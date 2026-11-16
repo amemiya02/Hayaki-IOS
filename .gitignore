@@ -13,3 +13,6 @@
 .swiftpm/
 DerivedData/
 xcuserdata/
+
+# Generated from project.yml by XcodeGen
+/Hayaki.xcodeproj/

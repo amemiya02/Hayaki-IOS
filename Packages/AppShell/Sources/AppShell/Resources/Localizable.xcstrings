@@ -1,0 +1,12 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "Could Not Open Your Collection" : {
+      "comment" : "Title shown when the collection could not be opened at launch."
+    },
+    "Opening Your Collection…" : {
+      "comment" : "Shown while the collection opens at launch."
+    }
+  },
+  "version" : "1.0"
+}

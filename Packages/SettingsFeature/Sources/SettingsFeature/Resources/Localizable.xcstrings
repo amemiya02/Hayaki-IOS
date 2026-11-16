@@ -1,0 +1,15 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "Settings" : {
+      "comment" : "Title of the Settings section and its tab."
+    },
+    "Settings Are Coming" : {
+      "comment" : "Title of the placeholder shown in the Settings section before its options exist."
+    },
+    "Sync, backups, reminders and About will appear here." : {
+      "comment" : "Description of the placeholder shown in the Settings section."
+    }
+  },
+  "version" : "1.0"
+}

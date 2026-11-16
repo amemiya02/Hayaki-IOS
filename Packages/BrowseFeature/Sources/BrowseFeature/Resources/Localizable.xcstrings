@@ -1,0 +1,15 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "Browse" : {
+      "comment" : "Title of the Browse section and its tab."
+    },
+    "Browse Is Coming" : {
+      "comment" : "Title of the placeholder shown in the Browse section before the card browser exists."
+    },
+    "Searching and editing your cards will appear here." : {
+      "comment" : "Description of the placeholder shown in the Browse section."
+    }
+  },
+  "version" : "1.0"
+}

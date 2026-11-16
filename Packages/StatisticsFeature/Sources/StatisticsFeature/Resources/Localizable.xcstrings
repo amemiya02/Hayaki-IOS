@@ -1,0 +1,15 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "Charts of your studying will appear here." : {
+      "comment" : "Description of the placeholder shown in the Statistics section."
+    },
+    "Statistics" : {
+      "comment" : "Title of the Statistics section and its tab."
+    },
+    "Statistics Are Coming" : {
+      "comment" : "Title of the placeholder shown in the Statistics section before the charts exist."
+    }
+  },
+  "version" : "1.0"
+}

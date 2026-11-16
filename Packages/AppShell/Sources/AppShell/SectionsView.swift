@@ -1,0 +1,64 @@
+import BrowseFeature
+import CollectionStore
+import DecksFeature
+import SettingsFeature
+import StatisticsFeature
+import SwiftUI
+
+/// The app's sections. iPhone shows them as tabs; iPad shows them in a
+/// sidebar with the chosen section beside it.
+///
+/// Each section's screen comes from its feature package, which also supplies
+/// its title and symbol; the shell only arranges them.
+struct SectionsView: View {
+    let store: CollectionStore
+    @State private var selection: AppSection = .decks
+
+    var body: some View {
+        TabView(selection: $selection) {
+            Tab(value: AppSection.decks) {
+                DeckListScreen(store: store)
+            } label: {
+                Label { DecksSection.title } icon: { Image(systemName: DecksSection.systemImage) }
+            }
+            Tab(value: AppSection.browse) {
+                BrowseScreen(store: store)
+            } label: {
+                Label { BrowseSection.title } icon: { Image(systemName: BrowseSection.systemImage) }
+            }
+            Tab(value: AppSection.statistics) {
+                StatisticsScreen(store: store)
+            } label: {
+                Label { StatisticsSection.title } icon: { Image(systemName: StatisticsSection.systemImage) }
+            }
+            Tab(value: AppSection.settings) {
+                SettingsScreen(store: store)
+            } label: {
+                Label { SettingsSection.title } icon: { Image(systemName: SettingsSection.systemImage) }
+            }
+        }
+        .tabViewStyle(.sidebarAdaptable)
+        .sidebarOnWideScreens()
+    }
+}
+
+private extension View {
+    /// On iPad, open with the sidebar showing rather than the tab bar. (The
+    /// packages also build for macOS so their tests run on the Mac, where
+    /// this does not apply.)
+    @ViewBuilder
+    func sidebarOnWideScreens() -> some View {
+        #if os(iOS)
+        defaultAdaptableTabBarPlacement(.sidebar)
+        #else
+        self
+        #endif
+    }
+}
+
+enum AppSection: Hashable {
+    case decks
+    case browse
+    case statistics
+    case settings
+}
