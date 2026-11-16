@@ -1,5 +1,6 @@
 import AnkiCore
 import DeckOptionsFeature
+import PackagesFeature
 import SwiftUI
 
 extension View {
@@ -52,6 +53,8 @@ private struct DeckManagement: ViewModifier {
                     }
                 case .options(let deck):
                     DeckOptionsScreen(store: model.store, deckID: deck.id)
+                case .export(let deck):
+                    PackageExportScreen(store: model.store, decks: [deck.id])
                 case .rename, .delete:
                     EmptyView()
                 }
@@ -65,7 +68,7 @@ private struct DeckManagement: ViewModifier {
                 case .delete(let deck):
                     request.pending = nil
                     confirmDeletion(of: deck)
-                case .create, .move, .options, nil:
+                case .create, .move, .options, .export, nil:
                     break
                 }
             }
@@ -119,7 +122,7 @@ private struct DeckManagement: ViewModifier {
     private var sheet: Binding<DeckAction?> {
         Binding {
             switch request.pending {
-            case .create, .move, .options: request.pending
+            case .create, .move, .options, .export: request.pending
             default: nil
             }
         } set: { request.pending = $0 }

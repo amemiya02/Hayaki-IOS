@@ -11,7 +11,10 @@
       "comment": "Update choice: always replace with the package's copy."
     },
     "Cancel": {
-      "comment": "Button that stops before importing a package."
+      "comment": "Button that stops before importing or exporting a package."
+    },
+    "Cancel Export": {
+      "comment": "Button that stops an export while it runs."
     },
     "Cancel Import": {
       "comment": "Button that stops an import while it runs."
@@ -19,20 +22,47 @@
     "Cards": {
       "comment": "Row label in the import summary: number of cards in the collection."
     },
+    "Collection Package": {
+      "comment": "Export choice: the whole collection as a collection package (.colpkg), as desktop Anki's 'Anki Collection Package'."
+    },
+    "Could Not Export": {
+      "comment": "Title shown when an export failed."
+    },
     "Could Not Import": {
       "comment": "Title shown when an import failed."
     },
+    "Deck Package": {
+      "comment": "Export choice: chosen decks as a deck package (.apkg), as desktop Anki's 'Anki Deck Package'."
+    },
     "Decks": {
-      "comment": "Row label in the import summary: number of decks in the collection."
+      "comment": "Row label in the import summary: number of decks in the collection; also the header of the deck list on the export screen."
     },
     "Done": {
-      "comment": "Button that closes the import summary."
+      "comment": "Button that closes the import summary or the finished export."
     },
     "Everything in Hayaki will be replaced by the collection in “%@”. A backup of your current collection is made first.": {
       "comment": "Warning before a collection package replaces the collection; the placeholder is the package's file name."
     },
+    "Export": {
+      "comment": "Title of the export screen, the accessibility label of its kind picker, and the button that starts the export."
+    },
+    "Export Cancelled": {
+      "comment": "Title shown after the learner cancelled an export."
+    },
+    "Export Complete": {
+      "comment": "Title shown when the package has been written."
+    },
+    "Exporting…": {
+      "comment": "Shown while the core writes the package."
+    },
+    "Export…": {
+      "comment": "Toolbar button on the deck list that opens the export screen."
+    },
     "Hayaki can import Anki collection packages (.colpkg) and deck packages (.apkg).": {
       "comment": "Shown when the learner opens a file that is not an Anki package."
+    },
+    "Hayaki cannot reach its Documents folder.": {
+      "comment": "Shown if the folder exports are saved in cannot be found."
     },
     "If Newer": {
       "comment": "Update choice: replace only if the package's copy is newer."
@@ -58,6 +88,15 @@
     "Importing “%@”…": {
       "comment": "Shown while a package imports; the placeholder is the file name."
     },
+    "Include Deck Presets": {
+      "comment": "Toggle: put the presets (deck options) of the chosen decks in the deck package (desktop Anki's 'Include deck presets')."
+    },
+    "Include Media": {
+      "comment": "Toggle: put the sounds and images in the package (desktop Anki's 'Include media')."
+    },
+    "Include Scheduling Information": {
+      "comment": "Toggle: put the cards' scheduling and review history in the deck package (desktop Anki's 'Include scheduling information')."
+    },
     "Learning progress is the scheduling and review history of cards new to your collection. Cards you already have keep their own progress.": {
       "comment": "Explains the learning progress toggle when importing a deck package."
     },
@@ -66,6 +105,9 @@
     },
     "Never": {
       "comment": "Update choice: never replace; keep the collection's copy."
+    },
+    "No file was saved.": {
+      "comment": "Shown after an export was cancelled."
     },
     "Notes": {
       "comment": "Row label in the import summary: number of notes in the collection."
@@ -86,10 +128,13 @@
       "comment": "Explains the Updated row of the import summary."
     },
     "OK": {
-      "comment": "Button that closes the message about a cancelled or failed import."
+      "comment": "Button that closes the message about a cancelled or failed import or export."
     },
     "Opening “%@”…": {
       "comment": "Shown while the chosen package is copied before importing; the placeholder is the file name."
+    },
+    "Options": {
+      "comment": "Section header of the export choices."
     },
     "Replace": {
       "comment": "Destructive button that confirms replacing the collection with a collection package."
@@ -97,11 +142,32 @@
     "Replace Your Collection?": {
       "comment": "Title of the warning shown before a collection package replaces the learner's collection."
     },
+    "Saved in the Exports folder, which you can find under Hayaki in the Files app. Share it to AirDrop it, save it elsewhere or open it in another app.": {
+      "comment": "Shown under the file name when an export has finished."
+    },
+    "Share…": {
+      "comment": "Button that opens the share sheet for the exported package."
+    },
     "Skipped": {
       "comment": "Import summary row: notes already in the collection that were left unchanged."
     },
     "Skipped: Different Note Type": {
       "comment": "Import summary row: notes skipped because the collection's copy has a different note type."
+    },
+    "Support Older Anki Versions": {
+      "comment": "Toggle: write the older package format (desktop Anki's 'Support older Anki versions (slower/larger files)')."
+    },
+    "The chosen decks no longer exist.": {
+      "comment": "Shown when the decks chosen for export were deleted meanwhile."
+    },
+    "The decks you choose, each with its subdecks. Importing it into Anki or AnkiDroid adds them to the collection there.": {
+      "comment": "Explains what a deck package export holds."
+    },
+    "There are no decks to export.": {
+      "comment": "Shown in the deck list of the export screen when the collection has no decks."
+    },
+    "Turn on support for older versions only for Anki before 2.1.50 or an old AnkiDroid; the file is larger and slower to make.": {
+      "comment": "Explains the 'Support Older Anki Versions' toggle."
     },
     "Update Note Types": {
       "comment": "Picker: when a note type already in the collection is replaced by the deck package's copy."
@@ -112,11 +178,23 @@
     "Updated": {
       "comment": "Import summary row: notes in the collection that a deck package replaced."
     },
+    "Without scheduling information the cards arrive as new cards, with no review history. Leave it off to share decks; turn it on to move your progress.": {
+      "comment": "Explains the 'Include Scheduling Information' toggle when exporting a deck package."
+    },
     "Your Collection Now Has": {
       "comment": "Header of the summary after a collection package replaced the collection."
     },
     "Your collection was not changed.": {
       "comment": "Shown after an import was cancelled."
+    },
+    "Your whole collection, with its scheduling and review history. Importing it into Anki or AnkiDroid replaces the collection there.": {
+      "comment": "Explains what a collection package export holds."
+    },
+    "collection": {
+      "comment": "Start of the file name of an exported collection package, followed by the date and time. Lowercase, as desktop Anki names it."
+    },
+    "decks": {
+      "comment": "Start of the file name of a deck package holding several decks, followed by the date and time. Lowercase, like desktop Anki's \"collection\" file names."
     },
     "“If Newer” replaces a note only when the package’s copy was changed more recently. Merging note types combines a changed note type with yours instead of keeping both.": {
       "comment": "Explains the update and merge choices when importing a deck package."

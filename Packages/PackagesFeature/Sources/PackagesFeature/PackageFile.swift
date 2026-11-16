@@ -2,7 +2,7 @@ import Foundation
 import UniformTypeIdentifiers
 
 /// The two kinds of Anki package Hayaki imports.
-public enum PackageKind: Sendable, Equatable {
+public enum PackageKind: Sendable, Hashable {
     /// A whole collection (`.colpkg`); importing it replaces the collection.
     case collectionPackage
     /// Chosen decks (`.apkg`); importing it merges them into the collection.
