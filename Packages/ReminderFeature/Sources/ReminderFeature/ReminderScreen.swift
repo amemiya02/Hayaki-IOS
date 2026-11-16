@@ -82,7 +82,7 @@ public struct ReminderScreen: View {
             if model.isOn, let next = model.nextReminder {
                 Section {
                     LabeledContent {
-                        Text(next.delivery, format: .dateTime.weekday(.wide).hour().minute())
+                        Text(verbatim: Self.relativeDay.string(from: next.delivery))
                     } label: {
                         Text("When", bundle: .module, comment: "Label of the date and time of the next reminder.")
                     }
@@ -106,6 +106,17 @@ public struct ReminderScreen: View {
                 Task { await model.refreshPermission() }
             }
         }
+    }
+}
+
+extension ReminderScreen {
+    /// "Today, 9:00 AM", "Tomorrow, 9:00 AM", in the learner's language.
+    private static var relativeDay: DateFormatter {
+        let format = DateFormatter()
+        format.dateStyle = .medium
+        format.timeStyle = .short
+        format.doesRelativeDateFormatting = true
+        return format
     }
 }
 

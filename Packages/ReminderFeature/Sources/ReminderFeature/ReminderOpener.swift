@@ -41,16 +41,30 @@ private final class NotificationDelegate: NSObject, UNUserNotificationCenterDele
         self.opener = opener
     }
 
-    func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse) async {
+    // The completion-handler forms, not the async ones: UIKit insists that
+    // the completion runs on the main thread, and the async forms' generated
+    // completion ran on a background thread and crashed the app when a
+    // reminder was opened.
+    func userNotificationCenter(
+        _ center: UNUserNotificationCenter,
+        didReceive response: UNNotificationResponse,
+        withCompletionHandler completionHandler: @escaping @Sendable () -> Void
+    ) {
         let identifier = response.notification.request.identifier
-        await opener.opened(notificationIdentifier: identifier)
+        Task { @MainActor in
+            opener.opened(notificationIdentifier: identifier)
+            completionHandler()
+        }
     }
 
     /// A reminder due while Hayaki is open still shows, as a banner.
     func userNotificationCenter(
         _ center: UNUserNotificationCenter,
-        willPresent notification: UNNotification
-    ) async -> UNNotificationPresentationOptions {
-        [.banner, .list, .sound]
+        willPresent notification: UNNotification,
+        withCompletionHandler completionHandler: @escaping @Sendable (UNNotificationPresentationOptions) -> Void
+    ) {
+        Task { @MainActor in
+            completionHandler([.banner, .list, .sound])
+        }
     }
 }
