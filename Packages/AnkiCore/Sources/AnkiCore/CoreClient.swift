@@ -12,8 +12,9 @@ import Synchronization
 ///
 /// A long operation is started with `start(_:)` instead, which adds progress
 /// reports and cancellation. Those use a second thread owned by the client,
-/// the monitor, which only ever reads the core's latest progress and sets its
-/// abort flag, so neither waits behind the operation they refer to.
+/// the monitor, which only ever reads the core's latest progress and makes the
+/// core's abort calls (which take no collection lock), so neither waits behind
+/// the operation they refer to.
 ///
 /// A failed call throws `CoreError` with the core's error kind and its
 /// localised message. After a panic inside the core (`CoreError.isPanic`) the
@@ -76,14 +77,18 @@ public final class CoreClient: Sendable {
     /// core's progress every `pollingInterval` while it runs; the core itself
     /// refreshes its progress at most every 0.1 seconds.
     ///
-    /// Cancellation reaches the core through its abort flag, which only
-    /// operations that report progress check, so `cancel()` stops those.
+    /// Cancellation reaches the core through `abortCall`. The default,
+    /// `SetWantsAbort`, sets the core's abort flag, which only operations that
+    /// report progress check, so `cancel()` stops those. Signing in to a sync
+    /// server and syncing the collection have an abort call of their own and
+    /// must pass `.abortSync()`; media sync has `.abortMediaSync()`.
     public func start<Response>(
         _ call: CoreCall<Response>,
+        abortingWith abortCall: CoreCall<Anki_Generic_Empty> = .setWantsAbort(),
         pollingInterval: Duration = .milliseconds(100)
     ) -> LongOperation<Response> {
         let operation = LongOperation<Response> { operation in
-            self.monitor.submit { self.abort(operation) }
+            self.monitor.submit { self.abort(operation, with: abortCall) }
         }
         worker.submit {
             // Whatever the core reports before the operation begins belongs to
@@ -96,7 +101,7 @@ public final class CoreClient: Sendable {
             operation.finish(self.execute(call))
         }
         Task {
-            await self.poll(operation, every: pollingInterval)
+            await self.poll(operation, abortingWith: abortCall, every: pollingInterval)
         }
         return operation
     }
@@ -122,14 +127,19 @@ public final class CoreClient: Sendable {
 
     /// Polls until the operation has finished. Only the sleeping happens on
     /// the concurrency pool; each poll is a quick call on the monitor thread.
-    private func poll<Response>(_ operation: LongOperation<Response>, every interval: Duration) async {
+    private func poll<Response>(
+        _ operation: LongOperation<Response>,
+        abortingWith abortCall: CoreCall<Anki_Generic_Empty>,
+        every interval: Duration
+    ) async {
         while !operation.isFinished {
             try? await Task.sleep(for: interval)
             await monitor.run {
                 // Repeated while cancelled: the core clears its abort flag when
-                // an operation sets up its progress reporting, so a request that
-                // arrived just before that would otherwise be lost.
-                self.abort(operation)
+                // an operation sets up its progress reporting, and a sync only
+                // becomes abortable once it has registered itself, so a request
+                // that arrived just before either would otherwise be lost.
+                self.abort(operation, with: abortCall)
                 if case .success(let progress) = self.call(.latestProgress()) {
                     operation.report(progress)
                 }
@@ -137,9 +147,9 @@ public final class CoreClient: Sendable {
         }
     }
 
-    private func abort<Response>(_ operation: LongOperation<Response>) {
+    private func abort<Response>(_ operation: LongOperation<Response>, with abortCall: CoreCall<Anki_Generic_Empty>) {
         operation.abortIfCancelled {
-            _ = self.call(.setWantsAbort())
+            _ = self.call(abortCall)
         }
     }
 

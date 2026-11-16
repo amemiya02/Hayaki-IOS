@@ -1,14 +1,165 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "%lld cards will be deleted with it." : {
+      "comment" : "Message of the alert confirming a deck's deletion, for a deck without child decks; the number is how many cards are deleted.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld card will be deleted with it."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld cards will be deleted with it."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "%lld new, %lld learning, %lld due" : {
       "comment" : "VoiceOver label for a deck's counts for today: new cards, learning cards and due review cards."
+    },
+    "Bring your cards in from Anki or AnkiDroid by importing a collection package (.colpkg) or a deck package (.apkg)." : {
+      "comment" : "Explains on the first-launch screen how to bring existing cards in."
+    },
+    "Cancel" : {
+      "comment" : "Button that closes a sheet or alert without changing anything."
+    },
+    "Could Not Create Deck" : {
+      "comment" : "Title of the alert shown when a deck could not be created."
+    },
+    "Could Not Delete Deck" : {
+      "comment" : "Title of the alert shown when a deck could not be deleted."
+    },
+    "Could Not Move Deck" : {
+      "comment" : "Title of the alert shown when a deck could not be moved."
+    },
+    "Could Not Rename Deck" : {
+      "comment" : "Title of the alert shown when a deck could not be renamed."
     },
     "Could Not Show Decks" : {
       "comment" : "Title shown when the deck list could not be read from the collection."
     },
+    "Create" : {
+      "comment" : "Button that creates the deck described in the New Deck sheet."
+    },
     "Decks" : {
       "comment" : "Title of the Decks section and its tab."
+    },
+    "Delete" : {
+      "comment" : "Deck context menu, swipe action and confirmation button: delete the deck."
+    },
+    "Delete “%@”?" : {
+      "comment" : "Title of the alert confirming a deck's deletion; the placeholder is the deck's name."
+    },
+    "Enter a name for the deck." : {
+      "comment" : "Error shown when the learner gives a deck an empty name."
+    },
+    "Inside" : {
+      "comment" : "New Deck sheet: label of the choice of deck the new deck goes inside."
+    },
+    "Its %lld subdecks and %lld cards will be deleted with it." : {
+      "comment" : "Message of the alert confirming a deck's deletion: how many child decks (at every level) and cards are deleted with it.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Its %#@subdecks@ and %#@cards@ will be deleted with it."
+          },
+          "substitutions" : {
+            "subdecks" : {
+              "argNum" : 1,
+              "formatSpecifier" : "lld",
+              "variations" : {
+                "plural" : {
+                  "one" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg subdeck"
+                    }
+                  },
+                  "other" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg subdecks"
+                    }
+                  }
+                }
+              }
+            },
+            "cards" : {
+              "argNum" : 2,
+              "formatSpecifier" : "lld",
+              "variations" : {
+                "plural" : {
+                  "one" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg card"
+                    }
+                  },
+                  "other" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg cards"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Its cards go back to their original decks." : {
+      "comment" : "Message of the alert confirming the deletion of a filtered deck: no cards are deleted."
+    },
+    "Move" : {
+      "comment" : "Deck context menu: put the deck inside another deck or at the top level."
+    },
+    "Move “%@”" : {
+      "comment" : "Title of the sheet for moving a deck; the placeholder is the deck's name."
+    },
+    "Name" : {
+      "comment" : "Placeholder of the field for a deck's name."
+    },
+    "New Deck" : {
+      "comment" : "Toolbar button in the deck list, and title of the sheet, for creating a deck."
+    },
+    "New Deck Inside" : {
+      "comment" : "Deck context menu: create a deck inside this deck."
+    },
+    "No Cards Yet" : {
+      "comment" : "Title of the first-launch screen when the collection has no cards."
+    },
+    "None (Top Level)" : {
+      "comment" : "New Deck sheet: choice that puts the new deck at the top level, inside no other deck."
+    },
+    "OK" : {
+      "comment" : "Button that closes an error alert."
+    },
+    "Rename" : {
+      "comment" : "Deck context menu, swipe action and alert button: give the deck a new name."
+    },
+    "Rename Deck" : {
+      "comment" : "Title of the alert asking for a deck's new name."
+    },
+    "Studies this deck." : {
+      "comment" : "VoiceOver hint on a deck in the deck list: tapping it starts a study session."
+    },
+    "There is already a deck named “%@” there." : {
+      "comment" : "Error shown when another deck in the same place already has the name; the placeholder is the name."
+    },
+    "Top Level" : {
+      "comment" : "Move sheet: destination that puts the deck at the top level, inside no other deck."
     },
     "Try Again" : {
       "comment" : "Button that reads the deck list again after it failed."
