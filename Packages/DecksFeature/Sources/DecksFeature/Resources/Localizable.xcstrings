@@ -4,11 +4,17 @@
     "%lld new, %lld learning, %lld due" : {
       "comment" : "VoiceOver label for a deck's counts for today: new cards, learning cards and due review cards."
     },
+    "Bring your cards in from Anki or AnkiDroid by importing a collection package (.colpkg) or a deck package (.apkg)." : {
+      "comment" : "Explains on the first-launch screen how to bring existing cards in."
+    },
     "Could Not Show Decks" : {
       "comment" : "Title shown when the deck list could not be read from the collection."
     },
     "Decks" : {
       "comment" : "Title of the Decks section and its tab."
+    },
+    "No Cards Yet" : {
+      "comment" : "Title of the first-launch screen when the collection has no cards."
     },
     "Try Again" : {
       "comment" : "Button that reads the deck list again after it failed."

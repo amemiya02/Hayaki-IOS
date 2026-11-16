@@ -11,6 +11,8 @@ Packages/
   BrowseFeature/      placeholder
   StatisticsFeature/  placeholder
   SettingsFeature/    placeholder
+  PackagesFeature/    PackageImportModel, the import sheets (packageImport(_:)), ImportPackageButton
+  NoteEditorFeature/  NoteEditorModel, NoteEditorScreen; addNoteAction(store:), the shell's Add Note button
 ```
 
 ## Where things go
@@ -34,7 +36,7 @@ Screens are created with the open `CollectionStore` (`DeckListScreen(store:)`), 
 - A model that shows collection data has a `run()` that the screen calls from `.task`: subscribe with `store.changes()` first, then load, then reload whenever a change intersects what the screen shows (see `DeckListModel.run()`). Subscribe inside `run()`, not in `init`: SwiftUI cancels and restarts `.task` when a screen disappears and reappears, and cancelling ends a stream.
 - `store.undo()` and `store.undoableAction()` undo the last operation with the core's undo and name it.
 - `store.replace { core, location in … }` closes the collection, lets the body overwrite it (a collection package import, a restore), reopens it and signals `.everything`.
-- Long operations with progress and cancel: `store.core.start(.call(request))` returns a `LongOperation`.
+- Long operations with progress and cancel: `store.core.start(.call(request))` returns a `LongOperation`; await one that modifies the collection with `store.modify(operation)` so its change is signalled.
 
 ## Tests
 
@@ -51,5 +53,7 @@ try await withTemporaryCollection { store in
 ```
 
 `CollectionTesting` provides `withTemporaryCollection`, `TemporaryFolder`, `eventually { … }` for models that update in the background, and learner-level setup actions on `CollectionStore` (`addDeck(named:)`, `addBasicNotes(count:toDeck:)`, `answerNextCard(inDeck:rating:)`, `makeDueToday(_:)`, `suspend(_:)`, `deckNames()`). Add new setup actions there, in a new file per area, so they are shared.
+
+Real Anki packages to start from: `FixturePackage` (`.collection`, `.basicDeck`, `.clozeDeck`, `.typedAnswerDeck`) with `url` and `contents` (what each holds), `store.importFixture(_:)` to bring one in, and `store.contents()` to compare a collection with a fixture's description. They were written by the pinned core's own export code (Anki 26.09.4), not by a desktop Anki install; see `FixturePackages.swift` for what they hold and how to regenerate them. Also `addNotes(ofType:fields:toDeck:)`, `addMediaFile(named:data:)`, `cardIDs(matching:)`, `noteIDs(matching:)`, `reviewCount(matching:)` and `mediaFileNames()`.
 
 Run every package's tests with `scripts/test.sh`, or one package with `scripts/test.sh DecksFeature`. A new package with a `Tests` folder is picked up automatically, by the script and by CI.
