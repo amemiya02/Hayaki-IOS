@@ -39,6 +39,8 @@ packages:
     path: Packages/SettingsFeature
   PackagesFeature:
     path: Packages/PackagesFeature
+  NoteEditorFeature:
+    path: Packages/NoteEditorFeature
 
 targets:
   Hayaki:
