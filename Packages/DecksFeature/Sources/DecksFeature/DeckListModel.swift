@@ -13,6 +13,8 @@ public struct DeckNode: Identifiable, Equatable, Sendable {
     /// Whether the learner collapsed this deck, hiding its child decks.
     public let isCollapsed: Bool
     public let children: [DeckNode]
+    /// All cards in the deck and its child decks, whatever their state.
+    public let totalCards: Int
 
     init(_ node: Anki_Decks_DeckTreeNode) {
         id = node.deckID
@@ -24,6 +26,7 @@ public struct DeckNode: Identifiable, Equatable, Sendable {
         )
         isCollapsed = node.collapsed
         children = node.children.map(DeckNode.init)
+        totalCards = Int(node.totalIncludingChildren)
     }
 }
 
@@ -49,6 +52,12 @@ public final class DeckListModel {
 
     public private(set) var state: State = .loading
     public private(set) var decks: [DeckNode] = []
+
+    /// Whether the collection has no cards at all, as on first launch, so
+    /// the screen offers to import a package instead of an empty deck list.
+    public var hasNoCards: Bool {
+        state == .loaded && decks.allSatisfy { $0.totalCards == 0 }
+    }
 
     @ObservationIgnored private let store: CollectionStore
 

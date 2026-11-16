@@ -19,6 +19,7 @@ let package = Package(
         .package(path: "../BrowseFeature"),
         .package(path: "../StatisticsFeature"),
         .package(path: "../SettingsFeature"),
+        .package(path: "../PackagesFeature"),
     ],
     targets: [
         .target(
@@ -30,6 +31,7 @@ let package = Package(
                 .product(name: "BrowseFeature", package: "BrowseFeature"),
                 .product(name: "StatisticsFeature", package: "StatisticsFeature"),
                 .product(name: "SettingsFeature", package: "SettingsFeature"),
+                .product(name: "PackagesFeature", package: "PackagesFeature"),
             ],
             resources: [.process("Resources")]
         ),
@@ -38,6 +40,7 @@ let package = Package(
             dependencies: [
                 "AppShell",
                 .product(name: "CollectionTesting", package: "CollectionStore"),
+                .product(name: "PackagesFeature", package: "PackagesFeature"),
             ]
         ),
     ],
