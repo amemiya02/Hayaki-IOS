@@ -1,4 +1,5 @@
 import CollectionStore
+import PackagesFeature
 import SwiftUI
 
 /// The Decks section: every deck as a nested list with today's counts.
@@ -13,6 +14,11 @@ public struct DeckListScreen: View {
         NavigationStack {
             content
                 .navigationTitle(Text("Decks", bundle: .module))
+                .toolbar {
+                    ToolbarItem(placement: .primaryAction) {
+                        ImportPackageButton()
+                    }
+                }
         }
         .task { await model.run() }
     }
@@ -37,6 +43,19 @@ public struct DeckListScreen: View {
                 } label: {
                     Text("Try Again", bundle: .module)
                 }
+            }
+        case .loaded where model.hasNoCards:
+            ContentUnavailableView {
+                Label {
+                    Text("No Cards Yet", bundle: .module)
+                } icon: {
+                    Image(systemName: "rectangle.stack")
+                }
+            } description: {
+                Text("Bring your cards in from Anki or AnkiDroid by importing a collection package (.colpkg) or a deck package (.apkg).", bundle: .module)
+            } actions: {
+                ImportPackageButton()
+                    .buttonStyle(.borderedProminent)
             }
         case .loaded:
             List {

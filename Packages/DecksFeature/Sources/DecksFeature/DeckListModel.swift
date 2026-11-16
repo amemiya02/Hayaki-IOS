@@ -20,6 +20,8 @@ public struct DeckNode: Identifiable, Equatable, Sendable {
     /// How many cards are in this deck itself, not counting child decks.
     let cardsInDeck: Int
     public internal(set) var children: [DeckNode]
+    /// All cards in the deck and its child decks, whatever their state.
+    public let totalCards: Int
 
     init(_ node: Anki_Decks_DeckTreeNode, parentName: String? = nil) {
         id = node.deckID
@@ -34,6 +36,7 @@ public struct DeckNode: Identifiable, Equatable, Sendable {
         isFiltered = node.filtered
         cardsInDeck = Int(node.totalInDeck)
         children = node.children.map { [fullName] child in DeckNode(child, parentName: fullName) }
+        totalCards = Int(node.totalIncludingChildren)
     }
 }
 
@@ -59,6 +62,12 @@ public final class DeckListModel {
 
     public private(set) var state: State = .loading
     public internal(set) var decks: [DeckNode] = []
+
+    /// Whether the collection has no cards at all, as on first launch, so
+    /// the screen offers to import a package instead of an empty deck list.
+    public var hasNoCards: Bool {
+        state == .loaded && decks.allSatisfy { $0.totalCards == 0 }
+    }
 
     @ObservationIgnored let store: CollectionStore
 

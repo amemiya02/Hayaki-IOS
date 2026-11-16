@@ -10,10 +10,14 @@ struct DeckManagementTests {
         try await withTemporaryCollection { store in
             let model = DeckListModel(store: store)
             await model.refresh()
+            #expect(!model.hasOwnDecks)
 
             try await model.createDeck(named: "Spanish", inside: nil)
 
             #expect(model.outline == ["Spanish: 0 new, 0 learning, 0 due"])
+            // Shown as a deck list, not as an empty collection, though it has
+            // no cards yet.
+            #expect(model.hasOwnDecks)
         }
     }
 

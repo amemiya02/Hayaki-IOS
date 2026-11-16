@@ -1,4 +1,5 @@
 import CollectionStore
+import PackagesFeature
 import SwiftUI
 
 /// The whole app: a short opening state while the collection opens, then the
@@ -16,7 +17,10 @@ public struct RootView: View {
                     Text("Opening Your Collection…", bundle: .module)
                 }
             case .ready(let store):
-                SectionsView(store: store)
+                if let packageImport = model.packageImport {
+                    SectionsView(store: store)
+                        .packageImport(packageImport)
+                }
             case .failed(let message):
                 ContentUnavailableView {
                     Label {
@@ -30,5 +34,10 @@ public struct RootView: View {
             }
         }
         .task { await model.open() }
+        // A collection package or deck package opened from Files, AirDrop or
+        // another app's share sheet.
+        .onOpenURL { url in
+            Task { await model.openPackage(url) }
+        }
     }
 }

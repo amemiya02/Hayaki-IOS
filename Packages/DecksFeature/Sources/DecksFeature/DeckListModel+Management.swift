@@ -93,6 +93,16 @@ extension DeckListModel {
         }
     }
 
+    /// Whether the learner has decks of their own, beyond an empty Default
+    /// deck. A collection with decks but no cards is shown as a deck list,
+    /// so a deck the learner just created appears.
+    public var hasOwnDecks: Bool {
+        decks.contains { $0.id != Self.defaultDeckID || !$0.children.isEmpty || $0.totalCards > 0 }
+    }
+
+    /// The id of the Default deck every collection has.
+    static let defaultDeckID: DeckNode.ID = 1
+
     // MARK: Looking up decks
 
     /// The deck with this id, wherever it is in the tree.
