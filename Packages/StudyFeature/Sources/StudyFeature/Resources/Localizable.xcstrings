@@ -1,0 +1,85 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "%lld learning cards come due later today." : {
+      "comment" : "Shown when a study session ends while learning cards of the deck are due later today, beyond Anki's learn-ahead limit.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld learning card comes due later today."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld learning cards come due later today."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld new, %lld learning, %lld due left" : {
+      "comment" : "VoiceOver label for the counts at the top of the study screen: new cards, learning cards and due review cards left today."
+    },
+    "Again" : {
+      "comment" : "Rating: the learner did not recall the card."
+    },
+    "All Done for Today" : {
+      "comment" : "Title shown when a study session ends, or a deck is opened that has nothing left to study today."
+    },
+    "Close" : {
+      "comment" : "Button that closes the study screen."
+    },
+    "Could Not Continue Studying" : {
+      "comment" : "Title shown when the study session failed, for example because the collection could not be read."
+    },
+    "Done" : {
+      "comment" : "Button that closes the study screen at the end of a session."
+    },
+    "Easy" : {
+      "comment" : "Rating: recalled at once."
+    },
+    "Good" : {
+      "comment" : "Rating: recalled after some thought."
+    },
+    "Hard" : {
+      "comment" : "Rating: recalled with serious difficulty."
+    },
+    "Show Answer" : {
+      "comment" : "Button at the bottom of the study screen that turns the card over to its answer side."
+    },
+    "This deck has nothing left to study today." : {
+      "comment" : "Shown when a deck is opened for studying but has no cards left for today."
+    },
+    "You reviewed %lld cards in this session." : {
+      "comment" : "Summary at the end of a study session: how many reviews the learner made.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "You reviewed %lld card in this session."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "You reviewed %lld cards in this session."
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "version" : "1.0"
+}

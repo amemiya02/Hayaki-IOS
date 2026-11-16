@@ -1,14 +1,184 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "%lld days" : {
+      "comment" : "Card detail: the card's current interval in days.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld day"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld days"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Added" : {
+      "comment" : "Card detail: label of the date the card's note was added."
+    },
+    "Again" : {
+      "comment" : "Card detail, review history: the Again rating."
+    },
+    "Anki search, such as deck:Spanish" : {
+      "comment" : "Prompt in the Browse search field; the search uses Anki's search syntax. Keep 'deck:' untranslated."
+    },
+    "Ascending" : {
+      "comment" : "Browse sort menu: sort from lowest to highest (A to Z, oldest first)."
+    },
+    "Blue flag" : {
+      "comment" : "Accessibility label of a card's blue flag in the Browse list."
+    },
     "Browse" : {
       "comment" : "Title of the Browse section and its tab."
     },
-    "Browse Is Coming" : {
-      "comment" : "Title of the placeholder shown in the Browse section before the card browser exists."
+    "Buried" : {
+      "comment" : "A buried card (Browse list label and card detail status)."
     },
-    "Searching and editing your cards will appear here." : {
-      "comment" : "Description of the placeholder shown in the Browse section."
+    "Card" : {
+      "comment" : "Card detail: navigation title, and the header of the section about the card's scheduling."
+    },
+    "Card Deleted" : {
+      "comment" : "Card detail: title shown when the card was deleted meanwhile."
+    },
+    "Card Template" : {
+      "comment" : "Card detail: label of the name of the card template that made the card."
+    },
+    "Cards you add or import appear here." : {
+      "comment" : "Browse: description shown when the collection has no cards."
+    },
+    "Could Not Show Card" : {
+      "comment" : "Card detail: title shown when the card could not be read."
+    },
+    "Could Not Show Cards" : {
+      "comment" : "Browse: title shown when the search failed for a reason other than invalid syntax."
+    },
+    "Deck" : {
+      "comment" : "Card detail: label of the card's deck."
+    },
+    "Descending" : {
+      "comment" : "Browse sort menu: sort from highest to lowest (Z to A, newest first)."
+    },
+    "Due" : {
+      "comment" : "Card detail: label of when the card is due."
+    },
+    "Easy" : {
+      "comment" : "Card detail, review history: the Easy rating."
+    },
+    "Filtered" : {
+      "comment" : "Card detail, review history: a review in a filtered deck."
+    },
+    "Good" : {
+      "comment" : "Card detail, review history: the Good rating."
+    },
+    "Green flag" : {
+      "comment" : "Accessibility label of a card's green flag in the Browse list."
+    },
+    "Hard" : {
+      "comment" : "Card detail, review history: the Hard rating."
+    },
+    "Home Deck" : {
+      "comment" : "Card detail: label of the deck a card in a filtered deck came from."
+    },
+    "Interval" : {
+      "comment" : "Card detail: label of the card's current interval."
+    },
+    "Interval %@" : {
+      "comment" : "Card detail, review history: the interval given after a review, such as 'Interval 3 d'."
+    },
+    "Invalid Search" : {
+      "comment" : "Browse: title shown when the search is not valid Anki search syntax; the core's explanation follows."
+    },
+    "Lapses" : {
+      "comment" : "Card detail: label of how many times the card was forgotten after being learnt."
+    },
+    "Learning" : {
+      "comment" : "Card detail, review history: a review while the card was in learning."
+    },
+    "Manual" : {
+      "comment" : "Card detail, review history: the card was changed by hand (for example reset)."
+    },
+    "Marked" : {
+      "comment" : "A card whose note is marked (Browse list label)."
+    },
+    "New card #%lld" : {
+      "comment" : "Card detail: when a new card is due, as its position among new cards."
+    },
+    "No Cards" : {
+      "comment" : "Browse: title shown when the collection has no cards."
+    },
+    "Not reviewed yet." : {
+      "comment" : "Card detail: shown in the review history of a card never reviewed."
+    },
+    "Note" : {
+      "comment" : "Card detail: header of the section listing the note's fields."
+    },
+    "Note Type" : {
+      "comment" : "Card detail: label of the card's note type."
+    },
+    "Orange flag" : {
+      "comment" : "Accessibility label of a card's orange flag in the Browse list."
+    },
+    "Order" : {
+      "comment" : "Browse sort menu: title of the ascending/descending choice."
+    },
+    "Pink flag" : {
+      "comment" : "Accessibility label of a card's pink flag in the Browse list."
+    },
+    "Purple flag" : {
+      "comment" : "Accessibility label of a card's purple flag in the Browse list."
+    },
+    "Red flag" : {
+      "comment" : "Accessibility label of a card's red flag in the Browse list."
+    },
+    "Relearning" : {
+      "comment" : "Card detail, review history: a review while relearning a forgotten card."
+    },
+    "Rescheduled" : {
+      "comment" : "Card detail, review history: the card's due date was set by hand."
+    },
+    "Review" : {
+      "comment" : "Card detail, review history: a review of a card in review."
+    },
+    "Review History" : {
+      "comment" : "Card detail: header of the list of the card's reviews."
+    },
+    "Reviews" : {
+      "comment" : "Card detail: label of how many times the card was reviewed."
+    },
+    "Sort" : {
+      "comment" : "Browse toolbar button that opens the sort menu."
+    },
+    "Sort By" : {
+      "comment" : "Browse sort menu: title of the list of columns to sort by."
+    },
+    "Status" : {
+      "comment" : "Card detail: label of whether the card is suspended or buried."
+    },
+    "Suspended" : {
+      "comment" : "A suspended card (Browse list label and card detail status)."
+    },
+    "This card is no longer in the collection." : {
+      "comment" : "Card detail: description shown when the card was deleted meanwhile."
+    },
+    "Took %@" : {
+      "comment" : "Card detail, review history: how long the review took, such as 'Took 8 s'."
+    },
+    "Try Again" : {
+      "comment" : "Button that retries after an error."
+    },
+    "Turquoise flag" : {
+      "comment" : "Accessibility label of a card's turquoise flag in the Browse list."
     }
   },
   "version" : "1.0"

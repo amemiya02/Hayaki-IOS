@@ -1,0 +1,317 @@
+import AnkiCore
+import AnkiProto
+import CollectionStore
+import Foundation
+import Observation
+
+/// Syncing the collection with the learner's own sync server.
+///
+/// The learner enters the server's address, their user name and password and
+/// signs in; the server issues a key in exchange, which is kept (in the
+/// Keychain) instead of the password. From then on one tap syncs. When the two
+/// sides cannot be merged, the model stops and asks whether to upload or
+/// download, and nothing is overwritten until the learner chooses.
+///
+/// There is no AnkiWeb sign-in and no default server (ADR 0002): without an
+/// address the learner typed, nothing is ever sent anywhere.
+@MainActor
+@Observable
+public final class SyncModel {
+    public enum Status: Equatable, Sendable {
+        case idle
+        case signingIn
+        case syncing(SyncProgress)
+        /// The two sides cannot be merged; one must replace the other. Waits
+        /// for `upload()`, `download()` or `keepBoth()`.
+        case choosingDirection(FullSyncChoice)
+        case synced(SyncOutcome)
+        case failed(SyncFailure)
+
+        public var failure: SyncFailure? {
+            if case .failed(let failure) = self { failure } else { nil }
+        }
+    }
+
+    /// The sign-in form. The address has no default.
+    public var serverAddress = ""
+    public var userName = ""
+    public var password = ""
+
+    /// The learner's sign-in, or nil when sync is not set up.
+    public private(set) var account: SyncAccount?
+    public private(set) var status: Status = .idle
+
+    @ObservationIgnored private let store: CollectionStore
+    @ObservationIgnored private let storage: any SyncAccountStorage
+    /// Cancels whatever is running: signing in or a sync.
+    @ObservationIgnored private var cancelRunning: (() -> Void)?
+
+    /// - Parameter storage: Where the sign-in is kept; the Keychain unless a
+    ///   test passes another.
+    public init(store: CollectionStore, storage: any SyncAccountStorage = KeychainSyncAccountStorage()) {
+        self.store = store
+        self.storage = storage
+        do {
+            account = try storage.load()
+        } catch {
+            status = .failed(SyncFailure(storageError: error))
+        }
+        if let account {
+            serverAddress = account.server.absoluteString
+            userName = account.userName
+        }
+    }
+
+    /// Whether signing in or a sync is under way.
+    public var isBusy: Bool {
+        switch status {
+        case .signingIn, .syncing: true
+        default: false
+        }
+    }
+
+    public var canSignIn: Bool {
+        !isBusy && account == nil
+            && !serverAddress.trimmed.isEmpty && !userName.trimmed.isEmpty && !password.isEmpty
+    }
+
+    // MARK: Signing in and out
+
+    /// Exchanges the user name and password for the server's key, and keeps
+    /// the key. The password is only ever held in this form while signing in,
+    /// and is cleared once the server has issued its key.
+    public func signIn() async {
+        guard canSignIn else { return }
+        guard let server = Self.serverURL(from: serverAddress) else {
+            status = .failed(SyncFailure(reason: .invalidAddress))
+            return
+        }
+        SyncClientIdentity.install()
+        status = .signingIn
+        let request = Anki_Sync_SyncLoginRequest.with {
+            $0.username = userName.trimmed
+            $0.password = password
+            $0.endpoint = server.absoluteString
+        }
+        let auth: Anki_Sync_SyncAuth
+        do {
+            auth = try await run(store.core.start(.syncLogin(request), abortingWith: .abortSync()))
+        } catch {
+            status = .failed(SyncFailure(error, server: server, signingIn: true))
+            return
+        }
+        let account = SyncAccount(server: server, userName: userName.trimmed, hostKey: auth.hkey)
+        do {
+            try storage.save(account)
+        } catch {
+            status = .failed(SyncFailure(storageError: error))
+            return
+        }
+        self.account = account
+        password = ""
+        status = .idle
+    }
+
+    /// Forgets the sign-in and removes the server's key from this device.
+    public func signOut() {
+        guard !isBusy else { return }
+        do {
+            try storage.remove()
+        } catch {
+            status = .failed(SyncFailure(storageError: error))
+            return
+        }
+        account = nil
+        password = ""
+        status = .idle
+    }
+
+    // MARK: Syncing
+
+    /// Syncs the collection with the server: sends this device's changes and
+    /// fetches the server's. When the two cannot be merged, stops at
+    /// `.choosingDirection` without changing either side.
+    public func sync() async {
+        guard let account, !isBusy else { return }
+        SyncClientIdentity.install()
+        status = .syncing(.connecting)
+        let request = Anki_Sync_SyncCollectionRequest.with {
+            $0.auth = account.auth
+            // Media sync (ticket #17) is not part of this yet.
+            $0.syncMedia = false
+        }
+        let response: Anki_Sync_SyncCollectionResponse
+        do {
+            response = try await run(store.core.start(.syncCollection(request), abortingWith: .abortSync()))
+        } catch {
+            status = .failed(SyncFailure(error, server: account.server, signingIn: false))
+            return
+        }
+        follow(newEndpoint: response.hasNewEndpoint ? response.newEndpoint : nil)
+        switch response.required {
+        case .fullSync:
+            status = .choosingDirection(.either)
+        case .fullDownload:
+            status = .choosingDirection(.downloadOnly)
+        case .fullUpload:
+            status = .choosingDirection(.uploadOnly)
+        case .noChanges, .normalSync, .UNRECOGNIZED:
+            // A finished normal sync reports no further changes required.
+            store.signal(.everything)
+            status = .synced(SyncOutcome(kind: .merged, serverMessage: response.serverMessage.nilIfEmpty))
+        }
+    }
+
+    /// Replaces the server's collection with this device's.
+    public func upload() async {
+        await fullSync(upload: true)
+    }
+
+    /// Replaces this device's collection with the server's.
+    public func download() async {
+        await fullSync(upload: false)
+    }
+
+    /// Leaves both sides as they are, when asked to choose a direction.
+    public func keepBoth() {
+        guard case .choosingDirection = status else { return }
+        status = .idle
+    }
+
+    /// Stops signing in or the sync under way. The core abandons the sync
+    /// and rolls back what it had applied.
+    public func cancel() {
+        cancelRunning?()
+    }
+
+    private func fullSync(upload: Bool) async {
+        guard let account, case .choosingDirection(let choice) = status,
+              upload ? choice.allowsUpload : choice.allowsDownload
+        else { return }
+        status = .syncing(upload ? .uploading(transferred: 0, total: 0) : .downloading(transferred: 0, total: 0))
+        let request = Anki_Sync_FullUploadOrDownloadRequest.with {
+            $0.auth = account.auth
+            $0.upload = upload
+            // Leaving serverUsn unset skips media sync (ticket #17).
+        }
+        do {
+            _ = try await run(store.core.start(.fullUploadOrDownload(request), abortingWith: .abortSync()))
+        } catch {
+            status = .failed(SyncFailure(error, server: account.server, signingIn: false))
+            return
+        }
+        // The core closed the collection and opened it again, replaced when
+        // downloading.
+        store.signal(.everything)
+        status = .synced(SyncOutcome(kind: upload ? .uploaded : .downloaded, serverMessage: nil))
+    }
+
+    /// Runs a long operation, showing its progress and making it cancellable.
+    private func run<Response>(_ operation: LongOperation<Response>) async throws(CoreError) -> Response {
+        cancelRunning = { operation.cancel() }
+        let progress = Task {
+            for await report in operation.progress {
+                show(report)
+            }
+        }
+        defer {
+            cancelRunning = nil
+            progress.cancel()
+        }
+        return try await operation.result
+    }
+
+    private func show(_ report: Anki_Collection_Progress) {
+        guard case .syncing(let current) = status else { return }
+        switch report.value {
+        case .normalSync(let sync):
+            status = .syncing(.syncing(detail: sync.added.nilIfEmpty))
+        case .fullSync(let transfer):
+            let transferred = Int(transfer.transferred), total = Int(transfer.total)
+            switch current {
+            case .uploading: status = .syncing(.uploading(transferred: transferred, total: total))
+            case .downloading: status = .syncing(.downloading(transferred: transferred, total: total))
+            default: break
+            }
+        default:
+            break
+        }
+    }
+
+    /// A server may move the learner to another address; later syncs use it.
+    private func follow(newEndpoint: String?) {
+        guard let newEndpoint, var account, let url = Self.serverURL(from: newEndpoint), url != account.server
+        else { return }
+        account.server = url
+        try? storage.save(account)
+        self.account = account
+    }
+
+    /// The address as the core expects it: a web address with a host, whose
+    /// path ends in a slash (the core resolves its endpoints relative to it).
+    static func serverURL(from text: String) -> URL? {
+        guard var components = URLComponents(string: text.trimmed),
+              let scheme = components.scheme?.lowercased(), scheme == "http" || scheme == "https",
+              let host = components.host, !host.isEmpty
+        else { return nil }
+        if !components.path.hasSuffix("/") {
+            components.path += "/"
+        }
+        return components.url
+    }
+}
+
+/// Where a sync stands while it runs.
+public enum SyncProgress: Equatable, Sendable {
+    case connecting
+    /// Exchanging changes; `detail` is the core's count of what was sent and
+    /// received so far, such as "Added/modified: 3↑ 0↓".
+    case syncing(detail: String?)
+    case uploading(transferred: Int, total: Int)
+    case downloading(transferred: Int, total: Int)
+}
+
+/// Which way a full sync may go, when the two sides cannot be merged.
+public enum FullSyncChoice: Equatable, Sendable {
+    /// Both sides have cards; the learner picks which one to keep.
+    case either
+    /// The server has no cards, so there is nothing to download.
+    case uploadOnly
+    /// This device has no cards, so there is nothing to upload.
+    case downloadOnly
+
+    public var allowsUpload: Bool { self != .downloadOnly }
+    public var allowsDownload: Bool { self != .uploadOnly }
+}
+
+public struct SyncOutcome: Equatable, Sendable {
+    public enum Kind: Equatable, Sendable {
+        /// Changes were exchanged both ways (or there were none).
+        case merged
+        case uploaded
+        case downloaded
+    }
+
+    public let kind: Kind
+    /// A message the server sent along, if any.
+    public let serverMessage: String?
+
+    public init(kind: Kind, serverMessage: String?) {
+        self.kind = kind
+        self.serverMessage = serverMessage
+    }
+}
+
+extension SyncAccount {
+    var auth: Anki_Sync_SyncAuth {
+        .with {
+            $0.hkey = hostKey
+            $0.endpoint = server.absoluteString
+        }
+    }
+}
+
+extension String {
+    var trimmed: String { trimmingCharacters(in: .whitespacesAndNewlines) }
+    var nilIfEmpty: String? { isEmpty ? nil : self }
+}

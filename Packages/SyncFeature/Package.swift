@@ -1,0 +1,36 @@
+// swift-tools-version: 6.2
+
+import PackageDescription
+
+// Sync: signing in to the learner's own sync server and syncing the collection
+// with it, presented from Settings. There is no AnkiWeb sign-in (ADR 0002).
+let package = Package(
+    name: "SyncFeature",
+    defaultLocalization: "en",
+    platforms: [.iOS(.v26), .macOS(.v26)],
+    products: [
+        .library(name: "SyncFeature", targets: ["SyncFeature"]),
+    ],
+    dependencies: [
+        .package(path: "../AnkiCore"),
+        .package(path: "../CollectionStore"),
+    ],
+    targets: [
+        .target(
+            name: "SyncFeature",
+            dependencies: [
+                .product(name: "AnkiCore", package: "AnkiCore"),
+                .product(name: "CollectionStore", package: "CollectionStore"),
+            ],
+            resources: [.process("Resources")]
+        ),
+        .testTarget(
+            name: "SyncFeatureTests",
+            dependencies: [
+                "SyncFeature",
+                .product(name: "CollectionTesting", package: "CollectionStore"),
+            ]
+        ),
+    ],
+    swiftLanguageModes: [.v6]
+)

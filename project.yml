@@ -37,6 +37,16 @@ packages:
     path: Packages/StatisticsFeature
   SettingsFeature:
     path: Packages/SettingsFeature
+  PackagesFeature:
+    path: Packages/PackagesFeature
+  NoteEditorFeature:
+    path: Packages/NoteEditorFeature
+  StudyFeature:
+    path: Packages/StudyFeature
+  DeckOptionsFeature:
+    path: Packages/DeckOptionsFeature
+  SyncFeature:
+    path: Packages/SyncFeature
   ReminderFeature:
     path: Packages/ReminderFeature
 
@@ -56,9 +66,16 @@ targets:
         MARKETING_VERSION: "0.1.0"
         CURRENT_PROJECT_VERSION: "1"
         TARGETED_DEVICE_FAMILY: "1,2"
+        # The core's simulator slice is arm64 only (Apple silicon), so never
+        # build the Intel simulator slice that a generic destination asks for.
+        "EXCLUDED_ARCHS[sdk=iphonesimulator*]": x86_64
         GENERATE_INFOPLIST_FILE: YES
+        # Document types (Anki packages) that build settings cannot express.
+        INFOPLIST_FILE: App/Info.plist
         INFOPLIST_KEY_CFBundleDisplayName: Hayaki
         INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.education
+        # A sync server the learner enters may be on their local network.
+        INFOPLIST_KEY_NSLocalNetworkUsageDescription: Hayaki connects to the sync server you enter, which may be on your local network.
         INFOPLIST_KEY_UIApplicationSceneManifest_Generation: YES
         INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents: YES
         INFOPLIST_KEY_UILaunchScreen_Generation: YES
@@ -68,6 +85,26 @@ targets:
         # Set your own team in Xcode to install on a device with a free Apple ID.
         DEVELOPMENT_TEAM: ""
 
+  # UI tests of the assembled app in the simulator; run them with
+  #     xcodebuild test -scheme Hayaki -destination 'platform=iOS Simulator,name=iPhone 17'
+  HayakiUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources:
+      - UITests
+      # The app starts the tests from a copy of this real collection package.
+      - path: Packages/CollectionStore/Sources/CollectionTesting/Fixtures/collection.colpkg
+        buildPhase: resources
+    dependencies:
+      - target: Hayaki
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: io.github.amemiya02.hayaki.uitests
+        GENERATE_INFOPLIST_FILE: YES
+        "EXCLUDED_ARCHS[sdk=iphonesimulator*]": x86_64
+        CODE_SIGN_STYLE: Automatic
+        DEVELOPMENT_TEAM: ""
+
 schemes:
   Hayaki:
     build:
@@ -75,5 +112,9 @@ schemes:
         Hayaki: all
     run:
       config: Debug
+    test:
+      config: Debug
+      targets:
+        - HayakiUITests
     archive:
       config: Release

@@ -54,6 +54,13 @@ CARGO_HOME_DIR="${CARGO_HOME:-$HOME/.cargo}"
 export RUSTFLAGS="${RUSTFLAGS:-} --remap-path-prefix=$ROOT=hayaki --remap-path-prefix=$CARGO_HOME_DIR=cargo"
 export CFLAGS="${CFLAGS:-} -ffile-prefix-map=$ROOT=hayaki -ffile-prefix-map=$CARGO_HOME_DIR=cargo"
 
+# The core names its build in every sync request it sends ("<version>,<build
+# hash>,<os>"), reading the build hash from out/buildhash at compile time. Name
+# Hayaki's build there, with the pinned Anki commit, so a sync server sees
+# Hayaki rather than an anonymous build of the core. (Ignored by git upstream.)
+mkdir -p "$ROOT/vendor/anki/out"
+printf 'hayaki-%s' "$(git -C "$ROOT/vendor/anki" rev-parse --short=8 HEAD)" > "$ROOT/vendor/anki/out/buildhash"
+
 FRAMEWORKS="$BUILD/frameworks"
 rm -rf "$FRAMEWORKS"
 mkdir -p "$FRAMEWORKS"

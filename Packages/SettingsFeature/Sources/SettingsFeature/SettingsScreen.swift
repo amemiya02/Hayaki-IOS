@@ -1,6 +1,7 @@
 import CollectionStore
 import ReminderFeature
 import SwiftUI
+import SyncFeature
 
 /// How the Settings section appears in the tab bar and sidebar.
 public enum SettingsSection {
@@ -8,7 +9,7 @@ public enum SettingsSection {
     public static let systemImage = "gearshape"
 }
 
-/// The Settings section: one row per setting, each leading to its own screen.
+/// The Settings section: one row per area, each leading to its own screen.
 public struct SettingsScreen: View {
     private let store: CollectionStore
 
@@ -19,6 +20,7 @@ public struct SettingsScreen: View {
     public var body: some View {
         NavigationStack {
             List {
+                SyncSettingsRow(store: store)
                 ReminderSettingsRow(store: store)
             }
             .navigationTitle(SettingsSection.title)
