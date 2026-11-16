@@ -37,6 +37,8 @@ packages:
     path: Packages/StatisticsFeature
   SettingsFeature:
     path: Packages/SettingsFeature
+  ReminderFeature:
+    path: Packages/ReminderFeature
 
 targets:
   Hayaki:

@@ -1,4 +1,5 @@
 import CollectionStore
+import ReminderFeature
 import SwiftUI
 
 /// The whole app: a short opening state while the collection opens, then the
@@ -7,6 +8,14 @@ public struct RootView: View {
     @State private var model = AppModel()
 
     public init() {}
+
+    /// Work that must be done before the app finishes launching. The app
+    /// calls it from its initializer.
+    public static func prepareForLaunch() {
+        // Opening a reminder that launched the app is only noticed if the
+        // notification delegate is in place by then.
+        ReminderOpener.shared.install()
+    }
 
     public var body: some View {
         Group {
