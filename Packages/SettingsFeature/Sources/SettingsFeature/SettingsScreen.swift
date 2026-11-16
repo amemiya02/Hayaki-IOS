@@ -1,4 +1,5 @@
 import CollectionStore
+import ReminderFeature
 import SwiftUI
 import SyncFeature
 
@@ -20,6 +21,7 @@ public struct SettingsScreen: View {
         NavigationStack {
             List {
                 SyncSettingsRow(store: store)
+                ReminderSettingsRow(store: store)
             }
             .navigationTitle(SettingsSection.title)
         }

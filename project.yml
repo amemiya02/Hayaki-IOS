@@ -47,6 +47,8 @@ packages:
     path: Packages/DeckOptionsFeature
   SyncFeature:
     path: Packages/SyncFeature
+  ReminderFeature:
+    path: Packages/ReminderFeature
 
 targets:
   Hayaki:

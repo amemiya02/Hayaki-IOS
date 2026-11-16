@@ -2,6 +2,7 @@ import BrowseFeature
 import CollectionStore
 import DecksFeature
 import NoteEditorFeature
+import ReminderFeature
 import SettingsFeature
 import StatisticsFeature
 import SwiftUI
@@ -41,6 +42,7 @@ struct SectionsView: View {
         .tabViewStyle(.sidebarAdaptable)
         .sidebarOnWideScreens()
         .addNoteAction(store: store)
+        .keepingDailyReminderCurrent(store: store) { selection = .decks }
     }
 }
 

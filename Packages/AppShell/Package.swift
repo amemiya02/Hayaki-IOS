@@ -21,6 +21,7 @@ let package = Package(
         .package(path: "../SettingsFeature"),
         .package(path: "../PackagesFeature"),
         .package(path: "../NoteEditorFeature"),
+        .package(path: "../ReminderFeature"),
     ],
     targets: [
         .target(
@@ -34,6 +35,7 @@ let package = Package(
                 .product(name: "SettingsFeature", package: "SettingsFeature"),
                 .product(name: "PackagesFeature", package: "PackagesFeature"),
                 .product(name: "NoteEditorFeature", package: "NoteEditorFeature"),
+                .product(name: "ReminderFeature", package: "ReminderFeature"),
             ],
             resources: [.process("Resources")]
         ),
