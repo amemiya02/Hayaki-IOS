@@ -10,7 +10,8 @@ Packages/
   DecksFeature/       DeckListModel, DeckListScreen, DecksSection
   DeckOptionsFeature/ DeckOptionsModel (edits the core's own deck options messages in place), DeckOptionsScreen
                       (a sheet, opened from a deck's Options menu item)
-  BrowseFeature/      placeholder
+  BrowseFeature/      CardBrowserModel (search, rows fetched a page at a time, quick filters, selection,
+                      undoable bulk actions), BrowseScreen, CardDetailModel, CardDetailScreen
   StatisticsFeature/  placeholder
   SettingsFeature/    SettingsScreen: one row per area
   PackagesFeature/    PackageImportModel, the import sheets (packageImport(_:)), ImportPackageButton

@@ -9,8 +9,13 @@ import Observation
 ///
 /// A search asks the core only for the matching card ids, in order, which
 /// stays fast with a very large collection. Each card's row is fetched from
-/// the core when it is needed (`loadRow(_:)`, called as the row appears) and
-/// kept until the next search or change makes it stale.
+/// the core when it is needed (`loadRow(_:)`, called as the row appears),
+/// together with the rest of its page of rows, and kept until the next search
+/// or change makes it stale.
+///
+/// The learner can select cards (`selection`) and act on all of them at once
+/// (`perform(_:)`, in CardBrowserModel+BulkActions.swift), and reach common
+/// searches through quick filters (CardBrowserModel+QuickFilters.swift).
 @MainActor
 @Observable
 public final class CardBrowserModel {
@@ -42,6 +47,21 @@ public final class CardBrowserModel {
     /// The ids of the cards matching the last search, in sort order.
     public private(set) var cardIDs: [Int64] = []
 
+    /// The selected cards, which bulk actions act on. Every search keeps only
+    /// the selected cards it still lists.
+    public var selection: Set<Int64> = []
+
+    /// The decks and tags the quick filters and the Move action offer. Empty
+    /// until `loadChoices()`.
+    public internal(set) var choices = BrowserChoices()
+
+    /// The last bulk action, which `undoLastAction()` can undo; nil once it
+    /// is undone or can no longer be.
+    public internal(set) var completedAction: CompletedAction?
+
+    /// Why the last bulk action or undo failed, in the core's words.
+    public var failure: String?
+
     @ObservationIgnored private var searchCount = 0
 
     /// The rows fetched so far, by card id.
@@ -51,7 +71,11 @@ public final class CardBrowserModel {
     /// fetched are fetched again when next needed.
     public private(set) var generation = 0
 
-    @ObservationIgnored private let store: CollectionStore
+    /// The pages of rows being fetched, so a page is fetched once even when
+    /// many of its rows appear at the same time.
+    @ObservationIgnored private var pagesLoading: Set<PageKey> = []
+
+    @ObservationIgnored let store: CollectionStore
 
     /// Changes after which the matching cards, their order or their rows may
     /// differ.
@@ -62,6 +86,11 @@ public final class CardBrowserModel {
     /// The columns the browser asks the core for, in the order of `CardRow`'s
     /// cells.
     static let columns = ["question", "deck", "cardDue"]
+
+    /// How many rows are fetched together: about a few screens' worth, so
+    /// scrolling rarely waits, while a search over a very large collection
+    /// still fetches only what is shown.
+    public static let pageSize = 50
 
     public init(store: CollectionStore) {
         self.store = store
@@ -90,12 +119,16 @@ public final class CardBrowserModel {
             })
             guard thisSearch == searchCount else { return }
             cardIDs = found.ids
+            if !selection.isEmpty {
+                selection.formIntersection(found.ids)
+            }
             searchedText = text
             generation += 1
             state = .loaded
         } catch where error.kind == .searchError {
             guard thisSearch == searchCount else { return }
             cardIDs = []
+            selection = []
             searchedText = text
             state = .invalidSearch(message: error.message)
         } catch {
@@ -121,17 +154,55 @@ public final class CardBrowserModel {
         rows[cardID]?.row
     }
 
-    /// Fetches a card's row from the core unless an up-to-date one is kept.
+    /// Fetches a card's row from the core unless an up-to-date one is kept,
+    /// with the rest of its page of rows (`pageSize` rows of `cardIDs`), so
+    /// scrolling fetches rows a page at a time.
     public func loadRow(_ cardID: Int64) async {
         if let cached = rows[cardID], cached.generation == generation { return }
-        let generation = generation
-        do {
-            let row = try await store.core.browserRowForId(.with { $0.val = cardID })
-            rows[cardID] = CachedRow(row: CardRow(id: cardID, row), generation: generation)
-        } catch {
-            // A card deleted since the search: the next search drops it.
-            rows[cardID] = nil
+        guard let index = cardIDs.firstIndex(of: cardID) else {
+            // Not listed (any more): fetch it alone.
+            await loadRows([cardID])
+            return
         }
+        let page = index / Self.pageSize
+        let key = PageKey(page: page, generation: generation)
+        guard !pagesLoading.contains(key) else { return }
+        pagesLoading.insert(key)
+        defer { pagesLoading.remove(key) }
+        let start = page * Self.pageSize
+        let ids = cardIDs[start ..< min(start + Self.pageSize, cardIDs.count)]
+            .filter { rows[$0]?.generation != generation }
+        await loadRows(ids)
+    }
+
+    /// Fetches rows from the core and keeps them all at once, so the list
+    /// redraws once per page rather than once per row.
+    private func loadRows(_ ids: [Int64]) async {
+        let generation = generation
+        var fetched: [(Int64, CachedRow?)] = []
+        for id in ids {
+            do {
+                let row = try await store.core.browserRowForId(.with { $0.val = id })
+                fetched.append((id, CachedRow(row: CardRow(id: id, row), generation: generation)))
+            } catch {
+                // A card deleted since the search: the next search drops it.
+                fetched.append((id, nil))
+            }
+        }
+        // No suspension point in between, so the list redraws once.
+        for (id, row) in fetched {
+            rows[id] = row
+        }
+    }
+
+    /// Selects every listed card.
+    public func selectAll() {
+        selection = Set(cardIDs)
+    }
+
+    /// Selects no card.
+    public func clearSelection() {
+        selection = []
     }
 
     /// Shows the cards matching the search, then keeps the list current
@@ -140,13 +211,22 @@ public final class CardBrowserModel {
     public func run() async {
         let changes = store.changes()
         await search()
+        await loadChoices()
         for await change in changes where !change.isDisjoint(with: Self.relevantChanges) {
             await search()
+            if !change.isDisjoint(with: [.deck, .tag, .note]) {
+                await loadChoices()
+            }
         }
     }
 
     private struct CachedRow {
         let row: CardRow
+        let generation: Int
+    }
+
+    private struct PageKey: Hashable {
+        let page: Int
         let generation: Int
     }
 }
