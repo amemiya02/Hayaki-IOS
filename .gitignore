@@ -1,2 +1,15 @@
 .claude/worktrees/
 .DS_Store
+
+# Build outputs of scripts/build-core.sh
+/build/
+/core/target/
+/Packages/AnkiCore/Frameworks/
+/Packages/AnkiCore/Sources/AnkiProto/Generated/
+/Packages/AnkiCore/Sources/AnkiCore/Generated/
+
+# Swift Package Manager and Xcode
+.build/
+.swiftpm/
+DerivedData/
+xcuserdata/

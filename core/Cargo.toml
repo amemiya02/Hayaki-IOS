@@ -1,0 +1,30 @@
+# Rust side of Hayaki: the bridge to Anki's core and the Swift code generator.
+# Upstream Anki lives unpatched in ../vendor/anki and is used as path dependencies.
+# Cargo.lock was seeded from upstream's lock file so the core builds with the
+# dependency versions upstream tested.
+
+[workspace]
+members = ["bridge", "codegen"]
+resolver = "2"
+
+[workspace.package]
+edition = "2021"
+license = "AGPL-3.0-or-later"
+publish = false
+
+[workspace.dependencies]
+anki = { path = "../vendor/anki/rslib", features = ["rustls"] }
+anki_proto = { path = "../vendor/anki/rslib/proto" }
+anki_proto_gen = { path = "../vendor/anki/rslib/proto_gen" }
+anyhow = "1.0.98"
+prost = "0.13"
+prost-reflect = "0.14"
+
+[profile.release]
+# A panic inside the core must unwind so the bridge can catch it and return an
+# error. Never set panic = "abort".
+panic = "unwind"
+# Do not strip: stripping the dylib has been seen to corrupt its LINKEDIT
+# segment (a pitfall documented by the Amgi project).
+strip = false
+debug = 0

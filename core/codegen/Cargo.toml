@@ -1,0 +1,12 @@
+[package]
+name = "hayaki_codegen"
+version = "0.1.0"
+description = "Generates Swift code from the Anki core's descriptor set"
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]
+anki_proto_gen.workspace = true
+anyhow.workspace = true
+prost-reflect.workspace = true

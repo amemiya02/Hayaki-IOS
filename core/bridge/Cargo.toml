@@ -1,0 +1,17 @@
+[package]
+name = "hayaki_bridge"
+version = "0.1.0"
+description = "C bridge between Hayaki and Anki's Rust core"
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[lib]
+# Built as a dynamic library and packaged as HayakiBridge.framework.
+# See docs/building-the-core.md for why it is dynamic rather than static.
+crate-type = ["cdylib"]
+
+[dependencies]
+anki.workspace = true
+anki_proto.workspace = true
+prost.workspace = true
