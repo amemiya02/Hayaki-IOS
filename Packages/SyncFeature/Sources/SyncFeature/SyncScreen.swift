@@ -79,22 +79,37 @@ private struct SignInSections: View {
 
     var body: some View {
         Section {
-            TextField(text: $model.serverAddress, prompt: Text(verbatim: "https://sync.example.org/")) {
-                Text("Server Address", bundle: .module)
+            FieldRow {
+                Text("Server", bundle: .module)
+            } field: {
+                TextField(text: $model.serverAddress, prompt: Text(verbatim: "https://sync.example.org/")) {
+                    Text("Server Address", bundle: .module)
+                }
+                .textContentType(.URL)
+                .autocorrectionDisabled()
+                .urlEntry()
+                .accessibilityIdentifier("server-address")
             }
-            .textContentType(.URL)
-            .autocorrectionDisabled()
-            .urlEntry()
-            TextField(text: $model.userName, prompt: Text("Required", bundle: .module)) {
+            FieldRow {
                 Text("User Name", bundle: .module)
+            } field: {
+                TextField(text: $model.userName, prompt: Text("Required", bundle: .module)) {
+                    Text("User Name", bundle: .module)
+                }
+                .textContentType(.username)
+                .autocorrectionDisabled()
+                .noAutocapitalization()
+                .accessibilityIdentifier("user-name")
             }
-            .textContentType(.username)
-            .autocorrectionDisabled()
-            .noAutocapitalization()
-            SecureField(text: $model.password, prompt: Text("Required", bundle: .module)) {
+            FieldRow {
                 Text("Password", bundle: .module)
+            } field: {
+                SecureField(text: $model.password, prompt: Text("Required", bundle: .module)) {
+                    Text("Password", bundle: .module)
+                }
+                .textContentType(.password)
+                .accessibilityIdentifier("password")
             }
-            .textContentType(.password)
         } header: {
             Text("Your Sync Server", bundle: .module)
         } footer: {
@@ -114,6 +129,34 @@ private struct SignInSections: View {
                     Text("Sign In", bundle: .module)
                 }
                 .disabled(!model.canSignIn)
+            }
+        }
+    }
+}
+
+/// A form row with its label visible beside the field, which a field in a
+/// form does not show by itself. The label stays readable at large text
+/// sizes by stacking above the field.
+private struct FieldRow<Label: View, Field: View>: View {
+    @ViewBuilder let label: Label
+    @ViewBuilder let field: Field
+
+    // VoiceOver reads the field's own title, so the visible label is hidden from it.
+    var body: some View {
+        ViewThatFits(in: .horizontal) {
+            HStack(spacing: 12) {
+                label
+                    .fixedSize()
+                    .accessibilityHidden(true)
+                field
+                    .multilineTextAlignment(.trailing)
+            }
+            VStack(alignment: .leading, spacing: 4) {
+                label
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .accessibilityHidden(true)
+                field
             }
         }
     }
