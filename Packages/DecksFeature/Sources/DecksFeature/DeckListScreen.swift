@@ -1,11 +1,17 @@
 import CollectionStore
+import PackagesFeature
+import StudyFeature
 import SwiftUI
 
-/// The Decks section: every deck as a nested list with today's counts.
+/// The Decks section: every deck as a nested list with today's counts. Tapping
+/// a deck starts studying it, full screen.
 public struct DeckListScreen: View {
     @State private var model: DeckListModel
+    @State private var studying: StudyDeck?
+    private let store: CollectionStore
 
     public init(store: CollectionStore) {
+        self.store = store
         _model = State(initialValue: DeckListModel(store: store))
     }
 
@@ -13,8 +19,15 @@ public struct DeckListScreen: View {
         NavigationStack {
             content
                 .navigationTitle(Text("Decks", bundle: .module))
+                .toolbar {
+                    ToolbarItem(placement: .primaryAction) {
+                        ImportPackageButton()
+                    }
+                }
+                .deckManagement(model)
         }
         .task { await model.run() }
+        .studySession(of: $studying, store: store)
     }
 
     @ViewBuilder
@@ -38,13 +51,27 @@ public struct DeckListScreen: View {
                     Text("Try Again", bundle: .module)
                 }
             }
+        case .loaded where model.hasNoCards && !model.hasOwnDecks:
+            ContentUnavailableView {
+                Label {
+                    Text("No Cards Yet", bundle: .module)
+                } icon: {
+                    Image(systemName: "rectangle.stack")
+                }
+            } description: {
+                Text("Bring your cards in from Anki or AnkiDroid by importing a collection package (.colpkg) or a deck package (.apkg).", bundle: .module)
+            } actions: {
+                ImportPackageButton()
+                    .buttonStyle(.borderedProminent)
+            }
         case .loaded:
             List {
                 ForEach(model.decks) { deck in
-                    DeckRows(deck: deck)
+                    DeckRows(deck: deck) { studying = StudyDeck(id: $0.id, name: $0.name) }
                 }
             }
             .refreshable { await model.refresh() }
+            .environment(model)
         }
     }
 }
@@ -52,38 +79,53 @@ public struct DeckListScreen: View {
 /// A deck and, below it, its child decks, which can be collapsed.
 private struct DeckRows: View {
     let deck: DeckNode
-    @State private var isExpanded: Bool
-
-    init(deck: DeckNode) {
-        self.deck = deck
-        _isExpanded = State(initialValue: !deck.isCollapsed)
-    }
+    let study: (DeckNode) -> Void
+    @Environment(DeckListModel.self) private var model
 
     var body: some View {
         if deck.children.isEmpty {
-            DeckRow(deck: deck)
+            DeckRow(deck: deck, study: study)
+                .deckActions(for: deck)
         } else {
-            DisclosureGroup(isExpanded: $isExpanded) {
+            DisclosureGroup(isExpanded: isExpanded) {
                 ForEach(deck.children) { child in
-                    DeckRows(deck: child)
+                    DeckRows(deck: child, study: study)
                 }
             } label: {
-                DeckRow(deck: deck)
+                DeckRow(deck: deck, study: study)
+                    .deckActions(for: deck)
             }
+        }
+    }
+
+    /// Whether the child decks show; the core remembers it for next time.
+    private var isExpanded: Binding<Bool> {
+        Binding {
+            !deck.isCollapsed
+        } set: { isExpanded in
+            Task { try? await model.setCollapsed(!isExpanded, deck: deck.id) }
         }
     }
 }
 
 private struct DeckRow: View {
     let deck: DeckNode
+    let study: (DeckNode) -> Void
 
     var body: some View {
-        HStack {
-            Text(deck.name)
-            Spacer()
-            CountsView(counts: deck.counts)
+        Button {
+            study(deck)
+        } label: {
+            HStack {
+                Text(deck.name)
+                Spacer()
+                CountsView(counts: deck.counts)
+            }
+            .contentShape(.rect)
+            .accessibilityElement(children: .combine)
         }
-        .accessibilityElement(children: .combine)
+        .buttonStyle(.plain)
+        .accessibilityHint(Text("Studies this deck.", bundle: .module))
     }
 }
 
