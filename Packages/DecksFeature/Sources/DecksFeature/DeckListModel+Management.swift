@@ -19,6 +19,15 @@ public struct DeckDeletion: Equatable, Sendable {
     }
 }
 
+/// A deck offered as a place to put another deck.
+public struct DeckChoice: Identifiable, Equatable, Sendable {
+    public let id: DeckNode.ID
+    public let name: String
+    public let fullName: String
+    /// 0 for a top-level deck, 1 for a deck inside it, and so on.
+    public let depth: Int
+}
+
 /// Organising decks: creating, renaming, deleting, moving, and collapsing or
 /// expanding parent decks. Each action goes through the core, then shows the
 /// deck list as it now is.
@@ -28,8 +37,9 @@ extension DeckListModel {
     /// seen.
     @discardableResult
     public func createDeck(named name: String, inside parentID: DeckNode.ID?) async throws(CoreError) -> DeckNode.ID {
+        let fullName = try available(fullName(of: name, inside: parentID))
         var deck = try await store.core.newDeck()
-        deck.name = fullName(of: name, inside: parentID)
+        deck.name = fullName
         // The core makes new decks collapsed; a new deck has nothing to hide.
         deck.common.studyCollapsed = false
         let id = try await store.modify(.addDeck(deck)).id
@@ -41,17 +51,17 @@ extension DeckListModel {
     /// Gives a deck a new name; it stays where it is, with its child decks
     /// and cards.
     public func renameDeck(_ id: DeckNode.ID, to name: String) async throws(CoreError) {
-        let parentID = path(to: id)?.dropLast().last?.id
+        let newName = try available(fullName(of: name, inside: parentID(of: id)), for: id)
         try await store.modify(.renameDeck(.with {
             $0.deckID = id
-            $0.newName = fullName(of: name, inside: parentID)
+            $0.newName = newName
         }))
         await refresh()
     }
 
     /// What deleting a deck would take with it, to state before the learner
     /// confirms.
-    public func deletion(of id: DeckNode.ID) -> DeckDeletion {
+    public func deletion(of id: DeckNode.ID) async throws(CoreError) -> DeckDeletion {
         guard let deck = deck(id) else {
             return DeckDeletion(cardCount: 0, subdeckCount: 0, isFiltered: false)
         }
@@ -59,12 +69,15 @@ extension DeckListModel {
             deck.children.flatMap { [$0] + subdecks(of: $0) }
         }
         let all = [deck] + subdecks(of: deck)
-        return DeckDeletion(
-            // The cards of filtered decks go back to their own decks.
-            cardCount: all.filter { !$0.isFiltered }.map(\.cardsInDeck).reduce(0, +),
-            subdeckCount: all.count - 1,
-            isFiltered: deck.isFiltered
-        )
+        // The core deletes the cards of the normal decks among them, wherever
+        // a filtered deck has borrowed them to; the cards in filtered decks go
+        // back to their own decks. `did:` matches exactly those: cards in the
+        // listed decks (not their children) or borrowed from them.
+        let normal = all.filter { !$0.isFiltered }.map { String($0.id) }
+        let cardCount = normal.isEmpty ? 0 : try await store.core.searchCards(.with {
+            $0.search = "did:\(normal.joined(separator: ","))"
+        }).ids.count
+        return DeckDeletion(cardCount: cardCount, subdeckCount: all.count - 1, isFiltered: deck.isFiltered)
     }
 
     /// Deletes a deck with its child decks and their cards, and returns how
@@ -75,6 +88,42 @@ extension DeckListModel {
         let response = try await store.modify(.removeDecks(.with { $0.dids = [id] }))
         await refresh()
         return Int(response.count)
+    }
+
+    /// Moves a deck, with its child decks and cards, under another deck, or
+    /// to the top level when `parentID` is nil. The deck it goes into is
+    /// expanded so the learner sees it there.
+    public func moveDeck(_ id: DeckNode.ID, under parentID: DeckNode.ID?) async throws(CoreError) {
+        if let deck = deck(id) {
+            try available(fullName(of: deck.name, inside: parentID), for: id)
+        }
+        try await store.modify(.reparentDecks(.with {
+            $0.deckIds = [id]
+            // The core reads 0 as the top level.
+            $0.newParent = parentID ?? 0
+        }))
+        await refresh()
+        try await expandAncestors(of: id)
+    }
+
+    /// The decks a deck can be put inside, in list order, each with how deep
+    /// it sits. Filtered decks cannot hold other decks, and a deck cannot go
+    /// inside itself or its own child decks, so with `excludedID` that deck
+    /// and everything below it are left out.
+    public func parentChoices(excludingSubtreeOf excludedID: DeckNode.ID? = nil) -> [DeckChoice] {
+        func choices(_ decks: [DeckNode], depth: Int) -> [DeckChoice] {
+            decks.flatMap { deck -> [DeckChoice] in
+                guard deck.id != excludedID, !deck.isFiltered else { return [] }
+                let choice = DeckChoice(id: deck.id, name: deck.name, fullName: deck.fullName, depth: depth)
+                return [choice] + choices(deck.children, depth: depth + 1)
+            }
+        }
+        return choices(decks, depth: 0)
+    }
+
+    /// The deck a deck sits in; nil at the top level.
+    public func parentID(of id: DeckNode.ID) -> DeckNode.ID? {
+        path(to: id)?.dropLast().last?.id
     }
 
     /// Collapses or expands a parent deck, hiding or showing its child decks.
@@ -122,11 +171,51 @@ extension DeckListModel {
         return search(decks)
     }
 
+    /// Whether a name the learner typed is empty or only spaces.
+    public static func isBlank(_ name: String) -> Bool {
+        name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
     /// A deck's full name when it is called `name` and sits inside `parentID`.
     private func fullName(of name: String, inside parentID: DeckNode.ID?) -> String {
         let name = name.trimmingCharacters(in: .whitespacesAndNewlines)
         guard let parentID, let parent = deck(parentID) else { return name }
         return "\(parent.fullName)::\(name)"
+    }
+
+    /// Returns `fullName` if a deck (the deck `id`, when renaming or moving
+    /// it) can take it. The core would quietly add "+" to a name that is
+    /// taken and call a blank deck "blank", so both are refused here with a
+    /// message the learner can act on.
+    @discardableResult
+    private func available(_ fullName: String, for id: DeckNode.ID? = nil) throws(CoreError) -> String {
+        let leafName = fullName.components(separatedBy: "::").last ?? fullName
+        if Self.isBlank(leafName) {
+            throw CoreError(
+                kind: .invalidInput,
+                message: String(localized: "Enter a name for the deck.", bundle: .module)
+            )
+        }
+        // Anki compares deck names ignoring case.
+        if let existing = deck(fullName: fullName), existing.id != id {
+            throw CoreError(
+                kind: .exists,
+                message: String(localized: "There is already a deck named “\(leafName)” there.", bundle: .module)
+            )
+        }
+        return fullName
+    }
+
+    /// The deck with this full name, ignoring letter case.
+    private func deck(fullName: String) -> DeckNode? {
+        func search(_ decks: [DeckNode]) -> DeckNode? {
+            for deck in decks {
+                if deck.fullName.caseInsensitiveCompare(fullName) == .orderedSame { return deck }
+                if let found = search(deck.children) { return found }
+            }
+            return nil
+        }
+        return search(decks)
     }
 
     /// Expands every collapsed deck above the deck with this id.

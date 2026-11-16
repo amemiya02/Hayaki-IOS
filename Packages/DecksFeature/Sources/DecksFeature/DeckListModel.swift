@@ -17,8 +17,6 @@ public struct DeckNode: Identifiable, Equatable, Sendable {
     public internal(set) var isCollapsed: Bool
     /// Whether this is a filtered deck, which borrows cards from other decks.
     public let isFiltered: Bool
-    /// How many cards are in this deck itself, not counting child decks.
-    let cardsInDeck: Int
     public internal(set) var children: [DeckNode]
     /// All cards in the deck and its child decks, whatever their state.
     public let totalCards: Int
@@ -34,7 +32,6 @@ public struct DeckNode: Identifiable, Equatable, Sendable {
         )
         isCollapsed = node.collapsed
         isFiltered = node.filtered
-        cardsInDeck = Int(node.totalInDeck)
         children = node.children.map { [fullName] child in DeckNode(child, parentName: fullName) }
         totalCards = Int(node.totalIncludingChildren)
     }
