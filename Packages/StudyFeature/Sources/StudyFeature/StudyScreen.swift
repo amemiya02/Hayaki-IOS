@@ -33,6 +33,11 @@ extension View {
 /// Show Answer or the four rating buttons at the bottom, within thumb reach.
 public struct StudyScreen: View {
     @State private var model: StudySessionModel
+    /// What the learner typed on a card that asks for typing.
+    @State private var typedAnswer = ""
+    #if os(iOS)
+    @State private var audio = CardAudioPlayer()
+    #endif
     private let deckName: String
     @Environment(\.dismiss) private var dismiss
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
@@ -128,7 +133,7 @@ public struct StudyScreen: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             Divider()
             AnswerBar(card: card, showingAnswer: showingAnswer, isAnswering: model.isAnswering) {
-                model.showAnswer()
+                showAnswer()
             } onRate: { rating in
                 Task { await model.answer(rating) }
             }
@@ -142,14 +147,47 @@ public struct StudyScreen: View {
     @ViewBuilder
     private func cardView(_ display: CardDisplay) -> some View {
         #if os(iOS)
-        CardWebView(display: display, zoom: dynamicTypeSize.cardZoom) {
-            model.showAnswer()
+        CardWebView(display: display, mediaFolder: model.mediaFolder, zoom: dynamicTypeSize.cardZoom) { event in
+            switch event {
+            case .tap, .submitTypedAnswer: showAnswer()
+            case .play(let id): model.sound(forPlayButton: id).map { audio.play([$0]) }
+            case .typed(let text): typedAnswer = text
+            }
         }
         // VoiceOver reads the card's own content inside the web view.
         .accessibilityIdentifier("card")
+        // Each side's audio plays when it appears.
+        .onChange(of: SideShown(display), initial: true) {
+            typedAnswer = display.isAnswer ? typedAnswer : ""
+            audio.play(model.soundsToAutoplay())
+        }
+        .onDisappear { audio.stop() }
         #else
         Text(verbatim: display.html)
         #endif
+    }
+
+    /// Turns the card over, with what the learner typed if the card asks
+    /// for typing.
+    private func showAnswer() {
+        guard let card = model.state.question else { return }
+        if card.asksForTypedAnswer {
+            let typed = typedAnswer
+            Task { await model.showAnswer(typed: typed) }
+        } else {
+            model.showAnswer()
+        }
+    }
+}
+
+/// Which side of which card is shown, to play its audio once when it appears.
+private struct SideShown: Equatable {
+    let cardID: Int64
+    let isAnswer: Bool
+
+    init(_ display: CardDisplay) {
+        cardID = display.cardID
+        isAnswer = display.isAnswer
     }
 }
 

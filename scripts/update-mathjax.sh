@@ -6,8 +6,9 @@
 # The version is the one upstream Anki 26.09.4 bundles (its yarn.lock pins
 # mathjax 3.2.2), from the npm registry, checked against the registry's
 # published SHA-512. Only what upstream's reviewer loads is copied: the
-# combined TeX-to-CommonHTML component, its web fonts and the assistive
-# MathML extension (for VoiceOver), plus MathJax's licence (Apache-2.0).
+# combined TeX-to-CommonHTML component (which already holds every TeX
+# extension, the menu and the assistive MathML that VoiceOver reads) and its
+# web fonts, plus MathJax's licence (Apache-2.0).
 #
 # Usage: scripts/update-mathjax.sh   (from the repository root)
 set -eu
@@ -28,9 +29,8 @@ tar -xzf "$WORK/mathjax.tgz" -C "$WORK/x"
 SRC="$WORK/x/package"
 
 rm -rf "$DEST"
-mkdir -p "$DEST/output/chtml/fonts/woff-v2" "$DEST/a11y"
+mkdir -p "$DEST/output/chtml/fonts/woff-v2"
 cp "$SRC/LICENSE" "$DEST/LICENSE"
 cp "$SRC/es5/tex-chtml-full.js" "$DEST/tex-chtml-full.js"
-cp "$SRC/es5/a11y/assistive-mml.js" "$DEST/a11y/assistive-mml.js"
 cp "$SRC"/es5/output/chtml/fonts/woff-v2/*.woff "$DEST/output/chtml/fonts/woff-v2/"
 echo "MathJax $VERSION copied to $DEST"

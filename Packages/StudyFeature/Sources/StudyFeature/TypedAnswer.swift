@@ -114,7 +114,7 @@ struct TypedAnswerPrompt: Equatable, Sendable {
     /// what is typed to native code, and Return shows the answer.
     private var textField: String {
         let label = String(
-            localized: "Type the Answer",
+            localized: "Type the answer",
             bundle: .module,
             comment: "VoiceOver label and placeholder of the text field on a card that asks the learner to type the answer."
         )

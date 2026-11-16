@@ -239,6 +239,12 @@ public final class StudySessionModel {
 
     // MARK: Audio
 
+    /// The collection's media folder, which cards' images, sounds and fonts
+    /// come from.
+    public var mediaFolder: URL {
+        store.location.mediaFolder
+    }
+
     /// What plays by itself when the shown side appears: the side's audio in
     /// order, unless the deck's options turn automatic playing off.
     public func soundsToAutoplay() -> [CardSound] {
