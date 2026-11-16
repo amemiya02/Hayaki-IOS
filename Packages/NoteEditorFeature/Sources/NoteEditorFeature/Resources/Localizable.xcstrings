@@ -78,6 +78,9 @@
     "Note Type" : {
       "comment" : "Label of the picker choosing the note type, which decides the note's fields and cards."
     },
+    "OK" : {
+      "comment" : "Button that dismisses a message in the note editor."
+    },
     "Remove %@" : {
       "comment" : "VoiceOver label of the button that removes a tag from the note; the argument is the tag."
     },

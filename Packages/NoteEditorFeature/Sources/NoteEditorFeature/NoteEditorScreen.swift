@@ -52,12 +52,12 @@ public struct NoteEditorScreen: View {
             warningMessage(warning)
         }
         .alert(refusalTitle, isPresented: isPresent($refusal), presenting: refusal) { _ in
-            Button(role: .cancel) {}
+            Button(role: .cancel) {} label: { Text("OK", bundle: .module) }
         } message: { refusal in
             refusalMessage(refusal)
         }
         .alert(Text("Could Not Add the Note", bundle: .module), isPresented: isPresent($failure), presenting: failure) { _ in
-            Button(role: .cancel) {}
+            Button(role: .cancel) {} label: { Text("OK", bundle: .module) }
         } message: { message in
             Text(message)
         }
@@ -248,7 +248,7 @@ private struct FieldSection: View {
             isPresented: Binding(get: { attachError != nil }, set: { if !$0 { attachError = nil } }),
             presenting: attachError
         ) { _ in
-            Button(role: .cancel) {}
+            Button(role: .cancel) {} label: { Text("OK", bundle: .module) }
         } message: { error in
             switch error {
             case .notAnImage: Text("The selected item is not an image Hayaki can read.", bundle: .module)
