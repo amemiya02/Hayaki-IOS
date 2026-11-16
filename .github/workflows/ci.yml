@@ -1,0 +1,87 @@
+name: CI
+
+on:
+  push:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-test:
+    name: Build the core and the app, run the tests
+    runs-on: xcode-27
+    timeout-minutes: 180
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+        # The Anki submodule is fetched by scripts/build-core.sh, and only when
+        # the core is not already cached.
+
+      - name: Show tool versions
+        run: |
+          xcodebuild -version
+          swift --version
+          sw_vers
+
+      - name: Compute the core's cache key
+        id: core-key
+        # The built core depends on the pinned Anki commit, our bridge and code
+        # generator, the Rust toolchain and lock file, the build script and the
+        # pinned swift-protobuf version.
+        run: |
+          anki_commit="$(git rev-parse HEAD:vendor/anki)"
+          echo "anki=$anki_commit" >> "$GITHUB_OUTPUT"
+          echo "Pinned Anki commit: $anki_commit"
+
+      - name: Restore the built core
+        id: core-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            build/core/descriptors.bin
+            Packages/AnkiCore/Frameworks
+            Packages/AnkiCore/Sources/AnkiCore/Generated
+            Packages/AnkiCore/Sources/AnkiProto/Generated
+          key: core-${{ runner.os }}-${{ steps.core-key.outputs.anki }}-${{ hashFiles('core/**', 'scripts/build-core.sh', 'Packages/AnkiCore/Package.resolved') }}
+
+      - name: Install build tools
+        run: |
+          brew list xcodegen >/dev/null 2>&1 || brew install xcodegen
+          if [[ "${{ steps.core-cache.outputs.cache-hit }}" != "true" ]]; then
+            brew list protobuf >/dev/null 2>&1 || brew install protobuf
+          fi
+
+      - name: Build the core
+        if: steps.core-cache.outputs.cache-hit != 'true'
+        run: scripts/build-core.sh
+
+      # Saved straight away, so a later failing step does not throw away a
+      # build that takes most of an hour.
+      - name: Save the built core
+        if: steps.core-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            build/core/descriptors.bin
+            Packages/AnkiCore/Frameworks
+            Packages/AnkiCore/Sources/AnkiCore/Generated
+            Packages/AnkiCore/Sources/AnkiProto/Generated
+          key: ${{ steps.core-cache.outputs.cache-primary-key }}
+
+      - name: Run the tests on the Mac
+        run: scripts/test.sh
+
+      - name: Generate the Xcode project
+        run: xcodegen generate
+
+      - name: Build the app for the iOS simulator
+        run: |
+          xcodebuild build \
+            -project Hayaki.xcodeproj \
+            -scheme Hayaki \
+            -configuration Debug \
+            -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath build/DerivedData \
+            CODE_SIGNING_ALLOWED=NO
