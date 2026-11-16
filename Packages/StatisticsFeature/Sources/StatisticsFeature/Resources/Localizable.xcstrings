@@ -1,11 +1,8 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
-    "%@ (%@ correct)" : {
-      "comment" : "Today's summary, Again row: reviews rated Again, then the share of today's reviews not rated Again, e.g. \"2 (80% correct)\"."
-    },
     "%@ (%@)" : {
-      "comment" : "Card counts list: a state's number of cards and its share of all cards, e.g. \"12 (40%)\"."
+      "comment" : "A number and its share of the whole: in the card counts list, a state's cards; in the ratings list, a rating's reviews. E.g. \"12 (40%)\"."
     },
     "%@ Correct" : {
       "comment" : "Ratings list: label of the share of reviews of one kind of card not rated Again, e.g. \"Young Correct\"."
@@ -81,7 +78,7 @@
       "comment" : "Shown in Statistics when the whole collection has no cards and no reviews."
     },
     "Again" : {
-      "comment" : "Rating: the card was forgotten. Also, in today's summary, how many reviews were rated Again."
+      "comment" : "Rating: the card was forgotten. Also, in today's summary, the number of reviews rated Again."
     },
     "All Time" : {
       "comment" : "Statistics period: the whole review history."
@@ -103,6 +100,9 @@
     },
     "Cards" : {
       "comment" : "Card counts chart: the quantity each slice stands for."
+    },
+    "Correct" : {
+      "comment" : "Today's summary: the share of today's reviews not rated Again."
     },
     "Could Not Show Statistics" : {
       "comment" : "Title shown when the statistics could not be read from the collection."

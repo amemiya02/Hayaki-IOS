@@ -74,6 +74,7 @@ struct StatisticsModelTests {
             ])
             #expect(ratings.count(.again) == 1)
             #expect(ratings.total == 3)
+            #expect(ratings.fraction(.good) == 1.0 / 3.0)
             #expect(ratings.correctFraction(of: .learning) == 0)
             #expect(ratings.correctFraction(of: .mature) == 1)
         }

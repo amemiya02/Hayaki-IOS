@@ -56,6 +56,11 @@ public struct RatingCounts: Equatable, Sendable {
         entries.filter { $0.rating == rating }.reduce(0) { $0 + $1.count }
     }
 
+    /// The share of all reviews rated `rating`, from 0 to 1.
+    public func fraction(_ rating: Rating) -> Double {
+        isEmpty ? 0 : Double(count(rating)) / Double(total)
+    }
+
     /// How often `rating` was chosen for one kind of card.
     public func count(_ rating: Rating, for kind: ReviewedCardKind) -> Int {
         entries.first { $0.kind == kind && $0.rating == rating }?.count ?? 0

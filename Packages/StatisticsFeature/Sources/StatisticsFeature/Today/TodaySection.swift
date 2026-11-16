@@ -26,11 +26,16 @@ struct TodaySection: View {
                     Text("Average per Review", bundle: .module)
                 }
             }
+            LabeledContent {
+                Text(today.againCount, format: .number)
+            } label: {
+                Text("Again", bundle: .module)
+            }
             if let correct = today.correctFraction {
                 LabeledContent {
-                    Text("\(today.againCount, format: .number) (\(correct, format: .percent.precision(.fractionLength(0))) correct)", bundle: .module)
+                    Text(correct, format: .percent.precision(.fractionLength(0)))
                 } label: {
-                    Text("Again", bundle: .module)
+                    Text("Correct", bundle: .module)
                 }
             }
             LabeledContent {

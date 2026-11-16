@@ -31,8 +31,11 @@ struct RatingsSection: View {
 
             ForEach(Rating.allCases, id: \.self) { rating in
                 LabeledContent {
-                    Text(ratings.count(rating), format: .number)
-                        .monospacedDigit()
+                    Text(
+                        "\(ratings.count(rating), format: .number) (\(ratings.fraction(rating), format: .percent.precision(.fractionLength(0))))",
+                        bundle: .module
+                    )
+                    .monospacedDigit()
                 } label: {
                     Text(rating.title)
                 }
