@@ -1,14 +1,189 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
-    "Charts of your studying will appear here." : {
-      "comment" : "Description of the placeholder shown in the Statistics section."
+    "%@ (%@ correct)" : {
+      "comment" : "Today's summary, Again row: reviews rated Again, then the share of today's reviews not rated Again, e.g. \"2 (80% correct)\"."
+    },
+    "%@ (%@)" : {
+      "comment" : "Card counts list: a state's number of cards and its share of all cards, e.g. \"12 (40%)\"."
+    },
+    "%@ Correct" : {
+      "comment" : "Ratings list: label of the share of reviews of one kind of card not rated Again, e.g. \"Young Correct\"."
+    },
+    "%@ learning, %@ review, %@ relearning, %@ filtered" : {
+      "comment" : "Today's summary: reviews of learning, review, relearning and filtered-deck cards."
+    },
+    "%@ of %@" : {
+      "comment" : "Ratings list: the share of reviews not rated Again, then the number of reviews, e.g. \"90% of 40\"."
+    },
+    "%@ of %@ (%@)" : {
+      "comment" : "Today's summary: mature reviews not rated Again, all mature reviews, and the share, e.g. \"4 of 5 (80%)\"."
+    },
+    "%@, %@" : {
+      "comment" : "VoiceOver label of a ratings bar segment: the rating, then the kind of card, e.g. \"Good, Young\"."
+    },
+    "%lld cards, %@" : {
+      "comment" : "VoiceOver value of a card counts slice: the number of cards and their share.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld card, %@"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld cards, %@"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld reviews" : {
+      "comment" : "VoiceOver value of a ratings bar: how many reviews it stands for.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld review"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld reviews"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "1 Month" : {
+      "comment" : "Statistics period: the last month."
+    },
+    "1 Year" : {
+      "comment" : "Statistics period: the last year."
+    },
+    "3 Months" : {
+      "comment" : "Statistics period: the last three months."
+    },
+    "Add cards and study them to see statistics here." : {
+      "comment" : "Shown in Statistics when the whole collection has no cards and no reviews."
+    },
+    "Again" : {
+      "comment" : "Rating: the card was forgotten. Also, in today's summary, how many reviews were rated Again."
+    },
+    "All Time" : {
+      "comment" : "Statistics period: the whole review history."
+    },
+    "Average per Review" : {
+      "comment" : "Today's summary: the average time one review took."
+    },
+    "Buried" : {
+      "comment" : "Card state: buried until tomorrow."
+    },
+    "By Kind" : {
+      "comment" : "Today's summary: today's reviews by the kind of card reviewed."
+    },
+    "Card" : {
+      "comment" : "Ratings chart: what the bars are stacked by (learning, young or mature cards)."
+    },
+    "Card Counts" : {
+      "comment" : "Title of the chart of how cards divide between states."
+    },
+    "Cards" : {
+      "comment" : "Card counts chart: the quantity each slice stands for."
+    },
+    "Could Not Show Statistics" : {
+      "comment" : "Title shown when the statistics could not be read from the collection."
+    },
+    "Deck" : {
+      "comment" : "Label of the picker that chooses a deck, or the whole collection, for the statistics."
+    },
+    "Easy" : {
+      "comment" : "Rating: recalled easily."
+    },
+    "Good" : {
+      "comment" : "Rating: recalled."
+    },
+    "Hard" : {
+      "comment" : "Rating: recalled with difficulty."
+    },
+    "Learning" : {
+      "comment" : "Card state: being learnt or relearnt."
+    },
+    "Mature" : {
+      "comment" : "Card state: in review with an interval of 21 days or more."
+    },
+    "Mature Cards Correct" : {
+      "comment" : "Today's summary: how many reviews of mature cards were not rated Again."
+    },
+    "New" : {
+      "comment" : "Card state: never studied."
+    },
+    "No Statistics Yet" : {
+      "comment" : "Title shown in Statistics when there are no cards and no reviews."
+    },
+    "No cards have been studied today." : {
+      "comment" : "Shown in place of today's summary when nothing was studied today."
+    },
+    "No reviews in this period." : {
+      "comment" : "Shown in place of the ratings chart when there were no reviews in the chosen period."
+    },
+    "Period" : {
+      "comment" : "Label of the picker that chooses how far back the statistics look."
+    },
+    "Rating" : {
+      "comment" : "Ratings chart: the horizontal axis, one bar per rating."
+    },
+    "Ratings" : {
+      "comment" : "Title of the chart of how often each rating was chosen."
+    },
+    "Reviews" : {
+      "comment" : "Today's summary: how many reviews were done. Also the vertical axis of the ratings chart."
+    },
+    "State" : {
+      "comment" : "Card counts chart: what the slices are grouped by."
     },
     "Statistics" : {
       "comment" : "Title of the Statistics section and its tab."
     },
-    "Statistics Are Coming" : {
-      "comment" : "Title of the placeholder shown in the Statistics section before the charts exist."
+    "Suspended" : {
+      "comment" : "Card state: suspended by the learner."
+    },
+    "There are no cards here yet." : {
+      "comment" : "Shown in place of the card counts chart when there are no cards."
+    },
+    "This deck has no cards and no reviews yet." : {
+      "comment" : "Shown in Statistics when the chosen deck has no cards and no reviews."
+    },
+    "Time" : {
+      "comment" : "Today's summary: how long today's reviews took."
+    },
+    "Today" : {
+      "comment" : "Title of the summary of today's studying."
+    },
+    "Total" : {
+      "comment" : "Card counts chart: caption under the total number of cards in the middle of the ring."
+    },
+    "Try Again" : {
+      "comment" : "Button that tries again to read the statistics after an error."
+    },
+    "Whole Collection" : {
+      "comment" : "Choice in the statistics deck picker: every deck together."
+    },
+    "Young" : {
+      "comment" : "Card state: in review with an interval under 21 days."
     }
   },
   "version" : "1.0"

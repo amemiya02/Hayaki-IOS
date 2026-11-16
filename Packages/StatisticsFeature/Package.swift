@@ -23,6 +23,13 @@ let package = Package(
             ],
             resources: [.process("Resources")]
         ),
+        .testTarget(
+            name: "StatisticsFeatureTests",
+            dependencies: [
+                "StatisticsFeature",
+                .product(name: "CollectionTesting", package: "CollectionStore"),
+            ]
+        ),
     ],
     swiftLanguageModes: [.v6]
 )
