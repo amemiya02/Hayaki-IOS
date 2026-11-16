@@ -1,20 +1,55 @@
 # Hayaki
 
-A free, open-source, standalone client for Anki collections on iPhone and iPad. Hayaki is not affiliated with or endorsed by Anki's makers. It embeds upstream Anki's Rust core, pinned to Anki 26.09.4.
+A free, open-source, standalone client for Anki collections on iPhone and iPad. Hayaki keeps the learner's whole collection on the device, works offline, and reads and writes the same collection that desktop Anki and AnkiDroid do, because it embeds the same Anki core they use: upstream Anki's Rust core, pinned to Anki 26.09.4.
+
+Hayaki is built from source and installed on the simulator or on your own device; it is not distributed through the App Store. It does not sign in to AnkiWeb (see [docs/adr/0002-no-ankiweb.md](docs/adr/0002-no-ankiweb.md)).
+
+## Not affiliated with Anki
+
+Hayaki is an independent project. It is not affiliated with, endorsed by or supported by Ankitects Pty Ltd, the makers of Anki and AnkiWeb, nor by the AnkiDroid project. "Anki" is used only to say which collections Hayaki works with. Please do not report Hayaki problems to the Anki or AnkiDroid projects.
 
 ## Building
 
-Prerequisites: a Mac with Apple silicon, Xcode 27, [rustup](https://rustup.rs) and `protoc` (`brew install protobuf`). The Rust version (1.97.1) and the iOS and macOS targets are pinned in `core/rust-toolchain.toml` and installed by rustup automatically.
+Prerequisites: a Mac with Apple silicon, Xcode 27, [rustup](https://rustup.rs), `protoc` and XcodeGen (`brew install protobuf xcodegen`). The Rust version (1.97.1) and the iOS and macOS targets are pinned in `core/rust-toolchain.toml` and installed by rustup automatically.
 
 ```sh
 git clone https://github.com/amemiya02/Hayaki.git
 cd Hayaki
-scripts/build-core.sh                      # builds Anki's core for iOS, the simulator and macOS
-swift test --package-path Packages/AnkiCore
+scripts/build-core.sh     # builds Anki's core for iOS, the simulator and macOS (long the first time)
+scripts/test.sh           # runs every package's tests on the Mac, against the real core
+xcodegen generate         # writes Hayaki.xcodeproj from project.yml
+open Hayaki.xcodeproj     # then run the Hayaki scheme on a simulator
 ```
 
-Details, decisions and the upgrade procedure: [docs/building-the-core.md](docs/building-the-core.md).
+To build and run in the simulator from the command line:
 
-## Licence
+```sh
+xcodebuild build -project Hayaki.xcodeproj -scheme Hayaki \
+    -destination 'platform=iOS Simulator,name=iPhone 17' -derivedDataPath build/DerivedData
+xcrun simctl boot 'iPhone 17'; open -a Simulator
+xcrun simctl install booted build/DerivedData/Build/Products/Debug-iphonesimulator/Hayaki.app
+xcrun simctl launch booted io.github.amemiya02.hayaki
+```
 
-AGPL-3.0-or-later, because Anki's core is. Credits: upstream [Anki](https://github.com/ankitects/anki), [AnkiDroid](https://github.com/ankidroid/Anki-Android-Backend) and [Amgi](https://github.com/antigluten/amgi).
+`Hayaki.xcodeproj` is generated and ignored by git: change `project.yml`, never the project. Details of the core build, its decisions and the upgrade procedure: [docs/building-the-core.md](docs/building-the-core.md). Every push is built and tested by GitHub Actions (`.github/workflows/ci.yml`).
+
+## How the code is organised
+
+The app target (`App/`) is only an entry point. Everything else is a local Swift package under `Packages/`:
+
+- `AnkiCore`: the Core Client, Hayaki's only way into Anki's core.
+- `CollectionStore`: where the collection lives; opening, closing and replacing it; the change signal; undo. Its `CollectionTesting` library gives tests a throwaway collection.
+- `AppShell`: opens the collection at launch and shows the sections, as tabs on iPhone and a sidebar on iPad.
+- One package per feature: `DecksFeature`, `BrowseFeature`, `StatisticsFeature`, `SettingsFeature`, and more as they are built. Conventions for adding to them: [docs/feature-packages.md](docs/feature-packages.md).
+
+Tests drive feature models against the real core and a throwaway collection on the Mac; the core is never mocked. The full specification is in [docs/specs/hayaki-v1.md](docs/specs/hayaki-v1.md); vocabulary in [GLOSSARY.md](GLOSSARY.md); decisions in [docs/adr/](docs/adr/).
+
+## Licence and credits
+
+Hayaki is licensed under the GNU Affero General Public License, version 3 or (at your option) any later version (AGPL-3.0-or-later), because Anki's core is. The licence text is in [LICENSE](LICENSE).
+
+Hayaki stands on the work of others:
+
+- [Anki](https://github.com/ankitects/anki) by Ankitects and its contributors: the Rust core Hayaki embeds, unmodified, with its translations.
+- [AnkiDroid](https://github.com/ankidroid/Anki-Android) and its [backend](https://github.com/ankidroid/Anki-Android-Backend): the model for driving Anki's core from a mobile app and testing against the real core.
+- [Amgi](https://github.com/antigluten/amgi): an earlier iOS client whose bridge and build recipe Hayaki learned from.
