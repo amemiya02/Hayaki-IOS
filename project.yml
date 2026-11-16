@@ -37,6 +37,8 @@ packages:
     path: Packages/StatisticsFeature
   SettingsFeature:
     path: Packages/SettingsFeature
+  PackagesFeature:
+    path: Packages/PackagesFeature
 
 targets:
   Hayaki:
@@ -55,6 +57,8 @@ targets:
         CURRENT_PROJECT_VERSION: "1"
         TARGETED_DEVICE_FAMILY: "1,2"
         GENERATE_INFOPLIST_FILE: YES
+        # Document types (Anki packages) that build settings cannot express.
+        INFOPLIST_FILE: App/Info.plist
         INFOPLIST_KEY_CFBundleDisplayName: Hayaki
         INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.education
         INFOPLIST_KEY_UIApplicationSceneManifest_Generation: YES

@@ -65,6 +65,47 @@ struct DeckListModelTests {
             }
         }
     }
+
+    @Test("A collection without cards counts as empty, so the first screen can offer an import")
+    func emptyUntilCardsArrive() async throws {
+        try await withTemporaryCollection { store in
+            let model = DeckListModel(store: store)
+            await model.refresh()
+            #expect(model.hasNoCards)
+
+            // Decks alone do not make it a collection to study.
+            try await store.addDeck(named: "Spanish")
+            await model.refresh()
+            #expect(model.hasNoCards)
+
+            // Suspended cards still count: they are the learner's cards.
+            let spanish = try await store.deckID(named: "Spanish")
+            try await store.suspend(store.addBasicNotes(count: 1, toDeck: spanish))
+            await model.refresh()
+            #expect(!model.hasNoCards)
+        }
+    }
+
+    @Test("After a package is imported, the shown deck list updates without a restart")
+    func refreshesAfterImport() async throws {
+        try await withTemporaryCollection { store in
+            let model = DeckListModel(store: store)
+            let shown = Task { await model.run() }
+            defer { shown.cancel() }
+            try await eventually("the deck list loaded") { model.state == .loaded }
+
+            try await store.importFixture(.basicDeck)
+            try await eventually("the imported decks shown") {
+                model.outline.first?.hasPrefix("Languages:") == true && !model.hasNoCards
+            }
+
+            try await store.importFixture(.collection)
+            try await eventually("the replacing collection's decks shown") {
+                model.outline.map { $0.components(separatedBy: ":").first ?? "" }
+                    == ["Geography", "Languages", "  Spanish", "Vocabulary"]
+            }
+        }
+    }
 }
 
 extension DeckListModel {

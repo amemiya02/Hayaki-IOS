@@ -1,0 +1,181 @@
+import AnkiCore
+import AnkiProto
+import CollectionStore
+import CollectionTesting
+import Foundation
+import PackagesFeature
+import Testing
+
+@MainActor
+@Suite("Importing a collection package", .timeLimit(.minutes(3)))
+struct CollectionPackageImportTests {
+    @Test("Opening a collection package asks the learner to confirm before anything changes")
+    func asksToConfirm() async throws {
+        try await withTemporaryCollection { store in
+            try await store.addDeck(named: "My Own Deck")
+            let backups = try TemporaryFolder()
+            let model = PackageImportModel(store: store, backupFolder: backups.url)
+
+            await model.open(FixturePackage.collection.url)
+
+            guard case .confirmingReplace(let package) = model.step else {
+                Issue.record("expected a confirmation, got \(model.step)")
+                return
+            }
+            #expect(package.kind == .collectionPackage)
+            #expect(package.name == "collection.colpkg")
+            #expect(try await store.deckNames() == ["Default", "My Own Deck"])
+            #expect(try backups.backupFiles().isEmpty)
+        }
+    }
+
+    @Test("Declining leaves the collection as it was, with no backup")
+    func declining() async throws {
+        try await withTemporaryCollection { store in
+            try await store.addDeck(named: "My Own Deck")
+            let backups = try TemporaryFolder()
+            let model = PackageImportModel(store: store, backupFolder: backups.url)
+            await model.open(FixturePackage.collection.url)
+
+            model.cancel()
+
+            #expect(model.step == .idle)
+            #expect(try await store.deckNames() == ["Default", "My Own Deck"])
+            #expect(try backups.backupFiles().isEmpty)
+        }
+    }
+
+    @Test("Confirming backs up the current collection, then replaces it with the package's, review history and media included")
+    func replacesAfterBackup() async throws {
+        try await withTemporaryCollection { store in
+            let mine = try await store.addDeck(named: "My Own Deck")
+            try await store.addBasicNotes(count: 3, toDeck: mine)
+            let backups = try TemporaryFolder()
+            let model = PackageImportModel(store: store, backupFolder: backups.url)
+            let changes = store.changes()
+            await model.open(FixturePackage.collection.url)
+
+            await model.startImport()
+
+            #expect(try await store.contents() == FixturePackage.collection.contents)
+            #expect(model.step == .finished(.replaced(ReplaceResult(decks: 4, notes: 8, cards: 9, backupMade: true))))
+            var heard = changes.makeAsyncIterator()
+            #expect(await heard.next() == .everything)
+
+            // The backup holds the collection as it was before.
+            let backup = try #require(try backups.backupFiles().first)
+            try await withTemporaryCollection { restored in
+                try await restored.replace { core, location in
+                    try await core.importCollectionPackage(.with {
+                        $0.colPath = location.collectionFile.path
+                        $0.backupPath = backup.path
+                        $0.mediaFolder = location.mediaFolder.path
+                        $0.mediaDb = location.mediaDatabase.path
+                    })
+                }
+                #expect(try await restored.deckNames() == ["Default", "My Own Deck"])
+                #expect(try await restored.contents().notes == 3)
+            }
+        }
+    }
+
+    @Test("A damaged package fails and leaves the previous collection intact")
+    func damagedPackage() async throws {
+        try await withTemporaryCollection { store in
+            let mine = try await store.addDeck(named: "My Own Deck")
+            try await store.addBasicNotes(count: 3, toDeck: mine)
+            let folder = try TemporaryFolder()
+            let damaged = folder.url.appendingPathComponent("damaged.colpkg")
+            try Data(repeating: 7, count: 4096).write(to: damaged)
+            let model = PackageImportModel(store: store, backupFolder: folder.url.appendingPathComponent("Backups"))
+            await model.open(damaged)
+
+            await model.startImport()
+
+            guard case .failed = model.step else {
+                Issue.record("expected a failure, got \(model.step)")
+                return
+            }
+            #expect(try await store.deckNames() == ["Default", "My Own Deck"])
+            #expect(try await store.contents().notes == 3)
+        }
+    }
+
+    @Test("Cancelling a running import leaves the previous collection intact")
+    func cancelling() async throws {
+        let large = try await LargePackages.make()
+        try await withTemporaryCollection { store in
+            let mine = try await store.addDeck(named: "My Own Deck")
+            try await store.addBasicNotes(count: 3, toDeck: mine)
+            let backups = try TemporaryFolder()
+            let model = PackageImportModel(store: store, backupFolder: backups.url)
+            await model.open(large.collectionPackage)
+
+            let importing = Task { await model.startImport() }
+            try await eventually(timeout: .seconds(30), "the import started") { model.isImporting }
+            model.cancel()
+            await importing.value
+
+            #expect(model.step == .cancelled)
+            #expect(try await store.deckNames() == ["Default", "My Own Deck"])
+            #expect(try await store.contents().notes == 3)
+        }
+    }
+}
+
+@MainActor
+@Suite("Cancelling a deck package import", .timeLimit(.minutes(3)))
+struct DeckPackageCancelTests {
+    @Test("Cancelling while the core reports progress stops the import with nothing merged")
+    func cancelling() async throws {
+        let large = try await LargePackages.make()
+        try await withTemporaryCollection { store in
+            let backups = try TemporaryFolder()
+            let model = PackageImportModel(store: store, backupFolder: backups.url)
+            await model.open(large.deckPackage)
+
+            let importing = Task { await model.startImport() }
+            try await eventually(timeout: .seconds(60), "the core reported progress") {
+                if case .importing(_, progress: .some) = model.step { true } else { false }
+            }
+            model.cancel()
+            await importing.value
+
+            #expect(model.step == .cancelled)
+            #expect(try await store.contents().notes == 0)
+        }
+    }
+}
+
+extension TemporaryFolder {
+    func backupFiles() throws -> [URL] {
+        try FileManager.default.contentsOfDirectory(at: url, includingPropertiesForKeys: nil)
+            .filter { $0.pathExtension == "colpkg" }
+    }
+}
+
+/// Packages large enough that an import runs long enough to be cancelled.
+struct LargePackages: ~Copyable {
+    let folder: TemporaryFolder
+    var collectionPackage: URL { folder.url.appendingPathComponent("large.colpkg") }
+    var deckPackage: URL { folder.url.appendingPathComponent("large.apkg") }
+
+    static func make(notes: Int = 20_000) async throws -> LargePackages {
+        let packages = LargePackages(folder: try TemporaryFolder())
+        let store = try await CollectionStore.open(
+            at: CollectionLocation(folder: packages.folder.url.appendingPathComponent("Collection")),
+            core: CoreClient(language: "en")
+        )
+        let deck = try await store.addDeck(named: "Large")
+        try await store.addBasicNotes(count: notes, toDeck: deck)
+        _ = try await store.core.exportAnkiPackage(.with {
+            $0.outPath = packages.deckPackage.path
+            $0.limit.deckID = deck
+        })
+        try await store.core.exportCollectionPackage(.with {
+            $0.outPath = packages.collectionPackage.path
+            $0.includeMedia = true
+        })
+        return packages
+    }
+}

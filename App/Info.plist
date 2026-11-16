@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Only what build settings cannot express; Xcode merges the generated keys
+  (INFOPLIST_KEY_* in project.yml) into this file.
+
+  Hayaki opens Anki's two package types. Their identifiers are the ones desktop
+  Anki 26.09 declares for them (its macOS bundle, built with Briefcase from
+  qt/installer/app/pyproject.toml: bundle "net.ankiweb", app "anki", document
+  types "apkg" and "colpkg"). Hayaki does not own the types, so it imports the
+  declarations and ranks itself as an alternate handler.
+-->
+<plist version="1.0">
+<dict>
+	<key>CFBundleDocumentTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeName</key>
+			<string>Anki Collection Package</string>
+			<key>CFBundleTypeRole</key>
+			<string>Viewer</string>
+			<key>LSHandlerRank</key>
+			<string>Alternate</string>
+			<key>LSItemContentTypes</key>
+			<array>
+				<string>net.ankiweb.anki.colpkg</string>
+			</array>
+		</dict>
+		<dict>
+			<key>CFBundleTypeName</key>
+			<string>Anki Deck Package</string>
+			<key>CFBundleTypeRole</key>
+			<string>Viewer</string>
+			<key>LSHandlerRank</key>
+			<string>Alternate</string>
+			<key>LSItemContentTypes</key>
+			<array>
+				<string>net.ankiweb.anki.apkg</string>
+			</array>
+		</dict>
+	</array>
+	<key>UTImportedTypeDeclarations</key>
+	<array>
+		<dict>
+			<key>UTTypeIdentifier</key>
+			<string>net.ankiweb.anki.colpkg</string>
+			<key>UTTypeDescription</key>
+			<string>Anki Collection Package</string>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.data</string>
+			</array>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>public.filename-extension</key>
+				<array>
+					<string>colpkg</string>
+				</array>
+				<key>public.mime-type</key>
+				<array>
+					<string>application/x-colpkg</string>
+				</array>
+			</dict>
+		</dict>
+		<dict>
+			<key>UTTypeIdentifier</key>
+			<string>net.ankiweb.anki.apkg</string>
+			<key>UTTypeDescription</key>
+			<string>Anki Deck Package</string>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.data</string>
+			</array>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>public.filename-extension</key>
+				<array>
+					<string>apkg</string>
+				</array>
+				<key>public.mime-type</key>
+				<array>
+					<string>application/x-apkg</string>
+					<string>application/vnd.anki</string>
+				</array>
+			</dict>
+		</dict>
+	</array>
+	<key>LSSupportsOpeningDocumentsInPlace</key>
+	<true/>
+</dict>
+</plist>
