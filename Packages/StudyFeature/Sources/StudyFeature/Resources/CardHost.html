@@ -1,0 +1,119 @@
+<!doctype html>
+<!--
+  Hayaki's card host page: the only page the study screen's web view loads.
+  Native code shows a card side with hayaki.show({html, css, bodyClass,
+  isAnswer}); a tap on the card (not on a link or control) is posted to the
+  "hayaki" message handler as "tap". The classes on <html> and <body> follow
+  desktop Anki's reviewer, so card styling written for Anki applies here too:
+  <body class="card card1"> and, in dark mode, "nightMode night_mode" on
+  <body> and "night-mode" on <html>.
+-->
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<style>
+    :root {
+        --canvas: #ffffff;
+        --fg: #000000;
+        --border: #c6c6c8;
+        -webkit-text-size-adjust: 100%;
+    }
+    :root.night-mode {
+        --canvas: #000000;
+        --fg: #ffffff;
+        --border: #38383a;
+    }
+    /* No background of our own: the card's (or, in dark mode, the canvas
+       colour below) fills the page, and without one the native background
+       shows through the transparent web view. */
+    body {
+        margin: 20px;
+        overflow-wrap: break-word;
+        color: var(--fg);
+        -webkit-tap-highlight-color: transparent;
+    }
+    /* As in Anki: overrides the note type's .card colours in dark mode. */
+    body.nightMode {
+        background-color: var(--canvas);
+        color: var(--fg);
+    }
+    hr {
+        background-color: var(--border);
+        margin: 1em 0;
+        border: none;
+        height: 1px;
+    }
+    img {
+        max-width: 100%;
+        max-height: 95vh;
+    }
+    li {
+        text-align: start;
+    }
+    pre {
+        text-align: left;
+    }
+</style>
+<style id="card-style"></style>
+</head>
+<body class="card">
+<div id="qa"></div>
+<script>
+(function () {
+    "use strict";
+
+    const dark = window.matchMedia("(prefers-color-scheme: dark)");
+    let shownBodyClass = "card";
+
+    function applyColorScheme() {
+        const night = dark.matches;
+        document.documentElement.classList.toggle("night-mode", night);
+        document.body.className = shownBodyClass + (night ? " nightMode night_mode" : "");
+    }
+
+    // Scripts inserted with innerHTML do not run; replace each with a fresh
+    // copy, in order, as Anki's reviewer does, so card scripts work.
+    function runScripts(container) {
+        for (const old of container.querySelectorAll("script")) {
+            const script = document.createElement("script");
+            for (const attribute of old.attributes) {
+                script.setAttribute(attribute.name, attribute.value);
+            }
+            script.text = old.text;
+            old.replaceWith(script);
+        }
+    }
+
+    function show(side) {
+        document.getElementById("card-style").textContent = side.css;
+        shownBodyClass = side.bodyClass;
+        applyColorScheme();
+        const qa = document.getElementById("qa");
+        qa.innerHTML = side.html;
+        runScripts(qa);
+        const answer = side.isAnswer ? document.getElementById("answer") : null;
+        if (answer && document.documentElement.scrollHeight > window.innerHeight) {
+            answer.scrollIntoView({ block: "start" });
+        } else {
+            window.scrollTo(0, 0);
+        }
+    }
+
+    dark.addEventListener("change", applyColorScheme);
+    applyColorScheme();
+
+    document.addEventListener("click", function (event) {
+        const interactive = "a, button, input, textarea, select, summary, label, audio, video, [onclick]";
+        if (event.target instanceof Element && event.target.closest(interactive)) {
+            return;
+        }
+        window.webkit?.messageHandlers?.hayaki?.postMessage("tap");
+    });
+
+    window.hayaki = { show: show };
+})();
+</script>
+</body>
+</html>

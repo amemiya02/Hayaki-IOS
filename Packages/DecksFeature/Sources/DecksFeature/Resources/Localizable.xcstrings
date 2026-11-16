@@ -16,6 +16,9 @@
     "No Cards Yet" : {
       "comment" : "Title of the first-launch screen when the collection has no cards."
     },
+    "Studies this deck." : {
+      "comment" : "VoiceOver hint on a deck in the deck list: tapping it starts a study session."
+    },
     "Try Again" : {
       "comment" : "Button that reads the deck list again after it failed."
     }

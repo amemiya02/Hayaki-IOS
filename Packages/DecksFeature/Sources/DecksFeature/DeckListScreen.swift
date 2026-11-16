@@ -1,12 +1,17 @@
 import CollectionStore
 import PackagesFeature
+import StudyFeature
 import SwiftUI
 
-/// The Decks section: every deck as a nested list with today's counts.
+/// The Decks section: every deck as a nested list with today's counts. Tapping
+/// a deck starts studying it, full screen.
 public struct DeckListScreen: View {
     @State private var model: DeckListModel
+    @State private var studying: StudyDeck?
+    private let store: CollectionStore
 
     public init(store: CollectionStore) {
+        self.store = store
         _model = State(initialValue: DeckListModel(store: store))
     }
 
@@ -21,6 +26,7 @@ public struct DeckListScreen: View {
                 }
         }
         .task { await model.run() }
+        .studySession(of: $studying, store: store)
     }
 
     @ViewBuilder
@@ -60,7 +66,7 @@ public struct DeckListScreen: View {
         case .loaded:
             List {
                 ForEach(model.decks) { deck in
-                    DeckRows(deck: deck)
+                    DeckRows(deck: deck) { studying = StudyDeck(id: $0.id, name: $0.name) }
                 }
             }
             .refreshable { await model.refresh() }
@@ -71,23 +77,25 @@ public struct DeckListScreen: View {
 /// A deck and, below it, its child decks, which can be collapsed.
 private struct DeckRows: View {
     let deck: DeckNode
+    let study: (DeckNode) -> Void
     @State private var isExpanded: Bool
 
-    init(deck: DeckNode) {
+    init(deck: DeckNode, study: @escaping (DeckNode) -> Void) {
         self.deck = deck
+        self.study = study
         _isExpanded = State(initialValue: !deck.isCollapsed)
     }
 
     var body: some View {
         if deck.children.isEmpty {
-            DeckRow(deck: deck)
+            DeckRow(deck: deck, study: study)
         } else {
             DisclosureGroup(isExpanded: $isExpanded) {
                 ForEach(deck.children) { child in
-                    DeckRows(deck: child)
+                    DeckRows(deck: child, study: study)
                 }
             } label: {
-                DeckRow(deck: deck)
+                DeckRow(deck: deck, study: study)
             }
         }
     }
@@ -95,14 +103,22 @@ private struct DeckRows: View {
 
 private struct DeckRow: View {
     let deck: DeckNode
+    let study: (DeckNode) -> Void
 
     var body: some View {
-        HStack {
-            Text(deck.name)
-            Spacer()
-            CountsView(counts: deck.counts)
+        Button {
+            study(deck)
+        } label: {
+            HStack {
+                Text(deck.name)
+                Spacer()
+                CountsView(counts: deck.counts)
+            }
+            .contentShape(.rect)
+            .accessibilityElement(children: .combine)
         }
-        .accessibilityElement(children: .combine)
+        .buttonStyle(.plain)
+        .accessibilityHint(Text("Studies this deck.", bundle: .module))
     }
 }
 
