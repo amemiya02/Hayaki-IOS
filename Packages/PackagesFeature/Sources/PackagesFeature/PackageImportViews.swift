@@ -67,89 +67,16 @@ private struct PackageImportModifier: ViewModifier {
             .sheet(isPresented: sheetShown) {
                 ImportSheet(model: model)
             }
-            .alert(
-                Text("Replace Your Collection?", bundle: .module),
-                isPresented: replaceConfirmationShown,
-                presenting: replaceCandidate
-            ) { _ in
-                Button(role: .destructive) {
-                    Task { await model.startImport() }
-                } label: {
-                    Text("Replace", bundle: .module)
-                }
-                Button(role: .cancel) {
-                    model.cancel()
-                } label: {
-                    Text("Cancel", bundle: .module)
-                }
-            } message: { package in
-                Text(
-                    "Everything in Hayaki will be replaced by the collection in “\(package.name)”. A backup of your current collection is made first.",
-                    bundle: .module
-                )
-            }
-            .alert(
-                endAlertTitle,
-                isPresented: endAlertShown
-            ) {
-                Button(role: .cancel) {
-                    model.dismiss()
-                } label: {
-                    Text("OK", bundle: .module)
-                }
-            } message: {
-                endAlertMessage
-            }
     }
 
-    // MARK: Which presentation the current step needs
-
+    /// Every step of an import shows in one sheet. (Switching between a
+    /// sheet and alerts as the steps change makes UIKit drop presentations
+    /// that start while another is still closing.)
     private var sheetShown: Binding<Bool> {
         Binding {
-            switch model.step {
-            case .preparing, .choosingMergeOptions, .importing, .finished: true
-            case .idle, .confirmingReplace, .cancelled, .failed: false
-            }
+            model.step != .idle
         } set: { shown in
             if !shown { model.dismiss() }
-        }
-    }
-
-    private var replaceCandidate: PackageFile? {
-        if case .confirmingReplace(let package) = model.step { package } else { nil }
-    }
-
-    private var replaceConfirmationShown: Binding<Bool> {
-        // The alert closes only through its buttons, which act themselves.
-        // (Cancelling here would race the Replace button's import.)
-        Binding { replaceCandidate != nil } set: { _ in }
-    }
-
-    private var endAlertShown: Binding<Bool> {
-        Binding {
-            switch model.step {
-            case .cancelled, .failed: true
-            default: false
-            }
-        } set: { shown in
-            if !shown { model.dismiss() }
-        }
-    }
-
-    private var endAlertTitle: Text {
-        if case .cancelled = model.step {
-            Text("Import Cancelled", bundle: .module)
-        } else {
-            Text("Could Not Import", bundle: .module)
-        }
-    }
-
-    private var endAlertMessage: Text {
-        switch model.step {
-        case .failed(let message):
-            Text(message)
-        default:
-            Text("Your collection was not changed.", bundle: .module)
         }
     }
 }
@@ -168,13 +95,88 @@ private struct ImportSheet: View {
                 ImportProgressView(model: model, package: package, progress: progress)
             case .preparing(let name):
                 ImportProgressView(model: model, package: nil, progress: nil, preparing: name)
+            case .confirmingReplace(let package):
+                ReplaceConfirmation(model: model, package: package)
             case .finished(let summary):
                 ImportSummaryView(model: model, summary: summary)
-            case .idle, .confirmingReplace, .cancelled, .failed:
+            case .cancelled:
+                ImportEnded(model: model, title: Text("Import Cancelled", bundle: .module), message: Text("Your collection was not changed.", bundle: .module))
+            case .failed(let message):
+                ImportEnded(model: model, title: Text("Could Not Import", bundle: .module), message: Text(message))
+            case .idle:
                 EmptyView()
             }
         }
         .interactiveDismissDisabled(model.isImporting)
+    }
+}
+
+/// The warning before a collection package replaces the collection.
+private struct ReplaceConfirmation: View {
+    let model: PackageImportModel
+    let package: PackageFile
+
+    var body: some View {
+        ContentUnavailableView {
+            Label {
+                Text("Replace Your Collection?", bundle: .module)
+            } icon: {
+                Image(systemName: "exclamationmark.triangle")
+                    .foregroundStyle(.orange)
+            }
+        } description: {
+            Text(
+                "Everything in Hayaki will be replaced by the collection in “\(package.name)”. A backup of your current collection is made first.",
+                bundle: .module
+            )
+        } actions: {
+            Button(role: .destructive) {
+                Task { await model.startImport() }
+            } label: {
+                Text("Replace", bundle: .module)
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.borderedProminent)
+            .tint(.red)
+            .controlSize(.large)
+        }
+        .toolbar {
+            ToolbarItem(placement: .cancellationAction) {
+                Button(role: .cancel) {
+                    model.cancel()
+                } label: {
+                    Text("Cancel", bundle: .module)
+                }
+            }
+        }
+    }
+}
+
+/// How an import that did not finish ended: cancelled, or failed and why.
+private struct ImportEnded: View {
+    let model: PackageImportModel
+    let title: Text
+    let message: Text
+
+    var body: some View {
+        ContentUnavailableView {
+            Label {
+                title
+            } icon: {
+                Image(systemName: "xmark.circle")
+            }
+        } description: {
+            message
+        }
+        .toolbar {
+            ToolbarItem(placement: .confirmationAction) {
+                Button {
+                    model.dismiss()
+                } label: {
+                    Text("OK", bundle: .module)
+                }
+            }
+        }
     }
 }
 
