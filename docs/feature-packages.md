@@ -13,6 +13,9 @@ Packages/
   SettingsFeature/    placeholder
   PackagesFeature/    PackageImportModel, the import sheets (packageImport(_:)), ImportPackageButton
   NoteEditorFeature/  NoteEditorModel, NoteEditorScreen; addNoteAction(store:), the shell's Add Note button
+  StudyFeature/       StudySessionModel, StudyScreen (presented from Decks with studySession(of:store:)),
+                      CardWebView and the card host page Resources/CardHost.html
+UITests/              UI tests of the assembled app (HayakiUITests target); see UITestLaunch in AppShell
 ```
 
 ## Where things go

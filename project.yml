@@ -41,6 +41,8 @@ packages:
     path: Packages/PackagesFeature
   NoteEditorFeature:
     path: Packages/NoteEditorFeature
+  StudyFeature:
+    path: Packages/StudyFeature
 
 targets:
   Hayaki:
@@ -75,6 +77,26 @@ targets:
         # Set your own team in Xcode to install on a device with a free Apple ID.
         DEVELOPMENT_TEAM: ""
 
+  # UI tests of the assembled app in the simulator; run them with
+  #     xcodebuild test -scheme Hayaki -destination 'platform=iOS Simulator,name=iPhone 17'
+  HayakiUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources:
+      - UITests
+      # The app starts the tests from a copy of this real collection package.
+      - path: Packages/CollectionStore/Sources/CollectionTesting/Fixtures/collection.colpkg
+        buildPhase: resources
+    dependencies:
+      - target: Hayaki
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: io.github.amemiya02.hayaki.uitests
+        GENERATE_INFOPLIST_FILE: YES
+        "EXCLUDED_ARCHS[sdk=iphonesimulator*]": x86_64
+        CODE_SIGN_STYLE: Automatic
+        DEVELOPMENT_TEAM: ""
+
 schemes:
   Hayaki:
     build:
@@ -82,5 +104,9 @@ schemes:
         Hayaki: all
     run:
       config: Debug
+    test:
+      config: Debug
+      targets:
+        - HayakiUITests
     archive:
       config: Release

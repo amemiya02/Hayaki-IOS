@@ -54,7 +54,13 @@ public final class AppModel {
         guard case .opening = state else { return }
         do {
             let core = try await CoreClient(language: language)
-            let store = try await CollectionStore.open(at: try location(), core: core)
+            var location = try location()
+            #if DEBUG
+            if let package = UITestLaunch.collectionPackage {
+                location = try await UITestLaunch.collection(from: package, core: core)
+            }
+            #endif
+            let store = try await CollectionStore.open(at: location, core: core)
             let packageImport = PackageImportModel(store: store, backupFolder: try backupFolder())
             self.packageImport = packageImport
             state = .ready(store)
