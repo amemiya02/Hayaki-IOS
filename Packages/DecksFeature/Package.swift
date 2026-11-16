@@ -13,6 +13,7 @@ let package = Package(
     dependencies: [
         .package(path: "../AnkiCore"),
         .package(path: "../CollectionStore"),
+        .package(path: "../DeckOptionsFeature"),
         .package(path: "../PackagesFeature"),
         .package(path: "../StudyFeature"),
     ],
@@ -22,6 +23,7 @@ let package = Package(
             dependencies: [
                 .product(name: "AnkiCore", package: "AnkiCore"),
                 .product(name: "CollectionStore", package: "CollectionStore"),
+                .product(name: "DeckOptionsFeature", package: "DeckOptionsFeature"),
                 .product(name: "PackagesFeature", package: "PackagesFeature"),
                 .product(name: "StudyFeature", package: "StudyFeature"),
             ],

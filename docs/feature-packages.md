@@ -8,6 +8,8 @@ Packages/
   CollectionStore/    CollectionStore library; CollectionTesting library for tests only
   AppShell/           AppModel (opens the collection at launch), RootView, SectionsView (tabs / sidebar)
   DecksFeature/       DeckListModel, DeckListScreen, DecksSection
+  DeckOptionsFeature/ DeckOptionsModel (edits the core's own deck options messages in place), DeckOptionsScreen
+                      (a sheet, opened from a deck's Options menu item)
   BrowseFeature/      placeholder
   StatisticsFeature/  placeholder
   SettingsFeature/    SettingsScreen: one row per area
