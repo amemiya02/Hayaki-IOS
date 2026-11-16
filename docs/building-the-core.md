@@ -40,7 +40,12 @@ All outputs are ignored by git. Intermediate files go to `build/core/`.
 swift test --package-path Packages/AnkiCore
 ```
 
-The tests run on the Mac against the macOS slice of the real core, using a throwaway collection in a temporary folder.
+The tests run on the Mac against the macOS slice of the real core, using a throwaway collection in a temporary folder. The same tests run against the simulator slice with:
+
+```sh
+cd Packages/AnkiCore
+xcodebuild test -scheme AnkiCore-Package -destination 'platform=iOS Simulator,name=iPhone 17'
+```
 
 ## How the bridge works
 
