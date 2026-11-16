@@ -9,6 +9,8 @@ enum DeckAction: Identifiable, Equatable {
     case move(DeckNode)
     case delete(DeckNode)
     case options(DeckNode)
+    /// Export the deck, with its subdecks, as a deck package.
+    case export(DeckNode)
 
     var id: String {
         switch self {
@@ -17,6 +19,7 @@ enum DeckAction: Identifiable, Equatable {
         case .move(let deck): "move-\(deck.id)"
         case .delete(let deck): "delete-\(deck.id)"
         case .options(let deck): "options-\(deck.id)"
+        case .export(let deck): "export-\(deck.id)"
         }
     }
 }
@@ -30,7 +33,7 @@ final class DeckActionRequest {
 }
 
 /// The deck-organising commands for a deck's context menu: new deck inside,
-/// rename, move, delete, and the deck's options.
+/// rename, move, delete, the deck's options, and exporting it.
 struct DeckActionMenuItems: View {
     let deck: DeckNode
     @Environment(DeckActionRequest.self) private var request: DeckActionRequest?
@@ -74,6 +77,15 @@ struct DeckActionMenuItems: View {
                 } icon: {
                     Image(systemName: "gearshape")
                 }
+            }
+        }
+        Button {
+            request?.pending = .export(deck)
+        } label: {
+            Label {
+                Text("Export…", bundle: .module)
+            } icon: {
+                Image(systemName: "square.and.arrow.up")
             }
         }
         Divider()

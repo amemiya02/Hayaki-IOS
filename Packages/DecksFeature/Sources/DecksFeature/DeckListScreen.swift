@@ -23,6 +23,9 @@ public struct DeckListScreen: View {
                     ToolbarItem(placement: .primaryAction) {
                         ImportPackageButton()
                     }
+                    ToolbarItem(placement: .primaryAction) {
+                        ExportPackageButton(store: store)
+                    }
                 }
                 .deckManagement(model)
         }

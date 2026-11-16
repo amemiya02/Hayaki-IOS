@@ -63,6 +63,9 @@
     "Enter a name for the deck." : {
       "comment" : "Error shown when the learner gives a deck an empty name."
     },
+    "Export…" : {
+      "comment" : "Deck context menu: export the deck, with its subdecks, as a deck package."
+    },
     "Inside" : {
       "comment" : "New Deck sheet: label of the choice of deck the new deck goes inside."
     },
