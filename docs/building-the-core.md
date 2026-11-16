@@ -70,6 +70,7 @@ Upstream Anki is used as path dependencies and is not patched. `core/Cargo.lock`
 - **Install name set at link time.** Each slice is linked with `-install_name @rpath/HayakiBridge.framework/...` (the versioned path on macOS), so the binary is never rewritten afterwards and the linker's code signature stays valid.
 - **No stripping.** Stripping the dylib has corrupted its LINKEDIT segment in Amgi's build; the release profile sets `strip = false`, and the script never runs `strip`.
 - **Descriptor path passed explicitly.** The core's build scripts look for the descriptor set at `OUT_DIR/../../anki_descriptors.bin` unless `DESCRIPTORS_BIN` is set, and newer cargo build-directory layouts break that fallback. The script sets `DESCRIPTORS_BIN=build/core/descriptors.bin`; the code generator reads the same file, so the generated numbers always match the built library.
+- **No builder paths in the library.** The script passes `--remap-path-prefix` (and `-ffile-prefix-map` for C code) so the checkout appears as `hayaki/` and Cargo's home as `cargo/` in panic locations and other embedded paths.
 - **Numbers are generated, never written by hand.** Service and method numbers come from upstream's `anki_proto_gen::get_services`, the same helper the core's dispatcher is generated from. They change between Anki versions, so upgrading the core means moving the submodule and re-running the script.
 
 ## Upgrading the core

@@ -48,6 +48,11 @@ export DESCRIPTORS_BIN="$BUILD/descriptors.bin"
 export CARGO_TARGET_DIR="$BUILD/cargo"
 export IPHONEOS_DEPLOYMENT_TARGET="$IOS_MIN"
 export MACOSX_DEPLOYMENT_TARGET="$MACOS_MIN"
+# Keep the builder's absolute paths out of the library (panic locations and
+# debug strings): the checkout becomes "hayaki/" and Cargo's home "cargo/".
+CARGO_HOME_DIR="${CARGO_HOME:-$HOME/.cargo}"
+export RUSTFLAGS="${RUSTFLAGS:-} --remap-path-prefix=$ROOT=hayaki --remap-path-prefix=$CARGO_HOME_DIR=cargo"
+export CFLAGS="${CFLAGS:-} -ffile-prefix-map=$ROOT=hayaki -ffile-prefix-map=$CARGO_HOME_DIR=cargo"
 
 FRAMEWORKS="$BUILD/frameworks"
 rm -rf "$FRAMEWORKS"
