@@ -68,6 +68,16 @@ public final class CollectionStore: Sendable {
         return response
     }
 
+    /// Waits for a long operation that modifies the collection, started with
+    /// `core.start(_:)` so it can show progress and be cancelled, and signals
+    /// what it changed once it succeeds.
+    @discardableResult
+    public func modify<Response: CollectionChanging>(_ operation: LongOperation<Response>) async throws(CoreError) -> Response {
+        let response = try await operation.result
+        signal(CollectionChange(response.collectionChanges))
+        return response
+    }
+
     /// The name of the operation `undo()` would revert, in the core's
     /// language, such as "Add Deck"; nil when there is nothing to undo.
     public func undoableAction() async throws(CoreError) -> String? {

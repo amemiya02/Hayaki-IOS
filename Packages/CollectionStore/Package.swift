@@ -22,11 +22,15 @@ let package = Package(
         ),
         .target(
             name: "CollectionTesting",
-            dependencies: ["CollectionStore", .product(name: "AnkiCore", package: "AnkiCore")]
+            dependencies: ["CollectionStore", .product(name: "AnkiCore", package: "AnkiCore")],
+            // Real Anki package files for tests; see FixturePackages.swift.
+            resources: [.copy("Fixtures")]
         ),
         .testTarget(
             name: "CollectionStoreTests",
-            dependencies: ["CollectionStore", "CollectionTesting"]
+            dependencies: ["CollectionStore", "CollectionTesting"],
+            // Media the fixture generator puts into the fixture packages.
+            exclude: ["FixtureMedia"]
         ),
     ],
     swiftLanguageModes: [.v6]

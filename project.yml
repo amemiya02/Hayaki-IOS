@@ -37,6 +37,8 @@ packages:
     path: Packages/StatisticsFeature
   SettingsFeature:
     path: Packages/SettingsFeature
+  PackagesFeature:
+    path: Packages/PackagesFeature
   NoteEditorFeature:
     path: Packages/NoteEditorFeature
 
@@ -56,7 +58,12 @@ targets:
         MARKETING_VERSION: "0.1.0"
         CURRENT_PROJECT_VERSION: "1"
         TARGETED_DEVICE_FAMILY: "1,2"
+        # The core's simulator slice is arm64 only (Apple silicon), so never
+        # build the Intel simulator slice that a generic destination asks for.
+        "EXCLUDED_ARCHS[sdk=iphonesimulator*]": x86_64
         GENERATE_INFOPLIST_FILE: YES
+        # Document types (Anki packages) that build settings cannot express.
+        INFOPLIST_FILE: App/Info.plist
         INFOPLIST_KEY_CFBundleDisplayName: Hayaki
         INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.education
         INFOPLIST_KEY_UIApplicationSceneManifest_Generation: YES
