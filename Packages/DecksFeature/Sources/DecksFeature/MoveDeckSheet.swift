@@ -21,15 +21,21 @@ struct MoveDeckSheet: View {
                         }
                     }
                 }
-                Section {
-                    ForEach(model.parentChoices(excludingSubtreeOf: deck.id)) { choice in
-                        destination(choice.id) {
-                            Text(choice.name)
-                                .padding(.leading, CGFloat(choice.depth) * 20)
+                let choices = model.parentChoices(excludingSubtreeOf: deck.id)
+                if !choices.isEmpty {
+                    Section {
+                        ForEach(choices) { choice in
+                            destination(choice.id) {
+                                Text(choice.name)
+                                    .padding(.leading, CGFloat(choice.depth) * 20)
+                                    // Indentation is not spoken: name the
+                                    // decks it sits in too.
+                                    .accessibilityLabel(Text(verbatim: choice.fullName.replacingOccurrences(of: "::", with: ", ")))
+                            }
                         }
+                    } header: {
+                        Text("Decks", bundle: .module)
                     }
-                } header: {
-                    Text("Decks", bundle: .module)
                 }
             }
             .navigationTitle(Text("Move “\(deck.name)”", bundle: .module))
