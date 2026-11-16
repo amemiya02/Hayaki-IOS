@@ -30,7 +30,14 @@ The first run takes a long time (the core is compiled once per target); later ru
 1. checks out `vendor/anki` at the pinned tag `26.09.4` and its two translation submodules (`ftl/core-repo`, `ftl/qt-repo`);
 2. builds the bridge crate `core/bridge`, which links the unpatched core, for iOS devices, the iOS simulator on Apple silicon and macOS on Apple silicon;
 3. packages the three slices as `Packages/AnkiCore/Frameworks/HayakiBridge.xcframework`;
-4. generates the service and method numbers (`Packages/AnkiCore/Sources/AnkiCore/Generated/CoreMethods.swift`) from the core's own descriptor set, and the Swift message types (`Packages/AnkiCore/Sources/AnkiProto/Generated/`) from the core's `.proto` files.
+4. generates the typed Swift calls from the core's own descriptor set (`Packages/AnkiCore/Sources/AnkiCore/Generated/`: `CoreMethods.swift` with the service and method numbers, `CoreCalls.swift` with a typed `CoreCall` and a typed async `CoreClient` method for every method of the core), and the Swift message types (`Packages/AnkiCore/Sources/AnkiProto/Generated/`) from the core's `.proto` files.
+
+To regenerate only the Swift calls, for example after changing `core/codegen`, without rebuilding the core:
+
+```sh
+cargo run --manifest-path core/Cargo.toml --locked --release --package hayaki_codegen -- \
+    build/core/descriptors.bin Packages/AnkiCore/Sources/AnkiCore/Generated
+```
 
 All outputs are ignored by git. Intermediate files go to `build/core/`.
 
@@ -53,6 +60,10 @@ xcodebuild test -scheme AnkiCore-Package -destination 'platform=iOS Simulator,na
 
 Upstream Anki is used as path dependencies and is not patched. `core/Cargo.lock` was seeded from upstream's lock file, so the core builds with the exact dependency versions upstream tested. All of the core's translations, and the desktop translations the core includes by default, are compiled in.
 
+## The Core Client
+
+`CoreClient` (in `Packages/AnkiCore`) is the only public way into the core. It is started with exactly one language, and every method of the core is a typed async method on it, generated from the descriptor set. All calls run in order on one dedicated worker thread the client owns, never on the main thread or Swift's shared concurrency pool. Long operations are started with `start(_:)`, which returns a `LongOperation` with an async sequence of progress reports and a `cancel()`; both use a second thread of the client that only calls the core's `LatestProgress` and `SetWantsAbort`, which do not take the collection lock, so they never wait behind the operation. Errors are a `CoreError` with the core's error kind and its localised message. After a panic inside the core the client replaces its backend, since the panic can leave the core's collection lock poisoned; an open collection must then be opened again.
+
 ## Decisions and known pitfalls
 
 - **Dynamic framework, not a static library.** The bridge is a `cdylib` packaged as `HayakiBridge.framework`. A static library interfered with SwiftUI previews in an earlier iOS client (Amgi), and would also require every Swift target that links it to repeat the core's system library and framework dependencies; the dynamic library resolves those itself when it is linked. The cost is one embedded framework in the app, which Xcode embeds and signs automatically from the binary target.
@@ -66,6 +77,6 @@ Upstream Anki is used as path dependencies and is not patched. `core/Cargo.lock`
 1. Check out the new tag in `vendor/anki` and commit the submodule change.
 2. Update `channel` in `core/rust-toolchain.toml` to match `vendor/anki/rust-toolchain.toml`.
 3. Refresh `core/Cargo.lock` from upstream: copy `vendor/anki/Cargo.lock` over it and run `cargo metadata --manifest-path core/Cargo.toml > /dev/null`.
-4. Run `scripts/build-core.sh` and the tests.
+4. Run `scripts/build-core.sh` and the tests. The generated Swift calls need no hand edits; if the core gains a method whose name clashes with another service's method or with a hand-written name of the Core Client, the generator stops and says so.
 
 Credit: the overall recipe (a small bridge crate around `run_service_method`, packaged as an XCFramework) follows AnkiDroid's backend and the Amgi project.

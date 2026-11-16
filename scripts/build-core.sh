@@ -8,8 +8,9 @@
 #       slices: iOS devices, iOS simulator (Apple silicon), macOS (Apple silicon)
 #   Packages/AnkiCore/Sources/AnkiProto/Generated/*.pb.swift
 #       Swift message types from the core's protobuf definitions
-#   Packages/AnkiCore/Sources/AnkiCore/Generated/CoreMethods.swift
-#       service and method numbers, from the core's own descriptor set
+#   Packages/AnkiCore/Sources/AnkiCore/Generated/CoreMethods.swift, CoreCalls.swift
+#       service and method numbers and a typed Swift call for every method,
+#       from the core's own descriptor set
 #
 # Prerequisites and the reasons behind the choices are in docs/building-the-core.md.
 set -euo pipefail
@@ -137,10 +138,9 @@ for target in "${TARGETS[@]}"; do
 done
 xcodebuild -create-xcframework "${xcframework_args[@]}" -output "$XCFRAMEWORK"
 
-step "Generating service and method numbers"
-mkdir -p "$PACKAGE/Sources/AnkiCore/Generated"
+step "Generating the typed Swift calls"
 cargo run --locked --release --quiet --package hayaki_codegen -- \
-    "$DESCRIPTORS_BIN" "$PACKAGE/Sources/AnkiCore/Generated/CoreMethods.swift"
+    "$DESCRIPTORS_BIN" "$PACKAGE/Sources/AnkiCore/Generated"
 
 step "Generating Swift message types"
 # protoc-gen-swift is built from the same swift-protobuf version the package

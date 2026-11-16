@@ -1,36 +1,32 @@
 import Foundation
 import HayakiBridge
 
-/// A call the core rejected. `encodedError` is an encoded `anki.backend.BackendError`
-/// carrying the error kind and the core's localised message. A panic inside the
-/// core arrives here too, with kind `ANKIDROID_PANIC_ERROR`.
-public struct BackendFailure: Error, Sendable {
-    public let encodedError: Data
-}
-
 /// One open backend of the Anki core, reached through the four C functions of
 /// the Hayaki bridge. Requests and responses are encoded protobuf messages.
+/// Only the Core Client uses it, and decides which thread calls it.
 ///
-/// The core's backend is safe to call from several threads at once (it guards its
-/// own state), hence `@unchecked Sendable`. Choosing which thread calls it is up
-/// to the caller.
-public final class Backend: @unchecked Sendable {
+/// `@unchecked Sendable` is justified: the only state is the opaque handle,
+/// which is immutable after `init`, and the core's backend guards its own state
+/// with locks, so calling it from two threads at once is supported (upstream
+/// Anki and AnkiDroid poll progress from a second thread the same way). The
+/// handle is closed exactly once, in `deinit`.
+final class Backend: @unchecked Sendable {
     private let handle: OpaquePointer
 
     /// Opens a backend from an encoded `anki.backend.BackendInit`.
-    public init(init request: Data) throws(BackendFailure) {
+    init(init request: Data) throws(CoreError) {
         var error = HayakiBuffer()
         let handle = request.withUnsafeBytes { raw in
             hayaki_backend_open(raw.bindMemory(to: UInt8.self).baseAddress, raw.count, &error)
         }
         guard let handle else {
-            throw BackendFailure(encodedError: Self.take(error))
+            throw CoreError(encoded: Self.take(error))
         }
         self.handle = handle
     }
 
     /// Runs one method of the core and returns its encoded response.
-    public func run(_ method: CoreMethod, input: Data) throws(BackendFailure) -> Data {
+    func run(_ method: CoreMethod, input: Data) -> Result<Data, CoreError> {
         var output = HayakiBuffer()
         let status = input.withUnsafeBytes { raw in
             hayaki_backend_run(
@@ -43,10 +39,7 @@ public final class Backend: @unchecked Sendable {
             )
         }
         let bytes = Self.take(output)
-        guard status == 0 else {
-            throw BackendFailure(encodedError: bytes)
-        }
-        return bytes
+        return status == 0 ? .success(bytes) : .failure(CoreError(encoded: bytes))
     }
 
     deinit {
