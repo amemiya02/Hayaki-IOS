@@ -105,7 +105,7 @@ public struct DeckOptionsScreen: View {
                 } label: {
                     Text("Save", bundle: .module)
                 }
-                .disabled(!model.canSave)
+                .disabled(!model.hasChanges || !model.canSave)
             }
         }
     }

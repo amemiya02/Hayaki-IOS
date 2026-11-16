@@ -6,10 +6,10 @@ struct DailyLimitsSection: View {
 
     var body: some View {
         Section {
-            NumberRow(value: $model.newCardsPerDay) {
+            NumberRow(value: $model.newCardsPerDay, identifier: "new-cards-per-day") {
                 Text("New cards/day", bundle: .module)
             }
-            NumberRow(value: $model.reviewsPerDay) {
+            NumberRow(value: $model.reviewsPerDay, identifier: "reviews-per-day") {
                 Text("Maximum reviews/day", bundle: .module)
             }
         } header: {
@@ -28,7 +28,7 @@ struct StepsSections: View {
 
     var body: some View {
         Section {
-            StepsRow(text: $model.learningSteps, isInvalid: model.learningStepsError != nil) {
+            StepsRow(text: $model.learningSteps, isInvalid: model.learningStepsError != nil, identifier: "learning-steps") {
                 Text("Learning steps", bundle: .module)
             }
         } header: {
@@ -39,7 +39,7 @@ struct StepsSections: View {
             }
         }
         Section {
-            StepsRow(text: $model.relearningSteps, isInvalid: model.relearningStepsError != nil) {
+            StepsRow(text: $model.relearningSteps, isInvalid: model.relearningStepsError != nil, identifier: "relearning-steps") {
                 Text("Relearning steps", bundle: .module)
             }
         } header: {
@@ -126,16 +126,37 @@ struct BuryingSection: View {
 
 private struct NumberRow<Label: View>: View {
     @Binding var value: Int
+    let identifier: String
     @ViewBuilder let label: Label
+    /// The digits as typed. The model gets each number as it is typed: a
+    /// number pad has no Return key to commit it before Save is tapped.
+    @State private var text = ""
+    @FocusState private var isFocused: Bool
 
     var body: some View {
         LabeledContent {
-            TextField(value: $value, format: .number) { label }
+            TextField(text: $text, prompt: Text(value, format: .number)) { label }
                 .multilineTextAlignment(.trailing)
+                .accessibilityIdentifier(identifier)
                 .monospacedDigit()
+                // Room for four digits, leaving the rest to the label.
+                .frame(maxWidth: 80)
+                .focused($isFocused)
                 #if os(iOS)
                 .keyboardType(.numberPad)
                 #endif
+                .onAppear { text = String(value) }
+                .onChange(of: text) { _, typed in
+                    if let number = Int(typed.filter(\.isASCII).filter(\.isNumber).prefix(9)) { value = number }
+                }
+                // Shows the number as the model holds it: limited to what
+                // Anki accepts, or another preset's after switching.
+                .onChange(of: value) { _, number in
+                    if Int(text) != number { text = String(number) }
+                }
+                .onChange(of: isFocused) { _, focused in
+                    if !focused { text = String(value) }
+                }
         } label: {
             label
         }
@@ -145,12 +166,14 @@ private struct NumberRow<Label: View>: View {
 private struct StepsRow<Label: View>: View {
     @Binding var text: String
     let isInvalid: Bool
+    let identifier: String
     @ViewBuilder let label: Label
 
     var body: some View {
         LabeledContent {
             TextField(text: $text, prompt: Text(verbatim: "1m 10m")) { label }
                 .multilineTextAlignment(.trailing)
+                .accessibilityIdentifier(identifier)
                 .autocorrectionDisabled()
                 .foregroundStyle(isInvalid ? Color.red : Color.primary)
                 #if os(iOS)
