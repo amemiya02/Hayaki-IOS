@@ -51,10 +51,11 @@ public struct BrowseScreen: View {
                 .sheet(isPresented: $isMoving) {
                     MoveCardsSheet(model: model)
                 }
-                .confirmationDialog(
+                // An alert, as in Decks: a dialog would point at the list's
+                // edge, next to the sidebar on iPad.
+                .alert(
                     Text("Delete \(deletion?.noteCount ?? 0) Notes?", bundle: .module),
                     isPresented: isConfirmingDeletion,
-                    titleVisibility: .visible,
                     presenting: deletion
                 ) { _ in
                     Button(role: .destructive) {
