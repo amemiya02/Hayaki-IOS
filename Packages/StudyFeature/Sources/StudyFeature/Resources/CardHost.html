@@ -1,12 +1,21 @@
 <!doctype html>
 <!--
-  Hayaki's card host page: the only page the study screen's web view loads.
+  Hayaki's card host page: the only page the study screen's web view loads,
+  served at hayaki-card://card/ (see CardResources.swift), so card HTML
+  finds the collection's media by plain relative names and the bundled
+  MathJax under /_hayaki/. Nothing is loaded from the network.
+
   Native code shows a card side with hayaki.show({html, css, bodyClass,
-  isAnswer}); a tap on the card (not on a link or control) is posted to the
-  "hayaki" message handler as "tap". The classes on <html> and <body> follow
-  desktop Anki's reviewer, so card styling written for Anki applies here too:
-  <body class="card card1"> and, in dark mode, "nightMode night_mode" on
-  <body> and "night-mode" on <html>.
+  isAnswer}). The page posts to the "hayaki" message handler:
+    "tap"               a tap on the card, not on a link or control
+    {play: "q:0"}       a tap on a replay button
+    {typed: "…"}        the text typed into a typed-answer field, as it changes
+    {submit: true}      Return pressed in that field
+  The classes on <html> and <body> follow desktop Anki's reviewer, so card
+  styling written for Anki applies here too: <body class="card card1"> and,
+  in dark mode, "nightMode night_mode" on <body> and "night-mode" on <html>.
+  Several rules below are those of Anki's reviewer (ts/reviewer/reviewer.scss,
+  AGPL-3.0-or-later, Ankitects Pty Ltd and contributors).
 -->
 <html>
 <head>
@@ -18,12 +27,16 @@
         --canvas: #ffffff;
         --fg: #000000;
         --border: #c6c6c8;
+        --replay-fill: #ffffff;
+        --replay-ink: #414141;
         -webkit-text-size-adjust: 100%;
     }
     :root.night-mode {
         --canvas: #000000;
         --fg: #ffffff;
         --border: #38383a;
+        --replay-fill: #2c2c2e;
+        --replay-ink: #e5e5ea;
     }
     /* No background of our own: the card's (or, in dark mode, the canvas
        colour below) fills the page, and without one the native background
@@ -45,15 +58,79 @@
         border: none;
         height: 1px;
     }
+    /* Images and videos never overflow the screen; a box squeezed by these
+       limits keeps the picture's proportions. */
     img {
         max-width: 100%;
         max-height: 95vh;
+        object-fit: contain;
+    }
+    video {
+        max-width: 100%;
+        height: auto;
     }
     li {
         text-align: start;
     }
     pre {
         text-align: left;
+        overflow-x: auto;
+    }
+    /* Typed answers, as in Anki. */
+    #typeans {
+        width: 100%;
+        box-sizing: border-box;
+        line-height: 1.75;
+    }
+    input#typeans {
+        font: inherit;
+        padding: 4px 8px;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        color: var(--fg);
+        background: transparent;
+    }
+    code#typeans {
+        white-space: pre-wrap;
+        font-variant-ligatures: none;
+    }
+    .typeGood {
+        background: #afa;
+        color: black;
+    }
+    .typeBad {
+        color: black;
+        background: #faa;
+    }
+    .typeMissed {
+        color: black;
+        background: #ccc;
+    }
+    /* Replay buttons, as in Anki. */
+    .replay-button {
+        text-decoration: none;
+        display: inline-flex;
+        vertical-align: middle;
+        margin: 3px;
+    }
+    .replay-button svg {
+        width: 40px;
+        height: 40px;
+    }
+    .replay-button svg circle {
+        fill: var(--replay-fill);
+        stroke: var(--replay-ink);
+    }
+    .replay-button svg path {
+        fill: var(--replay-ink);
+    }
+    .nightMode .latex {
+        filter: invert(100%);
+    }
+    /* Wide maths scrolls sideways instead of overflowing the screen. */
+    mjx-container[display="true"] {
+        overflow-x: auto;
+        overflow-y: hidden;
     }
 </style>
 <style id="card-style"></style>
@@ -66,6 +143,10 @@
 
     const dark = window.matchMedia("(prefers-color-scheme: dark)");
     let shownBodyClass = "card";
+
+    function post(message) {
+        window.webkit?.messageHandlers?.hayaki?.postMessage(message);
+    }
 
     function applyColorScheme() {
         const night = dark.matches;
@@ -86,30 +167,111 @@
         }
     }
 
-    function show(side) {
+    // MathJax, bundled with the app, is loaded the first time a card has
+    // maths, configured as Anki configures it (ts/mathjax/index.ts).
+    const mathPattern = /\\\[(.*?)\\\]|\\\((.*?)\\\)/su;
+    let mathJaxLoading = null;
+
+    function loadMathJax() {
+        if (!mathJaxLoading) {
+            mathJaxLoading = new Promise(function (resolve, reject) {
+                window.MathJax = {
+                    tex: {
+                        displayMath: [["\\[", "\\]"]],
+                        processEscapes: false,
+                        processEnvironments: false,
+                        processRefs: false,
+                        packages: { "[+]": ["noerrors", "mathtools"], "[-]": ["textmacros"] },
+                    },
+                    loader: {
+                        load: ["[tex]/noerrors", "[tex]/mathtools"],
+                        paths: { mathjax: "/_hayaki/mathjax" },
+                    },
+                    startup: { typeset: false },
+                };
+                const script = document.createElement("script");
+                script.src = "/_hayaki/mathjax/tex-chtml-full.js";
+                script.onload = function () { resolve(); };
+                script.onerror = function () { reject(new Error("MathJax did not load")); };
+                document.head.appendChild(script);
+            });
+        }
+        return mathJaxLoading;
+    }
+
+    async function typesetMaths(container) {
+        await loadMathJax();
+        await window.MathJax.startup.promise;
+        window.MathJax.typesetClear();
+        await window.MathJax.typesetPromise([container]);
+    }
+
+    async function render(side) {
         document.getElementById("card-style").textContent = side.css;
         shownBodyClass = side.bodyClass;
         applyColorScheme();
         const qa = document.getElementById("qa");
+        const hasMaths = mathPattern.test(side.html);
+        // Hidden until the maths is drawn, so raw TeX never flashes up.
+        qa.style.opacity = hasMaths ? "0" : "1";
         qa.innerHTML = side.html;
         runScripts(qa);
+        if (hasMaths) {
+            try {
+                await typesetMaths(qa);
+            } catch (error) {
+                console.error(error);
+            }
+            qa.style.opacity = "1";
+        }
         const answer = side.isAnswer ? document.getElementById("answer") : null;
         if (answer && document.documentElement.scrollHeight > window.innerHeight) {
             answer.scrollIntoView({ block: "start" });
         } else {
             window.scrollTo(0, 0);
         }
+        const typeans = document.querySelector("input#typeans");
+        if (typeans) {
+            typeans.addEventListener("input", function () {
+                post({ typed: typeans.value });
+            });
+            typeans.addEventListener("keydown", function (event) {
+                if (event.key === "Enter") {
+                    event.preventDefault();
+                    post({ typed: typeans.value });
+                    post({ submit: true });
+                }
+            });
+            typeans.focus();
+        }
+    }
+
+    // Sides are drawn one after another, so a quick turn of the card never
+    // lets an older side finish drawing over a newer one.
+    let drawing = Promise.resolve();
+
+    function show(side) {
+        drawing = drawing.then(function () { return render(side); }).catch(console.error);
     }
 
     dark.addEventListener("change", applyColorScheme);
     applyColorScheme();
 
     document.addEventListener("click", function (event) {
-        const interactive = "a, button, input, textarea, select, summary, label, audio, video, [onclick]";
-        if (event.target instanceof Element && event.target.closest(interactive)) {
+        if (!(event.target instanceof Element)) {
             return;
         }
-        window.webkit?.messageHandlers?.hayaki?.postMessage("tap");
+        const replay = event.target.closest(".replay-button[data-play]");
+        if (replay) {
+            event.preventDefault();
+            post({ play: replay.getAttribute("data-play") });
+            return;
+        }
+        const interactive = "a, button, input, textarea, select, summary, label, audio, video, [onclick]";
+        if (event.target.closest(interactive)) {
+            return;
+        }
+        post("tap");
     });
 
     window.hayaki = { show: show };

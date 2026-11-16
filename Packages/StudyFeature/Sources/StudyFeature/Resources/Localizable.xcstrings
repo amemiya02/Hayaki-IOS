@@ -51,11 +51,20 @@
     "Hard" : {
       "comment" : "Rating: recalled with serious difficulty."
     },
+    "Play Audio" : {
+      "comment" : "VoiceOver label of the replay button on a card."
+    },
     "Show Answer" : {
       "comment" : "Button at the bottom of the study screen that turns the card over to its answer side."
     },
+    "The card asks to type the field “%@”, which its note type does not have." : {
+      "comment" : "Shown on a card whose template asks to type the answer into a field that does not exist."
+    },
     "This deck has nothing left to study today." : {
       "comment" : "Shown when a deck is opened for studying but has no cards left for today."
+    },
+    "Type the answer" : {
+      "comment" : "VoiceOver label and placeholder of the text field on a card that asks the learner to type the answer."
     },
     "You reviewed %lld cards in this session." : {
       "comment" : "Summary at the end of a study session: how many reviews the learner made.",

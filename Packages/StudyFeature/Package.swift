@@ -24,7 +24,12 @@ let package = Package(
                 .product(name: "AnkiCore", package: "AnkiCore"),
                 .product(name: "CollectionStore", package: "CollectionStore"),
             ],
-            resources: [.process("Resources")]
+            resources: [
+                .process("Resources"),
+                // Web assets the card page loads by path, kept as they are:
+                // MathJax 3.2.2 (Apache-2.0), see scripts/update-mathjax.sh.
+                .copy("WebAssets"),
+            ]
         ),
         .testTarget(
             name: "StudyFeatureTests",

@@ -18,7 +18,9 @@ Packages/
                       PackageExportModel, PackageExportScreen (a sheet), ExportPackageButton
   NoteEditorFeature/  NoteEditorModel, NoteEditorScreen; addNoteAction(store:), the shell's Add Note button
   StudyFeature/       StudySessionModel, StudyScreen (presented from Decks with studySession(of:store:)),
-                      CardWebView and the card host page Resources/CardHost.html
+                      CardWebView and the card host page Resources/CardHost.html, served with the
+                      media folder and the bundled MathJax (WebAssets/) through the
+                      hayaki-card:// scheme (CardResources); CardAudioPlayer plays card audio
   SyncFeature/        SyncModel, SyncScreen and SyncSettingsRow (shown in Settings); SyncAccountStorage
                       (the Keychain); tests sync against a real sync server, see below
 UITests/              UI tests of the assembled app (HayakiUITests target); see UITestLaunch in AppShell

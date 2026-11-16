@@ -57,8 +57,10 @@ public struct RatingIntervals: Equatable, Sendable {
 /// One side of a card, as the core renders it from the card template.
 public struct CardSide: Equatable, Sendable {
     /// The side's HTML. Audio and video references (`[sound:…]` and
-    /// text-to-speech) are replaced by the core with `[anki:play:q:0]` style
-    /// markers, numbered in the order of `audio`.
+    /// text-to-speech) are replaced by replay buttons,
+    /// `<a class="replay-button" data-play="q:0">` style, numbered per side in
+    /// the order of the side's `audio`. On the answer side, `{{FrontSide}}`
+    /// brings the question's buttons (`q:…`) along.
     public let html: String
     /// The side's audio and video, in the order they play.
     public let audio: [Anki_CardRendering_AVTag]
@@ -71,8 +73,13 @@ public struct StudyCard: Equatable, Sendable {
     public let noteID: Int64
     /// The deck the card belongs to, whose options apply to it.
     public let homeDeckID: Int64
+    /// The question side. On a card that asks the learner to type the
+    /// answer, it has a text field (`<input id=typeans>`).
     public let question: CardSide
-    public let answer: CardSide
+    /// The answer side. On a card that asks the learner to type the answer,
+    /// it shows the core's comparison of what was typed with the expected
+    /// answer (`<code id=typeans>`).
+    public private(set) var answer: CardSide
     /// The note type's styling.
     public let css: String
     /// The classes Anki puts on the card's `<body>`: `card card1` for the
@@ -83,6 +90,16 @@ public struct StudyCard: Equatable, Sendable {
     /// The card's scheduling now and after each rating, from the core,
     /// which answering hands back to the core.
     let states: Anki_Scheduler_SchedulingStates
+    /// What a card that asks for typing expects; nil for other cards.
+    let typedAnswerPrompt: TypedAnswerPrompt?
+    /// The answer side before the comparison goes in.
+    let answerBeforeTyping: String
+
+    /// Whether the card asks the learner to type the answer before showing
+    /// it.
+    public var asksForTypedAnswer: Bool {
+        typedAnswerPrompt != nil
+    }
 
     /// Renders a card the core's queue handed out.
     static func render(_ queued: Anki_Scheduler_QueuedCards.QueuedCard, core: CoreClient) async throws(CoreError) -> StudyCard {
@@ -111,37 +128,65 @@ public struct StudyCard: Equatable, Sendable {
         intervals: RatingIntervals,
         core: CoreClient
     ) async throws(CoreError) -> StudyCard {
-        // A full render: rendering stops early only for the filters desktop
-        // Anki's Python code adds, which Hayaki does not have.
+        // A partial render, as desktop Anki makes: the core leaves
+        // {{FrontSide}} for us to fill with the question as shown, its audio
+        // already turned into question markers, so the answer side does not
+        // play the question's audio again; and fields with filters the core
+        // does not know (add-on filters on desktop) keep their text.
         let rendered = try await core.renderExistingCard(.with {
             $0.cardID = card.id
             $0.browser = false
-            $0.partialRender = false
+            $0.partialRender = true
         })
+        let question = try await side(rendered.questionNodes, frontSide: "", isQuestion: true, core: core)
+        let answer = try await side(rendered.answerNodes, frontSide: question.withMarkers, isQuestion: false, core: core)
+        let typing = try await TypedAnswerPrompt.questionSide(question.side.html, card: card, core: core)
         return StudyCard(
             id: card.id,
             noteID: card.noteID,
             homeDeckID: card.originalDeckID != 0 ? card.originalDeckID : card.deckID,
-            question: try await side(rendered.questionNodes, isQuestion: true, core: core),
-            answer: try await side(rendered.answerNodes, isQuestion: false, core: core),
+            question: CardSide(html: typing.html, audio: question.side.audio),
+            // Until the learner types something, the comparison shows the
+            // expected answer, as in Anki.
+            answer: CardSide(
+                html: try await TypedAnswerPrompt.answerSide(answer.side.html, prompt: typing.prompt, typed: "", core: core),
+                audio: answer.side.audio
+            ),
             css: rendered.css,
             bodyClass: "card card\(card.templateIdx + 1)",
             intervals: intervals,
-            states: states
+            states: states,
+            typedAnswerPrompt: typing.prompt,
+            answerBeforeTyping: answer.side.html
         )
     }
 
+    /// The card with its answer side showing the core's comparison of
+    /// `typed` with the expected answer, for a card that asks for typing.
+    /// Any other card comes back unchanged.
+    func answering(typed: String, core: CoreClient) async throws(CoreError) -> StudyCard {
+        guard let typedAnswerPrompt else { return self }
+        var card = self
+        card.answer = CardSide(
+            html: try await TypedAnswerPrompt.answerSide(answerBeforeTyping, prompt: typedAnswerPrompt, typed: typed, core: core),
+            audio: answer.audio
+        )
+        return card
+    }
+
+    /// One side's HTML, with its audio taken out by the core. `withMarkers`
+    /// is the HTML before the replay buttons go in, for `{{FrontSide}}`.
     private static func side(
         _ nodes: [Anki_CardRendering_RenderedTemplateNode],
+        frontSide: String,
         isQuestion: Bool,
         core: CoreClient
-    ) async throws(CoreError) -> CardSide {
+    ) async throws(CoreError) -> (side: CardSide, withMarkers: String) {
         let html = nodes.map { node in
             switch node.value {
             case .text(let text): text
-            // Only left by a partial render, which this is not; the
-            // field's text is the best that can be shown.
-            case .replacement(let replacement): replacement.currentText
+            case .replacement(let replacement):
+                replacement.fieldName == "FrontSide" ? frontSide : replacement.currentText
             case nil: ""
             }
         }.joined()
@@ -149,6 +194,10 @@ public struct StudyCard: Equatable, Sendable {
             $0.text = html
             $0.questionSide = isQuestion
         })
-        return CardSide(html: extracted.text, audio: extracted.avTags)
+        let shown = PlayButtons.insert(
+            into: extracted.text,
+            label: String(localized: "Play Audio", bundle: .module, comment: "VoiceOver label of the replay button on a card.")
+        )
+        return (CardSide(html: shown, audio: extracted.avTags), extracted.text)
     }
 }
