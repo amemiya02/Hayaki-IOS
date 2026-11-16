@@ -12,6 +12,7 @@ Packages/
   StatisticsFeature/  placeholder
   SettingsFeature/    placeholder
   PackagesFeature/    PackageImportModel, the import sheets (packageImport(_:)), ImportPackageButton
+  NoteEditorFeature/  NoteEditorModel, NoteEditorScreen; addNoteAction(store:), the shell's Add Note button
 ```
 
 ## Where things go
