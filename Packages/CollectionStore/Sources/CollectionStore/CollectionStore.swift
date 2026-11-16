@@ -60,6 +60,28 @@ public final class CollectionStore: Sendable {
         if let failure { throw failure }
     }
 
+    /// Runs `body`, which hands the open collection to a core operation that
+    /// closes it when done (exporting a collection package does), then opens
+    /// the collection again and signals that everything changed. The
+    /// collection is reopened even if `body` throws, whether or not the
+    /// operation got as far as closing it.
+    public func reopening(
+        isolation: isolated (any Actor)? = #isolation,
+        after body: (_ core: CoreClient) async throws -> Void
+    ) async throws {
+        var failure: (any Error)?
+        do {
+            try await body(core)
+        } catch {
+            failure = error
+        }
+        // Fails harmlessly when the operation already closed it.
+        try? await core.closeCollection(.init())
+        try await core.openCollection(location.openRequest)
+        signal(.everything)
+        if let failure { throw failure }
+    }
+
     /// Runs a call that modifies the collection and signals what it changed.
     @discardableResult
     public func modify<Response: CollectionChanging>(_ call: CoreCall<Response>) async throws(CoreError) -> Response {
