@@ -11,6 +11,7 @@ Packages/
   BrowseFeature/      placeholder
   StatisticsFeature/  placeholder
   SettingsFeature/    placeholder
+  NoteEditorFeature/  NoteEditorModel, NoteEditorScreen; addNoteAction(store:), the shell's Add Note button
 ```
 
 ## Where things go

@@ -37,6 +37,8 @@ packages:
     path: Packages/StatisticsFeature
   SettingsFeature:
     path: Packages/SettingsFeature
+  NoteEditorFeature:
+    path: Packages/NoteEditorFeature
 
 targets:
   Hayaki:

@@ -19,6 +19,7 @@ let package = Package(
         .package(path: "../BrowseFeature"),
         .package(path: "../StatisticsFeature"),
         .package(path: "../SettingsFeature"),
+        .package(path: "../NoteEditorFeature"),
     ],
     targets: [
         .target(
@@ -30,6 +31,7 @@ let package = Package(
                 .product(name: "BrowseFeature", package: "BrowseFeature"),
                 .product(name: "StatisticsFeature", package: "StatisticsFeature"),
                 .product(name: "SettingsFeature", package: "SettingsFeature"),
+                .product(name: "NoteEditorFeature", package: "NoteEditorFeature"),
             ],
             resources: [.process("Resources")]
         ),
