@@ -1,0 +1,126 @@
+{
+  "sourceLanguage": "en",
+  "strings": {
+    "A backup of your previous collection was saved in the Backups folder.": {
+      "comment": "Shown after a collection package replaced the collection, when a backup was made first."
+    },
+    "Added": {
+      "comment": "Import summary row: notes added from a deck package."
+    },
+    "Always": {
+      "comment": "Update choice: always replace with the package's copy."
+    },
+    "Cancel": {
+      "comment": "Button that stops before importing a package."
+    },
+    "Cancel Import": {
+      "comment": "Button that stops an import while it runs."
+    },
+    "Cards": {
+      "comment": "Row label in the import summary: number of cards in the collection."
+    },
+    "Could Not Import": {
+      "comment": "Title shown when an import failed."
+    },
+    "Decks": {
+      "comment": "Row label in the import summary: number of decks in the collection."
+    },
+    "Done": {
+      "comment": "Button that closes the import summary."
+    },
+    "Everything in Hayaki will be replaced by the collection in “%@”. A backup of your current collection is made first.": {
+      "comment": "Warning before a collection package replaces the collection; the placeholder is the package's file name."
+    },
+    "Hayaki can import Anki collection packages (.colpkg) and deck packages (.apkg).": {
+      "comment": "Shown when the learner opens a file that is not an Anki package."
+    },
+    "If Newer": {
+      "comment": "Update choice: replace only if the package's copy is newer."
+    },
+    "Import": {
+      "comment": "Button that starts importing a deck package with the chosen options."
+    },
+    "Import Cancelled": {
+      "comment": "Title shown after the learner cancelled an import."
+    },
+    "Import Complete": {
+      "comment": "Title of the summary shown after an import finished."
+    },
+    "Import Deck Presets": {
+      "comment": "Toggle: bring the deck presets (deck options) of a deck package's decks (Anki's 'Import any deck presets')."
+    },
+    "Import Learning Progress": {
+      "comment": "Toggle: bring the scheduling and review history of a deck package's cards (Anki's 'Import any learning progress')."
+    },
+    "Import a Package…": {
+      "comment": "Button that opens the file picker to choose an Anki collection package or deck package to import."
+    },
+    "Importing “%@”…": {
+      "comment": "Shown while a package imports; the placeholder is the file name."
+    },
+    "Learning progress is the scheduling and review history of cards new to your collection. Cards you already have keep their own progress.": {
+      "comment": "Explains the learning progress toggle when importing a deck package."
+    },
+    "Merge Note Types": {
+      "comment": "Toggle: merge a changed note type into the collection's one instead of keeping both (Anki's 'Merge note types')."
+    },
+    "Never": {
+      "comment": "Update choice: never replace; keep the collection's copy."
+    },
+    "Notes": {
+      "comment": "Row label in the import summary: number of notes in the collection."
+    },
+    "Notes Already in Your Collection": {
+      "comment": "Section header of the deck package import choices about notes the collection already has."
+    },
+    "Notes new to your collection.": {
+      "comment": "Explains the Added row of the import summary."
+    },
+    "Notes you already had with another note type. Turn on Merge Note Types to update them.": {
+      "comment": "Explains the note-type conflict row of the import summary."
+    },
+    "Notes you already had, left as they were. Their cards keep your scheduling.": {
+      "comment": "Explains the Skipped row of the import summary."
+    },
+    "Notes you already had, replaced by the package’s copy.": {
+      "comment": "Explains the Updated row of the import summary."
+    },
+    "OK": {
+      "comment": "Button that closes the message about a cancelled or failed import."
+    },
+    "Opening “%@”…": {
+      "comment": "Shown while the chosen package is copied before importing; the placeholder is the file name."
+    },
+    "Replace": {
+      "comment": "Destructive button that confirms replacing the collection with a collection package."
+    },
+    "Replace Your Collection?": {
+      "comment": "Title of the warning shown before a collection package replaces the learner's collection."
+    },
+    "Skipped": {
+      "comment": "Import summary row: notes already in the collection that were left unchanged."
+    },
+    "Skipped: Different Note Type": {
+      "comment": "Import summary row: notes skipped because the collection's copy has a different note type."
+    },
+    "Update Note Types": {
+      "comment": "Picker: when a note type already in the collection is replaced by the deck package's copy."
+    },
+    "Update Notes": {
+      "comment": "Picker: when a note already in the collection is replaced by the deck package's copy."
+    },
+    "Updated": {
+      "comment": "Import summary row: notes in the collection that a deck package replaced."
+    },
+    "Your Collection Now Has": {
+      "comment": "Header of the summary after a collection package replaced the collection."
+    },
+    "Your collection was not changed.": {
+      "comment": "Shown after an import was cancelled."
+    },
+    "“If Newer” replaces a note only when the package’s copy was changed more recently. Merging note types combines a changed note type with yours instead of keeping both.": {
+      "comment": "Explains the update and merge choices when importing a deck package."
+    }
+  },
+  "version": "1.0"
+}

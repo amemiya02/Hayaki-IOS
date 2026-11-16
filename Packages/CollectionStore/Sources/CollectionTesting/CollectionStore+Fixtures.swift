@@ -38,6 +38,7 @@ extension CollectionStore {
         let requests = (0..<count).map { index in
             Anki_Notes_AddNoteRequest.with {
                 $0.note = template
+                $0.note.guid = newNoteGUID()
                 $0.note.fields = ["Question \(index)", "Answer \(index)"]
                 $0.deckID = deckID
             }

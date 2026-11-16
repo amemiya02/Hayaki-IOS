@@ -1,0 +1,228 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "%@ copy" : {
+      "comment" : "Suggested name for a copy of a preset. The placeholder is the preset's name."
+    },
+    "Add" : {
+      "comment" : "Alert button that adds a preset with the name typed."
+    },
+    "Add Preset" : {
+      "comment" : "Command and alert title: add a new preset with Anki's default options."
+    },
+    "Ascending ease" : {
+      "comment" : "Review sort order: cards with the lowest ease first."
+    },
+    "Ascending intervals" : {
+      "comment" : "Review sort order: cards with the shortest interval first."
+    },
+    "Ascending position" : {
+      "comment" : "New card gather order: cards added first come first."
+    },
+    "Ascending retrievability" : {
+      "comment" : "Review sort order: cards most likely forgotten first."
+    },
+    "Bury interday learning siblings" : {
+      "comment" : "Toggle: other learning cards of the same note, due on a later day, wait until the next day."
+    },
+    "Bury new siblings" : {
+      "comment" : "Toggle: other new cards of the same note wait until the next day."
+    },
+    "Bury review siblings" : {
+      "comment" : "Toggle: other review cards of the same note wait until the next day."
+    },
+    "Burying" : {
+      "comment" : "Section header of the burying options."
+    },
+    "Cancel" : {
+      "comment" : "Button that closes deck options or an alert without saving."
+    },
+    "Card type, then order gathered" : {
+      "comment" : "New card sort order: by card template, then in the order gathered."
+    },
+    "Card type, then random" : {
+      "comment" : "New card sort order: by card template, then randomly."
+    },
+    "Clone Preset" : {
+      "comment" : "Command and alert title: add a copy of the current preset."
+    },
+    "Could Not Save Deck Options" : {
+      "comment" : "Title of the alert shown when saving deck options failed."
+    },
+    "Could Not Show Deck Options" : {
+      "comment" : "Title shown when a deck's options could not be read from the collection."
+    },
+    "Daily Limits" : {
+      "comment" : "Section header of the daily limits for new cards and reviews."
+    },
+    "Deck" : {
+      "comment" : "New card gather order: deck by deck."
+    },
+    "Deck Options" : {
+      "comment" : "Title of the deck options screen."
+    },
+    "Deck, then due date" : {
+      "comment" : "Review sort order: deck by deck, then by due date."
+    },
+    "Deck, then random notes" : {
+      "comment" : "New card gather order: deck by deck, random notes within each deck."
+    },
+    "Delete Preset" : {
+      "comment" : "Command and confirmation button: delete the current preset."
+    },
+    "Delete “%@”?" : {
+      "comment" : "Title of the confirmation before deleting a preset. The placeholder is the preset's name."
+    },
+    "Descending ease" : {
+      "comment" : "Review sort order: cards with the highest ease first."
+    },
+    "Descending intervals" : {
+      "comment" : "Review sort order: cards with the longest interval first."
+    },
+    "Descending position" : {
+      "comment" : "New card gather order: cards added last come first."
+    },
+    "Descending retrievability" : {
+      "comment" : "Review sort order: cards least likely forgotten first."
+    },
+    "Discard Changes" : {
+      "comment" : "Button that closes deck options without saving the edits."
+    },
+    "Discard your changes to these deck options?" : {
+      "comment" : "Title of the confirmation shown when cancelling deck options with unsaved edits."
+    },
+    "Display Order" : {
+      "comment" : "Section header of the options for the order in which cards are shown."
+    },
+    "Due date, then deck" : {
+      "comment" : "Review sort order: by due date, then deck by deck."
+    },
+    "Due date, then random" : {
+      "comment" : "Review sort order: by due date, then randomly."
+    },
+    "Interday learning/review order" : {
+      "comment" : "Picker: whether learning cards due on a later day are mixed with reviews or shown before or after them."
+    },
+    "Keep Editing" : {
+      "comment" : "Button that returns to deck options instead of discarding the edits."
+    },
+    "Lapses" : {
+      "comment" : "Section header of the options for review cards that were forgotten."
+    },
+    "Learning steps" : {
+      "comment" : "Field for the delays at which a new card is shown again while it is learned."
+    },
+    "Manage Presets" : {
+      "comment" : "Menu with commands to add, clone, rename and delete presets."
+    },
+    "Maximum reviews/day" : {
+      "comment" : "Field for the most review cards shown per day."
+    },
+    "Mix with reviews" : {
+      "comment" : "New/review order and interday learning order: mixed with review cards."
+    },
+    "Name" : {
+      "comment" : "Placeholder of the text field for a preset's name."
+    },
+    "New Cards" : {
+      "comment" : "Section header of the options for cards not studied yet."
+    },
+    "New card gather order" : {
+      "comment" : "Picker: which new cards are gathered first."
+    },
+    "New card sort order" : {
+      "comment" : "Picker: how gathered new cards are sorted."
+    },
+    "New cards/day" : {
+      "comment" : "Field for how many new cards are introduced per day."
+    },
+    "New/review order" : {
+      "comment" : "Picker: whether new cards are mixed with reviews or shown before or after them."
+    },
+    "OK" : {
+      "comment" : "Button that closes an error alert."
+    },
+    "Order added" : {
+      "comment" : "Review sort order: by when the card was added."
+    },
+    "Order gathered" : {
+      "comment" : "New card sort order: in the order the cards were gathered."
+    },
+    "Other" : {
+      "comment" : "Shown for an order this version of Hayaki does not know, set by a newer Anki."
+    },
+    "Preset" : {
+      "comment" : "Section header and picker label: the named set of deck options this deck uses."
+    },
+    "Random" : {
+      "comment" : "New card or review sort order: randomly."
+    },
+    "Random cards" : {
+      "comment" : "New card gather order: random cards."
+    },
+    "Random note, then card type" : {
+      "comment" : "New card sort order: random notes, then by card template."
+    },
+    "Random notes" : {
+      "comment" : "New card gather order: random notes."
+    },
+    "Relative overdueness" : {
+      "comment" : "Review sort order: the most overdue cards relative to their interval first."
+    },
+    "Relearning steps" : {
+      "comment" : "Field for the delays at which a forgotten review card is shown again."
+    },
+    "Rename" : {
+      "comment" : "Alert button that renames the preset."
+    },
+    "Rename Preset" : {
+      "comment" : "Command and alert title: give the current preset a new name."
+    },
+    "Reverse order added" : {
+      "comment" : "Review sort order: the most recently added cards first."
+    },
+    "Review sort order" : {
+      "comment" : "Picker: how review cards are sorted."
+    },
+    "Save" : {
+      "comment" : "Button that saves the deck options."
+    },
+    "Show after reviews" : {
+      "comment" : "New/review order and interday learning order: after all review cards."
+    },
+    "Show before reviews" : {
+      "comment" : "New/review order and interday learning order: before all review cards."
+    },
+    "The %lld decks using it will use the Default preset instead. Takes effect when you save." : {
+      "comment" : "Message of the confirmation before deleting a preset several decks use. The placeholder is how many."
+    },
+    "This deck has its own limits, set in Anki on another device. They apply instead of these and are kept." : {
+      "comment" : "Footer of the daily limits when the deck has deck-only or today-only limits, which this screen does not edit."
+    },
+    "This deck will use the Default preset instead. Takes effect when you save." : {
+      "comment" : "Message of the confirmation before deleting a preset only this deck uses."
+    },
+    "Try Again" : {
+      "comment" : "Button that reads the deck options again after it failed."
+    },
+    "Used by %lld decks. Changes apply to all of them." : {
+      "comment" : "Footer of the preset picker when several decks share the preset. The placeholder is how many."
+    },
+    "Used only by this deck." : {
+      "comment" : "Footer of the preset picker when no other deck uses the preset."
+    },
+    "When a forgotten review card comes back. Leave empty to skip relearning." : {
+      "comment" : "Footer explaining relearning steps."
+    },
+    "When a new card comes back while you learn it, such as 1m 10m 1d." : {
+      "comment" : "Footer explaining learning steps; 1m, 10m and 1d mean one minute, ten minutes and one day."
+    },
+    "When you study a card, other cards of the same note wait until the next day." : {
+      "comment" : "Footer explaining burying."
+    },
+    "“%@” is not a step. Enter delays such as 1m 10m 1d, using s, m, h or d." : {
+      "comment" : "Shown under a learning or relearning steps field when part of what was typed is not a delay. The placeholder is the part that is wrong."
+    }
+  },
+  "version" : "1.0"
+}
