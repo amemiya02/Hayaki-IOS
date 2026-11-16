@@ -43,6 +43,8 @@ packages:
     path: Packages/NoteEditorFeature
   StudyFeature:
     path: Packages/StudyFeature
+  DeckOptionsFeature:
+    path: Packages/DeckOptionsFeature
   SyncFeature:
     path: Packages/SyncFeature
 

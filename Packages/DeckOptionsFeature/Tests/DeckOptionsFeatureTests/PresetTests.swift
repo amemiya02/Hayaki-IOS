@@ -64,6 +64,17 @@ struct PresetTests {
         }
     }
 
+    @Test("A preset is not added or cloned with a blank name")
+    func blankNames() async throws {
+        try await withTemporaryCollection { store in
+            let model = await openOptions(store, deck: try await store.addDeck(named: "Spanish"))
+            model.addPreset(named: "")
+            model.cloneSelectedPreset(named: "  ")
+            #expect(model.presets.map(\.name) == ["Default"])
+            #expect(model.hasChanges == false)
+        }
+    }
+
     @Test("A cloned preset starts with the options of the one it copies")
     func clonePreset() async throws {
         try await withTemporaryCollection { store in

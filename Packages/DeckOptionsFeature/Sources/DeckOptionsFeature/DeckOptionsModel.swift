@@ -136,16 +136,19 @@ public final class DeckOptionsModel {
     }
 
     /// Adds a preset with Anki's default options and makes this deck use it.
+    /// A name of only spaces is ignored.
     public func addPreset(named name: String) {
+        guard !Self.cleanName(name).isEmpty else { return }
         var config = settings.defaults
         config.id = 0
         config.name = name
         insertUnsaved(config)
     }
 
-    /// Adds a copy of the selected preset and makes this deck use it.
+    /// Adds a copy of the selected preset and makes this deck use it. A name
+    /// of only spaces is ignored.
     public func cloneSelectedPreset(named name: String) {
-        guard var config = selectedEntry?.config else { return }
+        guard !Self.cleanName(name).isEmpty, var config = selectedEntry?.config else { return }
         config.id = 0
         config.mtimeSecs = 0
         config.usn = 0
@@ -223,6 +226,11 @@ public final class DeckOptionsModel {
             saveError = error.message
             return false
         }
+    }
+
+    /// Forgets the last save error once the learner has seen it.
+    public func dismissSaveError() {
+        saveError = nil
     }
 
     /// The selected preset as it is sent. If the learner did not edit it, it

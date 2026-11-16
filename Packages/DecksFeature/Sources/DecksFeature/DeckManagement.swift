@@ -1,4 +1,5 @@
 import AnkiCore
+import DeckOptionsFeature
 import SwiftUI
 
 extension View {
@@ -49,6 +50,8 @@ private struct DeckManagement: ViewModifier {
                     MoveDeckSheet(model: model, deck: deck) { error in
                         failure = Failure(title: Text("Could Not Move Deck", bundle: .module), message: error.message)
                     }
+                case .options(let deck):
+                    DeckOptionsScreen(store: model.store, deckID: deck.id)
                 case .rename, .delete:
                     EmptyView()
                 }
@@ -62,7 +65,7 @@ private struct DeckManagement: ViewModifier {
                 case .delete(let deck):
                     request.pending = nil
                     confirmDeletion(of: deck)
-                case .create, .move, nil:
+                case .create, .move, .options, nil:
                     break
                 }
             }
@@ -116,7 +119,7 @@ private struct DeckManagement: ViewModifier {
     private var sheet: Binding<DeckAction?> {
         Binding {
             switch request.pending {
-            case .create, .move: request.pending
+            case .create, .move, .options: request.pending
             default: nil
             }
         } set: { request.pending = $0 }
