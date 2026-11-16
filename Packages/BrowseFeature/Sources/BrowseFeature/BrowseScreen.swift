@@ -119,6 +119,8 @@ private struct SortMenu: View {
 
     var body: some View {
         Menu {
+            // The column list is long, so it is a submenu showing the
+            // current column; the direction stays one tap away.
             Picker(selection: column) {
                 ForEach(model.sortColumns) { column in
                     Text(column.label).tag(column.id)
@@ -126,6 +128,7 @@ private struct SortMenu: View {
             } label: {
                 Text("Sort By", bundle: .module)
             }
+            .pickerStyle(.menu)
             Picker(selection: reverse) {
                 Text("Ascending", bundle: .module).tag(false)
                 Text("Descending", bundle: .module).tag(true)
