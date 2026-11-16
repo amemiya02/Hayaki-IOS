@@ -35,8 +35,14 @@ public final class CardBrowserModel {
     /// Empty until the first search.
     public private(set) var sortColumns: [SortColumn] = []
 
+    /// The search that found `cardIDs`, which may differ from `searchText`
+    /// while the learner edits it.
+    public private(set) var searchedText = ""
+
     /// The ids of the cards matching the last search, in sort order.
     public private(set) var cardIDs: [Int64] = []
+
+    @ObservationIgnored private var searchCount = 0
 
     /// The rows fetched so far, by card id.
     private var rows: [Int64: CachedRow] = [:]
@@ -63,6 +69,12 @@ public final class CardBrowserModel {
 
     /// Runs the current search in the current sort order.
     public func search() async {
+        // Searches can overlap (the learner submits while a change triggers
+        // one); only the latest may update what is shown.
+        searchCount += 1
+        let thisSearch = searchCount
+        let text = searchText
+        let order = sort.order
         do {
             // The core keeps the columns per open collection, so set them
             // every time: the collection may have been reopened since.
@@ -73,16 +85,21 @@ public final class CardBrowserModel {
                     .map { SortColumn(id: $0.key, label: $0.cardsModeLabel, startsDescending: $0.sortingCards == .descending) }
             }
             let found = try await store.core.searchCards(.with {
-                $0.search = searchText
-                $0.order = sort.order
+                $0.search = text
+                $0.order = order
             })
+            guard thisSearch == searchCount else { return }
             cardIDs = found.ids
+            searchedText = text
             generation += 1
             state = .loaded
-        } catch where error.kind == .searchError || error.kind == .invalidInput {
+        } catch where error.kind == .searchError {
+            guard thisSearch == searchCount else { return }
             cardIDs = []
+            searchedText = text
             state = .invalidSearch(message: error.message)
         } catch {
+            guard thisSearch == searchCount else { return }
             state = .failed(message: error.message)
         }
     }

@@ -83,7 +83,7 @@ public struct BrowseScreen: View {
                 }
             }
         case .loaded where model.cardIDs.isEmpty:
-            if model.searchText.isEmpty {
+            if model.searchedText.isEmpty {
                 ContentUnavailableView {
                     Label {
                         Text("No Cards", bundle: .module)
@@ -94,7 +94,7 @@ public struct BrowseScreen: View {
                     Text("Cards you add or import appear here.", bundle: .module)
                 }
             } else {
-                ContentUnavailableView.search(text: model.searchText)
+                ContentUnavailableView.search(text: model.searchedText)
             }
         case .loaded:
             List(model.cardIDs, id: \.self) { cardID in
