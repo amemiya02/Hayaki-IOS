@@ -1,0 +1,55 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "%lld cards are due." : {
+      "comment" : "Daily reminder text: how many cards (reviews and learning cards) are due. Plural variations by count.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld card is due."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld cards are due."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld new cards are ready to learn." : {
+      "comment" : "Daily reminder text: how many new cards can be learned that day. Plural variations by count.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld new card is ready to learn."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld new cards are ready to learn."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Time to Study" : {
+      "comment" : "Title of the daily study reminder notification."
+    }
+  },
+  "version" : "1.0"
+}
