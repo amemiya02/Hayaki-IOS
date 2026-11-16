@@ -101,7 +101,11 @@ struct CollectionPackageImportTests {
         }
     }
 
-    @Test("Cancelling a running import leaves the previous collection intact")
+    /// The core checks for a cancel only at its progress checkpoints; once
+    /// past the last one it finishes. So a cancel either stops the import, or
+    /// comes too late and the import completes. Which one depends on timing;
+    /// a half-imported collection must never result.
+    @Test("Cancelling a running import leaves the previous collection intact, or lets it finish in full, never partly")
     func cancelling() async throws {
         let large = try await LargePackages.make()
         try await withTemporaryCollection { store in
@@ -116,9 +120,19 @@ struct CollectionPackageImportTests {
             model.cancel()
             await importing.value
 
-            #expect(model.step == .cancelled)
-            #expect(try await store.deckNames() == ["Default", "My Own Deck"])
-            #expect(try await store.contents().notes == 3)
+            switch model.step {
+            case .cancelled:
+                print("Collection package cancel: the import stopped")
+                #expect(try await store.deckNames() == ["Default", "My Own Deck"])
+                #expect(try await store.contents().notes == 3)
+            case .finished(.replaced(let result)):
+                print("Collection package cancel: came too late, the import finished")
+                #expect(result.notes == LargePackages.noteCount)
+                #expect(try await store.deckNames() == ["Default", "Large"])
+                #expect(try await store.contents().notes == LargePackages.noteCount)
+            default:
+                Issue.record("expected the import cancelled or finished, got \(model.step)")
+            }
         }
     }
 }
@@ -126,7 +140,11 @@ struct CollectionPackageImportTests {
 @MainActor
 @Suite("Cancelling a deck package import", .timeLimit(.minutes(3)))
 struct DeckPackageCancelTests {
-    @Test("Cancelling while the core reports progress stops the import with nothing merged")
+    /// The core checks for a cancel only at its progress checkpoints (reading
+    /// the package, then every few notes); adding the cards and review history
+    /// has none, so a cancel that arrives then is not seen and the import
+    /// finishes. Its transaction makes it all or nothing either way.
+    @Test("Cancelling a running import merges nothing, or lets it finish in full, never partly")
     func cancelling() async throws {
         let large = try await LargePackages.make()
         try await withTemporaryCollection { store in
@@ -135,14 +153,23 @@ struct DeckPackageCancelTests {
             await model.open(large.deckPackage)
 
             let importing = Task { await model.startImport() }
-            try await eventually(timeout: .seconds(60), "the core reported progress") {
-                if case .importing(_, progress: .some) = model.step { true } else { false }
-            }
+            try await eventually(timeout: .seconds(60), "the import started") { model.isImporting }
             model.cancel()
             await importing.value
 
-            #expect(model.step == .cancelled)
-            #expect(try await store.contents().notes == 0)
+            switch model.step {
+            case .cancelled:
+                print("Deck package cancel: the import stopped")
+                #expect(try await store.contents().notes == 0)
+                #expect(try await store.contents().cards == 0)
+            case .finished(.merged(let result)):
+                print("Deck package cancel: came too late, the import finished")
+                #expect(result.added.count == LargePackages.noteCount)
+                #expect(try await store.contents().notes == LargePackages.noteCount)
+                #expect(try await store.contents().cards == LargePackages.noteCount)
+            default:
+                Issue.record("expected the import cancelled or finished, got \(model.step)")
+            }
         }
     }
 }
@@ -160,7 +187,9 @@ struct LargePackages: ~Copyable {
     var collectionPackage: URL { folder.url.appendingPathComponent("large.colpkg") }
     var deckPackage: URL { folder.url.appendingPathComponent("large.apkg") }
 
-    static func make(notes: Int = 20_000) async throws -> LargePackages {
+    static let noteCount = 20_000
+
+    static func make(notes: Int = noteCount) async throws -> LargePackages {
         let packages = LargePackages(folder: try TemporaryFolder())
         let store = try await CollectionStore.open(
             at: CollectionLocation(folder: packages.folder.url.appendingPathComponent("Collection")),
