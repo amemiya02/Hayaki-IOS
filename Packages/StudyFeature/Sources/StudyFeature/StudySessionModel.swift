@@ -68,9 +68,12 @@ public final class StudySessionModel {
     /// When the current card's question was shown, for the time the review
     /// took.
     @ObservationIgnored private var questionShownAt = ContinuousClock.now
-    /// The longest time a review may count as taking, from each deck's
-    /// options, by deck id.
-    @ObservationIgnored private var answerTimeCaps: [Int64: Duration] = [:]
+    /// The options of each card's home deck, by deck id.
+    @ObservationIgnored private var cardOptions: [Int64: CardOptions] = [:]
+    /// What the learner typed on the shown card, for its answer side.
+    @ObservationIgnored private var typedAnswer = ""
+    /// The audio options of the shown card's home deck.
+    @ObservationIgnored private var audioOptions = AudioOptions()
 
     public init(store: CollectionStore, deckID: Int64) {
         self.store = store
@@ -109,10 +112,11 @@ public final class StudySessionModel {
         guard let card = state.card else { return }
         do {
             let redrawn = try await card.redrawn(core: store.core)
+            let redrawnAnswer = try await redrawn.answering(typed: typedAnswer, core: store.core)
             // The learner may have moved on meanwhile.
             switch state {
             case .question(let shown) where shown.id == card.id: state = .question(redrawn)
-            case .answer(let shown) where shown.id == card.id: state = .answer(redrawn)
+            case .answer(let shown) where shown.id == card.id: state = .answer(redrawnAnswer)
             default: break
             }
         } catch {
@@ -129,6 +133,7 @@ public final class StudySessionModel {
             counts = StudyCounts(queued)
             if let next = queued.cards.first {
                 let card = try await StudyCard.render(next, core: store.core)
+                audioOptions = try await options(for: card).audio
                 state = .question(card)
                 questionShownAt = .now
             } else {
@@ -139,10 +144,33 @@ public final class StudySessionModel {
         }
     }
 
-    /// Turns the card over to its answer side.
+    /// Turns the card over to its answer side. On a card that asks the
+    /// learner to type the answer, the answer side shows the expected answer,
+    /// as when nothing was typed.
     public func showAnswer() {
         guard case .question(let card) = state else { return }
+        typedAnswer = ""
         state = .answer(card)
+    }
+
+    /// Turns the card over to its answer side, which on a card that asks the
+    /// learner to type the answer shows the core's comparison of `typed`
+    /// with the expected answer. Other cards ignore `typed`.
+    public func showAnswer(typed: String) async {
+        guard case .question(let card) = state else { return }
+        guard card.asksForTypedAnswer else {
+            showAnswer()
+            return
+        }
+        do {
+            let answered = try await card.answering(typed: typed, core: store.core)
+            // The learner may have moved on meanwhile.
+            guard case .question(let shown) = state, shown.id == card.id else { return }
+            typedAnswer = typed
+            state = .answer(answered)
+        } catch {
+            state = .failed(message: error.message)
+        }
     }
 
     /// Rates the review of the card whose answer is shown, sends it to the
@@ -188,14 +216,64 @@ public final class StudySessionModel {
     /// "Maximum answer seconds" from the options of the card's home deck,
     /// as Anki caps the time a review is recorded as taking.
     private func answerTimeCap(for card: StudyCard) async throws(CoreError) -> Duration {
-        if let cap = answerTimeCaps[card.homeDeckID] { return cap }
-        let deck = try await store.core.getDeck(.with { $0.did = card.homeDeckID })
-        let options = try await store.core.getDeckConfig(.with { $0.dcid = deck.normal.configID })
-        let seconds = options.config.capAnswerTimeToSecs
-        let cap = Duration.seconds(seconds > 0 ? Int(seconds) : 60)
-        answerTimeCaps[card.homeDeckID] = cap
-        return cap
+        try await options(for: card).answerTimeCap
     }
+
+    /// The options of a card's home deck that studying it follows, read once
+    /// per deck in a session.
+    private func options(for card: StudyCard) async throws(CoreError) -> CardOptions {
+        if let options = cardOptions[card.homeDeckID] { return options }
+        let deck = try await store.core.getDeck(.with { $0.did = card.homeDeckID })
+        let config = try await store.core.getDeckConfig(.with { $0.dcid = deck.normal.configID }).config
+        let seconds = config.capAnswerTimeToSecs
+        let options = CardOptions(
+            answerTimeCap: .seconds(seconds > 0 ? Int(seconds) : 60),
+            audio: AudioOptions(
+                autoplay: !config.disableAutoplay,
+                replaysQuestionOnAnswer: !config.skipQuestionWhenReplayingAnswer
+            )
+        )
+        cardOptions[card.homeDeckID] = options
+        return options
+    }
+
+    // MARK: Audio
+
+    /// What plays by itself when the shown side appears: the side's audio in
+    /// order, unless the deck's options turn automatic playing off.
+    public func soundsToAutoplay() -> [CardSound] {
+        guard let card = state.card, audioOptions.autoplay else { return [] }
+        return sounds(state.answer == nil ? card.question.audio : card.answer.audio)
+    }
+
+    /// What replaying the shown side plays: on the question side its audio;
+    /// on the answer side the answer's audio, after the question's unless
+    /// the deck's options skip the question.
+    public func soundsToReplay() -> [CardSound] {
+        guard let card = state.card else { return [] }
+        if state.answer == nil {
+            return sounds(card.question.audio)
+        }
+        return sounds((audioOptions.replaysQuestionOnAnswer ? card.question.audio : []) + card.answer.audio)
+    }
+
+    /// The sound behind one of the card's replay buttons, by the button's
+    /// `data-play` id such as `q:0` or `a:1`.
+    public func sound(forPlayButton id: String) -> CardSound? {
+        guard let card = state.card, let (isQuestion, index) = PlayButtons.parse(id) else { return nil }
+        let audio = isQuestion ? card.question.audio : card.answer.audio
+        return audio.indices.contains(index) ? CardSound(audio[index], mediaFolder: store.location.mediaFolder) : nil
+    }
+
+    private func sounds(_ tags: [Anki_CardRendering_AVTag]) -> [CardSound] {
+        tags.map { CardSound($0, mediaFolder: store.location.mediaFolder) }
+    }
+}
+
+/// The deck options that studying a card follows.
+private struct CardOptions {
+    var answerTimeCap: Duration
+    var audio: AudioOptions
 }
 
 extension String {
