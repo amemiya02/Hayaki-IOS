@@ -58,6 +58,14 @@ extension CollectionStore {
         }))
     }
 
+    /// Suspends cards, so they are not studied until unsuspended.
+    public func suspend(_ cardIDs: [Int64]) async throws {
+        try await modify(.buryOrSuspendCards(.with {
+            $0.cardIds = cardIDs
+            $0.mode = .suspend
+        }))
+    }
+
     /// Studies the next card of a deck once, answering it with `rating`, as
     /// the study screen does. Returns the id of the card answered.
     @discardableResult

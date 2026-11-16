@@ -1,0 +1,18 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "%lld new, %lld learning, %lld due" : {
+      "comment" : "VoiceOver label for a deck's counts for today: new cards, learning cards and due review cards."
+    },
+    "Could Not Show Decks" : {
+      "comment" : "Title shown when the deck list could not be read from the collection."
+    },
+    "Decks" : {
+      "comment" : "Title of the Decks section and its tab."
+    },
+    "Try Again" : {
+      "comment" : "Button that reads the deck list again after it failed."
+    }
+  },
+  "version" : "1.0"
+}
