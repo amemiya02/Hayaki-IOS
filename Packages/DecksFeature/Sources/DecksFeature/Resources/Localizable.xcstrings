@@ -152,6 +152,9 @@
     "Rename Deck" : {
       "comment" : "Title of the alert asking for a deck's new name."
     },
+    "Studies this deck." : {
+      "comment" : "VoiceOver hint on a deck in the deck list: tapping it starts a study session."
+    },
     "There is already a deck named “%@” there." : {
       "comment" : "Error shown when another deck in the same place already has the name; the placeholder is the name."
     },

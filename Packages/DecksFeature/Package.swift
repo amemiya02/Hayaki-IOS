@@ -2,7 +2,7 @@
 
 import PackageDescription
 
-// Decks: the deck list with today's counts.
+// Decks: the deck list with today's counts; tapping a deck starts studying it.
 let package = Package(
     name: "DecksFeature",
     defaultLocalization: "en",
@@ -14,6 +14,7 @@ let package = Package(
         .package(path: "../AnkiCore"),
         .package(path: "../CollectionStore"),
         .package(path: "../PackagesFeature"),
+        .package(path: "../StudyFeature"),
     ],
     targets: [
         .target(
@@ -22,6 +23,7 @@ let package = Package(
                 .product(name: "AnkiCore", package: "AnkiCore"),
                 .product(name: "CollectionStore", package: "CollectionStore"),
                 .product(name: "PackagesFeature", package: "PackagesFeature"),
+                .product(name: "StudyFeature", package: "StudyFeature"),
             ],
             resources: [.process("Resources")]
         ),
@@ -30,6 +32,7 @@ let package = Package(
             dependencies: [
                 "DecksFeature",
                 .product(name: "CollectionTesting", package: "CollectionStore"),
+                .product(name: "StudyFeature", package: "StudyFeature"),
             ]
         ),
     ],
