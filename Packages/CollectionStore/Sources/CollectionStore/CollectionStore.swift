@@ -96,7 +96,10 @@ public final class CollectionStore: Sendable {
         return stream
     }
 
-    private func signal(_ change: CollectionChange) {
+    /// Tells every subscriber that the collection changed. `modify(_:)` and
+    /// `replace(_:)` signal by themselves; call this only after a change the
+    /// core makes without a change summary, such as a sync.
+    public func signal(_ change: CollectionChange) {
         guard !change.isEmpty else { return }
         for continuation in subscribers.withLock({ Array($0.values) }) {
             continuation.yield(change)
