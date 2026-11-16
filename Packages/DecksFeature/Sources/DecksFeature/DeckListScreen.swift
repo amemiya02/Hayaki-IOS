@@ -19,6 +19,7 @@ public struct DeckListScreen: View {
                         ImportPackageButton()
                     }
                 }
+                .deckManagement(model)
         }
         .task { await model.run() }
     }
@@ -44,7 +45,7 @@ public struct DeckListScreen: View {
                     Text("Try Again", bundle: .module)
                 }
             }
-        case .loaded where model.hasNoCards:
+        case .loaded where model.hasNoCards && !model.hasOwnDecks:
             ContentUnavailableView {
                 Label {
                     Text("No Cards Yet", bundle: .module)
@@ -64,6 +65,7 @@ public struct DeckListScreen: View {
                 }
             }
             .refreshable { await model.refresh() }
+            .environment(model)
         }
     }
 }
@@ -71,24 +73,30 @@ public struct DeckListScreen: View {
 /// A deck and, below it, its child decks, which can be collapsed.
 private struct DeckRows: View {
     let deck: DeckNode
-    @State private var isExpanded: Bool
-
-    init(deck: DeckNode) {
-        self.deck = deck
-        _isExpanded = State(initialValue: !deck.isCollapsed)
-    }
+    @Environment(DeckListModel.self) private var model
 
     var body: some View {
         if deck.children.isEmpty {
             DeckRow(deck: deck)
+                .deckActions(for: deck)
         } else {
-            DisclosureGroup(isExpanded: $isExpanded) {
+            DisclosureGroup(isExpanded: isExpanded) {
                 ForEach(deck.children) { child in
                     DeckRows(deck: child)
                 }
             } label: {
                 DeckRow(deck: deck)
+                    .deckActions(for: deck)
             }
+        }
+    }
+
+    /// Whether the child decks show; the core remembers it for next time.
+    private var isExpanded: Binding<Bool> {
+        Binding {
+            !deck.isCollapsed
+        } set: { isExpanded in
+            Task { try? await model.setCollapsed(!isExpanded, deck: deck.id) }
         }
     }
 }
