@@ -74,6 +74,11 @@ public final class PackageImportModel {
         step = .preparing(name: url.lastPathComponent)
         do {
             let package = try await PackageFile.stage(url)
+            // The learner may have cancelled while the file was copied.
+            guard case .preparing = step else {
+                package.discard()
+                return
+            }
             switch package.kind {
             case .collectionPackage:
                 step = .confirmingReplace(package)
