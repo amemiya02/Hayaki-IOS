@@ -43,6 +43,8 @@ packages:
     path: Packages/NoteEditorFeature
   StudyFeature:
     path: Packages/StudyFeature
+  SyncFeature:
+    path: Packages/SyncFeature
 
 targets:
   Hayaki:
@@ -68,6 +70,8 @@ targets:
         INFOPLIST_FILE: App/Info.plist
         INFOPLIST_KEY_CFBundleDisplayName: Hayaki
         INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.education
+        # A sync server the learner enters may be on their local network.
+        INFOPLIST_KEY_NSLocalNetworkUsageDescription: Hayaki connects to the sync server you enter, which may be on your local network.
         INFOPLIST_KEY_UIApplicationSceneManifest_Generation: YES
         INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents: YES
         INFOPLIST_KEY_UILaunchScreen_Generation: YES

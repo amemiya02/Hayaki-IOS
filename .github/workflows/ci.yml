@@ -46,10 +46,19 @@ jobs:
             Packages/AnkiCore/Sources/AnkiProto/Generated
           key: core-${{ runner.os }}-${{ steps.core-key.outputs.anki }}-${{ hashFiles('core/**', 'scripts/build-core.sh', 'Packages/AnkiCore/Package.resolved') }}
 
+      # Upstream's sync server, which the SyncFeature tests sync against. It
+      # depends only on the pinned Anki commit and its build script.
+      - name: Restore the sync server
+        id: server-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: build/sync-server/anki-sync-server
+          key: sync-server-${{ runner.os }}-${{ steps.core-key.outputs.anki }}-${{ hashFiles('scripts/build-sync-server.sh') }}
+
       - name: Install build tools
         run: |
           brew list xcodegen >/dev/null 2>&1 || brew install xcodegen
-          if [[ "${{ steps.core-cache.outputs.cache-hit }}" != "true" ]]; then
+          if [[ "${{ steps.core-cache.outputs.cache-hit }}" != "true" || "${{ steps.server-cache.outputs.cache-hit }}" != "true" ]]; then
             brew list protobuf >/dev/null 2>&1 || brew install protobuf
           fi
 
@@ -69,6 +78,17 @@ jobs:
             Packages/AnkiCore/Sources/AnkiCore/Generated
             Packages/AnkiCore/Sources/AnkiProto/Generated
           key: ${{ steps.core-cache.outputs.cache-primary-key }}
+
+      - name: Build the sync server
+        if: steps.server-cache.outputs.cache-hit != 'true'
+        run: scripts/build-sync-server.sh
+
+      - name: Save the sync server
+        if: steps.server-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: build/sync-server/anki-sync-server
+          key: ${{ steps.server-cache.outputs.cache-primary-key }}
 
       - name: Run the tests on the Mac
         run: scripts/test.sh
