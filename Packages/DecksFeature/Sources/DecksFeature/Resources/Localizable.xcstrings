@@ -146,6 +146,9 @@
     "OK" : {
       "comment" : "Button that closes an error alert."
     },
+    "Options" : {
+      "comment" : "Deck context menu: open the deck's options (preset, daily limits, steps, display order, burying)."
+    },
     "Rename" : {
       "comment" : "Deck context menu, swipe action and alert button: give the deck a new name."
     },

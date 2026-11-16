@@ -8,6 +8,7 @@ enum DeckAction: Identifiable, Equatable {
     case rename(DeckNode)
     case move(DeckNode)
     case delete(DeckNode)
+    case options(DeckNode)
 
     var id: String {
         switch self {
@@ -15,6 +16,7 @@ enum DeckAction: Identifiable, Equatable {
         case .rename(let deck): "rename-\(deck.id)"
         case .move(let deck): "move-\(deck.id)"
         case .delete(let deck): "delete-\(deck.id)"
+        case .options(let deck): "options-\(deck.id)"
         }
     }
 }
@@ -28,7 +30,7 @@ final class DeckActionRequest {
 }
 
 /// The deck-organising commands for a deck's context menu: new deck inside,
-/// rename, move and delete.
+/// rename, move, delete, and the deck's options.
 struct DeckActionMenuItems: View {
     let deck: DeckNode
     @Environment(DeckActionRequest.self) private var request: DeckActionRequest?
@@ -61,6 +63,17 @@ struct DeckActionMenuItems: View {
                 Text("Move", bundle: .module)
             } icon: {
                 Image(systemName: "folder")
+            }
+        }
+        if !deck.isFiltered {
+            Button {
+                request?.pending = .options(deck)
+            } label: {
+                Label {
+                    Text("Options", bundle: .module)
+                } icon: {
+                    Image(systemName: "gearshape")
+                }
             }
         }
         Divider()

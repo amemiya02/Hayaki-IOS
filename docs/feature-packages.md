@@ -8,15 +8,20 @@ Packages/
   CollectionStore/    CollectionStore library; CollectionTesting library for tests only
   AppShell/           AppModel (opens the collection at launch), RootView, SectionsView (tabs / sidebar)
   DecksFeature/       DeckListModel, DeckListScreen, DecksSection
-  BrowseFeature/      placeholder
+  DeckOptionsFeature/ DeckOptionsModel (edits the core's own deck options messages in place), DeckOptionsScreen
+                      (a sheet, opened from a deck's Options menu item)
+  BrowseFeature/      CardBrowserModel (search, rows fetched a page at a time, quick filters, selection,
+                      undoable bulk actions), BrowseScreen, CardDetailModel, CardDetailScreen
   StatisticsFeature/  placeholder
-  SettingsFeature/    placeholder
+  SettingsFeature/    SettingsScreen: one row per area
   PackagesFeature/    PackageImportModel, the import sheets (packageImport(_:)), ImportPackageButton
   NoteEditorFeature/  NoteEditorModel, NoteEditorScreen; addNoteAction(store:), the shell's Add Note button
   StudyFeature/       StudySessionModel, StudyScreen (presented from Decks with studySession(of:store:)),
                       CardWebView and the card host page Resources/CardHost.html, served with the
                       media folder and the bundled MathJax (WebAssets/) through the
                       hayaki-card:// scheme (CardResources); CardAudioPlayer plays card audio
+  SyncFeature/        SyncModel, SyncScreen and SyncSettingsRow (shown in Settings); SyncAccountStorage
+                      (the Keychain); tests sync against a real sync server, see below
 UITests/              UI tests of the assembled app (HayakiUITests target); see UITestLaunch in AppShell
 ```
 
@@ -62,3 +67,5 @@ try await withTemporaryCollection { store in
 Real Anki packages to start from: `FixturePackage` (`.collection`, `.basicDeck`, `.clozeDeck`, `.typedAnswerDeck`) with `url` and `contents` (what each holds), `store.importFixture(_:)` to bring one in, and `store.contents()` to compare a collection with a fixture's description. They were written by the pinned core's own export code (Anki 26.09.4), not by a desktop Anki install; see `FixturePackages.swift` for what they hold and how to regenerate them. Also `addNotes(ofType:fields:toDeck:)`, `addMediaFile(named:data:)`, `cardIDs(matching:)`, `noteIDs(matching:)`, `reviewCount(matching:)` and `mediaFileNames()`.
 
 Run every package's tests with `scripts/test.sh`, or one package with `scripts/test.sh DecksFeature`. A new package with a `Tests` folder is picked up automatically, by the script and by CI.
+
+The SyncFeature tests sync through upstream Anki's own sync server, built from the same pinned source as the core by `scripts/build-sync-server.sh` into `build/sync-server/` (a long Rust build the first time). Each test starts it on a free local port with a throwaway data folder and stops it afterwards. Without the binary those tests are skipped with a message saying how to build it; CI builds it.

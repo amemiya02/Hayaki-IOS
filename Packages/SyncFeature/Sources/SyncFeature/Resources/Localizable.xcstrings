@@ -1,0 +1,150 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "%@ of %@" : {
+      "comment" : "Upload or download progress: bytes transferred of the total, such as “1.2 MB of 3.4 MB”."
+    },
+    "AnkiWeb" : {
+      "comment" : "Header of the section explaining that Hayaki does not sign in to AnkiWeb."
+    },
+    "Cancel" : {
+      "comment" : "Button that stops signing in or syncing."
+    },
+    "Choose Which Collection to Keep" : {
+      "comment" : "Title shown when the collection here and on the server cannot be merged."
+    },
+    "Connecting…" : {
+      "comment" : "Shown while a sync connects to the server."
+    },
+    "Could not reach the sync server at %@. Check the address, and that the server is running and reachable from this device." : {
+      "comment" : "Failure: the server could not be reached. The placeholder is the server's host name."
+    },
+    "Could not use the device's secure storage for the sign-in." : {
+      "comment" : "Failure reading or writing the Keychain."
+    },
+    "Download from Server" : {
+      "comment" : "Button that replaces this device's collection with the server's."
+    },
+    "Downloading…" : {
+      "comment" : "Shown while the collection is downloaded from the server."
+    },
+    "Enter the server's full address, starting with http:// or https://." : {
+      "comment" : "Shown when the server address is not a web address."
+    },
+    "Hayaki does not sign in to AnkiWeb. AnkiWeb's terms allow only apps its operators have approved, and Hayaki is not one of them. Hayaki syncs only with a sync server you run or choose yourself." : {
+      "comment" : "Explains why there is no AnkiWeb sign-in. AnkiWeb is a product name; do not translate it."
+    },
+    "Not Now" : {
+      "comment" : "Button that leaves both collections as they are instead of uploading or downloading."
+    },
+    "Off" : {
+      "comment" : "Value of the Sync row in Settings when sync is not set up."
+    },
+    "Password" : {
+      "comment" : "Label of the field for the password on the sync server."
+    },
+    "Replace the collection on the server with the one on this device. Changes that only the server has, from your other devices, are lost." : {
+      "comment" : "Explains what uploading overwrites."
+    },
+    "Replace the collection on this device with the one on the server. Changes that only this device has are lost." : {
+      "comment" : "Explains what downloading overwrites."
+    },
+    "Replace the empty collection on this device with the one on the server." : {
+      "comment" : "Explains downloading into an empty collection."
+    },
+    "Required" : {
+      "comment" : "Placeholder of a sign-in field that must be filled in."
+    },
+    "Send the collection on this device to the server, so your other devices can download it." : {
+      "comment" : "Explains uploading to a server that has no collection yet."
+    },
+    "Server" : {
+      "comment" : "Label of the signed-in sync server's address."
+    },
+    "Server Address" : {
+      "comment" : "Label of the field for the sync server's web address."
+    },
+    "Sign In" : {
+      "comment" : "Button that signs in to the sync server."
+    },
+    "Sign Out" : {
+      "comment" : "Button that signs out of the sync server."
+    },
+    "Signing In…" : {
+      "comment" : "Shown while signing in to the sync server."
+    },
+    "Signing in failed." : {
+      "comment" : "Sign-in failure for any other reason; the cause is shown below it."
+    },
+    "Signing in was cancelled." : {
+      "comment" : "Shown after the learner cancelled signing in."
+    },
+    "Signing out removes the server's key from this device. Your collection stays on this device." : {
+      "comment" : "Footer under Sign Out."
+    },
+    "Sync" : {
+      "comment" : "Title of the Sync row in Settings and of the sync screen."
+    },
+    "Sync Now" : {
+      "comment" : "Button that syncs the collection with the server."
+    },
+    "Syncing sends the changes made on this device to the server and brings in the changes made on your other devices." : {
+      "comment" : "Footer explaining what syncing does."
+    },
+    "Syncing…" : {
+      "comment" : "Shown while changes are exchanged with the server."
+    },
+    "The collection on this device and the one on the server have changed in ways that cannot be merged, so one must replace the other. Nothing has been changed yet." : {
+      "comment" : "Explains why the learner must choose between uploading and downloading."
+    },
+    "The collection on this device is empty. Nothing has been changed yet." : {
+      "comment" : "Shown before downloading into an empty collection."
+    },
+    "The device's secure storage reported an error: %@" : {
+      "comment" : "Keychain error; the placeholder is the system's description."
+    },
+    "The server did not accept this user name and password." : {
+      "comment" : "Sign-in failure: wrong user name or password."
+    },
+    "The server has no collection yet. Nothing has been changed yet." : {
+      "comment" : "Shown before the first upload to an empty server."
+    },
+    "The server no longer accepts this device's sign-in. Sign out, then sign in again." : {
+      "comment" : "Sync failure: the stored key was refused."
+    },
+    "The server now has the collection from this device." : {
+      "comment" : "Shown after uploading."
+    },
+    "The server's address, and your user name and password on it. Hayaki keeps only the key the server issues in exchange, in this device's Keychain; your password is not stored." : {
+      "comment" : "Footer under the sign-in fields, saying what is kept."
+    },
+    "The sync failed." : {
+      "comment" : "Sync failure for any other reason; the cause is shown below it."
+    },
+    "The sync was cancelled before it finished." : {
+      "comment" : "Shown after the learner cancelled a sync."
+    },
+    "This device and the server are in step." : {
+      "comment" : "Shown after a sync that merged changes."
+    },
+    "This device now has the collection from the server." : {
+      "comment" : "Shown after downloading."
+    },
+    "To move your collection to or from AnkiWeb, export it from Hayaki as a collection package and sync it from desktop Anki or AnkiDroid." : {
+      "comment" : "How to reach AnkiWeb without Hayaki signing in to it."
+    },
+    "Upload to Server" : {
+      "comment" : "Button that replaces the server's collection with this device's."
+    },
+    "Uploading…" : {
+      "comment" : "Shown while the collection is uploaded to the server."
+    },
+    "User Name" : {
+      "comment" : "Label of the field for the user name on the sync server."
+    },
+    "Your Sync Server" : {
+      "comment" : "Header of the section with the sync server's address and the sign-in fields."
+    }
+  },
+  "version" : "1.0"
+}
