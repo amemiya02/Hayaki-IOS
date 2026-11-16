@@ -1,0 +1,104 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "Add" : {
+      "comment" : "Button in the note editor that adds the note to the collection."
+    },
+    "Add Anyway" : {
+      "comment" : "Button that adds a note despite a warning (a duplicate, or a cloze note without cloze deletions)."
+    },
+    "Add Image" : {
+      "comment" : "Button below a field that opens the photo library to attach an image to the field."
+    },
+    "Add Image to %@" : {
+      "comment" : "VoiceOver label of the button that attaches an image; the argument is the field's name, such as Back."
+    },
+    "Add Note" : {
+      "comment" : "Title of the note editor, and the button, reachable from every section, that opens it."
+    },
+    "Add Tags" : {
+      "comment" : "Placeholder of the text field where the learner types new tags."
+    },
+    "Another note of this note type has the same first field." : {
+      "comment" : "Explanation shown when the note being added duplicates an existing note."
+    },
+    "Cannot Add the Note" : {
+      "comment" : "Title of the message shown when the note cannot be added as it is."
+    },
+    "Cloze deletions can only be used in the note type's cloze field, usually the first." : {
+      "comment" : "Shown when a cloze deletion such as {{c1::text}} was typed into a field of a cloze note type that does not support it."
+    },
+    "Cloze deletions can only be used with a cloze note type." : {
+      "comment" : "Shown when a cloze deletion such as {{c1::text}} was typed into a note whose note type is not a cloze type."
+    },
+    "Could Not Add the Image" : {
+      "comment" : "Title of the message shown when an image from the photo library could not be attached."
+    },
+    "Could Not Add the Note" : {
+      "comment" : "Title of the message shown when adding the note failed unexpectedly."
+    },
+    "Could Not Start a Note" : {
+      "comment" : "Title shown when the note editor could not read note types and decks from the collection."
+    },
+    "Deck" : {
+      "comment" : "Label of the picker choosing the deck the note's cards go into."
+    },
+    "Duplicate Note" : {
+      "comment" : "Title of the warning shown when the note being added duplicates an existing note."
+    },
+    "Image in %@" : {
+      "comment" : "VoiceOver label of an image attached to a field; the argument is the field's name, such as Back."
+    },
+    "No Cloze Deletions" : {
+      "comment" : "Title of the warning shown when a cloze note has no cloze deletion."
+    },
+    "Note added with %lld cards." : {
+      "comment" : "Confirmation shown after a note was added; the argument is the number of cards it made.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Note added with %lld card."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Note added with %lld cards."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Note Type" : {
+      "comment" : "Label of the picker choosing the note type, which decides the note's fields and cards."
+    },
+    "Remove %@" : {
+      "comment" : "VoiceOver label of the button that removes a tag from the note; the argument is the tag."
+    },
+    "Remove Image" : {
+      "comment" : "Button that removes an attached image from a field."
+    },
+    "Separate tags with spaces." : {
+      "comment" : "Hint below the tags of the note being added."
+    },
+    "Tags" : {
+      "comment" : "Header of the note's tags in the note editor."
+    },
+    "The first field is empty." : {
+      "comment" : "Shown when the learner tries to add a note whose first field is empty."
+    },
+    "The selected item is not an image Hayaki can read." : {
+      "comment" : "Shown when the item chosen in the photo library could not be read as an image."
+    },
+    "This is a cloze note type, but the note has no cloze deletions, such as {{c1::text}}." : {
+      "comment" : "Warning shown when a cloze note has no cloze deletion. {{c1::text}} is Anki's cloze syntax and must stay as it is."
+    }
+  },
+  "version" : "1.0"
+}
