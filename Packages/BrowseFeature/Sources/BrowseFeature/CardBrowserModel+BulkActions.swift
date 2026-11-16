@@ -106,6 +106,12 @@ extension CardBrowserModel {
         return true
     }
 
+    /// Stops offering to undo the last bulk action (the core can still undo
+    /// it until something else is done).
+    public func dismissCompletedAction() {
+        completedAction = nil
+    }
+
     private func summarizeDeletion(of cardIDs: [Int64]) async throws(CoreError) -> DeletionSummary {
         let cards = cardIDs.map(String.init).joined(separator: ",")
         let notes = try await store.core.searchNotes(.with { $0.search = "cid:\(cards)" }).ids

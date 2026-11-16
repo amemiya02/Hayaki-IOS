@@ -12,6 +12,13 @@ public enum BrowseSection {
 public struct BrowseScreen: View {
     private let store: CollectionStore
     @State private var model: CardBrowserModel
+    /// Whether the learner is selecting cards to act on them together.
+    @State private var isSelecting = false
+    @State private var isMoving = false
+    /// What a deletion the learner asked for would delete, while it waits
+    /// for confirmation.
+    @State private var deletion: DeletionSummary?
+    @Environment(\.accessibilityVoiceOverEnabled) private var voiceOverEnabled
 
     public init(store: CollectionStore) {
         self.store = store
@@ -21,14 +28,56 @@ public struct BrowseScreen: View {
     public var body: some View {
         NavigationStack {
             content
-                .navigationTitle(BrowseSection.title)
+                .navigationTitle(title)
                 .navigationDestination(for: CardLink.self) { link in
                     CardDetailScreen(store: store, cardID: link.cardID)
                 }
-                .toolbar {
-                    ToolbarItem(placement: .primaryAction) {
-                        SortMenu(model: model)
+                .toolbar { toolbar }
+                .selectingCards(isSelecting)
+                .safeAreaInset(edge: .bottom) {
+                    if let completed = model.completedAction {
+                        UndoBanner(model: model, completed: completed)
+                            .transition(.move(edge: .bottom).combined(with: .opacity))
                     }
+                }
+                .animation(.default, value: model.completedAction)
+                .task(id: model.completedAction) {
+                    // The undo offer goes away after a while, unless
+                    // VoiceOver is on (reaching it may take longer).
+                    guard model.completedAction != nil, !voiceOverEnabled else { return }
+                    try? await Task.sleep(for: .seconds(10))
+                    if !Task.isCancelled { model.dismissCompletedAction() }
+                }
+                .sheet(isPresented: $isMoving) {
+                    MoveCardsSheet(model: model)
+                }
+                .confirmationDialog(
+                    Text("Delete \(deletion?.noteCount ?? 0) Notes?", bundle: .module),
+                    isPresented: isConfirmingDeletion,
+                    titleVisibility: .visible,
+                    presenting: deletion
+                ) { _ in
+                    Button(role: .destructive) {
+                        Task { await model.perform(.delete) }
+                    } label: {
+                        Text("Delete", bundle: .module)
+                    }
+                    Button(role: .cancel) {} label: {
+                        Text("Cancel", bundle: .module)
+                    }
+                } message: { summary in
+                    Text("Deleting a card deletes its note, with the note's other cards: \(summary.cardCount) cards in all.", bundle: .module)
+                }
+                .alert(
+                    Text("Could Not Change Cards", bundle: .module),
+                    isPresented: hasFailure
+                ) {
+                    Button {} label: { Text("OK", bundle: .module) }
+                } message: {
+                    Text(model.failure ?? "")
+                }
+                .onChange(of: model.cardIDs.isEmpty) { _, isEmpty in
+                    if isEmpty { isSelecting = false }
                 }
         }
         .searchable(
@@ -49,6 +98,72 @@ public struct BrowseScreen: View {
             if text.isEmpty { Task { await model.search() } }
         }
         .task { await model.run() }
+    }
+
+    private var title: Text {
+        isSelecting ? Text("\(model.selection.count) Selected", bundle: .module) : BrowseSection.title
+    }
+
+    @ToolbarContentBuilder
+    private var toolbar: some ToolbarContent {
+        if isSelecting {
+            ToolbarItem(placement: .cancellationAction) {
+                if model.selection.count == model.cardIDs.count {
+                    Button {
+                        model.clearSelection()
+                    } label: {
+                        Text("Deselect All", bundle: .module)
+                    }
+                } else {
+                    Button {
+                        model.selectAll()
+                    } label: {
+                        Text("Select All", bundle: .module)
+                    }
+                }
+            }
+            ToolbarItem(placement: .confirmationAction) {
+                Button {
+                    isSelecting = false
+                    model.clearSelection()
+                } label: {
+                    Text("Done", bundle: .module)
+                }
+            }
+            ToolbarItem(placement: .primaryAction) {
+                BulkActionMenu(model: model, isMoving: $isMoving, deletion: $deletion)
+                    .disabled(model.selection.isEmpty)
+            }
+        } else {
+            ToolbarItemGroup(placement: .primaryAction) {
+                QuickFilterMenu(model: model)
+                SortMenu(model: model)
+            }
+            ToolbarItem(placement: .primaryAction) {
+                Button {
+                    isSelecting = true
+                } label: {
+                    Text("Select", bundle: .module)
+                }
+                .disabled(model.cardIDs.isEmpty)
+            }
+        }
+    }
+
+    private var isConfirmingDeletion: Binding<Bool> {
+        Binding {
+            deletion != nil
+        } set: { isShown in
+            if !isShown { deletion = nil }
+        }
+    }
+
+    private var hasFailure: Binding<Bool> {
+        Binding {
+            model.failure != nil
+        } set: { isShown in
+            if !isShown { model.failure = nil }
+        }
     }
 
     @ViewBuilder
@@ -97,7 +212,9 @@ public struct BrowseScreen: View {
                 ContentUnavailableView.search(text: model.searchedText)
             }
         case .loaded:
-            List(model.cardIDs, id: \.self) { cardID in
+            // Rows can be selected only while selecting; otherwise a tap
+            // opens the card.
+            List(model.cardIDs, id: \.self, selection: isSelecting ? $model.selection : nil) { cardID in
                 NavigationLink(value: CardLink(cardID: cardID)) {
                     CardRowView(model: model, cardID: cardID)
                 }
@@ -111,6 +228,19 @@ public struct BrowseScreen: View {
 /// A card to show in the card detail.
 struct CardLink: Hashable {
     let cardID: Int64
+}
+
+private extension View {
+    /// While selecting, the list shows selection circles. (The package also
+    /// builds for macOS so its tests run on the Mac.)
+    @ViewBuilder
+    func selectingCards(_ isSelecting: Bool) -> some View {
+        #if os(iOS)
+        environment(\.editMode, .constant(isSelecting ? .active : .inactive))
+        #else
+        self
+        #endif
+    }
 }
 
 /// The sort order menu: the column, then ascending or descending.
