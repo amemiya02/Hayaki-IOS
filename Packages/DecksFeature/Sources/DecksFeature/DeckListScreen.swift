@@ -24,6 +24,7 @@ public struct DeckListScreen: View {
                         ImportPackageButton()
                     }
                 }
+                .deckManagement(model)
         }
         .task { await model.run() }
         .studySession(of: $studying, store: store)
@@ -50,7 +51,7 @@ public struct DeckListScreen: View {
                     Text("Try Again", bundle: .module)
                 }
             }
-        case .loaded where model.hasNoCards:
+        case .loaded where model.hasNoCards && !model.hasOwnDecks:
             ContentUnavailableView {
                 Label {
                     Text("No Cards Yet", bundle: .module)
@@ -70,6 +71,7 @@ public struct DeckListScreen: View {
                 }
             }
             .refreshable { await model.refresh() }
+            .environment(model)
         }
     }
 }
@@ -78,25 +80,30 @@ public struct DeckListScreen: View {
 private struct DeckRows: View {
     let deck: DeckNode
     let study: (DeckNode) -> Void
-    @State private var isExpanded: Bool
-
-    init(deck: DeckNode, study: @escaping (DeckNode) -> Void) {
-        self.deck = deck
-        self.study = study
-        _isExpanded = State(initialValue: !deck.isCollapsed)
-    }
+    @Environment(DeckListModel.self) private var model
 
     var body: some View {
         if deck.children.isEmpty {
             DeckRow(deck: deck, study: study)
+                .deckActions(for: deck)
         } else {
-            DisclosureGroup(isExpanded: $isExpanded) {
+            DisclosureGroup(isExpanded: isExpanded) {
                 ForEach(deck.children) { child in
                     DeckRows(deck: child, study: study)
                 }
             } label: {
                 DeckRow(deck: deck, study: study)
+                    .deckActions(for: deck)
             }
+        }
+    }
+
+    /// Whether the child decks show; the core remembers it for next time.
+    private var isExpanded: Binding<Bool> {
+        Binding {
+            !deck.isCollapsed
+        } set: { isExpanded in
+            Task { try? await model.setCollapsed(!isExpanded, deck: deck.id) }
         }
     }
 }

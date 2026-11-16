@@ -9,23 +9,30 @@ public struct DeckNode: Identifiable, Equatable, Sendable {
     public let id: Int64
     /// The deck's own name, without its parents' names.
     public let name: String
+    /// The deck's name with its parents' names, as Anki stores it, such as
+    /// "Languages::Japanese".
+    public let fullName: String
     public let counts: DeckCounts
     /// Whether the learner collapsed this deck, hiding its child decks.
-    public let isCollapsed: Bool
-    public let children: [DeckNode]
+    public internal(set) var isCollapsed: Bool
+    /// Whether this is a filtered deck, which borrows cards from other decks.
+    public let isFiltered: Bool
+    public internal(set) var children: [DeckNode]
     /// All cards in the deck and its child decks, whatever their state.
     public let totalCards: Int
 
-    init(_ node: Anki_Decks_DeckTreeNode) {
+    init(_ node: Anki_Decks_DeckTreeNode, parentName: String? = nil) {
         id = node.deckID
         name = node.name
+        fullName = parentName.map { "\($0)::\(node.name)" } ?? node.name
         counts = DeckCounts(
             new: Int(node.newCount),
             learning: Int(node.learnCount),
             due: Int(node.reviewCount)
         )
         isCollapsed = node.collapsed
-        children = node.children.map(DeckNode.init)
+        isFiltered = node.filtered
+        children = node.children.map { [fullName] child in DeckNode(child, parentName: fullName) }
         totalCards = Int(node.totalIncludingChildren)
     }
 }
@@ -51,7 +58,7 @@ public final class DeckListModel {
     }
 
     public private(set) var state: State = .loading
-    public private(set) var decks: [DeckNode] = []
+    public internal(set) var decks: [DeckNode] = []
 
     /// Whether the collection has no cards at all, as on first launch, so
     /// the screen offers to import a package instead of an empty deck list.
@@ -59,7 +66,7 @@ public final class DeckListModel {
         state == .loaded && decks.allSatisfy { $0.totalCards == 0 }
     }
 
-    @ObservationIgnored private let store: CollectionStore
+    @ObservationIgnored let store: CollectionStore
 
     /// Changes after which the decks or their counts may differ.
     private static let relevantChanges: CollectionChange = [.deck, .card, .config, .deckConfig, .studyQueues]
@@ -73,7 +80,7 @@ public final class DeckListModel {
         do {
             // Counts are only computed when the request says what "now" is.
             let root = try await store.core.deckTree(.with { $0.now = Int64(Date().timeIntervalSince1970) })
-            decks = root.children.map(DeckNode.init)
+            decks = root.children.map { DeckNode($0) }
             state = .loaded
         } catch {
             state = .failed(message: error.message)
