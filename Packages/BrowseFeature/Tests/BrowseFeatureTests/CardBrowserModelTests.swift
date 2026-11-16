@@ -154,13 +154,38 @@ struct CardBrowserModelTests {
     }
 }
 
+extension CardBrowserModelTests {
+    @Test("While shown, the list follows imported deck and collection packages")
+    func followsImports() async throws {
+        try await withTemporaryCollection { store in
+            let model = CardBrowserModel(store: store)
+            let shown = Task { await model.run() }
+            defer { shown.cancel() }
+            try await eventually("the empty collection listed") { model.state == .loaded }
+            #expect(model.cardIDs.isEmpty)
+
+            try await store.importFixture(.clozeDeck)
+            try await eventually("the deck package's cards listed") { model.cardIDs.count == 3 }
+            #expect(Set(await model.shownRows().map { $0.components(separatedBy: " | ").last })
+                == ["Geography"])
+
+            // A collection package replaces the collection, which the core
+            // closes and opens again; the rows must still be fetched.
+            try await store.importFixture(.collection)
+            try await eventually("the collection package's cards listed") { model.cardIDs.count == 9 }
+            #expect(Set(await model.shownRows().map { $0.components(separatedBy: " | ").last })
+                == ["Geography", "Languages::Spanish", "Vocabulary"])
+        }
+    }
+}
+
 /// Waits until an async condition holds, checking every few milliseconds.
 @MainActor
 func eventuallyAsync(_ what: String, _ condition: () async -> Bool) async throws {
     let deadline = ContinuousClock.now.advanced(by: .seconds(5))
     while await !condition() {
         guard ContinuousClock.now < deadline else {
-            throw TimedOut(description: "\(what) was still false after 5 seconds")
+            throw StillFalse(description: "\(what) was still false after 5 seconds")
         }
         try await Task.sleep(for: .milliseconds(10))
     }
@@ -186,4 +211,8 @@ extension CardBrowserModel {
         }
         return lines
     }
+}
+
+struct StillFalse: Error, CustomStringConvertible {
+    let description: String
 }

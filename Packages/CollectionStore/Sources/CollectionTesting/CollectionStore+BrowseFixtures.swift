@@ -11,6 +11,7 @@ extension CollectionStore {
         let basic = try await core.getNotetypeIdByName(.with { $0.val = "Basic" })
         var note = try await core.newNote(basic)
         note.fields = [front, back]
+        note.guid = newNoteGUID()
         note.tags = tags
         let added = try await modify(.addNote(.with {
             $0.note = note
