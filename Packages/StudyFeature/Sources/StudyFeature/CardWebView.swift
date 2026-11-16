@@ -25,6 +25,7 @@ struct CardDisplay: Equatable, Encodable {
 }
 
 #if os(iOS)
+import OSLog
 import WebKit
 
 /// Draws a card in a web view, on Hayaki's own card host page
@@ -105,7 +106,11 @@ struct CardWebView: UIViewRepresentable {
                 return
             }
             shown = wanted
-            webView.evaluateJavaScript("hayaki.show(\(argument))")
+            webView.evaluateJavaScript("hayaki.show(\(argument)); true") { _, error in
+                if let error {
+                    Self.log.error("The card host page could not show a card: \(error, privacy: .public)")
+                }
+            }
         }
 
         func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
@@ -113,9 +118,16 @@ struct CardWebView: UIViewRepresentable {
             sendIfReady()
         }
 
+        func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: any Error) {
+            Self.log.error("The card host page did not load: \(error, privacy: .public)")
+        }
+
         func webViewWebContentProcessDidTerminate(_ webView: WKWebView) {
+            Self.log.error("The card web view's content process ended; reloading")
             loadHostPage()
         }
+
+        private static let log = Logger(subsystem: "io.github.amemiya02.hayaki", category: "CardWebView")
 
         func webView(
             _ webView: WKWebView,

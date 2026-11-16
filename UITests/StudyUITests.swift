@@ -16,6 +16,11 @@ final class StudyUITests: XCTestCase {
             Bundle(for: StudyUITests.self).url(forResource: "collection", withExtension: "colpkg"),
             "The fixture collection package is missing from the UI test bundle"
         )
+        // On an iPad, landscape: the sidebar sits beside the deck list rather
+        // than over it.
+        if UIDevice.current.userInterfaceIdiom == .pad {
+            XCUIDevice.shared.orientation = .landscapeLeft
+        }
         app = XCUIApplication()
         app.launchEnvironment["HAYAKI_UI_TEST_COLLECTION_PACKAGE"] = package.path
         app.launch()
@@ -27,11 +32,20 @@ final class StudyUITests: XCTestCase {
         XCTAssertTrue(counts.waitForExistence(timeout: 20))
         let countsBefore = counts.label
         XCTAssertTrue(countsBefore.hasSuffix("due left"), countsBefore)
+        // A Cloze card's question is drawn in the web view, with its deletion
+        // hidden. Generous: the web view's first page load can take many
+        // seconds on a busy machine.
+        let hiddenDeletion = app.webViews.staticTexts
+            .matching(NSPredicate(format: "label CONTAINS %@", "[...]")).firstMatch
+        XCTAssertTrue(hiddenDeletion.waitForExistence(timeout: 60), "The question is drawn")
         attachScreen("1 question")
 
         app.buttons["show-answer"].tap()
         let good = app.buttons["rating-good"]
         XCTAssertTrue(good.waitForExistence(timeout: 10))
+        // The answer side fills the deletion in.
+        XCTAssertTrue(hiddenDeletion.waitForNonExistence(timeout: 30), "The answer is drawn")
+        XCTAssertTrue(app.webViews.staticTexts.firstMatch.exists, "The answer is drawn")
         for rating in ["again", "hard", "good", "easy"] {
             XCTAssertTrue(app.buttons["rating-\(rating)"].exists)
             XCTAssertFalse(app.buttons["rating-\(rating)"].value as? String ?? "" == "", "\(rating) shows an interval")

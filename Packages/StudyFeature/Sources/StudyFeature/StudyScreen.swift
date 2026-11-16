@@ -84,14 +84,21 @@ public struct StudyScreen: View {
 
     @ViewBuilder
     private var content: some View {
+        // One view for both sides of every card, so the card's web view and
+        // its page stay loaded for the whole session.
+        if let card = model.state.card {
+            studying(card, showingAnswer: model.state.answer != nil)
+        } else {
+            noCard
+        }
+    }
+
+    @ViewBuilder
+    private var noCard: some View {
         switch model.state {
-        case .loading:
+        case .loading, .question, .answer:
             ProgressView()
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-        case .question(let card):
-            studying(card, showingAnswer: false)
-        case .answer(let card):
-            studying(card, showingAnswer: true)
         case .finished(let summary):
             FinishedView(summary: summary) { dismiss() }
         case .failed(let message):
@@ -211,8 +218,7 @@ private struct RatingButton: View {
         Button(action: action) {
             VStack(spacing: 2) {
                 Text(interval)
-                    .font(.caption.monospacedDigit())
-                    .foregroundStyle(.secondary)
+                    .font(.caption.monospacedDigit().weight(.medium))
                 rating.title
                     .font(.subheadline.weight(.semibold))
             }
