@@ -185,7 +185,7 @@ public struct StudyCard: Equatable, Sendable {
 
     /// One side's HTML, with its audio taken out by the core. `withMarkers`
     /// is the HTML before the replay buttons go in, for `{{FrontSide}}`.
-    private static func side(
+    fileprivate static func side(
         _ nodes: [Anki_CardRendering_RenderedTemplateNode],
         frontSide: String,
         isQuestion: Bool,
@@ -208,5 +208,35 @@ public struct StudyCard: Equatable, Sendable {
             label: String(localized: "Play Audio", bundle: .module, comment: "VoiceOver label of the replay button on a card.")
         )
         return (CardSide(html: shown, audio: extracted.avTags), extracted.text)
+    }
+}
+
+/// Both rendered sides of a draft card, using the same template and media
+/// handling as the reviewer.
+public struct CardPreviewContent: Equatable, Sendable {
+    public let ordinal: UInt32
+    public let question: CardSide
+    public let answer: CardSide
+    public let css: String
+
+    public init(
+        rendered: Anki_CardRendering_RenderCardResponse,
+        ordinal: UInt32,
+        note: Anki_Notes_Note,
+        notetype: Anki_Notetypes_Notetype,
+        core: CoreClient
+    ) async throws(CoreError) {
+        self.ordinal = ordinal
+        css = rendered.css
+        let front = try await StudyCard.side(rendered.questionNodes, frontSide: "", isQuestion: true, core: core)
+        let back = try await StudyCard.side(rendered.answerNodes, frontSide: front.withMarkers, isQuestion: false, core: core)
+        let typing = try await TypedAnswerPrompt.questionSide(
+            front.side.html, note: note, notetype: notetype, ordinal: ordinal, preview: true, core: core
+        )
+        question = CardSide(html: typing.html, audio: front.side.audio)
+        answer = CardSide(
+            html: try await TypedAnswerPrompt.answerSide(back.side.html, prompt: typing.prompt, typed: "", core: core),
+            audio: back.side.audio
+        )
     }
 }
