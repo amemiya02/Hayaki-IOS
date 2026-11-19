@@ -2,6 +2,7 @@
 import AnkiCore
 import CollectionStore
 import Foundation
+import SyncFeature
 
 /// Launch support for the app's UI tests (`UITests/`), in debug builds only.
 ///
@@ -11,18 +12,27 @@ import Foundation
 /// every test run sees the same cards. `HAYAKI_UI_TEST_DUE_TODAY`, an Anki
 /// search, also makes the matching cards due today.
 enum UITestLaunch {
-    /// A UI test can keep the same new collection and its own preferences
-    /// across launches by passing the same fresh UUID.
+    /// An empty fixture keeps its data when the test passes the same UUID across launches.
     @MainActor
-    static var emptyCollectionModel: AppModel? {
-        guard
-            let argument = ProcessInfo.processInfo.environment["HAYAKI_UI_TEST_EMPTY_COLLECTION"],
-            let id = UUID(uuidString: argument),
-            let preferences = UserDefaults(suiteName: "HayakiUITests.\(id.uuidString)")
-        else { return nil }
-        let folder = FileManager.default.temporaryDirectory
-            .appendingPathComponent("UITestCollection-\(id.uuidString)", isDirectory: true)
-        return AppModel(location: { CollectionLocation(folder: folder) }, preferences: preferences)
+    static var model: AppModel? {
+        let id: UUID
+        if let argument = ProcessInfo.processInfo.environment["HAYAKI_UI_TEST_EMPTY_COLLECTION"],
+           let emptyID = UUID(uuidString: argument) {
+            id = emptyID
+        } else if collectionPackage != nil {
+            id = UUID()
+        } else {
+            return nil
+        }
+        let namespace = "HayakiUITests.\(id.uuidString)"
+        guard let preferences = UserDefaults(suiteName: namespace) else { return nil }
+        let folder = FileManager.default.temporaryDirectory.appendingPathComponent(namespace, isDirectory: true)
+        return AppModel(
+            location: { CollectionLocation(folder: folder.appendingPathComponent("Collection", isDirectory: true)) },
+            backupFolder: { folder.appendingPathComponent("Backups", isDirectory: true) },
+            preferences: preferences,
+            accountStorage: { KeychainSyncAccountStorage(service: namespace, profileID: $0) }
+        )
     }
 
     static var collectionPackage: URL? {
@@ -32,10 +42,8 @@ enum UITestLaunch {
     }
 
     /// Makes a throwaway collection in the temporary folder from `package`.
-    static func collection(from package: URL, core: CoreClient) async throws -> CollectionLocation {
-        let folder = FileManager.default.temporaryDirectory.appendingPathComponent("UITestCollection", isDirectory: true)
-        try? FileManager.default.removeItem(at: folder)
-        let location = CollectionLocation(folder: folder)
+    static func seedCollection(at location: CollectionLocation, from package: URL, core: CoreClient) async throws {
+        try? FileManager.default.removeItem(at: location.folder)
         try FileManager.default.createDirectory(at: location.mediaFolder, withIntermediateDirectories: true)
         try await core.importCollectionPackage(.with {
             $0.colPath = location.collectionFile.path
@@ -46,7 +54,6 @@ enum UITestLaunch {
         if let search = ProcessInfo.processInfo.environment["HAYAKI_UI_TEST_DUE_TODAY"] {
             try await makeDueToday(cardsMatching: search, in: location, core: core)
         }
-        return location
     }
 
     /// Makes the cards matching an Anki search due for review today, as

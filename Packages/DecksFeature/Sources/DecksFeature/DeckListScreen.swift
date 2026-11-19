@@ -31,8 +31,14 @@ public struct DeckListScreen: View {
                     ToolbarItem(placement: .secondaryAction) {
                         SharedDecksLink()
                     }
+                    ToolbarItem(placement: .secondaryAction) {
+                        TextImportButton(store: store)
+                    }
                 }
-                .deckManagement(model)
+                .deckManagement(model) { deck in
+                    selectedDeckID = deck.id
+                    studying = deck
+                }
         }
         .task { await model.run() }
         .onChange(of: scenePhase) { _, phase in

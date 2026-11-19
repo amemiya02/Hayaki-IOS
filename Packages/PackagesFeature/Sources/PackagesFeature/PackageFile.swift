@@ -26,15 +26,29 @@ public struct PackageFile: Sendable, Equatable {
     /// The file's name as the learner knows it, such as "Spanish.apkg".
     public let name: String
     /// The staged copy the core reads.
-    let url: URL
+    private let staged: StagedImportFile
+    var url: URL { staged.url }
 
-    /// Copies the package at `source` into a new staging folder. `source` may
-    /// be a security-scoped URL from the file picker or from another app.
     @concurrent
     static func stage(_ source: URL) async throws -> PackageFile {
         guard let kind = PackageKind(fileExtension: source.pathExtension) else {
             throw NotAPackage()
         }
+        let staged = try await StagedImportFile.stage(source)
+        return PackageFile(kind: kind, name: source.lastPathComponent, staged: staged)
+    }
+
+    func discard() {
+        staged.discard()
+    }
+}
+
+/// A private copy that stays readable after the document picker closes.
+struct StagedImportFile: Sendable, Equatable {
+    let url: URL
+
+    @concurrent
+    static func stage(_ source: URL) async throws -> StagedImportFile {
         let accessing = source.startAccessingSecurityScopedResource()
         defer { if accessing { source.stopAccessingSecurityScopedResource() } }
 
@@ -62,7 +76,7 @@ public struct PackageFile: Sendable, Equatable {
         if isInInbox(source) {
             try? FileManager.default.removeItem(at: source)
         }
-        return PackageFile(kind: kind, name: source.lastPathComponent, url: copy)
+        return StagedImportFile(url: copy)
     }
 
     private static func isInInbox(_ url: URL) -> Bool {

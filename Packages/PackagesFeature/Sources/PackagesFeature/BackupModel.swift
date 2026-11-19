@@ -67,7 +67,7 @@ public final class BackupModel {
     }
 
     public func createBackup() async {
-        guard !isBusy, !importer.isImporting else { return }
+        guard store.allowsNewProfileWork, !isBusy, !importer.isImporting else { return }
         status = .creating
         do {
             let created = try await store.backUp(to: folder, force: true)
@@ -79,7 +79,7 @@ public final class BackupModel {
     }
 
     public func createAutomaticBackup() async {
-        guard !isBusy, !importer.isImporting else { return }
+        guard store.allowsNewProfileWork, !isBusy, !importer.isImporting else { return }
         creatingAutomaticBackup = true
         defer { creatingAutomaticBackup = false }
         do {
@@ -92,7 +92,7 @@ public final class BackupModel {
     }
 
     public func prepareRestore(_ entry: CollectionBackup) async {
-        guard !isBusy, entries.contains(entry) else { return }
+        guard store.allowsNewProfileWork, !isBusy, entries.contains(entry) else { return }
         // The common package importer stages the file before asking for
         // replacement, so the pre-restore backup can thin older backups.
         await importer.open(entry.url)
@@ -111,7 +111,7 @@ public final class BackupModel {
 
     @discardableResult
     public func saveRetention(_ retention: BackupRetention) async -> Bool {
-        guard retention.isValid, !importer.isImporting else { return false }
+        guard store.allowsNewProfileWork, retention.isValid, !importer.isImporting else { return false }
         do {
             var preferences = try await store.core.getPreferences()
             preferences.backups.minimumIntervalMins = retention.intervalMinutes

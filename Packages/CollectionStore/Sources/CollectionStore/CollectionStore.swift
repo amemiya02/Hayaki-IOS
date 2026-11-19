@@ -14,6 +14,8 @@ public final class CollectionStore: Sendable {
     /// that only read.
     public let core: CoreClient
     public let location: CollectionLocation
+    /// Package and sync actions stop accepting new work while the app switches away from this store.
+    @MainActor public var allowsNewProfileWork = true
     private let subscribers = Mutex<[UUID: AsyncStream<CollectionChange>.Continuation]>([:])
 
     private init(core: CoreClient, location: CollectionLocation) {

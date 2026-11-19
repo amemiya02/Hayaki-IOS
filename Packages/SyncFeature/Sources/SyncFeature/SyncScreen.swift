@@ -47,6 +47,8 @@ public struct SyncSettingsRow: View {
 /// Choosing a sync destination, signing in, and syncing the collection and media.
 public struct SyncScreen: View {
     @Bindable private var model: SyncModel
+    @State private var confirmingDestinationChange = false
+    @State private var confirmingFullSync = false
 
     public init(model: SyncModel) {
         self.model = model
@@ -54,7 +56,7 @@ public struct SyncScreen: View {
 
     public var body: some View {
         Form {
-            if let account = model.account {
+            if let account = model.account, !model.isChangingDestination {
                 SignedInSections(model: model, account: account)
                 MediaSyncSection(model: model)
             } else {
@@ -63,11 +65,58 @@ public struct SyncScreen: View {
             if let failure = model.status.failure {
                 FailureSection(failure: failure)
             }
-            if model.account != nil {
+            if model.isChangingDestination {
+                Section {
+                    Button {
+                        model.cancelDestinationChange()
+                    } label: {
+                        Text("Keep Current Sign-In", bundle: .module)
+                    }
+                    .disabled(model.isBusy)
+                }
+            } else if model.account != nil {
+                Section {
+                    Button {
+                        confirmingFullSync = true
+                    } label: {
+                        Text("Force Full Sync…", bundle: .module)
+                    }
+                    .disabled(!model.canForceFullSync)
+                    Button {
+                        confirmingDestinationChange = true
+                    } label: {
+                        Text("Change Sync Destination…", bundle: .module)
+                    }
+                    .disabled(model.isBusy)
+                }
                 SignOutSection(model: model)
             }
         }
         .navigationTitle(Text("Sync", bundle: .module))
+        .alert(Text("Change Sync Destination?", bundle: .module), isPresented: $confirmingDestinationChange) {
+            Button {
+                model.beginDestinationChange()
+            } label: {
+                Text("Continue", bundle: .module)
+            }
+            Button(role: .cancel) {} label: {
+                Text("Cancel", bundle: .module)
+            }
+        } message: {
+            Text("Your current sign-in will stay active until you sign in to the new destination.", bundle: .module)
+        }
+        .alert(Text("Force Full Sync?", bundle: .module), isPresented: $confirmingFullSync) {
+            Button {
+                Task { await model.forceFullSync() }
+            } label: {
+                Text("Force Full Sync", bundle: .module)
+            }
+            Button(role: .cancel) {} label: {
+                Text("Cancel", bundle: .module)
+            }
+        } message: {
+            Text("The next sync will ask whether to upload or download the collection.", bundle: .module)
+        }
     }
 }
 
@@ -225,6 +274,10 @@ private struct SignedInSections: View {
                 if case .synced(let outcome) = model.status {
                     OutcomeRow(outcome: outcome)
                 }
+                if model.status == .fullSyncRequested {
+                    Text("A full sync will run next time you sync.", bundle: .module)
+                        .foregroundStyle(.secondary)
+                }
             }
         } footer: {
             Text("Syncing sends the changes made on this device to the server and brings in the changes made on your other devices.", bundle: .module)
@@ -302,7 +355,7 @@ private struct DirectionChoice: View {
             Group {
                 switch choice {
                 case .either:
-                    Text("The collection on this device and the one on the server have changed in ways that cannot be merged, so one must replace the other. Nothing has been changed yet.", bundle: .module)
+                    Text("A one-way sync replaces one collection with the other. Choose which collection to keep.", bundle: .module)
                 case .uploadOnly:
                     Text("The server has no collection yet. Nothing has been changed yet.", bundle: .module)
                 case .downloadOnly:
