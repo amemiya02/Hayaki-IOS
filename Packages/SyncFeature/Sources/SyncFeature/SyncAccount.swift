@@ -12,6 +12,7 @@ public struct SyncAccount: Codable, Equatable, Sendable {
     /// A redirect returned by the core for this sign-in. Keep it separate
     /// from the configured address so it does not change the destination.
     var redirectedEndpoint: URL?
+    var customCertificate: String?
     var mediaSync: SavedMediaSync?
 
     public init(server: URL?, userName: String, hostKey: String) {
@@ -23,7 +24,7 @@ public struct SyncAccount: Codable, Equatable, Sendable {
     // The required server key is either a self-hosted URL (including legacy
     // items) or explicit null for AnkiWeb. A missing key indicates invalid data.
     private enum CodingKeys: String, CodingKey {
-        case server, userName, hostKey, redirectedEndpoint, mediaSync
+        case server, userName, hostKey, redirectedEndpoint, mediaSync, customCertificate
     }
 
     public init(from decoder: any Decoder) throws {
@@ -32,6 +33,7 @@ public struct SyncAccount: Codable, Equatable, Sendable {
         userName = try values.decode(String.self, forKey: .userName)
         hostKey = try values.decode(String.self, forKey: .hostKey)
         redirectedEndpoint = try values.decodeIfPresent(URL.self, forKey: .redirectedEndpoint)
+        customCertificate = try values.decodeIfPresent(String.self, forKey: .customCertificate)
         mediaSync = try values.decodeIfPresent(SavedMediaSync.self, forKey: .mediaSync)
     }
 
@@ -41,6 +43,7 @@ public struct SyncAccount: Codable, Equatable, Sendable {
         try values.encode(userName, forKey: .userName)
         try values.encode(hostKey, forKey: .hostKey)
         try values.encodeIfPresent(redirectedEndpoint, forKey: .redirectedEndpoint)
+        try values.encodeIfPresent(customCertificate, forKey: .customCertificate)
         try values.encodeIfPresent(mediaSync, forKey: .mediaSync)
     }
 }

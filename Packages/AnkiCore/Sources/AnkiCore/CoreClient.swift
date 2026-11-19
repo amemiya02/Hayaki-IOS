@@ -14,6 +14,8 @@ import Synchronization
 /// reports and cancellation. Those use a second thread owned by the client,
 /// the monitor, which reads progress and media sync results and makes the
 /// core's abort calls without waiting behind the operation they refer to.
+/// Sync status also has its own worker because the core releases its
+/// collection lock while waiting on the sync server.
 ///
 /// A failed call throws `CoreError` with the core's error kind and its
 /// localised message. After a panic inside the core (`CoreError.isPanic`) the
@@ -26,6 +28,7 @@ public final class CoreClient: Sendable {
 
     private let worker: WorkerThread
     private let monitor: WorkerThread
+    private let syncStatusWorker: WorkerThread
     private let backend: Mutex<Backend?>
     /// The encoded `BackendInit`, kept to replace the backend after a panic.
     private let initRequest: Data
@@ -54,6 +57,7 @@ public final class CoreClient: Sendable {
         case .success(let backend):
             self.worker = worker
             self.monitor = WorkerThread(name: "Hayaki Core Monitor")
+            self.syncStatusWorker = WorkerThread(name: "Hayaki Sync Status")
             self.initRequest = initRequest
             self.backend = Mutex(backend)
         case .failure(let error):
@@ -64,6 +68,7 @@ public final class CoreClient: Sendable {
 
     deinit {
         monitor.stop()
+        syncStatusWorker.stop()
         // Close the backend on the worker too, after any calls still queued.
         let backend = backend.withLock { $0.take() }
         worker.submit { [backend] in withExtendedLifetime(backend) {} }
@@ -74,6 +79,12 @@ public final class CoreClient: Sendable {
     /// Runs one call on the worker thread and returns its typed response.
     public func perform<Response>(_ call: CoreCall<Response>) async throws(CoreError) -> Response {
         try await worker.run { self.execute(call) }.get()
+    }
+
+    /// Checks sync status without delaying other collection reads while the
+    /// core is waiting for the server's metadata.
+    public func lookupSyncStatus(_ auth: Anki_Sync_SyncAuth) async throws(CoreError) -> Anki_Sync_SyncStatusResponse {
+        try await syncStatusWorker.run { self.call(.syncStatus(auth)) }.get()
     }
 
     /// Updates just the scheduler preferences on the core's serialized worker.
