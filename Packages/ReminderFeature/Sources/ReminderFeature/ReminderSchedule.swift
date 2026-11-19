@@ -35,6 +35,7 @@ public final class ReminderSchedule {
     private let defaults: UserDefaults
     private let days: Int
     private let calendar: Calendar
+    private let profileID: UUID?
 
     /// Updates run one after another, across every schedule in the app, so a
     /// slower update can never re-add reminders a later one removed.
@@ -45,13 +46,15 @@ public final class ReminderSchedule {
         centre: any NotificationCentre,
         defaults: UserDefaults = .standard,
         days: Int = ReminderSchedule.defaultDays,
-        calendar: Calendar = .current
+        calendar: Calendar = .current,
+        profileID: UUID? = nil
     ) {
         self.store = store
         self.centre = centre
         self.defaults = defaults
         self.days = days
         self.calendar = calendar
+        self.profileID = profileID
     }
 
     /// Computes the reminders afresh from the learner's choices and the
@@ -93,46 +96,118 @@ public final class ReminderSchedule {
     private var settlingUpdate: Task<Void, Never>?
 
     private func replacePendingReminders() async {
+        guard store.allowsNewProfileWork else { return }
         let preferences = ReminderPreferences(from: defaults)
-        let pending = await centre.pendingReminders().map(\.identifier)
-        guard preferences.isOn, await centre.permission() == .allowed else {
-            await centre.removeReminders(withIdentifiers: pending)
+        let pending = await centre.pendingReminders()
+        guard await centre.permission() == .allowed else {
+            await centre.removeReminders(withIdentifiers: pending.map(\.identifier))
             return
         }
+
         let wanted: [ScheduledReminder]
         do {
-            wanted = try await reminders(for: preferences, from: Date.now)
+            wanted = try await reminders(for: preferences, from: .now)
         } catch {
-            // The collection could not be read (it may be being replaced);
-            // keep what is scheduled until the next update.
+            // The collection may be changing during sync or import.
             return
         }
-        let wantedIdentifiers = Set(wanted.map(\.identifier))
-        await centre.removeReminders(withIdentifiers: pending.filter { !wantedIdentifiers.contains($0) })
-        for reminder in wanted {
+        guard store.allowsNewProfileWork else { return }
+
+        let retained = pending.filter { reminder in
+            guard let target = DeckReminderDestination(identifier: reminder.identifier) else { return false }
+            return target.profileID != profileID
+        }
+        // Keep the daily reminder's slots and give the remaining system
+        // slots to the soonest deck reminders across all profiles.
+        let combined = wanted + retained
+        let daily = combined.filter { !$0.identifier.hasPrefix(DeckReminderDestination.prefix) }
+        let decks = combined.filter { $0.identifier.hasPrefix(DeckReminderDestination.prefix) }
+            .sorted { ($0.delivery, $0.identifier) < ($1.delivery, $1.identifier) }
+        let selection = Array(daily.prefix(64)) + Array(decks.prefix(max(0, 64 - daily.count)))
+        let selectedIDs = Set(selection.map(\.identifier))
+        await centre.removeReminders(withIdentifiers: pending.map(\.identifier).filter { !selectedIDs.contains($0) })
+        let previous = Dictionary(uniqueKeysWithValues: pending.map { ($0.identifier, $0) })
+        for reminder in selection where previous[reminder.identifier] != reminder {
             try? await centre.add(reminder)
         }
     }
 
     private func reminders(for preferences: ReminderPreferences, from now: Date) async throws(CoreError) -> [ScheduledReminder] {
+        var deliveries: [Date: [DeckReminder]] = [:]
+        let daily = Set(preferences.isOn ? moments(hour: preferences.hour, minute: preferences.minute, after: now) : [])
+        var reviewedToday: Set<Int64> = []
+        var nextDay: Int64 = 0
+        if let profileID {
+            let rules = DeckReminder.load(profileID: profileID, from: defaults).filter(\.enabled)
+            if !rules.isEmpty {
+                let names = try await store.core.getDeckNames(.with { $0.includeFiltered = true }).entries
+                let namesByID = Dictionary(uniqueKeysWithValues: names.map { ($0.id, $0.name) })
+                let liveRules = rules.filter { namesByID[$0.deckID] != nil }
+                for rule in liveRules {
+                    for date in moments(hour: rule.hour, minute: rule.minute, after: now) {
+                        deliveries[date, default: []].append(rule)
+                    }
+                }
+                if liveRules.contains(where: \.onlyWithoutReviews) {
+                    nextDay = try await store.core.schedTimingToday().nextDayAt
+                    for id in Set(liveRules.filter(\.onlyWithoutReviews).map(\.deckID)) {
+                        guard let name = namesByID[id] else { continue }
+                        let escaped = name.replacingOccurrences(of: "\\", with: "\\\\")
+                            .replacingOccurrences(of: "\"", with: "\\\"")
+                            .replacingOccurrences(of: "*", with: "\\*")
+                            .replacingOccurrences(of: "_", with: "\\_")
+                        let search = "rated:1 \"deck:\(escaped)\""
+                        if try await !store.core.searchCards(.with { $0.search = search }).ids.isEmpty {
+                            reviewedToday.insert(id)
+                        }
+                    }
+                }
+            }
+        }
+
         var reminders: [ScheduledReminder] = []
-        for delivery in deliveries(at: preferences, after: now) {
-            let counts = try await StudyCounts.at(delivery, in: store)
-            guard let body = ReminderText.body(for: counts) else { continue }
-            reminders.append(ScheduledReminder(
-                identifier: ScheduledReminder.identifierPrefix + Self.dayFormat.string(from: delivery),
-                delivery: delivery,
-                title: ReminderText.title,
-                body: body
-            ))
+        var deckReminderCount = 0
+        for date in daily.union(deliveries.keys).sorted() {
+            let rules = deckReminderCount < 64 ? deliveries[date] ?? [] : []
+            guard !rules.isEmpty || daily.contains(date) else { continue }
+            let timestamp = Int64(date.timeIntervalSince1970)
+            let root = try await store.core.deckTree(.with { $0.now = timestamp })
+            let day = Self.dayFormat.string(from: date)
+
+            if daily.contains(date), let body = ReminderText.body(for: StudyCounts.sum(root.children)) {
+                reminders.append(ScheduledReminder(
+                    identifier: ScheduledReminder.identifierPrefix + day,
+                    delivery: date, title: ReminderText.title, body: body
+                ))
+            }
+            guard let profileID else { continue }
+            for rule in rules where deckReminderCount < 64 {
+                guard !rule.onlyWithoutReviews || timestamp >= nextDay || !reviewedToday.contains(rule.deckID),
+                      let deck = Self.deck(withID: rule.deckID, in: root.children)
+                else { continue }
+                let considered = (rule.countNew ? Int(deck.newCount) : 0)
+                    + (rule.countLearning ? Int(deck.learnCount) : 0)
+                    + (rule.countReview ? Int(deck.reviewCount) : 0)
+                guard considered >= rule.minimumCards else { continue }
+                let body = ReminderText.body(for: StudyCounts.sum([deck])) ?? ReminderText.noCards
+                let identifier = DeckReminderDestination.profilePrefix(profileID) + "\(deck.deckID).\(rule.id.uuidString).\(day)"
+                reminders.append(ScheduledReminder(identifier: identifier, delivery: date, title: deck.name, body: body))
+                deckReminderCount += 1
+            }
         }
         return reminders
     }
 
-    /// The next `days` moments at the chosen time of day, the first one after
-    /// `now`.
-    private func deliveries(at preferences: ReminderPreferences, after now: Date) -> [Date] {
-        let time = DateComponents(hour: preferences.hour, minute: preferences.minute)
+    private static func deck(withID id: Int64, in decks: [Anki_Decks_DeckTreeNode]) -> Anki_Decks_DeckTreeNode? {
+        for deck in decks {
+            if deck.deckID == id { return deck }
+            if let child = self.deck(withID: id, in: deck.children) { return child }
+        }
+        return nil
+    }
+
+    private func moments(hour: Int, minute: Int, after now: Date) -> [Date] {
+        let time = DateComponents(hour: hour, minute: minute)
         var moments: [Date] = []
         var after = now
         while moments.count < days,
@@ -158,15 +233,10 @@ struct StudyCounts: Equatable {
     var due = 0
     var new = 0
 
-    /// Asks the core for the deck tree as it will be at `moment`. The core
-    /// computes the counts for the day `moment` falls in (by the collection's
-    /// own day boundary), so cards due on later days and fresh daily limits
-    /// are counted then.
-    static func at(_ moment: Date, in store: CollectionStore) async throws(CoreError) -> StudyCounts {
-        let root = try await store.core.deckTree(.with { $0.now = Int64(moment.timeIntervalSince1970) })
+    static func sum(_ decks: [Anki_Decks_DeckTreeNode]) -> StudyCounts {
         // Each top-level deck's counts already include its child decks.
-        return root.children.reduce(into: StudyCounts()) { counts, deck in
-            counts.due += Int(deck.reviewCount + deck.learnCount)
+        decks.reduce(into: StudyCounts()) { counts, deck in
+            counts.due += Int(deck.reviewCount) + Int(deck.learnCount)
             counts.new += Int(deck.newCount)
         }
     }

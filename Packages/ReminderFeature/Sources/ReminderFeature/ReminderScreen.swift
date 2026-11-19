@@ -8,18 +8,20 @@ import UIKit
 /// time or that it is off.
 public struct ReminderSettingsRow: View {
     private let store: CollectionStore
+    private let profileID: UUID?
 
     @AppStorage(ReminderPreferences.Key.isOn) private var isOn = false
     @AppStorage(ReminderPreferences.Key.hour) private var hour = ReminderPreferences().hour
     @AppStorage(ReminderPreferences.Key.minute) private var minute = ReminderPreferences().minute
 
-    public init(store: CollectionStore) {
+    public init(store: CollectionStore, profileID: UUID? = nil) {
         self.store = store
+        self.profileID = profileID
     }
 
     public var body: some View {
         NavigationLink {
-            ReminderScreen(store: store)
+            ReminderScreen(store: store, profileID: profileID)
         } label: {
             LabeledContent {
                 if isOn, let time = Calendar.current.date(bySettingHour: hour, minute: minute, second: 0, of: .now) {
@@ -43,8 +45,8 @@ public struct ReminderScreen: View {
     @State private var model: ReminderModel
     @Environment(\.scenePhase) private var scenePhase
 
-    public init(store: CollectionStore) {
-        _model = State(initialValue: ReminderModel(store: store))
+    public init(store: CollectionStore, profileID: UUID? = nil) {
+        _model = State(initialValue: ReminderModel(store: store, profileID: profileID))
     }
 
     public var body: some View {
@@ -121,17 +123,22 @@ extension ReminderScreen {
 }
 
 /// Explains that notifications are refused and how to allow them.
-private struct NotificationsRefusedSection: View {
+struct NotificationsRefusedSection: View {
+    var forDeckReminders = false
     @Environment(\.openURL) private var openURL
 
     var body: some View {
         Section {
             Label {
-                Text(
-                    "Hayaki is not allowed to send notifications, so the reminder cannot appear. To get it, allow notifications for Hayaki in the Settings app, then turn the reminder on.",
-                    bundle: .module,
-                    comment: "Shown when the learner refused notifications, explaining how to allow them later."
-                )
+                if forDeckReminders {
+                    Text("Allow Hayaki notifications in Settings to receive deck reminders.", bundle: .module)
+                } else {
+                    Text(
+                        "Hayaki is not allowed to send notifications, so the reminder cannot appear. To get it, allow notifications for Hayaki in the Settings app, then turn the reminder on.",
+                        bundle: .module,
+                        comment: "Shown when the learner refused notifications, explaining how to allow them later."
+                    )
+                }
             } icon: {
                 Image(systemName: "bell.slash")
                     .foregroundStyle(.red)

@@ -242,3 +242,33 @@ extension Date {
         Calendar.current.isDate(self, equalTo: other, toGranularity: .minute)
     }
 }
+
+@MainActor
+@Test("A deck reminder counts only its deck and carries the profile and deck on launch")
+func deckReminderOpensItsDeck() async throws {
+    try await withTemporaryCollection { store in
+        let target = try await store.addDeck(named: "Spanish")
+        let other = try await store.addDeck(named: "Japanese")
+        try await store.makeDueToday(store.addBasicNotes(count: 2, toDeck: target))
+        try await store.makeDueToday(store.addBasicNotes(count: 4, toDeck: other))
+        let centre = RecordingNotificationCentre()
+        let defaults = UserDefaults.throwaway()
+        let profile = UUID()
+        let model = DeckReminderModel(store: store, profileID: profile, centre: centre, defaults: defaults)
+        let time = Calendar.current.dateComponents([.hour, .minute], from: .now.addingTimeInterval(3600))
+        let rule = DeckReminder(deckID: target, hour: try #require(time.hour), minute: try #require(time.minute))
+
+        await model.save(rule)
+
+        let reminder = try #require(await centre.pendingReminders().first)
+        #expect(reminder.title == "Spanish")
+        #expect(reminder.body == "2 cards are due.")
+        let opener = ReminderOpener()
+        opener.opened(notificationIdentifier: reminder.identifier)
+        #expect(opener.deckRequested?.profileID == profile)
+        #expect(opener.deckRequested?.deckID == target)
+
+        await model.delete(rule.id)
+        #expect(await centre.pendingReminders().isEmpty)
+    }
+}

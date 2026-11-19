@@ -12,6 +12,7 @@ public final class ReminderOpener {
     /// The learner opened a reminder and the deck list has not been shown for
     /// it yet.
     public var deckListRequested = false
+    public var deckRequested: DeckReminderDestination?
 
     @ObservationIgnored private var delegate: NotificationDelegate?
 
@@ -28,7 +29,9 @@ public final class ReminderOpener {
 
     /// The learner opened the notification with this identifier.
     public func opened(notificationIdentifier identifier: String) {
-        if ScheduledReminder.isReminder(identifier: identifier) {
+        if let target = DeckReminderDestination(identifier: identifier) {
+            deckRequested = target
+        } else if ScheduledReminder.isReminder(identifier: identifier), !identifier.hasPrefix(DeckReminderDestination.prefix) {
             deckListRequested = true
         }
     }
