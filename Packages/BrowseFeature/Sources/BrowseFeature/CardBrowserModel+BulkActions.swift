@@ -16,7 +16,7 @@ public enum BulkAction: Hashable, Sendable {
     case resetProgress(restorePosition: Bool, resetCounts: Bool)
     case reposition(start: UInt32, step: UInt32, randomize: Bool, shiftExisting: Bool)
     case grade(CardDetail.Review.Rating)
-    case findAndReplace(search: String, replacement: String, field: String, regex: Bool, matchCase: Bool, onlySelection: Bool)
+    case findAndReplace(search: String, replacement: String, field: String, tags: Bool, regex: Bool, matchCase: Bool, onlySelection: Bool)
     /// Sets a flag, replacing any other; nil takes the flag off.
     case flag(CardRow.Flag?)
     /// Moves the cards to a deck, by id. Cards borrowed by a filtered deck
@@ -58,7 +58,7 @@ extension CardBrowserModel {
         guard !isPerformingAction else { return }
         let selected = rowIDs.filter { selection.contains($0) }
         let mode = mode
-        if case .findAndReplace(_, _, _, _, _, false) = action {
+        if case .findAndReplace(_, _, _, _, _, _, false) = action {
             // The unscoped Find and Replace action searches all notes.
         } else if selected.isEmpty {
             return
@@ -156,11 +156,11 @@ extension CardBrowserModel {
     private func applyToNotes(_ action: BulkAction, selected: [Int64], mode: Mode) async throws(CoreError)
         -> (changes: Anki_Collection_OpChanges, cardCount: Int)
     {
-        if case let .findAndReplace(search, replacement, field, regex, matchCase, onlySelection) = action {
+        if case let .findAndReplace(search, replacement, field, tags, regex, matchCase, onlySelection) = action {
             let notes = onlySelection ? try await noteIDs(for: selected, mode: mode) : []
             guard !onlySelection || !notes.isEmpty else { return (.init(), 0) }
             let result: Anki_Collection_OpChangesWithCount
-            if field == "Tags" {
+            if tags {
                 result = try await store.modify(.findAndReplaceTag(.with {
                     $0.noteIds = notes
                     $0.search = search
