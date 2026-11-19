@@ -3,6 +3,7 @@
     const editable = "input, textarea, select, [contenteditable]";
     const post = value => window.webkit.messageHandlers.hayakiReviewerInput.postMessage(value);
     let touchStart = null;
+    document.body.classList.add("reviewer-input");
 
     const canUseGesture = event => event.isTrusted
         && event.target instanceof Element

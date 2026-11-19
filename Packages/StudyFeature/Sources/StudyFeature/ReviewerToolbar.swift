@@ -92,7 +92,7 @@ struct ReviewerToolbar: View {
             .fixedSize(horizontal: actions(in: .toolbar).count <= 1, vertical: false)
             Menu {
                 ForEach(actions(in: .menu)) { action in item(action) }
-                Button("Reviewer Settings", systemImage: "gear", action: onSettings)
+                Button(reviewerLocalized("Reviewer Settings"), systemImage: "gear", action: onSettings)
             } label: {
                 let flag = StudyFlag(rawValue: model.state.card?.flag ?? 0) ?? .clear
                 Image(systemName: flag == .clear ? "ellipsis.circle" : "flag.fill")
@@ -152,7 +152,7 @@ struct ReviewerToolbar: View {
             if let command = action.command {
                 let isMarked = action == .mark && model.isCurrentNoteMarked
                 Button(role: action == .deleteNote ? .destructive : nil) { dispatch(command) } label: {
-                    Label(isMarked ? "Unmark Note" : action.title, systemImage: isMarked ? "star.fill" : action.icon)
+                    Label(reviewerLocalized(isMarked ? "Unmark Note" : action.title), systemImage: isMarked ? "star.fill" : action.icon)
                 }
             }
         }

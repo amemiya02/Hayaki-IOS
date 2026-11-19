@@ -10,7 +10,9 @@ public struct ReviewerDeckTools: Codable, Equatable, Sendable {
     public var penWidth = 4.0
     public var eraserWidth = 24.0
     public var strokeEraser = false
-    public var toolbarTop = false
+    var toolbarAlignment: WhiteboardToolbarAlignment?
+    var hidesToolbar: Bool?
+    var brushes: [ReviewerBrush]?
 
     public init() {}
 
@@ -28,4 +30,13 @@ public struct ReviewerDeckTools: Codable, Equatable, Sendable {
     private static func key(profile: URL, deckID: Int64) -> String {
         "reviewer.tools.\(Data(profile.standardizedFileURL.path.utf8).base64EncodedString()).\(deckID)"
     }
+}
+
+enum WhiteboardToolbarAlignment: String, Codable, CaseIterable {
+    case left, right, bottom
+}
+
+struct ReviewerBrush: Hashable, Codable {
+    let color: String
+    let width: Double
 }

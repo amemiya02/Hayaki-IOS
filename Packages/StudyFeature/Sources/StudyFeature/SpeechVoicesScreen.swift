@@ -11,8 +11,8 @@ struct SpeechVoicesScreen: View {
 
     var body: some View {
         List {
-            Section("Voice Preview") {
-                TextField("Text to Speak", text: $sample)
+            Section(reviewerLocalized("Voice Preview")) {
+                TextField(reviewerLocalized("Text to Speak"), text: $sample)
             }
             ForEach(languages, id: \.self) { language in
                 Section(Locale.current.localizedString(forIdentifier: language) ?? language) {
@@ -25,7 +25,7 @@ struct SpeechVoicesScreen: View {
                                     .foregroundStyle(.secondary)
                             }
                             Spacer()
-                            Button("Preview", systemImage: "play.circle") {
+                            Button(reviewerLocalized("Preview"), systemImage: "play.circle") {
                                 let text = sample.isEmpty ? voice.name : sample
                                 audio.play([.speech(.init(
                                     text: text, language: voice.language, voices: [voice.identifier], speed: 1
@@ -33,7 +33,7 @@ struct SpeechVoicesScreen: View {
                             }
                             .labelStyle(.iconOnly)
                             .buttonStyle(.borderless)
-                            Button("Copy Template Filter", systemImage: "document.on.document") {
+                            Button(reviewerLocalized("Copy Template Filter"), systemImage: "document.on.document") {
                                 UIPasteboard.general.string = "{{tts \(voice.language.replacingOccurrences(of: "-", with: "_")) voices=\(CardSpeechVoice.templateName(voice)):Field}}"
                             }
                             .labelStyle(.iconOnly)
@@ -43,7 +43,7 @@ struct SpeechVoicesScreen: View {
                 }
             }
         }
-        .navigationTitle("Text-to-Speech Voices")
+        .navigationTitle(reviewerLocalized("Text-to-Speech Voices"))
         .searchable(text: $search)
         .task {
             voices = AVSpeechSynthesisVoice.speechVoices().sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }

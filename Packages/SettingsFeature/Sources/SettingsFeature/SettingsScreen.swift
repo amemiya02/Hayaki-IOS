@@ -40,7 +40,11 @@ public struct SettingsScreen<ProfileEntry: View>: View {
                 NavigationLink {
                     ReviewerSettingsScreen(store: store)
                 } label: {
-                    Label("Reviewer", systemImage: "rectangle.on.rectangle")
+                    Label {
+                        Text("Reviewer", bundle: .module)
+                    } icon: {
+                        Image(systemName: "rectangle.on.rectangle")
+                    }
                 }
                 if let backups {
                     NavigationLink {

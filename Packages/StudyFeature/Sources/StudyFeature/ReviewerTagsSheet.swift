@@ -21,7 +21,7 @@ struct ReviewerTagsSheet: View {
                     ProgressView()
                 }
             }
-            .navigationTitle("Edit Tags")
+            .navigationTitle(reviewerLocalized("Edit Tags"))
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel", role: .cancel) { dismiss() }.disabled(isSaving)
@@ -36,7 +36,7 @@ struct ReviewerTagsSheet: View {
             do {
                 draft = try await model.tags(of: noteID).joined(separator: " ")
             } catch {
-                self.error = error.message
+                self.error = (error as? CoreError)?.message ?? error.localizedDescription
             }
         }
         .alert("Could Not Edit Tags", isPresented: Binding(
@@ -58,7 +58,7 @@ struct ReviewerTagsSheet: View {
                 try await model.setTags(draft.split(whereSeparator: \.isWhitespace).map(String.init), on: noteID)
                 dismiss()
             } catch {
-                self.error = error.message
+                self.error = (error as? CoreError)?.message ?? error.localizedDescription
             }
         }
     }

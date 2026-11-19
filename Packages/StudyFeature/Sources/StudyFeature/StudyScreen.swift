@@ -123,15 +123,15 @@ public struct StudyScreen: View {
         }) { route in
             destinations?(route)
         }
-        .alert("Timebox Reached", isPresented: Binding(
+        .alert(reviewerLocalized("Timebox Reached"), isPresented: Binding(
             get: { timebox != nil },
             set: { if !$0 { timebox = nil } }
         )) {
-            Button("Continue") {
+            Button(reviewerLocalized("Continue")) {
                 model.restartTimebox()
                 timebox = nil
             }
-            Button("Finish") { dismiss() }
+            Button(reviewerLocalized("Finish")) { dismiss() }
         } message: {
             if let timebox {
                 Text("You reviewed \(timebox.reviewed) cards in \(timebox.limit.components.seconds / 60) minutes.")
@@ -141,7 +141,8 @@ public struct StudyScreen: View {
         .focused($reviewerFocused)
         .onAppear { reviewerFocused = true }
         .onKeyPress { press in
-            dispatchInput(.keyboard(ReviewerKey(press))) ? .handled : .ignored
+            guard press.phase == .down else { return .ignored }
+            return dispatchInput(.keyboard(ReviewerKey(press))) ? .handled : .ignored
         }
         #if os(iOS)
         .statusBarHidden(preferences.hideStatusBar)
@@ -385,7 +386,7 @@ public struct StudyScreen: View {
                             TimelineView(.periodic(from: .now, by: 1)) { _ in
                                 Text(model.answerTimer().formatted(.time(pattern: .minuteSecond)))
                                     .monospacedDigit()
-                                    .accessibilityLabel("Answer Timer")
+                                    .accessibilityLabel(reviewerLocalized("Answer Timer"))
                             }
                         }
                     }
@@ -406,7 +407,7 @@ public struct StudyScreen: View {
                 .keyboardShortcut(.cancelAction)
                 Spacer()
                 if preferences.toolbarPosition == .hidden {
-                    Button("Reviewer Settings", systemImage: "gear") { showingSettings = true }
+                    Button(reviewerLocalized("Reviewer Settings"), systemImage: "gear") { showingSettings = true }
                         .labelStyle(.iconOnly)
                         .frame(width: 44, height: 44)
                 } else if preferences.toolbarPosition == .top {
@@ -421,7 +422,7 @@ public struct StudyScreen: View {
             if preferences.showProgress, initialCount > 0 {
                 ProgressView(value: Double(min(model.reviewedCount, initialCount)), total: Double(initialCount))
                     .labelsHidden()
-                    .accessibilityLabel("Study Progress")
+                    .accessibilityLabel(reviewerLocalized("Study Progress"))
             }
         }
     }
@@ -490,7 +491,7 @@ public struct StudyScreen: View {
                         ReviewerWhiteboard(drawing: drawing, tools: deckTools, isErasing: isErasing)
                     }
                 }
-                .overlay(alignment: deckTools.toolbarTop ? .top : .bottom) {
+                .overlay(alignment: whiteboardAlignment) {
                     if deckTools.whiteboardEnabled {
                         ReviewerWhiteboardTools(drawing: drawing, options: $deckTools, isErasing: $isErasing)
                             .padding(8)
@@ -504,7 +505,7 @@ public struct StudyScreen: View {
                     Spacer()
                     ReviewerVoiceControls(recorder: recorder, stopCardAudio: audio.stop)
                     Spacer()
-                    Button("Hide Recorder", systemImage: "xmark.circle") {
+                    Button(reviewerLocalized("Hide Recorder"), systemImage: "xmark.circle") {
                         recorder.discard()
                         deckTools.recorderShown = false
                     }
@@ -517,10 +518,13 @@ public struct StudyScreen: View {
                 AnswerBar(
                     card: card, showingAnswer: showingAnswer, isAnswering: model.isBusy,
                     minimumPress: Double(preferences.minimumPressMilliseconds) / 1000,
+                    cooldown: .milliseconds(preferences.doubleTapMilliseconds),
                     buttonHeight: Double(preferences.answerButtonSize) * 0.52,
                     hideHardAndEasy: preferences.hideHardAndEasy, showsIntervals: model.showsRatingIntervals
                 ) {
                     dispatch(.showAnswer)
+                } onShortPress: {
+                    feedback = ReviewFeedback(text: String(localized: "Hold Show Answer to reveal the card.", bundle: .module))
                 } onRate: { rating in
                     dispatch(rating.reviewerCommand)
                 }
@@ -531,6 +535,16 @@ public struct StudyScreen: View {
             }
         }
     }
+
+    #if os(iOS)
+    private var whiteboardAlignment: Alignment {
+        switch deckTools.toolbarAlignment ?? .bottom {
+        case .left: .leading
+        case .right: .trailing
+        case .bottom: .bottom
+        }
+    }
+    #endif
 
     @ViewBuilder
     private func cardView(_ display: CardDisplay) -> some View {
@@ -644,11 +658,14 @@ private struct AnswerBar: View {
     let showingAnswer: Bool
     let isAnswering: Bool
     let minimumPress: Double
+    let cooldown: Duration
     let buttonHeight: Double
     let hideHardAndEasy: Bool
     let showsIntervals: Bool
     let onShowAnswer: () -> Void
+    let onShortPress: () -> Void
     let onRate: (Rating) -> Void
+    @State private var lastPress: ContinuousClock.Instant?
 
     var body: some View {
         Group {
@@ -657,15 +674,19 @@ private struct AnswerBar: View {
                     ForEach(hideHardAndEasy ? [.again, .good] : Rating.allCases, id: \.self) { rating in
                         RatingButton(
                             rating: rating, interval: showsIntervals ? card.intervals[rating] : nil,
-                            minimumPress: minimumPress, buttonHeight: buttonHeight
+                            buttonHeight: buttonHeight
                         ) {
-                            onRate(rating)
+                            guarded { onRate(rating) }
                         }
                     }
                 }
                 .disabled(isAnswering)
             } else {
-                ReviewerPressButton(minimumPress: minimumPress, action: onShowAnswer) {
+                ReviewerPressButton(
+                    minimumPress: minimumPress,
+                    action: { guarded(onShowAnswer) },
+                    onShortPress: onShortPress
+                ) {
                     Text("Show Answer", bundle: .module)
                         .font(.headline)
                         .frame(maxWidth: .infinity, minHeight: buttonHeight)
@@ -677,17 +698,23 @@ private struct AnswerBar: View {
         }
         .frame(minHeight: 60)
     }
+
+    private func guarded(_ action: () -> Void) {
+        let now = ContinuousClock.now
+        guard lastPress.map({ now - $0 >= cooldown }) != false else { return }
+        lastPress = now
+        action()
+    }
 }
 
 private struct RatingButton: View {
     let rating: Rating
     let interval: String?
-    let minimumPress: Double
     let buttonHeight: Double
     let action: () -> Void
 
     var body: some View {
-        ReviewerPressButton(minimumPress: minimumPress, action: action) {
+        Button(action: action) {
             VStack(spacing: 2) {
                 if let interval {
                     Text(interval).font(.caption.monospacedDigit().weight(.medium))
@@ -710,14 +737,23 @@ private struct RatingButton: View {
 private struct ReviewerPressButton<Label: View>: View {
     let minimumPress: Double
     let action: () -> Void
+    let onShortPress: () -> Void
     @ViewBuilder let label: () -> Label
+    @State private var held = false
 
     var body: some View {
         if minimumPress == 0 {
             Button(action: action, label: label)
         } else {
-            Button(action: {}, label: label)
-                .simultaneousGesture(LongPressGesture(minimumDuration: minimumPress).onEnded { _ in action() })
+            Button {
+                if held { held = false } else { onShortPress() }
+            } label: {
+                label()
+            }
+            .simultaneousGesture(LongPressGesture(minimumDuration: minimumPress).onEnded { _ in
+                held = true
+                action()
+            })
                 .accessibilityAction { action() }
         }
     }

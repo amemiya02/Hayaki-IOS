@@ -24,18 +24,7 @@ final class ReviewerDrawing {
     }
 
     func save() throws -> URL {
-        let drawing = canvas.drawing
-        guard !drawing.strokes.isEmpty else { throw CocoaError(.fileWriteUnknown) }
-        let exportBounds = drawing.bounds.insetBy(dx: -8, dy: -8)
-        let scale = min(2, 4096 / max(exportBounds.width, exportBounds.height))
-        guard let png = drawing.image(from: exportBounds, scale: scale).pngData() else {
-            throw CocoaError(.fileWriteUnknown)
-        }
-        let folder = URL.documentsDirectory.appending(path: "Whiteboard", directoryHint: .isDirectory)
-        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-        let url = folder.appending(path: "Whiteboard-\(UUID().uuidString).png")
-        try png.write(to: url, options: .atomic)
-        return url
+        try WhiteboardExport.save(canvas.drawing)
     }
 }
 
@@ -104,58 +93,25 @@ struct ReviewerWhiteboardTools: View {
     @State private var showSavedFile = false
 
     var body: some View {
-        HStack(spacing: 16) {
-            Button(
-                options.drawingShown ? "Hide Drawing" : "Show Drawing",
-                systemImage: options.drawingShown ? "eye.slash" : "eye"
-            ) { options.drawingShown.toggle() }
-            if options.drawingShown {
-                Button("Pen", systemImage: "pencil") { isErasing = false }
-                    .foregroundStyle(isErasing ? Color.primary : Color.accentColor)
-                Button("Eraser", systemImage: "eraser") { isErasing = true }
-                    .foregroundStyle(isErasing ? Color.accentColor : Color.primary)
-                Button("Undo Stroke", systemImage: "arrow.uturn.backward") { drawing.canvas.undoManager?.undo() }
-                    .disabled(!drawing.canUndo)
-                Menu {
-                    Button("Redo Stroke", systemImage: "arrow.uturn.forward") { drawing.canvas.undoManager?.redo() }
-                        .disabled(!drawing.canRedo)
-                    Button("Clear Drawing", systemImage: "trash", role: .destructive) { drawing.clear() }
-                        .disabled(!drawing.hasInk)
-                    ColorPicker("Pen Color", selection: penColor, supportsOpacity: false)
-                    Button("Automatic Pen Color") { options.penColor = "automatic" }
-                    Picker("Pen Width", selection: $options.penWidth) {
-                        ForEach([2.0, 4.0, 8.0, 12.0], id: \.self) { Text($0, format: .number).tag($0) }
-                    }
-                    Picker("Eraser Width", selection: $options.eraserWidth) {
-                        ForEach([12.0, 24.0, 36.0, 48.0], id: \.self) { Text($0, format: .number).tag($0) }
-                    }
-                    Toggle("Erase Whole Strokes", isOn: $options.strokeEraser)
-                    Toggle("Apple Pencil Only", isOn: $options.stylusOnly)
-                    Toggle("Tools at Top", isOn: $options.toolbarTop)
-                } label: {
-                    Label("Whiteboard Tools", systemImage: "ellipsis.circle")
-                }
+        let vertical = options.toolbarAlignment == .left || options.toolbarAlignment == .right
+        let layout = vertical ? AnyLayout(VStackLayout(spacing: 12)) : AnyLayout(HStackLayout(spacing: 16))
+        layout {
+            if options.hidesToolbar == true {
+                Button("Show Whiteboard Tools", systemImage: "ellipsis.circle") { options.hidesToolbar = false }
+            } else {
+                controls
             }
-            Button("Save Drawing", systemImage: "square.and.arrow.down") {
-                do {
-                    saved = try drawing.save()
-                    showSavedFile = true
-                } catch {
-                    saveError = error.localizedDescription
-                }
-            }
-            .disabled(!drawing.hasInk)
         }
         .labelStyle(.iconOnly)
         .buttonStyle(.borderless)
         .padding(8)
         .background(.regularMaterial, in: Capsule())
-        .alert("Drawing Saved", isPresented: $showSavedFile) {
+        .alert(reviewerLocalized("Drawing Saved"), isPresented: $showSavedFile) {
             Button("OK", role: .cancel) {}
         } message: {
             if let saved { Text("Files → On My iPhone or iPad → Hayaki → Whiteboard → \(saved.lastPathComponent)") }
         }
-        .alert("Could Not Save Drawing", isPresented: Binding(
+        .alert(reviewerLocalized("Could Not Save Drawing"), isPresented: Binding(
             get: { saveError != nil },
             set: { if !$0 { saveError = nil } }
         )) {
@@ -163,6 +119,85 @@ struct ReviewerWhiteboardTools: View {
         } message: {
             Text(verbatim: saveError ?? "")
         }
+    }
+
+    @ViewBuilder
+    private var controls: some View {
+        Button(
+            options.drawingShown ? "Hide Drawing" : "Show Drawing",
+            systemImage: options.drawingShown ? "eye.slash" : "eye"
+        ) { options.drawingShown.toggle() }
+        if options.drawingShown {
+            Button(reviewerLocalized("Pen"), systemImage: "pencil") { isErasing = false }
+                .foregroundStyle(isErasing ? Color.primary : Color.accentColor)
+            Button(reviewerLocalized("Eraser"), systemImage: "eraser") { isErasing = true }
+                .foregroundStyle(isErasing ? Color.accentColor : Color.primary)
+            Button(reviewerLocalized("Undo Stroke"), systemImage: "arrow.uturn.backward") { drawing.canvas.undoManager?.undo() }
+                .disabled(!drawing.canUndo)
+            Menu {
+                Button(reviewerLocalized("Redo Stroke"), systemImage: "arrow.uturn.forward") { drawing.canvas.undoManager?.redo() }
+                    .disabled(!drawing.canRedo)
+                Button(reviewerLocalized("Clear Drawing"), systemImage: "trash", role: .destructive) { drawing.clear() }
+                    .disabled(!drawing.hasInk)
+                ColorPicker("Pen Color", selection: penColor, supportsOpacity: false)
+                Button("Automatic Pen Color") { options.penColor = "automatic" }
+                Picker("Pen Width", selection: $options.penWidth) {
+                    ForEach([2.0, 4.0, 8.0, 12.0], id: \.self) { Text($0, format: .number).tag($0) }
+                }
+                Picker("Eraser Width", selection: $options.eraserWidth) {
+                    ForEach([12.0, 24.0, 36.0, 48.0], id: \.self) { Text($0, format: .number).tag($0) }
+                }
+                Toggle("Erase Whole Strokes", isOn: $options.strokeEraser)
+                Toggle(reviewerLocalized("Apple Pencil Only"), isOn: $options.stylusOnly)
+                Picker(reviewerLocalized("Whiteboard Toolbar Position"), selection: Binding(
+                    get: { options.toolbarAlignment ?? .bottom },
+                    set: { options.toolbarAlignment = $0 }
+                )) {
+                    ForEach(WhiteboardToolbarAlignment.allCases, id: \.self) {
+                        Text($0.rawValue.capitalized).tag($0)
+                    }
+                }
+                Menu("Brushes", systemImage: "paintpalette") {
+                    ForEach(options.brushes ?? [], id: \.self) { brush in
+                        Menu {
+                            Button("Use Brush") {
+                                options.penColor = brush.color
+                                options.penWidth = brush.width
+                                isErasing = false
+                            }
+                            Button("Remove Brush", role: .destructive) {
+                                options.brushes?.removeAll { $0 == brush }
+                            }
+                        } label: {
+                            Label {
+                                Text("\(brush.width, format: .number) pt")
+                            } icon: {
+                                Image(systemName: "circle.fill")
+                                    .foregroundStyle(Color(uiColor: UIColor(hexRGB: brush.color) ?? .label))
+                            }
+                        }
+                    }
+                    Button("Save Current Brush", systemImage: "plus") {
+                        let brush = ReviewerBrush(color: options.penColor, width: options.penWidth)
+                        var existing = options.brushes ?? []
+                        if !existing.contains(brush) { existing.append(brush) }
+                        options.brushes = existing
+                    }
+                }
+                Button("Hide Whiteboard Tools") { options.hidesToolbar = true }
+            } label: {
+                Label("Whiteboard Tools", systemImage: "ellipsis.circle")
+            }
+        }
+        Button(reviewerLocalized("Save Drawing"), systemImage: "square.and.arrow.down") {
+            do {
+                saved = try drawing.save()
+                showSavedFile = true
+            } catch {
+                saveError = error.localizedDescription
+            }
+        }
+        .disabled(!drawing.hasInk)
     }
 
     private var penColor: Binding<Color> {

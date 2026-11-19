@@ -17,9 +17,9 @@ struct ReviewerVoiceControls: View {
                 ) {
                     if recorder.state == .recording { recorder.pause() } else { recorder.resume() }
                 }
-                Button("Stop Recording", systemImage: "stop.circle") { recorder.stopRecording() }
+                Button(reviewerLocalized("Stop Recording"), systemImage: "stop.circle") { recorder.stopRecording() }
             default:
-                Button("Record Voice", systemImage: "mic.circle") {
+                Button(reviewerLocalized("Record Voice"), systemImage: "mic.circle") {
                     stopCardAudio()
                     Task { await recorder.record() }
                 }

@@ -17,47 +17,47 @@ public struct ReviewerSettingsScreen: View {
     public var body: some View {
         Form {
             if let store { ReviewerCollectionSettings(store: store) }
-            Section("Studying") {
-                Toggle("Keep Screen On", isOn: $preferences.keepScreenOn)
-                Toggle("Center Card Vertically", isOn: $preferences.centerVertically)
-                Toggle("Show Current Card’s Deck", isOn: $preferences.showDeckTitle)
-                Toggle("Show Study Progress", isOn: $preferences.showProgress)
-                Toggle("Show Rating Feedback", isOn: $preferences.showFeedback)
-                Toggle("Show Answer Buttons", isOn: $preferences.showAnswerButtons)
-                Toggle("Hide Hard and Easy", isOn: $preferences.hideHardAndEasy)
-                Toggle("Show Card Frame", isOn: $preferences.cardFrame)
-                Toggle("Hide Status Bar", isOn: $preferences.hideStatusBar)
-                Toggle("Prefer Hidden Home Indicator", isOn: $preferences.hideHomeIndicator)
+            Section(reviewerLocalized("Studying")) {
+                Toggle(reviewerLocalized("Keep Screen On"), isOn: $preferences.keepScreenOn)
+                Toggle(reviewerLocalized("Center Card Vertically"), isOn: $preferences.centerVertically)
+                Toggle(reviewerLocalized("Show Current Card’s Deck"), isOn: $preferences.showDeckTitle)
+                Toggle(reviewerLocalized("Show Study Progress"), isOn: $preferences.showProgress)
+                Toggle(reviewerLocalized("Show Rating Feedback"), isOn: $preferences.showFeedback)
+                Toggle(reviewerLocalized("Show Answer Buttons"), isOn: $preferences.showAnswerButtons)
+                Toggle(reviewerLocalized("Hide Hard and Easy"), isOn: $preferences.hideHardAndEasy)
+                Toggle(reviewerLocalized("Show Card Frame"), isOn: $preferences.cardFrame)
+                Toggle(reviewerLocalized("Hide Status Bar"), isOn: $preferences.hideStatusBar)
+                Toggle(reviewerLocalized("Prefer Hidden Home Indicator"), isOn: $preferences.hideHomeIndicator)
             }
-            Section("Toolbar") {
-                Picker("Position", selection: $preferences.toolbarPosition) {
+            Section(reviewerLocalized("Toolbar")) {
+                Picker(reviewerLocalized("Position"), selection: $preferences.toolbarPosition) {
                     ForEach(ReviewerToolbarPosition.allCases, id: \.self) { Text($0.rawValue.capitalized).tag($0) }
                 }
-                NavigationLink("Toolbar Actions") { ToolbarActionsSettings(preferences: $preferences) }
+                NavigationLink(reviewerLocalized("Toolbar Actions")) { ToolbarActionsSettings(preferences: $preferences) }
             }
-            Section("Controls") {
-                Picker("Tap Zones", selection: $preferences.tapZones) {
-                    Text("Four Edges").tag(ReviewerTapZones.edges)
-                    Text("Nine Zones").tag(ReviewerTapZones.grid)
+            Section(reviewerLocalized("Controls")) {
+                Picker(reviewerLocalized("Tap Zones"), selection: $preferences.tapZones) {
+                    Text("Four Edges", bundle: .module).tag(ReviewerTapZones.edges)
+                    Text("Nine Zones", bundle: .module).tag(ReviewerTapZones.grid)
                 }
                 LabeledContent("Swipe Sensitivity") {
                     Slider(value: decimal(\.swipeSensitivity), in: 50...200, step: 5)
                     Text("\(preferences.swipeSensitivity)%").monospacedDigit()
                 }
-                Picker("Card Side", selection: $side) {
-                    Text("Question").tag(ReviewerSide.question)
-                    Text("Answer").tag(ReviewerSide.answer)
+                Picker(reviewerLocalized("Card Side"), selection: $side) {
+                    Text("Question", bundle: .module).tag(ReviewerSide.question)
+                    Text("Answer", bundle: .module).tag(ReviewerSide.answer)
                 }
                 ForEach(preferences.bindings.filter { $0.side == side }) { binding in
                     ReviewerBindingPicker(preferences: $preferences, input: binding.input, side: side)
                 }
-                Button("Add Binding", systemImage: "plus") { selectingInput = true }
-                Button("Restore Default Bindings") { preferences.bindings = ReviewerPreferences.defaultBindings }
+                Button(reviewerLocalized("Add Binding"), systemImage: "plus") { selectingInput = true }
+                Button(reviewerLocalized("Restore Default Bindings")) { preferences.bindings = ReviewerPreferences.defaultBindings }
             }
             #if os(iOS)
-            NavigationLink("Text-to-Speech Voices") { SpeechVoicesScreen() }
+            NavigationLink(reviewerLocalized("Text-to-Speech Voices")) { SpeechVoicesScreen() }
             #endif
-            Section("Accessibility") {
+            Section(reviewerLocalized("Accessibility")) {
                 LabeledContent("Card Zoom") {
                     Slider(value: decimal(\.cardZoom), in: 10...300, step: 10)
                     Text("\(preferences.cardZoom)%").monospacedDigit()
@@ -70,7 +70,7 @@ public struct ReviewerSettingsScreen: View {
                     Slider(value: decimal(\.answerButtonSize), in: 100...200, step: 10)
                     Text("\(preferences.answerButtonSize)%").monospacedDigit()
                 }
-                Toggle("Reduce Card Animations", isOn: $preferences.reducedMotion)
+                Toggle(reviewerLocalized("Reduce Card Animations"), isOn: $preferences.reducedMotion)
                 LabeledContent("Minimum Answer Press") {
                     Slider(value: decimal(\.minimumPressMilliseconds), in: 0...2000, step: 10)
                     Text("\(preferences.minimumPressMilliseconds) ms").monospacedDigit()
@@ -81,7 +81,7 @@ public struct ReviewerSettingsScreen: View {
                 }
             }
         }
-        .navigationTitle("Reviewer")
+        .navigationTitle(reviewerLocalized("Reviewer"))
         .onChange(of: preferences) { _, value in value.save() }
         .sheet(isPresented: $selectingInput) {
             NavigationStack {
@@ -114,12 +114,12 @@ private struct ToolbarActionsSettings: View {
                 }
             }
             .onMove { preferences.toolbarOrder.move(fromOffsets: $0, toOffset: $1) }
-            Button("Restore Toolbar Defaults") {
+            Button(reviewerLocalized("Restore Toolbar Defaults")) {
                 preferences.toolbarOrder = ReviewerToolbarAction.allCases
                 preferences.toolbarVisibility = [:]
             }
         }
-        .navigationTitle("Toolbar Actions")
+        .navigationTitle(reviewerLocalized("Toolbar Actions"))
         #if os(iOS)
         .toolbar { EditButton() }
         #endif
@@ -133,15 +133,15 @@ private struct ReviewerCollectionSettings: View {
     @State private var saveError: String?
 
     var body: some View {
-        Section("Collection") {
+        Section(reviewerLocalized("Collection")) {
             if let reviewing {
-                Toggle("Show Remaining Counts", isOn: preference(\.showRemainingDueCounts, reviewing))
-                Toggle("Show Next Review on Buttons", isOn: preference(\.showIntervalsOnButtons, reviewing))
-                Toggle("Show Card Audio Play Buttons", isOn: Binding(
+                Toggle(reviewerLocalized("Show Remaining Counts"), isOn: preference(\.showRemainingDueCounts, reviewing))
+                Toggle(reviewerLocalized("Show Next Review on Buttons"), isOn: preference(\.showIntervalsOnButtons, reviewing))
+                Toggle(reviewerLocalized("Show Card Audio Play Buttons"), isOn: Binding(
                     get: { self.reviewing?.hideAudioPlayButtons == false },
                     set: { update(\.hideAudioPlayButtons, to: !$0) }
                 ))
-                Toggle("Interrupt Audio When Answering", isOn: preference(\.interruptAudioWhenAnswering, reviewing))
+                Toggle(reviewerLocalized("Interrupt Audio When Answering"), isOn: preference(\.interruptAudioWhenAnswering, reviewing))
                 let minutes = Int(reviewing.timeLimitSecs) / 60
                 Stepper(
                     minutes == 0 ? "Timebox Off" : "Timebox: \(minutes) min",
@@ -244,7 +244,7 @@ private struct ReviewerNewBinding: View {
                 }
             }
         }
-        .navigationTitle("Add Binding")
+        .navigationTitle(reviewerLocalized("Add Binding"))
         .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } } }
     }
 }
