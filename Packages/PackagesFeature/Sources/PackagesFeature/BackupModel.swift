@@ -1,3 +1,5 @@
+import AnkiCore
+import AnkiProto
 import CollectionStore
 import Foundation
 import Observation
@@ -8,6 +10,24 @@ public struct CollectionBackup: Equatable, Identifiable, Sendable {
     public let date: Date
 
     fileprivate let url: URL
+}
+
+public struct BackupRetention: Equatable, Sendable {
+    public var intervalMinutes: UInt32
+    public var daily: UInt32
+    public var weekly: UInt32
+    public var monthly: UInt32
+
+    public init(intervalMinutes: UInt32, daily: UInt32, weekly: UInt32, monthly: UInt32) {
+        self.intervalMinutes = intervalMinutes
+        self.daily = daily
+        self.weekly = weekly
+        self.monthly = monthly
+    }
+
+    public var isValid: Bool {
+        (5...99_999).contains(intervalMinutes) && daily <= 99_999 && weekly <= 99_999 && monthly <= 99_999
+    }
 }
 
 /// The backups for the collection currently open in the app.
@@ -74,6 +94,34 @@ public final class BackupModel {
         // The common package importer stages the file before asking for
         // replacement, so the pre-restore backup can thin older backups.
         await importer.open(entry.url)
+    }
+
+    public func loadRetention() async -> BackupRetention? {
+        do {
+            let limits = try await store.core.getPreferences().backups
+            return BackupRetention(intervalMinutes: limits.minimumIntervalMins,
+                                   daily: limits.daily, weekly: limits.weekly, monthly: limits.monthly)
+        } catch {
+            status = .failed(error.localizedDescription)
+            return nil
+        }
+    }
+
+    @discardableResult
+    public func saveRetention(_ retention: BackupRetention) async -> Bool {
+        guard retention.isValid, !importer.isImporting else { return false }
+        do {
+            var preferences = try await store.core.getPreferences()
+            preferences.backups.minimumIntervalMins = retention.intervalMinutes
+            preferences.backups.daily = retention.daily
+            preferences.backups.weekly = retention.weekly
+            preferences.backups.monthly = retention.monthly
+            try await store.modify(.setPreferences(preferences))
+            return true
+        } catch {
+            status = .failed(error.localizedDescription)
+            return false
+        }
     }
 
     private func reload() throws {

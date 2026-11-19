@@ -1,3 +1,4 @@
+import AnkiCore
 import CollectionTesting
 import Foundation
 import PackagesFeature
@@ -36,4 +37,24 @@ struct BackupTests {
             #expect(try await store.snapshot() == expected)
         }
     }
+
+    @Test("Changing backup retention preserves unrelated collection preferences")
+    func saveBackupLimits() async throws {
+        try await withTemporaryCollection { store in
+            let folder = try TemporaryFolder()
+            let importer = PackageImportModel(store: store, backupFolder: folder.url)
+            let model = BackupModel(store: store, folder: folder.url, importer: importer)
+            let original = try await store.core.getPreferences()
+            let limits = BackupRetention(intervalMinutes: 30, daily: 2, weekly: 3, monthly: 4)
+
+            await model.saveRetention(limits)
+
+            let reopened = BackupModel(store: store, folder: folder.url, importer: importer)
+            #expect(await reopened.loadRetention() == limits)
+            let saved = try await store.core.getPreferences()
+            #expect(saved.reviewing == original.reviewing)
+            #expect(saved.scheduling == original.scheduling)
+        }
+    }
+
 }

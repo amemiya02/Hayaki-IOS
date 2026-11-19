@@ -62,13 +62,16 @@ public final class AppModel {
         do {
             let core = try await CoreClient(language: language)
             var location = try location()
+            var backupLocation = try backupFolder()
             #if DEBUG
             if let package = UITestLaunch.collectionPackage {
                 location = try await UITestLaunch.collection(from: package, core: core)
+                backupLocation = location.folder.deletingLastPathComponent()
+                    .appendingPathComponent("Backups", isDirectory: true)
             }
             #endif
             let store = try await CollectionStore.open(at: location, core: core)
-            let packageImport = PackageImportModel(store: store, backupFolder: try backupFolder())
+            let packageImport = PackageImportModel(store: store, backupFolder: backupLocation)
             if !preferences.bool(forKey: Self.welcomeCompletedKey) {
                 // Existing collections with cards or user-created decks go
                 // straight to Decks when upgrading.
