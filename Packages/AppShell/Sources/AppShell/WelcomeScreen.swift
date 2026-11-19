@@ -19,6 +19,7 @@ struct WelcomeScreen: View {
                 }
                 Section {
                     ImportPackageButton()
+                    TextImportButton()
                     SharedDecksLink()
                     NavigationLink {
                         SyncScreen(model: sync)

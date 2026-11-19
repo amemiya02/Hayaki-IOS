@@ -24,9 +24,41 @@ struct TextImportTests {
 
             await model.startImport()
 
-            #expect(model.summary?.changes.added.count == 2)
+            #expect(model.summary?.added == 2)
             let fields = try await store.snapshot().notes.map(\.fields)
             #expect(Set(fields) == Set([["sun", "日"], ["moon", "月"]]))
+        }
+    }
+
+    @Test("Updating, preserving, and adding duplicates produce different collection changes")
+    func duplicateResolution() async throws {
+        try await withTemporaryCollection { store in
+            let folder = try TemporaryFolder()
+            let original = folder.url.appendingPathComponent("original.csv")
+            let revision = folder.url.appendingPathComponent("revision.csv")
+            try "Word,Meaning\n".write(to: original, atomically: true, encoding: .utf8)
+            try "Word,Updated meaning\n".write(to: revision, atomically: true, encoding: .utf8)
+            let model = TextImportModel(store: store)
+            await model.prepare(original)
+            await model.startImport()
+            #expect(model.summary?.added == 1)
+
+            await model.prepare(revision)
+            model.updateOptions { $0.dupeResolution = .preserve }
+            await model.startImport()
+            #expect(model.summary?.skipped == 1)
+
+            await model.prepare(revision)
+            model.updateOptions { $0.dupeResolution = .update }
+            await model.startImport()
+            #expect(model.summary?.updated == 1)
+
+            await model.prepare(original)
+            model.updateOptions { $0.dupeResolution = .duplicate }
+            await model.startImport()
+            #expect(model.summary?.added == 1)
+            let storedFields = try await store.snapshot().notes.map(\.fields)
+            #expect(Set(storedFields) == Set([["Word", "Meaning"], ["Word", "Updated meaning"]]))
         }
     }
 }

@@ -18,6 +18,12 @@ final class WelcomeUITests: XCTestCase {
         cancel.tap()
         XCTAssertTrue(startEmpty.waitForExistence(timeout: 10))
 
+        app.buttons["shared-decks"].tap()
+        XCTAssertTrue(app.navigationBars["Get Shared Decks"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.buttons["Import Downloaded Deck"].exists)
+        app.buttons["Done"].tap()
+        XCTAssertTrue(startEmpty.waitForExistence(timeout: 10))
+
         app.buttons["Set Up Sync"].tap()
         XCTAssertTrue(app.navigationBars["Sync"].waitForExistence(timeout: 10))
         app.navigationBars["Sync"].buttons.matching(NSPredicate(format: "label != %@", "Done")).firstMatch.tap()

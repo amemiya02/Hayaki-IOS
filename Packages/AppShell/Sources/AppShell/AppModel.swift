@@ -23,6 +23,7 @@ public final class AppModel {
     public private(set) var backups: BackupModel?
     /// Importing packages into the open collection, once it is ready.
     public private(set) var packageImport: PackageImportModel?
+    public private(set) var textImport: TextImportModel?
     /// Whether the learner should choose how to start the empty collection.
     public private(set) var showsWelcome = false
 
@@ -34,8 +35,8 @@ public final class AppModel {
     @ObservationIgnored private var isOpening = false
     private static let welcomeCompletedKey = "hayakiWelcomeCompleted"
     private static let profilesKey = "hayakiProfiles"
-    /// A package opened from another app before the collection was ready.
-    @ObservationIgnored private var waitingPackage: URL?
+    /// An import file opened from another app before the collection was ready.
+    @ObservationIgnored private var waitingImport: URL?
     @ObservationIgnored private var failedCollection: (location: CollectionLocation, backupFolder: URL)?
     #if DEBUG
     @ObservationIgnored private var loadedFixture = false
@@ -94,9 +95,9 @@ public final class AppModel {
             let (store, folder) = try await openCollection(for: activeProfile, recordRecovery: true)
             let welcome = await shouldShowWelcome(for: activeProfile, in: store)
             showCollection(store, backupFolder: folder, welcome: welcome)
-            if let waiting = waitingPackage {
-                waitingPackage = nil
-                await packageImport?.open(waiting)
+            if let waiting = waitingImport {
+                waitingImport = nil
+                await openPackage(waiting)
             }
         } catch {
             state = .failed(message: error.localizedDescription)
@@ -127,7 +128,8 @@ public final class AppModel {
         guard let target = profiles.first(where: { $0.id == id }) else { throw ProfileError.unavailable }
         guard target != activeProfile else { return }
         guard let previous = store, !isOpening, !isSwitchingProfile,
-              sync?.isBusy == false, packageImport?.isBusy == false, backups?.isBusy == false
+              sync?.isBusy == false, packageImport?.isBusy == false, backups?.isBusy == false,
+              textImport?.isWorking == false
         else { throw ProfileError.busy }
         let saved = try PropertyListEncoder().encode(SavedProfiles(profiles: profiles, activeID: id))
 
@@ -150,6 +152,7 @@ public final class AppModel {
         sync?.keepBoth()
         sync?.password = ""
         packageImport?.cancel()
+        textImport?.dismiss()
         preferences.set(saved, forKey: Self.profilesKey)
         activeProfile = target
         showCollection(next, backupFolder: folder, welcome: welcome)
@@ -201,6 +204,7 @@ public final class AppModel {
         sync = SyncModel(store: store, storage: accountStorage(profileID))
         backups = BackupModel(store: store, folder: backupFolder, importer: importer)
         packageImport = importer
+        textImport = TextImportModel(store: store)
         showsWelcome = welcome
         state = .ready(store)
     }
@@ -251,12 +255,17 @@ public final class AppModel {
         profile.usesLegacyStorage ? Self.welcomeCompletedKey : "\(Self.welcomeCompletedKey).\(profile.id.uuidString)"
     }
 
-    /// Starts importing a package opened in another app or queues it during launch.
+    /// Routes an import file opened in another app or queues it during launch.
     public func openPackage(_ url: URL) async {
-        if let packageImport {
+        guard let packageImport, let textImport else {
+            waitingImport = url
+            return
+        }
+        switch url.pathExtension.lowercased() {
+        case "csv", "tsv", "txt":
+            await textImport.prepare(url)
+        default:
             await packageImport.open(url)
-        } else {
-            waitingPackage = url
         }
     }
 
