@@ -437,14 +437,7 @@ public final class StudySessionModel {
     public func toggleMark() async {
         guard let card = state.card else { return }
         await runAction { () async throws(CoreError) in
-            var note = try await store.core.getNote(.with { $0.nid = card.noteID })
-            if note.tags.contains(where: StudyCard.isMarkTag) {
-                note.tags.removeAll(where: StudyCard.isMarkTag)
-            } else {
-                note.tags.append("marked")
-            }
-            let updatedNote = note
-            try await store.modify(.updateNotes(.with { $0.notes = [updatedNote] }))
+            try await store.toggleNoteMark(card.noteID)
             await redrawShownCard()
             await refreshUndoStatus()
         }

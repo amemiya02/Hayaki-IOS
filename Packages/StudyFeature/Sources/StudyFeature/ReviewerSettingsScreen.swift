@@ -58,6 +58,11 @@ public struct ReviewerSettingsScreen: View {
                 Button(reviewerLocalized("Add Binding"), systemImage: "plus") { selectingInput = true }
                 Button(reviewerLocalized("Restore Default Bindings")) { preferences.bindings = ReviewerPreferences.defaultBindings }
             }
+            NavigationLink {
+                PreviewControlSettings(tapZones: preferences.tapZones)
+            } label: {
+                Text("Preview Controls", bundle: .module)
+            }
             #if os(iOS)
             NavigationLink(reviewerLocalized("Text-to-Speech Voices")) { SpeechVoicesScreen() }
             #endif
@@ -90,7 +95,9 @@ public struct ReviewerSettingsScreen: View {
         .onChange(of: preferences) { _, value in value.save() }
         .sheet(isPresented: $selectingInput) {
             NavigationStack {
-                ReviewerNewBinding(preferences: $preferences, side: side)
+                PhysicalInputSettings(tapZones: preferences.tapZones) { input in
+                    ReviewerBindingPicker(preferences: $preferences, input: input, side: side)
+                }
             }
         }
     }
@@ -275,19 +282,51 @@ private struct ReviewerCollectionSettings: View {
     }
 }
 
-private struct ReviewerNewBinding: View {
-    @Binding var preferences: ReviewerPreferences
-    let side: ReviewerSide
+private struct PreviewControlSettings: View {
+    let tapZones: ReviewerTapZones
+    @State private var controls = PreviewControls.load()
+    @State private var selectingInput = false
+
+    var body: some View {
+        Form {
+            ForEach(controls.bindings) { binding in picker(binding.id) }
+            Button(reviewerLocalized("Add Binding"), systemImage: "plus") { selectingInput = true }
+            Button(reviewerLocalized("Restore Default Bindings")) { controls = PreviewControls() }
+        }
+        .hayakiScrollBackground()
+        .navigationTitle(Text("Preview Controls", bundle: .module))
+        .onChange(of: controls) { _, controls in controls.save() }
+        .sheet(isPresented: $selectingInput) {
+            NavigationStack { PhysicalInputSettings(tapZones: tapZones, picker: picker) }
+        }
+    }
+
+    private func picker(_ input: ReviewerInput) -> some View {
+        Picker(input.title, selection: Binding(
+            get: { controls.command(for: input) },
+            set: { controls.bind($0, to: input) }
+        )) {
+            Text("Unassigned", bundle: .module).tag(PreviewCommand?.none)
+            ForEach(PreviewCommand.allCases, id: \.self) { command in
+                Text(command.title).tag(Optional(command))
+            }
+        }
+    }
+}
+
+private struct PhysicalInputSettings<CommandPicker: View>: View {
+    let tapZones: ReviewerTapZones
+    @ViewBuilder let picker: (ReviewerInput) -> CommandPicker
     @State private var keyName = ""
     @State private var modifiers: Set<ReviewerKey.Modifier> = []
     @FocusState private var capturingKey: Bool
     @Environment(\.dismiss) private var dismiss
 
-    private static let controllerButtons = [
+    private var controllerButtons: [String] { [
         "buttonA", "buttonB", "buttonX", "buttonY", "dpadUp", "dpadDown", "dpadLeft", "dpadRight",
         "leftShoulder", "rightShoulder", "leftTrigger", "rightTrigger", "leftStick", "rightStick",
         "buttonMenu", "buttonOptions", "buttonHome",
-    ]
+    ] }
 
     var body: some View {
         Form {
@@ -313,19 +352,17 @@ private struct ReviewerNewBinding: View {
                     ))
                 }
                 if !keyName.isEmpty {
-                    ReviewerBindingPicker(
-                        preferences: $preferences, input: .key(keyName, modifiers: modifiers), side: side
-                    )
+                    picker(.key(keyName, modifiers: modifiers))
                 }
             }
             Section(reviewerLocalized("Gestures")) {
-                ForEach(preferences.tapZones.gestures + ReviewerGesture.allCases.filter { !$0.isTapZone }, id: \.self) {
-                    ReviewerBindingPicker(preferences: $preferences, input: .gesture($0), side: side)
+                ForEach(tapZones.gestures + ReviewerGesture.allCases.filter { !$0.isTapZone }, id: \.self) {
+                    picker(.gesture($0))
                 }
             }
             Section(reviewerLocalized("Controller")) {
-                ForEach(Self.controllerButtons, id: \.self) {
-                    ReviewerBindingPicker(preferences: $preferences, input: .controller($0), side: side)
+                ForEach(controllerButtons, id: \.self) {
+                    picker(.controller($0))
                 }
             }
         }

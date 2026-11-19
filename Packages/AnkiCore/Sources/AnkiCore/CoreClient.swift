@@ -100,6 +100,23 @@ public final class CoreClient: Sendable {
         }.get()
     }
 
+    /// Updates only the exact mark tag using the latest note on the serialized worker.
+    public func toggleNoteMark(_ noteID: Int64) async throws(CoreError) -> (marked: Bool, changes: Anki_Collection_OpChanges) {
+        try await worker.run {
+            self.execute(.getNote(.with { $0.nid = noteID })).flatMap { current in
+                var note = current
+                let isMark = { (tag: String) in tag.caseInsensitiveCompare("marked") == .orderedSame }
+                let marked = !note.tags.contains(where: isMark)
+                if marked {
+                    note.tags.append("marked")
+                } else {
+                    note.tags.removeAll(where: isMark)
+                }
+                return self.execute(.updateNotes(.with { $0.notes = [note] })).map { (marked, $0) }
+            }
+        }.get()
+    }
+
     /// Atomically applies an undo offer if the core is still at the expected step.
     public func undo(ifLastStep step: UInt32) async throws(CoreError) -> Anki_Collection_OpChangesAfterUndo? {
         try await worker.run {

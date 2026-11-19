@@ -92,6 +92,14 @@ public final class CollectionStore: Sendable {
         return response
     }
 
+    /// Toggles the mark without overwriting fields edited by another feature.
+    @discardableResult
+    public func toggleNoteMark(_ noteID: Int64) async throws(CoreError) -> Bool {
+        let result = try await core.toggleNoteMark(noteID)
+        signal(CollectionChange(result.changes))
+        return result.marked
+    }
+
     public func updateSchedulingPreferences(
         _ update: @Sendable @escaping (inout Anki_Config_Preferences.Scheduling) -> Void
     ) async throws(CoreError) {
