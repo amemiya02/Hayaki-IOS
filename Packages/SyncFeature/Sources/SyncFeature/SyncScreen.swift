@@ -49,6 +49,7 @@ public struct SyncScreen: View {
     @Bindable private var model: SyncModel
     @State private var confirmingDestinationChange = false
     @State private var confirmingFullSync = false
+    @State private var confirmingMetered = false
 
     public init(model: SyncModel) {
         self.model = model
@@ -91,8 +92,32 @@ public struct SyncScreen: View {
                 }
                 SignOutSection(model: model)
             }
+            SyncPolicySection(model: model)
         }
         .navigationTitle(Text("Sync", bundle: .module))
+        .onDisappear { model.dismissMeteredConfirmation() }
+        .onChange(of: model.needsMeteredConfirmation, initial: true) { _, needed in
+            confirmingMetered = needed
+        }
+        .alert(Text("Sync on a Metered Connection?", bundle: .module), isPresented: $confirmingMetered) {
+            Button {
+                Task { await model.confirmMeteredSync(alwaysAllow: false) }
+            } label: {
+                Text("Sync Once", bundle: .module)
+            }
+            Button {
+                Task { await model.confirmMeteredSync(alwaysAllow: true) }
+            } label: {
+                Text("Always Allow", bundle: .module)
+            }
+            Button(role: .cancel) {
+                model.dismissMeteredConfirmation()
+            } label: {
+                Text("Cancel", bundle: .module)
+            }
+        } message: {
+            Text("Syncing can use cellular data or count against this connection’s data limit.", bundle: .module)
+        }
         .alert(Text("Change Sync Destination?", bundle: .module), isPresented: $confirmingDestinationChange) {
             Button {
                 model.beginDestinationChange()

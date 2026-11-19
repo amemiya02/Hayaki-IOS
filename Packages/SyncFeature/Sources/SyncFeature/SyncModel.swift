@@ -14,6 +14,17 @@ public final class SyncModel {
         case selfHosted
     }
 
+    public enum Badge: Equatable, Sendable {
+        case signedOut
+        case pendingChanges
+        case oneWay
+    }
+
+    public enum AutomaticTrigger: Sendable {
+        case foreground
+        case background
+    }
+
     public enum Status: Equatable, Sendable {
         case idle
         case signingIn
@@ -63,6 +74,19 @@ public final class SyncModel {
     public var network: SyncNetwork? { networkOverride?() ?? observedNetwork }
     public var needsMeteredConfirmation: Bool { pendingMeteredAction != nil }
 
+    public var badge: Badge? {
+        guard policy.showsStatusBadge else { return nil }
+        return account == nil ? .signedOut : lastKnownBadge
+    }
+
+    private var lastKnownBadge: Badge?
+    private var checkingStatus = false
+    @ObservationIgnored private var didCancelStatusCheck = false
+    @ObservationIgnored private var lastAttempt: Date? {
+        didSet { preferences?.set(lastAttempt, forKey: "\(policyKey).lastAttempt") }
+    }
+    @ObservationIgnored private let now: () -> Date
+
     private enum MeteredAction {
         case collection
         case fullSync(upload: Bool)
@@ -98,13 +122,16 @@ public final class SyncModel {
         storage: any SyncAccountStorage = KeychainSyncAccountStorage(),
         preferences: UserDefaults? = nil,
         profileID: UUID? = nil,
-        network: (() -> SyncNetwork)? = nil
+        network: (() -> SyncNetwork)? = nil,
+        now: @escaping () -> Date = Date.init
     ) {
         self.store = store
         self.storage = storage
         self.preferences = preferences
         let key = profileID.map { "hayakiSyncPolicy.\($0.uuidString)" } ?? "hayakiSyncPolicy"
         policyKey = key
+        self.now = now
+        lastAttempt = preferences?.object(forKey: "\(key).lastAttempt") as? Date
         policy = preferences?.data(forKey: key)
             .flatMap { try? PropertyListDecoder().decode(SyncPolicy.self, from: $0) } ?? SyncPolicy()
         networkOverride = network
@@ -138,7 +165,7 @@ public final class SyncModel {
 
     /// Whether signing in or a collection or media sync is under way.
     public var isBusy: Bool {
-        if markingFullSync { return true }
+        if markingFullSync || checkingStatus { return true }
         return switch status {
         case .signingIn, .syncing: true
         default:
@@ -241,6 +268,8 @@ public final class SyncModel {
             return
         }
         self.account = account
+        lastAttempt = nil
+        lastKnownBadge = nil
         mediaStatus = .idle
         statusBeforeDestinationChange = nil
         userName = account.userName
@@ -257,6 +286,8 @@ public final class SyncModel {
             return
         }
         account = nil
+        lastAttempt = nil
+        lastKnownBadge = nil
         mediaStatus = .idle
         dismissMeteredConfirmation()
         confirmedMeteredConflict = false
@@ -268,8 +299,96 @@ public final class SyncModel {
     /// Syncs the collection with the server: sends this device's changes and
     /// fetches the server's. When the two cannot be merged, stops at
     /// `.choosingDirection` without changing either side.
+    public var canStartManualSync: Bool {
+        guard account != nil, !isBusy, !isChangingDestination else { return false }
+        if case .choosingDirection = status { return false }
+        return true
+    }
+
     public func sync() async {
         await request(.collection)
+    }
+
+    /// Checks the upstream status before transferring. Unchanged collections
+    /// can transfer media independently. A background trigger skips the foreground cooldown.
+    public func automaticSync(_ trigger: AutomaticTrigger) async {
+        guard policy.automatic, networkAllowsAutomaticTransfer, let account,
+              canCheckStatus, pendingMeteredAction == nil
+        else { return }
+        if trigger == .foreground, let lastAttempt, now().timeIntervalSince(lastAttempt) <= 600 { return }
+
+        meterPermissionForActiveTransfer = policy.allowsMetered
+        defer {
+            lastAttempt = now()
+            meterPermissionForActiveTransfer = nil
+        }
+
+        let previousStatus = status
+        status = .syncing(.connecting)
+        do {
+            let required = try await checkStatus(for: account)
+            guard !didCancelStatusCheck, networkAllowsAutomaticTransfer else {
+                status = previousStatus
+                return
+            }
+            if required == .normalSync || required == .fullSync {
+                await syncCollection(meteredConsent: false)
+            } else {
+                // A manually cancelled media transfer stays paused until a manual sync or retry.
+                guard mediaStatus != .cancelled, policy.media.allows(network) else {
+                    status = previousStatus
+                    return
+                }
+                let outcome = SyncOutcome(kind: .merged, serverMessage: nil)
+                status = .synced(outcome)
+                await syncMedia(after: outcome)
+            }
+        } catch {
+            status = .failed(SyncFailure(error, server: account.server, signingIn: false))
+        }
+    }
+
+    /// Reads pending collection work for the Decks sync control.
+    public func refreshBadge() async {
+        guard policy.showsStatusBadge, networkAllowsAutomaticTransfer,
+              let account, canCheckStatus
+        else { return }
+        do {
+            _ = try await checkStatus(for: account)
+        } catch {
+            lastKnownBadge = nil
+        }
+    }
+
+    private var canCheckStatus: Bool {
+        guard store.allowsNewProfileWork, !isBusy, !isChangingDestination else { return false }
+        if case .choosingDirection = status { return false }
+        return true
+    }
+
+    private var networkAllowsAutomaticTransfer: Bool {
+        network == .unmetered || (network == .metered && policy.allowsMetered)
+    }
+
+    private func checkStatus(for account: SyncAccount) async throws(CoreError) -> Anki_Sync_SyncStatusResponse.Required {
+        checkingStatus = true
+        didCancelStatusCheck = false
+        cancelRunning = { [weak self] in self?.didCancelStatusCheck = true }
+        defer {
+            cancelRunning = nil
+            checkingStatus = false
+        }
+        SyncClientIdentity.install()
+        let result = try await store.core.syncStatus(account.auth(timeoutSeconds: policy.timeoutSeconds))
+        if result.hasNewEndpoint, let failure = follow(newEndpoint: result.newEndpoint, for: account) {
+            throw CoreError(kind: .invalidInput, message: failure.message)
+        }
+        lastKnownBadge = switch result.required {
+        case .noChanges, .UNRECOGNIZED: nil
+        case .normalSync: .pendingChanges
+        case .fullSync: .oneWay
+        }
+        return result.required
     }
 
     public func dismissMeteredConfirmation() {
@@ -297,7 +416,10 @@ public final class SyncModel {
 
     private func perform(_ action: MeteredAction, meteredConsent: Bool) async {
         meterPermissionForActiveTransfer = policy.allowsMetered || meteredConsent
-        defer { meterPermissionForActiveTransfer = nil }
+        defer {
+            lastAttempt = now()
+            meterPermissionForActiveTransfer = nil
+        }
         switch action {
         case .collection:
             await syncCollection(meteredConsent: meteredConsent)
@@ -342,10 +464,13 @@ public final class SyncModel {
         }
         switch response.required {
         case .fullSync:
+            lastKnownBadge = .oneWay
             status = .choosingDirection(.either)
         case .fullDownload:
+            lastKnownBadge = .oneWay
             status = .choosingDirection(.downloadOnly)
         case .fullUpload:
+            lastKnownBadge = .oneWay
             status = .choosingDirection(.uploadOnly)
         case .noChanges, .normalSync, .UNRECOGNIZED:
             // A finished normal sync reports no further changes required.
@@ -376,6 +501,7 @@ public final class SyncModel {
         do {
             _ = try await store.core.runDbCommand(.with { $0.json = command })
             store.signal(.everything)
+            lastKnownBadge = .oneWay
             status = .fullSyncRequested
             return true
         } catch {
@@ -438,6 +564,7 @@ public final class SyncModel {
 
     private func finishCollectionSync(_ outcome: SyncOutcome) async {
         store.signal(.everything)
+        lastKnownBadge = nil
         status = .synced(outcome)
         await syncMedia(after: outcome)
     }

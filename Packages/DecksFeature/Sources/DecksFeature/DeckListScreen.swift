@@ -19,7 +19,7 @@ public struct DeckPresentation: Identifiable, Equatable, Sendable {
 
 /// The Decks section: every deck as a nested list with today's counts. Tapping
 /// a deck starts studying it, full screen.
-public struct DeckListScreen: View {
+public struct DeckListScreen<SyncControl: View>: View {
     @State private var model: DeckListModel
     @State private var studying: StudyDeck?
     @State private var optionsDeck: DeckNode?
@@ -31,14 +31,17 @@ public struct DeckListScreen: View {
     @Environment(\.scenePhase) private var scenePhase
     private let store: CollectionStore
     private let profileID: UUID?
+    private let syncControl: SyncControl
 
     public init(
         store: CollectionStore,
         profileID: UUID? = nil,
-        presentation: Binding<DeckPresentation?> = .constant(nil)
+        presentation: Binding<DeckPresentation?> = .constant(nil),
+        @ViewBuilder syncControl: () -> SyncControl
     ) {
         self.store = store
         self.profileID = profileID
+        self.syncControl = syncControl()
         _presentation = presentation
         _model = State(initialValue: DeckListModel(store: store))
     }
@@ -50,6 +53,9 @@ public struct DeckListScreen: View {
                 .background { deckBackground }
                 .navigationTitle(Text("Decks", bundle: .module))
                 .toolbar {
+                    ToolbarItem(placement: .primaryAction) {
+                        syncControl
+                    }
                     ToolbarItem(placement: .primaryAction) {
                         ImportPackageButton()
                     }
@@ -337,5 +343,16 @@ private struct CountsView: View {
         Text(value, format: .number)
             .foregroundStyle(value == 0 ? Color.secondary : color)
             .frame(minWidth: 24, alignment: .trailing)
+    }
+}
+
+
+public extension DeckListScreen where SyncControl == EmptyView {
+    init(
+        store: CollectionStore,
+        profileID: UUID? = nil,
+        presentation: Binding<DeckPresentation?> = .constant(nil)
+    ) {
+        self.init(store: store, profileID: profileID, presentation: presentation) { EmptyView() }
     }
 }

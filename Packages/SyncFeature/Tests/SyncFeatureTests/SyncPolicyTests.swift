@@ -42,4 +42,70 @@ struct SyncPolicyTests {
             #expect(model.needsMeteredConfirmation)
         }
     }
+
+    @Test("Automatic sync respects the foreground attempt interval and transfers on background")
+    func automaticSyncAndBadge() async throws {
+        let server = try await SyncServer(users: [("alice", "correct horse")])
+        try await withTemporaryCollection { local in
+            var now = Date(timeIntervalSince1970: 10_000)
+            var network = SyncNetwork.unmetered
+            let model = SyncModel(
+                store: local, storage: MemoryAccountStorage(),
+                network: { network }, now: { now }
+            )
+            #expect(model.badge == .signedOut)
+            model.selectDestination(.selfHosted)
+            model.serverAddress = server.address
+            model.userName = "alice"
+            model.password = "correct horse"
+            await model.signIn()
+            try #require(model.account != nil)
+            let deck = try await local.addDeck(named: "Automatic")
+            try await local.addBasicNotes(count: 1, toDeck: deck)
+            model.policy.media = .never
+
+            await model.automaticSync(.foreground)
+            #expect(model.status == .idle)
+            await model.sync()
+            #expect(model.badge == .oneWay)
+            await model.upload()
+
+            model.policy.automatic = true
+            try await local.addBasicNotes(count: 1, toDeck: deck)
+            await model.refreshBadge()
+            #expect(model.badge == .pendingChanges)
+            model.policy.showsStatusBadge = false
+            #expect(model.badge == nil)
+            model.policy.showsStatusBadge = true
+
+            await model.automaticSync(.foreground)
+            #expect(model.badge == .pendingChanges)
+            network = .metered
+            now.addTimeInterval(601)
+            await model.automaticSync(.foreground)
+            #expect(model.badge == .pendingChanges)
+            #expect(!model.needsMeteredConfirmation)
+
+            network = .unmetered
+            await model.automaticSync(.foreground)
+            #expect(model.badge == nil)
+            try await local.addBasicNotes(count: 1, toDeck: deck)
+            await model.automaticSync(.background)
+            #expect(model.status == .synced(SyncOutcome(kind: .merged, serverMessage: nil)))
+            #expect(model.mediaStatus == .idle)
+
+            try await withTemporaryCollection { other in
+                let reader = SyncModel(store: other, storage: MemoryAccountStorage(), network: { .unmetered })
+                reader.selectDestination(.selfHosted)
+                reader.serverAddress = server.address
+                reader.userName = "alice"
+                reader.password = "correct horse"
+                await reader.signIn()
+                await reader.sync()
+                await reader.download()
+                let count = try await other.cardCount(matching: "deck:Automatic")
+                #expect(count == 3)
+            }
+        }
+    }
 }
