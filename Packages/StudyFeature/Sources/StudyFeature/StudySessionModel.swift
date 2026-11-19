@@ -135,6 +135,8 @@ public final class StudySessionModel {
             await start()
         }
         for await change in changes where !change.isDisjoint(with: [.note, .noteText, .notetype]) {
+            // Reviewer actions refresh after applying their own changes.
+            guard !isPerformingAction else { continue }
             await redrawShownCard()
             await refreshUndoStatus()
         }
@@ -151,6 +153,8 @@ public final class StudySessionModel {
             case .answer(let shown) where shown.id == card.id: state = .answer(redrawnAnswer)
             default: break
             }
+        } catch where error.kind == .notFoundError {
+            await showNextCard()
         } catch {
             state = .failed(message: error.message)
         }
@@ -301,6 +305,58 @@ public final class StudySessionModel {
             }))
             await redrawShownCard()
             await refreshUndoStatus()
+        }
+    }
+
+    public var isCurrentNoteMarked: Bool { state.card?.isNoteMarked == true }
+
+    public func toggleMark() async {
+        guard let card = state.card else { return }
+        await runAction { () async throws(CoreError) in
+            var note = try await store.core.getNote(.with { $0.nid = card.noteID })
+            if note.tags.contains(where: StudyCard.isMarkTag) {
+                note.tags.removeAll(where: StudyCard.isMarkTag)
+            } else {
+                note.tags.append("marked")
+            }
+            let updatedNote = note
+            try await store.modify(.updateNotes(.with { $0.notes = [updatedNote] }))
+            await redrawShownCard()
+            await refreshUndoStatus()
+        }
+    }
+
+    public func setDueDate(_ days: String) async {
+        guard let card = state.card else { return }
+        await runAction { () async throws(CoreError) in
+            try await store.modify(.setDueDate(.with {
+                $0.cardIds = [card.id]
+                $0.days = days
+            }))
+            await showNextCard()
+        }
+    }
+
+    public func resetProgress() async {
+        guard let card = state.card else { return }
+        await runAction { () async throws(CoreError) in
+            let defaults = try await store.core.scheduleCardsAsNewDefaults(.with { $0.context = .reviewer })
+            try await store.modify(.scheduleCardsAsNew(.with {
+                $0.cardIds = [card.id]
+                $0.log = true
+                $0.restorePosition = defaults.restorePosition
+                $0.resetCounts = defaults.resetCounts
+                $0.context = .reviewer
+            }))
+            await showNextCard()
+        }
+    }
+
+    public func deleteNote() async {
+        guard let card = state.card else { return }
+        await runAction { () async throws(CoreError) in
+            try await store.modify(.removeNotes(.with { $0.cardIds = [card.id] }))
+            await showNextCard()
         }
     }
 
