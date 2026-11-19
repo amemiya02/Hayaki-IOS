@@ -103,6 +103,26 @@ struct AttachImageTests {
         }
     }
 
+    @Test("Cropping an attached image replaces its source without changing the field text")
+    func cropImage() async throws {
+        try await withTemporaryCollection { store in
+            let model = NoteEditorModel(store: store)
+            await model.load()
+            let original = try TestImage.encoded(as: .png)
+            model.setText("Front", ofField: 0)
+            try await model.attachImage(original, toField: 0)
+            let oldName = try #require(model.fields[0].images.first)
+            try await model.cropImage(named: oldName, to: CGRect(x: 0.25, y: 0.25, width: 0.5, height: 0.5), inField: 0)
+            let newName = try #require(model.fields[0].images.first)
+            #expect(newName != oldName)
+            #expect(model.fields[0].text == "Front")
+            let source = try #require(CGImageSourceCreateWithURL(model.mediaFile(named: newName) as CFURL, nil))
+            let cropped = try #require(CGImageSourceCreateImageAtIndex(source, 0, nil))
+            #expect(cropped.width == 4 && cropped.height == 4)
+            #expect(await model.add().isAdded)
+        }
+    }
+
     @Test("Data that is not an image is refused")
     func notAnImage() async throws {
         try await withTemporaryCollection { store in
