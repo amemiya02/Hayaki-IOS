@@ -1,6 +1,22 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "The import was cancelled because “%@” could not open." : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "「%@」を開けなかったため、インポートをキャンセルしました。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "由于无法打开“%@”，导入已取消。"
+          }
+        }
+      }
+    },
     "Profiles" : {
       "localizations" : {
         "ja" : {

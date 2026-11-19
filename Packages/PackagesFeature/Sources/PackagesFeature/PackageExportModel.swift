@@ -81,22 +81,26 @@ public final class PackageExportModel {
     /// Whether the choices make a package: a deck package needs at least one
     /// deck.
     public var canExport: Bool {
-        !isExporting && (selection.map { $0.count > 0 } ?? (kind == .collectionPackage || !selectedDeckIDs.isEmpty))
+        store.allowsNewProfileWork && !isExporting
+            && (selection.map { $0.count > 0 } ?? (kind == .collectionPackage || !selectedDeckIDs.isEmpty))
     }
 
     /// Lists the decks the learner can choose from.
     public func loadDecks() async {
-        guard selection == nil else { return }
+        guard selection == nil, store.allowsNewProfileWork else { return }
         decks = (try? await allDecks()) ?? decks
     }
 
     /// Writes the package. Ignored while an export is running or when nothing
     /// is chosen.
     public func export() async {
-        guard canExport else { return }
+        guard canExport, store.beginPackageExport() else { return }
         cancelRequested = false
         step = .exporting(progress: nil)
-        defer { cancelRunningOperation = nil }
+        defer {
+            store.endPackageExport()
+            cancelRunningOperation = nil
+        }
         do {
             try FileManager.default.createDirectory(at: exportFolder, withIntermediateDirectories: true)
             let exported: ExportedPackage

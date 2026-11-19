@@ -20,7 +20,8 @@ public final class AppModel {
     public private(set) var state: State = .opening
     public private(set) var profiles: [CollectionProfile]
     public private(set) var activeProfile: CollectionProfile
-    public private(set) var isSwitchingProfile = false
+    public var isSwitchingProfile: Bool { switchDestination != nil }
+    private var switchDestination: UUID?
     public private(set) var sync: SyncModel?
     public private(set) var backups: BackupModel?
     /// Importing packages into the open collection, once it is ready.
@@ -39,10 +40,11 @@ public final class AppModel {
     var decksRequested: UUID?
     var deckPresentation: DeckPresentation?
     var deckLinkError: String?
+    var packageLinkError: String?
     @ObservationIgnored private var isRouting = false
 
     var collectionIsIdle: Bool {
-        store != nil && !isSwitchingProfile && sync?.isBusy == false
+        store?.isExportingPackage == false && !isSwitchingProfile && sync?.isBusy == false
             && packageImport?.isBusy == false && textImport?.isWorking == false && backups?.isBusy == false
     }
 
@@ -58,8 +60,32 @@ public final class AppModel {
     @ObservationIgnored private var isOpening = false
     private static let welcomeCompletedKey = "hayakiWelcomeCompleted"
     private static let profilesKey = "hayakiProfiles"
-    /// An import file opened from another app before the collection was ready.
-    @ObservationIgnored private var waitingImport: URL?
+    private struct ImportRequest {
+        let profileID: UUID
+        let file: ImportURL
+    }
+
+    /// Keeps a Files provider's resource accessible until its importer has staged a copy.
+    private final class ImportURL {
+        let url: URL
+        private let isSecurityScoped: Bool
+
+        init(_ url: URL) {
+            self.url = url
+            isSecurityScoped = url.startAccessingSecurityScopedResource()
+        }
+
+        deinit {
+            if isSecurityScoped { url.stopAccessingSecurityScopedResource() }
+        }
+    }
+
+    private var waitingImports: [ImportRequest] = []
+
+    var canRouteWaitingImport: Bool {
+        collectionIsIdle && packageImport?.step == .idle && textImport?.isPresented == false
+            && waitingImports.contains { $0.profileID == activeProfile.id }
+    }
     @ObservationIgnored private var failedCollection: (location: CollectionLocation, backupFolder: URL)?
     #if DEBUG
     @ObservationIgnored private var loadedFixture = false
@@ -120,10 +146,7 @@ public final class AppModel {
             let (store, folder) = try await openCollection(for: activeProfile, recordRecovery: true)
             let welcome = await shouldShowWelcome(for: activeProfile, in: store)
             showCollection(store, backupFolder: folder, welcome: welcome)
-            if let waiting = waitingImport {
-                waitingImport = nil
-                await openPackage(waiting)
-            }
+            await routeWaitingImport()
         } catch {
             state = .failed(message: error.localizedDescription)
         }
@@ -155,19 +178,29 @@ public final class AppModel {
         guard let previous = store, !isOpening, canHandleExtensionWork else { throw ProfileError.busy }
         let saved = try PropertyListEncoder().encode(SavedProfiles(profiles: profiles, activeID: id))
 
-        isSwitchingProfile = true
+        switchDestination = id
         previous.allowsNewProfileWork = false
-        defer {
-            isSwitchingProfile = false
-            if activeProfile.id != id { previous.allowsNewProfileWork = true }
-        }
 
-        let (next, folder) = try await openCollection(for: target)
-        let welcome = await shouldShowWelcome(for: target, in: next)
+        let next: CollectionStore
+        let folder: URL
+        let welcome: Bool
         do {
-            try await previous.close()
+            (next, folder) = try await openCollection(for: target)
+            welcome = await shouldShowWelcome(for: target, in: next)
+            do {
+                try await previous.close()
+            } catch {
+                try? await next.close()
+                throw error
+            }
         } catch {
-            try? await next.close()
+            previous.allowsNewProfileWork = true
+            switchDestination = nil
+            if waitingImports.contains(where: { $0.profileID == id }) {
+                waitingImports.removeAll { $0.profileID == id }
+                packageLinkError = String(localized: "The import was cancelled because “\(target.name)” could not open.",
+                                          bundle: .module)
+            }
             throw error
         }
         sync?.cancelDestinationChange()
@@ -181,6 +214,8 @@ public final class AppModel {
         deckPresentation = nil
         activeProfile = target
         showCollection(next, backupFolder: folder, welcome: welcome)
+        switchDestination = nil
+        await routeWaitingImport()
     }
 
     private func openCollection(for profile: CollectionProfile, recordRecovery: Bool = false) async throws -> (CollectionStore, URL) {
@@ -306,18 +341,25 @@ public final class AppModel {
         profile.usesLegacyStorage ? Self.welcomeCompletedKey : "\(Self.welcomeCompletedKey).\(profile.id.uuidString)"
     }
 
-    /// Routes an import file opened in another app or queues it during launch.
+    /// Routes an import file into the profile being opened, or the active profile.
     public func openPackage(_ url: URL) async {
-        guard let packageImport, let textImport else {
-            waitingImport = url
-            return
-        }
+        waitingImports.append(ImportRequest(profileID: switchDestination ?? activeProfile.id, file: ImportURL(url)))
+        await routeWaitingImport()
+    }
+
+    func routeWaitingImport() async {
+        guard canRouteWaitingImport, let packageImport, let textImport,
+              let index = waitingImports.firstIndex(where: { $0.profileID == activeProfile.id }) else { return }
+        let request = waitingImports.remove(at: index)
+        let url = request.file.url
         switch url.pathExtension.lowercased() {
         case "csv", "tsv", "txt":
             await textImport.prepare(url)
         default:
             await packageImport.open(url)
         }
+        // The provider may revoke access as soon as the request is released.
+        withExtendedLifetime(request) {}
     }
 
     /// The language the app's own screens are shown in.

@@ -204,6 +204,40 @@ struct ProfilesTests {
         try await reopened.close()
     }
 
+    @Test("A collection package export keeps the current profile open through its reopen")
+    func switchWaitsForCollectionExport() async throws {
+        let folder = try TemporaryFolder()
+        let location = CollectionLocation(folder: folder.url.appendingPathComponent("Collection"))
+        let backups = folder.url.appendingPathComponent("Backups")
+        let exports = folder.url.appendingPathComponent("Exports")
+        let suite = "HayakiProfilesTests.\(UUID())"
+        let preferences = try #require(UserDefaults(suiteName: suite))
+        defer { preferences.removePersistentDomain(forName: suite) }
+        let app = AppModel(location: { location }, backupFolder: { backups }, language: "en", preferences: preferences)
+        await app.open()
+        let original = app.activeProfile
+        let current = try #require(app.store)
+        let next = try app.addProfile(named: "Next")
+        let exporter = PackageExportModel(store: current, exportFolder: exports)
+
+        let export = Task { await exporter.export() }
+        while exporter.step == .choosing { await Task.yield() }
+        try #require(exporter.isExporting)
+        await #expect(throws: ProfileError.busy) { try await app.switchProfile(to: next.id) }
+        await export.value
+
+        guard case .finished = exporter.step else {
+            Issue.record("Expected the current collection to finish exporting, got \(exporter.step)")
+            return
+        }
+        #expect(app.activeProfile == original)
+        try await app.switchProfile(to: next.id)
+        #expect(!exporter.canExport)
+        #expect(app.activeProfile == next)
+        #expect(try await app.store?.deckNames() == ["Default"])
+        try await app.store?.close()
+    }
+
     @Test("An active sync blocks switching until the core stops")
     func switchWaitsForActiveSync() async throws {
         let folder = try TemporaryFolder()

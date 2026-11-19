@@ -31,6 +31,36 @@ struct OpeningPackagesTests {
         try await app.store?.close()
     }
 
+    @Test("A file received during a profile switch opens in the incoming profile")
+    func openedDuringSwitch() async throws {
+        let folder = try TemporaryFolder()
+        let location = CollectionLocation(folder: folder.url.appendingPathComponent("Collection"))
+        let backup = folder.url.appendingPathComponent("Backups")
+        let domain = "dev.hayaki.OpeningPackages.\(UUID())"
+        let preferences = try #require(UserDefaults(suiteName: domain))
+        defer { preferences.removePersistentDomain(forName: domain) }
+        let app = AppModel(location: { location }, backupFolder: { backup }, language: "en", preferences: preferences)
+        await app.open()
+        let oldImporter = try #require(app.packageImport)
+        let incoming = try app.addProfile(named: "Incoming")
+
+        let switching = Task { try await app.switchProfile(to: incoming.id) }
+        while !app.isSwitchingProfile && app.activeProfile != incoming { await Task.yield() }
+        try #require(app.isSwitchingProfile)
+        await app.openPackage(FixturePackage.basicDeck.url)
+        try await switching.value
+
+        #expect(oldImporter.step == .idle)
+        #expect(app.activeProfile == incoming)
+        let newImporter = try #require(app.packageImport)
+        guard case .choosingMergeOptions(let package) = newImporter.step else {
+            Issue.record("Expected merge choices in the incoming profile, got \(newImporter.step)")
+            return
+        }
+        #expect(package.name == "basic.apkg")
+        try await app.store?.close()
+    }
+
     @Test("A package opened while the app is running starts an import")
     func openedWhileRunning() async throws {
         let folder = try TemporaryFolder()

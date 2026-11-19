@@ -1,6 +1,7 @@
 import AnkiCore
 import AnkiProto
 import Foundation
+import Observation
 import Synchronization
 
 /// The learner's open collection.
@@ -9,13 +10,31 @@ import Synchronization
 /// owns opening, closing and replacing it. Feature models read through `core`
 /// and make every change that modifies the collection through `modify(_:)`,
 /// which signals the change to every subscriber of `changes()`.
+@Observable
 public final class CollectionStore: Sendable {
     /// The Core Client the collection is open in. Use it directly for calls
     /// that only read.
     public let core: CoreClient
     public let location: CollectionLocation
-    /// Package and sync actions stop accepting new work while the app switches away from this store.
-    @MainActor public var allowsNewProfileWork = true
+    /// Package and sync actions stop accepting new work while the app switches away
+    /// from this store or exports a package that could temporarily close it.
+    @MainActor private var acceptingProfileWork = true
+    @MainActor public var allowsNewProfileWork: Bool {
+        get { acceptingProfileWork && !isExportingPackage }
+        set { acceptingProfileWork = newValue }
+    }
+    /// A package export can temporarily close the collection.
+    @MainActor public private(set) var isExportingPackage = false
+
+    @MainActor public func beginPackageExport() -> Bool {
+        guard allowsNewProfileWork else { return false }
+        isExportingPackage = true
+        return true
+    }
+
+    @MainActor public func endPackageExport() {
+        isExportingPackage = false
+    }
     private let subscribers = Mutex<[UUID: AsyncStream<CollectionChange>.Continuation]>([:])
 
     private init(core: CoreClient, location: CollectionLocation) {
