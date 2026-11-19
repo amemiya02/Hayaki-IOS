@@ -139,9 +139,9 @@ final class AppExtensions {
             guard editor.state == .ready, !Task.isCancelled else { return }
             let deckExists = editor.decks.contains { $0.id == draft.deckID }
             let typeExists = editor.notetypes.contains { $0.id == draft.noteTypeID }
-            if deckExists { editor.selectDeck(draft.deckID) }
             if typeExists { await editor.selectNotetype(draft.noteTypeID) }
             guard editor.state == .ready, !Task.isCancelled else { return }
+            if deckExists { editor.selectDeck(draft.deckID) }
             let fieldsMatch = editor.fields.map(\.name) == draft.fieldNames && editor.fields.count == draft.values.count
             if fieldsMatch {
                 for (index, value) in draft.values.enumerated() { editor.setText(value, ofField: index) }

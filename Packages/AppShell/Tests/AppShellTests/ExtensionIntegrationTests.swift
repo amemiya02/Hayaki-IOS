@@ -42,7 +42,7 @@ func sharedTextAddsNote() async throws {
         let deck = try await store.addDeck(named: "Phrases")
         await service.publish(store: store, profile: profile, isCurrent: { true })
         let snapshot = try #require(bridge.snapshot())
-        let noteType = try #require(snapshot.noteTypes.first { $0.name == "Basic" })
+        let noteType = try #require(snapshot.noteTypes.first { $0.name == "Basic (type in the answer)" })
         let draft = SharedNote(
             profileID: profile.id, deckID: deck, noteTypeID: noteType.id, fieldNames: noteType.fields,
             values: ["one < two\n二", "answer"], mode: .quickAdd
@@ -58,6 +58,7 @@ func sharedTextAddsNote() async throws {
         let card = try await store.core.getCard(.with { $0.cid = cid })
         let note = try await store.core.getNote(.with { $0.nid = card.noteID })
         #expect(card.deckID == deck)
+        #expect(note.notetypeID == noteType.id)
         #expect(note.fields == ["one &lt; two<br>二", "answer"])
         await service.publish(store: store, profile: profile, isCurrent: { true })
         #expect(bridge.snapshot()?.decks.first(where: { $0.id == deck })?.new == 1)

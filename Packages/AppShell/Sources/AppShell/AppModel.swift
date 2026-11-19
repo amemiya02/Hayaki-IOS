@@ -235,29 +235,29 @@ public final class AppModel {
     }
 
     func routeWaitingDeckLink() async {
-        guard canHandleExtensionWork, !isOpening, !isRouting, let request = waitingDeckLink else { return }
+        guard !isRouting else { return }
         isRouting = true
         defer { isRouting = false }
-        do {
-            if let profileID = request.link.profileID, profileID != activeProfile.id {
-                try await switchProfile(to: profileID)
+
+        while canHandleExtensionWork, !isOpening, let request = waitingDeckLink {
+            do {
+                if let profileID = request.link.profileID, profileID != activeProfile.id {
+                    try await switchProfile(to: profileID)
+                }
+                guard request == waitingDeckLink else { continue }
+                completeWelcome()
+                if case .deck(_, let id, let action) = request.link {
+                    deckPresentation = DeckPresentation(deckID: id, showsOptions: action == .options)
+                } else {
+                    deckPresentation = nil
+                }
+                decksRequested = request.id
+            } catch {
+                guard request == waitingDeckLink else { continue }
+                deckLinkError = error.localizedDescription
             }
-            guard request == waitingDeckLink else {
-                isRouting = false
-                await routeWaitingDeckLink()
-                return
-            }
-            completeWelcome()
-            if case .deck(_, let id, let action) = request.link {
-                deckPresentation = DeckPresentation(deckID: id, showsOptions: action == .options)
-            } else {
-                deckPresentation = nil
-            }
-            decksRequested = request.id
-        } catch {
-            deckLinkError = error.localizedDescription
+            waitingDeckLink = nil
         }
-        if waitingDeckLink == request { waitingDeckLink = nil }
     }
 
     private func validatedName(_ name: String, ignoring id: UUID? = nil) throws -> String {
