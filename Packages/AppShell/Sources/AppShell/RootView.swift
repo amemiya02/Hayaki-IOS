@@ -8,19 +8,21 @@ import UniformTypeIdentifiers
 /// The whole app: a short opening state while the collection opens, then the
 /// sections.
 public struct RootView: View {
-    @State private var model: AppModel
+    private let model: AppModel
     @State private var choosingRecoveryPackage = false
     @State private var recoveryPackage: URL?
     @State private var recoveryPickerError: String?
 
-    public init() {
+    // All app windows use the same active profile and set of operations.
+    private static let launchModel: AppModel = {
         #if DEBUG
-        if let emptyCollection = UITestLaunch.emptyCollectionModel {
-            _model = State(initialValue: emptyCollection)
-            return
-        }
+        if let testModel = UITestLaunch.model { return testModel }
         #endif
-        _model = State(initialValue: AppModel())
+        return AppModel()
+    }()
+
+    public init() {
+        model = Self.launchModel
     }
 
     /// Work that must be done before the app finishes launching. The app
@@ -39,8 +41,19 @@ public struct RootView: View {
                     Text("Opening Your Collection…", bundle: .module)
                 }
             case .ready(let store):
-                if let packageImport = model.packageImport {
-                    ReadyView(store: store, model: model, packageImport: packageImport)
+                if let importer = model.packageImport, let sync = model.sync, let backups = model.backups {
+                    ReadyView(store: store, model: model, packageImport: importer, sync: sync, backups: backups)
+                        .id(model.activeProfile.id)
+                        .disabled(model.isSwitchingProfile)
+                        .overlay {
+                            if model.isSwitchingProfile {
+                                ProgressView {
+                                    Text("Opening Your Collection…", bundle: .module)
+                                }
+                                .padding()
+                                .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 14))
+                            }
+                        }
                 }
             case .failed(let message):
                 ContentUnavailableView {
@@ -105,24 +118,16 @@ private struct ReadyView: View {
     let store: CollectionStore
     let model: AppModel
     let packageImport: PackageImportModel
-    @State private var sync: SyncModel
-    @State private var backups: BackupModel
+    let sync: SyncModel
+    let backups: BackupModel
     @Environment(\.scenePhase) private var scenePhase
-
-    init(store: CollectionStore, model: AppModel, packageImport: PackageImportModel) {
-        self.store = store
-        self.model = model
-        self.packageImport = packageImport
-        _sync = State(initialValue: SyncModel(store: store))
-        _backups = State(initialValue: BackupModel(store: store, folder: packageImport.backupFolder, importer: packageImport))
-    }
 
     var body: some View {
         Group {
             if model.showsWelcome {
                 WelcomeScreen(sync: sync, onContinue: model.completeWelcome)
             } else {
-                SectionsView(store: store, sync: sync, backups: backups)
+                SectionsView(store: store, sync: sync, backups: backups, model: model)
             }
         }
         .packageImport(packageImport)

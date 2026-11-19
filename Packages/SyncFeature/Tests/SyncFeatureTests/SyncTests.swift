@@ -3,6 +3,7 @@ import CollectionTesting
 import Foundation
 import Observation
 import SyncFeature
+import SyncTesting
 import Testing
 
 /// Two or three devices, each a throwaway collection with its own core, syncing
@@ -339,6 +340,36 @@ struct SyncTests {
                 var iterator = changes.makeAsyncIterator()
                 #expect(await iterator.next() == .everything)
             }
+        }
+    }
+
+    @Test("A requested one-way sync survives reopening and waits for an upload or download choice")
+    func requestOneWaySync() async throws {
+        let server = try await SyncServer(users: [("alice", "correct horse")])
+        try await withTemporaryCollection { phone in
+            try await phone.addBasicNotes(count: 1, toDeck: phone.addDeck(named: "Spanish"))
+            let storage = MemoryAccountStorage()
+            let model = try await signedIn(phone, to: server, storage: storage)
+            await model.sync()
+            await model.upload()
+            await model.sync()
+            #expect(model.status == .synced(SyncOutcome(kind: .merged, serverMessage: nil)))
+
+            #expect(await model.forceFullSync())
+            try await phone.close()
+            let reopened = try await CollectionStore.open(at: phone.location, core: phone.core)
+            let restarted = SyncModel(store: reopened, storage: storage)
+            await restarted.sync()
+            #expect(restarted.status == .choosingDirection(.either))
+            #expect(try await reopened.cardCount(matching: "deck:Spanish") == 1)
+            restarted.keepBoth()
+            await restarted.sync()
+            #expect(restarted.status == .choosingDirection(.either))
+
+            await restarted.download()
+            #expect(restarted.status == .synced(SyncOutcome(kind: .downloaded, serverMessage: nil)))
+            await restarted.sync()
+            #expect(restarted.status == .synced(SyncOutcome(kind: .merged, serverMessage: nil)))
         }
     }
 

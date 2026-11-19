@@ -9,6 +9,7 @@ let package = Package(
     platforms: [.iOS(.v26), .macOS(.v26)],
     products: [
         .library(name: "SyncFeature", targets: ["SyncFeature"]),
+        .library(name: "SyncTesting", targets: ["SyncTesting"]),
     ],
     dependencies: [
         .package(path: "../AnkiCore"),
@@ -23,10 +24,15 @@ let package = Package(
             ],
             resources: [.process("Resources")]
         ),
+        .target(
+            name: "SyncTesting",
+            dependencies: [.product(name: "CollectionTesting", package: "CollectionStore")]
+        ),
         .testTarget(
             name: "SyncFeatureTests",
             dependencies: [
                 "SyncFeature",
+                "SyncTesting",
                 .product(name: "CollectionTesting", package: "CollectionStore"),
             ]
         ),

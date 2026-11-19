@@ -45,6 +45,8 @@ let package = Package(
             name: "AppShellTests",
             dependencies: [
                 "AppShell",
+                .product(name: "SyncFeature", package: "SyncFeature"),
+                .product(name: "SyncTesting", package: "SyncFeature"),
                 .product(name: "CollectionTesting", package: "CollectionStore"),
                 .product(name: "PackagesFeature", package: "PackagesFeature"),
             ]
