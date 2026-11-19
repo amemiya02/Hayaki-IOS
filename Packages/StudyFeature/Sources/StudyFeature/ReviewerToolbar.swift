@@ -30,16 +30,18 @@ enum ReviewerToolbarAction: String, Identifiable, CaseIterable, Codable {
     var command: ReviewerCommand? { ReviewerCommand(rawValue: rawValue) }
 
     var title: String {
+        let key: String
         switch self {
-        case .flag: "Flag"
-        case .bury: "Bury"
-        case .suspend: "Suspend"
-        case .mark: "Mark Note"
-        case .edit: "Edit Note"
-        case .toggleWhiteboard: "Whiteboard"
-        case .toggleAutoAdvance: "Auto Advance"
-        default: command?.title ?? rawValue
+        case .flag: key = "Flag"
+        case .bury: key = "Bury"
+        case .suspend: key = "Suspend"
+        case .mark: key = "Mark Note"
+        case .edit: key = "Edit Note"
+        case .toggleWhiteboard: key = "Whiteboard"
+        case .toggleAutoAdvance: key = "Auto Advance"
+        default: return command?.title ?? rawValue
         }
+        return reviewerLocalized(key)
     }
 
     var icon: String {
@@ -152,7 +154,7 @@ struct ReviewerToolbar: View {
             if let command = action.command {
                 let isMarked = action == .mark && model.isCurrentNoteMarked
                 Button(role: action == .deleteNote ? .destructive : nil) { dispatch(command) } label: {
-                    Label(reviewerLocalized(isMarked ? "Unmark Note" : action.title), systemImage: isMarked ? "star.fill" : action.icon)
+                    Label(isMarked ? reviewerLocalized("Unmark Note") : action.title, systemImage: isMarked ? "star.fill" : action.icon)
                 }
             }
         }

@@ -1,4 +1,5 @@
 import CollectionStore
+import HayakiAppearance
 import SwiftUI
 
 /// Native statistics for the chosen deck, collection, or Anki search.
@@ -32,6 +33,7 @@ public struct StatisticsScreen: View {
                     }
                 }
             }
+            .hayakiScrollBackground()
             .navigationTitle(StatisticsSection.title)
             .toolbar {
                 ToolbarItem(placement: .primaryAction) {

@@ -20,13 +20,13 @@ struct SectionsView: View {
     let store: CollectionStore
     let sync: SyncModel
     let backups: BackupModel
-    let model: AppModel
+    @Bindable var model: AppModel
     @State private var selection: AppSection = .decks
 
     var body: some View {
         TabView(selection: $selection) {
             Tab(value: AppSection.decks) {
-                DeckListScreen(store: store)
+                DeckListScreen(store: store, profileID: model.activeProfile.id, presentation: $model.deckPresentation)
             } label: {
                 Label { DecksSection.title } icon: { Image(systemName: DecksSection.systemImage) }
             }
@@ -41,7 +41,7 @@ struct SectionsView: View {
                 Label { Text("Stats", bundle: .module) } icon: { Image(systemName: StatisticsSection.systemImage) }
             }
             Tab(value: AppSection.more) {
-                SettingsScreen(store: store, sync: sync, backups: backups) {
+                SettingsScreen(store: store, sync: sync, backups: backups, profileID: model.activeProfile.id) {
                     NavigationLink {
                         ProfilesScreen(model: model)
                     } label: {
@@ -56,7 +56,6 @@ struct SectionsView: View {
                         }
                     }
                     .accessibilityIdentifier("profiles-settings")
-                    CardTemplateSettingsRow()
                 }
             } label: {
                 Label { SettingsSection.title } icon: { Image(systemName: SettingsSection.systemImage) }
@@ -68,7 +67,9 @@ struct SectionsView: View {
         .reviewerDestination { route, study in
             ReviewerDestinationView(route: route, store: store, study: study)
         }
-        .keepingDailyReminderCurrent(store: store) { selection = .decks }
+        .onChange(of: model.decksRequested, initial: true) { _, request in
+            if request != nil { selection = .decks }
+        }
     }
 }
 

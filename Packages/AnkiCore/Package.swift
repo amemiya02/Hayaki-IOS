@@ -6,6 +6,7 @@ import PackageDescription
 // generated sources first with scripts/build-core.sh.
 let package = Package(
     name: "AnkiCore",
+    defaultLocalization: "en",
     platforms: [.iOS(.v26), .macOS(.v26)],
     products: [
         .library(name: "AnkiCore", targets: ["AnkiCore"]),
@@ -22,7 +23,8 @@ let package = Package(
         ),
         .target(
             name: "AnkiCore",
-            dependencies: ["HayakiBridge", "AnkiProto"]
+            dependencies: ["HayakiBridge", "AnkiProto"],
+            resources: [.process("Resources")]
         ),
         .testTarget(
             name: "AnkiCoreTests",

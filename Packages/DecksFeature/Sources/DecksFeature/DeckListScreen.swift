@@ -1,25 +1,53 @@
 import CollectionStore
+import DeckOptionsFeature
+import HayakiAppearance
 import PackagesFeature
 import StudyFeature
 import SwiftUI
+
+/// A deck queued by an external study or options destination.
+public struct DeckPresentation: Identifiable, Equatable, Sendable {
+    public let id = UUID()
+    public let deckID: Int64
+    public let showsOptions: Bool
+
+    public init(deckID: Int64, showsOptions: Bool) {
+        self.deckID = deckID
+        self.showsOptions = showsOptions
+    }
+}
 
 /// The Decks section: every deck as a nested list with today's counts. Tapping
 /// a deck starts studying it, full screen.
 public struct DeckListScreen: View {
     @State private var model: DeckListModel
     @State private var studying: StudyDeck?
+    @State private var optionsDeck: DeckNode?
+    @Binding private var presentation: DeckPresentation?
     @State private var selectedDeckID: DeckNode.ID?
+    @Environment(\.hayakiTheme) private var theme
+    @AppStorage(DeckBackground.revisionKey) private var backgroundRevision = ""
+    @State private var backgroundImage: CGImage?
     @Environment(\.scenePhase) private var scenePhase
     private let store: CollectionStore
+    private let profileID: UUID?
 
-    public init(store: CollectionStore) {
+    public init(
+        store: CollectionStore,
+        profileID: UUID? = nil,
+        presentation: Binding<DeckPresentation?> = .constant(nil)
+    ) {
         self.store = store
+        self.profileID = profileID
+        _presentation = presentation
         _model = State(initialValue: DeckListModel(store: store))
     }
 
     public var body: some View {
         NavigationStack {
             content
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background { deckBackground }
                 .navigationTitle(Text("Decks", bundle: .module))
                 .toolbar {
                     ToolbarItem(placement: .primaryAction) {
@@ -38,12 +66,16 @@ public struct DeckListScreen: View {
                         TextExportButton(store: store)
                     }
                 }
-                .deckManagement(model) { deck in
+                .deckManagement(model, profileID: profileID) { deck in
                     selectedDeckID = deck.id
                     studying = deck
                 }
         }
         .task { await model.run() }
+        .task(id: backgroundRevision) {
+            let image = await DeckBackground(collectionFolder: store.location.folder).image()
+            if !Task.isCancelled { backgroundImage = image }
+        }
         .onChange(of: scenePhase) { _, phase in
             if phase == .active {
                 Task { await model.refresh() }
@@ -51,6 +83,15 @@ public struct DeckListScreen: View {
         }
         .onChange(of: selectedDeck?.id, initial: true) { _, id in
             selectedDeckID = id
+        }
+        .onChange(of: presentation, initial: true) { _, _ in openRequestedDeck() }
+        .onChange(of: model.state) { _, _ in openRequestedDeck() }
+        .sheet(item: $optionsDeck) { deck in
+            if deck.isFiltered {
+                FilteredDeckScreen(store: store, deckID: deck.id)
+            } else {
+                DeckOptionsScreen(store: store, deckID: deck.id)
+            }
         }
         .studySession(of: $studying, store: store)
     }
@@ -103,9 +144,27 @@ public struct DeckListScreen: View {
                     DeckRows(deck: deck, selectedDeckID: selection, study: study)
                 }
             }
+            .scrollContentBackground(.hidden)
             .refreshable { await model.refresh() }
             .environment(model)
         }
+    }
+
+    private var deckBackground: some View {
+        GeometryReader { geometry in
+            if let backgroundImage {
+                Image(decorative: backgroundImage, scale: 1)
+                    .resizable()
+                    .scaledToFill()
+                    .frame(width: geometry.size.width, height: geometry.size.height)
+                    .clipped()
+                    .overlay(theme.background.opacity(0.65))
+            } else {
+                theme.background
+            }
+        }
+        .ignoresSafeArea()
+        .accessibilityHidden(true)
     }
 
     private var selectedDeck: DeckNode? {
@@ -117,6 +176,17 @@ public struct DeckListScreen: View {
     private var deckToStudy: DeckNode? {
         if let selectedDeck, !selectedDeck.counts.isEmpty { return selectedDeck }
         return model.decks.first { !$0.counts.isEmpty }
+    }
+
+    private func openRequestedDeck() {
+        guard let request = presentation, model.state == .loaded else { return }
+        presentation = nil
+        guard let deck = model.deck(request.deckID) else { return }
+        if request.showsOptions {
+            optionsDeck = deck
+        } else {
+            study(deck)
+        }
     }
 
     private func study(_ deck: DeckNode) {
@@ -205,20 +275,28 @@ private struct DeckRow: View {
     let deck: DeckNode
     let isSelected: Bool
     let study: (DeckNode) -> Void
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     var body: some View {
+        let layout = dynamicTypeSize.isAccessibilitySize
+            ? AnyLayout(VStackLayout(alignment: .leading, spacing: 6))
+            : AnyLayout(HStackLayout())
         Button {
             study(deck)
         } label: {
-            HStack {
-                Text(deck.name)
-                if isSelected {
-                    Image(systemName: "checkmark")
-                        .foregroundStyle(.tint)
-                        .accessibilityHidden(true)
+            layout {
+                HStack {
+                    Text(verbatim: deck.name)
+                        .lineLimit(dynamicTypeSize.isAccessibilitySize ? 2 : 1)
+                    if isSelected {
+                        Image(systemName: "checkmark")
+                            .foregroundStyle(.tint)
+                            .accessibilityHidden(true)
+                    }
                 }
-                Spacer()
+                .frame(maxWidth: .infinity, alignment: .leading)
                 CountsView(counts: deck.counts)
+                    .fixedSize(horizontal: !dynamicTypeSize.isAccessibilitySize, vertical: false)
             }
             .contentShape(.rect)
             .accessibilityElement(children: .combine)
@@ -232,12 +310,12 @@ private struct DeckRow: View {
 /// Today's new, learning and due counts in Anki's colours: blue, red and green.
 private struct CountsView: View {
     let counts: DeckCounts
+    @Environment(\.hayakiTheme) private var theme
 
     var body: some View {
-        HStack(spacing: 12) {
-            count(counts.new, color: .blue)
-            count(counts.learning, color: .red)
-            count(counts.due, color: .green)
+        ViewThatFits(in: .horizontal) {
+            HStack(spacing: 12) { numbers }
+            VStack(alignment: .leading, spacing: 4) { numbers }
         }
         .font(.callout.monospacedDigit())
         .accessibilityElement(children: .ignore)
@@ -245,6 +323,14 @@ private struct CountsView: View {
             "\(counts.new) new, \(counts.learning) learning, \(counts.due) due",
             bundle: .module
         ))
+    }
+
+    private var numbers: some View {
+        Group {
+            count(counts.new, color: theme.color(for: .new))
+            count(counts.learning, color: theme.color(for: .learning))
+            count(counts.due, color: theme.color(for: .due))
+        }
     }
 
     private func count(_ value: Int, color: Color) -> some View {

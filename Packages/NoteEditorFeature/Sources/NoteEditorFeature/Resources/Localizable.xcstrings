@@ -2082,55 +2082,293 @@
       }
     },
     "Add" : {
-      "comment" : "Button in the note editor that adds the note to the collection."
+      "comment" : "Button in the note editor that adds the note to the collection.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "追加"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "添加"
+          }
+        }
+      }
     },
     "Add Anyway" : {
-      "comment" : "Button that adds a note despite a warning (a duplicate, or a cloze note without cloze deletions)."
+      "comment" : "Button that adds a note despite a warning (a duplicate, or a cloze note without cloze deletions).",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "それでも添付"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "仍要添加"
+          }
+        }
+      }
     },
     "Add Image" : {
-      "comment" : "Button below a field that opens the photo library to attach an image to the field."
+      "comment" : "Button below a field that opens the photo library to attach an image to the field.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "画像を追加"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "添加图像"
+          }
+        }
+      }
     },
     "Add Image to %@" : {
-      "comment" : "VoiceOver label of the button that attaches an image; the argument is the field's name, such as Back."
+      "comment" : "VoiceOver label of the button that attaches an image; the argument is the field's name, such as Back.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "「%@」に画像を追加"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "向“%@”添加图片"
+          }
+        }
+      }
     },
     "Add Note" : {
-      "comment" : "Title of the note editor, and the button, reachable from every section, that opens it."
+      "comment" : "Title of the note editor, and the button, reachable from every section, that opens it.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ノートを追加"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "添加笔记"
+          }
+        }
+      }
     },
     "Add Tags" : {
-      "comment" : "Placeholder of the text field where the learner types new tags."
+      "comment" : "Placeholder of the text field where the learner types new tags.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "タグを追加"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "添加标签"
+          }
+        }
+      }
     },
     "Another note of this note type has the same first field." : {
-      "comment" : "Explanation shown when the note being added duplicates an existing note."
+      "comment" : "Explanation shown when the note being added duplicates an existing note.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "同じノートタイプで、先頭のフィールドが同じノートがすでにあります。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "此笔记类型中已有一条首字段相同的笔记。"
+          }
+        }
+      }
     },
     "Cannot Add the Note" : {
-      "comment" : "Title of the message shown when the note cannot be added as it is."
+      "comment" : "Title of the message shown when the note cannot be added as it is.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ノートを追加できません"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "无法添加笔记"
+          }
+        }
+      }
     },
     "Cloze deletions can only be used in the note type's cloze field, usually the first." : {
-      "comment" : "Shown when a cloze deletion such as {{c1::text}} was typed into a field of a cloze note type that does not support it."
+      "comment" : "Shown when a cloze deletion such as {{c1::text}} was typed into a field of a cloze note type that does not support it.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "穴埋めは、このノートタイプの穴埋め用フィールド（通常は先頭）でのみ使えます。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "填空只能用于此笔记类型的填空字段，通常是第一个字段。"
+          }
+        }
+      }
     },
     "Cloze deletions can only be used with a cloze note type." : {
-      "comment" : "Shown when a cloze deletion such as {{c1::text}} was typed into a note whose note type is not a cloze type."
+      "comment" : "Shown when a cloze deletion such as {{c1::text}} was typed into a note whose note type is not a cloze type.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "穴埋めは、穴埋め用のノートタイプでのみ使えます。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "只有填空笔记类型可以使用填空。"
+          }
+        }
+      }
     },
     "Could Not Add the Image" : {
-      "comment" : "Title of the message shown when an image from the photo library could not be attached."
+      "comment" : "Title of the message shown when an image from the photo library could not be attached.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "画像を追加できませんでした"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "无法添加图片"
+          }
+        }
+      }
     },
     "Could Not Add the Note" : {
-      "comment" : "Title of the message shown when adding the note failed unexpectedly."
+      "comment" : "Title of the message shown when adding the note failed unexpectedly.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ノートを追加できませんでした"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "无法添加笔记"
+          }
+        }
+      }
     },
     "Could Not Start a Note" : {
-      "comment" : "Title shown when the note editor could not read note types and decks from the collection."
+      "comment" : "Title shown when the note editor could not read note types and decks from the collection.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ノートの作成を開始できませんでした"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "无法开始创建笔记"
+          }
+        }
+      }
     },
     "Deck" : {
-      "comment" : "Label of the picker choosing the deck the note's cards go into."
+      "comment" : "Label of the picker choosing the deck the note's cards go into.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "デッキ"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "牌组"
+          }
+        }
+      }
     },
     "Duplicate Note" : {
-      "comment" : "Title of the warning shown when the note being added duplicates an existing note."
+      "comment" : "Title of the warning shown when the note being added duplicates an existing note.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ノートが重複しています"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "笔记重复"
+          }
+        }
+      }
     },
     "Image in %@" : {
-      "comment" : "VoiceOver label of an image attached to a field; the argument is the field's name, such as Back."
+      "comment" : "VoiceOver label of an image attached to a field; the argument is the field's name, such as Back.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "「%@」内の画像"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "“%@”中的图片"
+          }
+        }
+      }
     },
     "No Cloze Deletions" : {
-      "comment" : "Title of the warning shown when a cloze note has no cloze deletion."
+      "comment" : "Title of the warning shown when a cloze note has no cloze deletion.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "穴埋めがありません"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "没有填空"
+          }
+        }
+      }
     },
     "Note added with %lld cards." : {
       "comment" : "Confirmation shown after a note was added; the argument is the number of cards it made.",
@@ -2152,35 +2390,173 @@
               }
             }
           }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ノートを追加し、%lld枚のカードを作成しました。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已添加笔记并创建 %lld 张卡片。"
+          }
         }
       }
     },
     "Note Type" : {
-      "comment" : "Label of the picker choosing the note type, which decides the note's fields and cards."
+      "comment" : "Label of the picker choosing the note type, which decides the note's fields and cards.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ノートタイプ"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "笔记类型"
+          }
+        }
+      }
     },
     "OK" : {
-      "comment" : "Button that dismisses a message in the note editor."
+      "comment" : "Button that dismisses a message in the note editor.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "OK"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "好"
+          }
+        }
+      }
     },
     "Remove %@" : {
-      "comment" : "VoiceOver label of the button that removes a tag from the note; the argument is the tag."
+      "comment" : "VoiceOver label of the button that removes a tag from the note; the argument is the tag.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "「%@」を削除"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "移除“%@”"
+          }
+        }
+      }
     },
     "Remove Image" : {
-      "comment" : "Button that removes an attached image from a field."
+      "comment" : "Button that removes an attached image from a field.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "画像を削除"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "移除图片"
+          }
+        }
+      }
     },
     "Separate tags with spaces." : {
-      "comment" : "Hint below the tags of the note being added."
+      "comment" : "Hint below the tags of the note being added.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "タグはスペースで区切ります。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "用空格分隔各个标签。"
+          }
+        }
+      }
     },
     "Tags" : {
-      "comment" : "Header of the note's tags in the note editor."
+      "comment" : "Header of the note's tags in the note editor.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "タグ"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "标签"
+          }
+        }
+      }
     },
     "The first field is empty." : {
-      "comment" : "Shown when the learner tries to add a note whose first field is empty."
+      "comment" : "Shown when the learner tries to add a note whose first field is empty.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "先頭のフィールドが空です。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "第一个字段为空。"
+          }
+        }
+      }
     },
     "The selected item is not an image Hayaki can read." : {
-      "comment" : "Shown when the item chosen in the photo library could not be read as an image."
+      "comment" : "Shown when the item chosen in the photo library could not be read as an image.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "選択した項目はHayakiで読み込める画像ではありません。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "所选项目不是 Hayaki 能读取的图片。"
+          }
+        }
+      }
     },
     "This is a cloze note type, but the note has no cloze deletions, such as {{c1::text}}." : {
-      "comment" : "Warning shown when a cloze note has no cloze deletion. {{c1::text}} is Anki's cloze syntax and must stay as it is."
+      "comment" : "Warning shown when a cloze note has no cloze deletion. {{c1::text}} is Anki's cloze syntax and must stay as it is.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "穴埋め用のノートタイプですが、このノートには {{c1::text}} のような穴埋めがありません。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "此笔记使用填空类型，但没有 {{c1::text}} 这样的填空。"
+          }
+        }
+      }
     },
     "Add Card Template" : {
       "localizations" : {
@@ -3554,6 +3930,104 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "集合已发生变化。请重新打开“更改笔记类型”并设置映射。"
+          }
+        }
+      }
+    },
+    "No note types are available." : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "使用できるノートタイプがありません。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "没有可用的笔记类型。"
+          }
+        }
+      },
+      "extractionState" : "manual"
+    },
+    "Paste Image" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "画像を貼り付ける"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "粘贴图片"
+          }
+        }
+      },
+      "extractionState" : "manual"
+    },
+    "%lld" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld"
+          }
+        }
+      }
+    },
+    "Card %lld" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "カード%lld"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "卡片 %lld"
+          }
+        }
+      }
+    },
+    "Done" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "完了"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "完成"
+          }
+        }
+      }
+    },
+    "HTML" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "HTML"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "HTML"
           }
         }
       }

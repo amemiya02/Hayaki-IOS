@@ -11,6 +11,7 @@ enum DeckAction: Identifiable, Equatable {
     case options(DeckNode)
     case filteredOptions(DeckNode.ID?)
     case customStudy(DeckNode)
+    case reminders(DeckNode)
     case rebuild(DeckNode)
     case empty(DeckNode)
     /// Export the deck, with its subdecks, as a deck package.
@@ -24,6 +25,7 @@ enum DeckAction: Identifiable, Equatable {
         case .delete(let deck): "delete-\(deck.id)"
         case .options(let deck): "options-\(deck.id)"
         case .customStudy(let deck): "custom-study-\(deck.id)"
+        case .reminders(let deck): "reminders-\(deck.id)"
         case .filteredOptions(let did): "filtered-options-\(did.map(String.init) ?? "new")"
         case .rebuild(let deck): "rebuild-\(deck.id)"
         case .empty(let deck): "empty-\(deck.id)"
@@ -38,6 +40,9 @@ enum DeckAction: Identifiable, Equatable {
 @Observable
 final class DeckActionRequest {
     var pending: DeckAction?
+    let profileID: UUID?
+
+    init(profileID: UUID? = nil) { self.profileID = profileID }
 }
 
 /// The deck-organising commands for a deck's context menu: new deck inside,
@@ -84,6 +89,17 @@ struct DeckActionMenuItems: View {
                     Text("Options", bundle: .module)
                 } icon: {
                     Image(systemName: "gearshape")
+                }
+            }
+        }
+        if request?.profileID != nil {
+            Button {
+                request?.pending = .reminders(deck)
+            } label: {
+                Label {
+                    Text("Review Reminders", bundle: .module)
+                } icon: {
+                    Image(systemName: "bell.badge")
                 }
             }
         }

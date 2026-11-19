@@ -15,7 +15,9 @@ public struct EditableField: Equatable, Sendable {
     /// Text that can be represented losslessly by the plain-text editor,
     /// with canonical image tags at its end.
     public var requiresMarkup: Bool {
-        !content.utf8.elementsEqual(plainHTML(text).utf8)
+        let text = text
+        return !content.utf8.elementsEqual(plainHTML(text, replaceNewlines: true).utf8)
+            && !content.utf8.elementsEqual(plainHTML(text, replaceNewlines: false).utf8)
     }
 
     public init(name: String, storedContent: String) {
@@ -24,9 +26,9 @@ public struct EditableField: Equatable, Sendable {
         content = storedContent
     }
 
-    mutating func setText(_ text: String) {
+    mutating func setText(_ text: String, replaceNewlines: Bool = true) {
         guard !requiresMarkup else { return }
-        content = plainHTML(text)
+        content = plainHTML(text, replaceNewlines: replaceNewlines)
     }
 
     mutating func setMarkup(_ markup: String) {
@@ -65,7 +67,7 @@ public struct EditableField: Equatable, Sendable {
         }
     }
 
-    private func plainHTML(_ text: String) -> String {
+    private func plainHTML(_ text: String, replaceNewlines: Bool) -> String {
         let attachments = content.matches(of: FieldMarkup.mediaTag).map { match in
             let value = String(match.output)
             if let image = FieldMarkup.imageNames(inHTML: value).first {
@@ -73,7 +75,7 @@ public struct EditableField: Equatable, Sendable {
             }
             return value
         }
-        return FieldMarkup.html(fromPlainText: text) + attachments.joined()
+        return FieldMarkup.html(fromPlainText: text, replaceNewlines: replaceNewlines) + attachments.joined()
     }
 
     private static func imageHTML(named name: String) -> String {
@@ -84,10 +86,9 @@ public struct EditableField: Equatable, Sendable {
 /// Converting between field HTML and the plain text the editor shows.
 enum FieldMarkup {
     /// Typed text as Anki stores it.
-    static func html(fromPlainText text: String) -> String {
-        escaped(text, quotes: false)
-            .replacingOccurrences(of: "\r\n", with: "\n")
-            .replacingOccurrences(of: "\n", with: "<br>")
+    static func html(fromPlainText text: String, replaceNewlines: Bool = true) -> String {
+        let escapedText = escaped(text, quotes: false).replacingOccurrences(of: "\r\n", with: "\n")
+        return replaceNewlines ? escapedText.replacingOccurrences(of: "\n", with: "<br>") : escapedText
     }
 
     static func escaped(_ text: String, quotes: Bool) -> String {

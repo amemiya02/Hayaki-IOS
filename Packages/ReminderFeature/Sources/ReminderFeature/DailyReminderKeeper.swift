@@ -6,26 +6,24 @@ import UIKit
 
 extension View {
     /// Keeps the daily reminder's pending notifications current for as long
-    /// as this view is shown, and calls `openDeckList` when the learner opens
-    /// a reminder. The app shell applies it once, around its sections.
+    /// as this view is shown. The app shell applies it to the open collection.
     ///
     /// The reminders are computed again after the collection changes, and
     /// whenever the app comes to the foreground or moves to the background;
     /// see `ReminderSchedule` for why.
     public func keepingDailyReminderCurrent(
         store: CollectionStore,
-        openDeckList: @escaping @MainActor () -> Void
+        profileID: UUID? = nil
     ) -> some View {
-        modifier(DailyReminderKeeper(store: store, openDeckList: openDeckList))
+        modifier(DailyReminderKeeper(store: store, profileID: profileID))
     }
 }
 
 private struct DailyReminderKeeper: ViewModifier {
     let store: CollectionStore
-    let openDeckList: @MainActor () -> Void
+    let profileID: UUID?
 
     @Environment(\.scenePhase) private var scenePhase
-    @State private var opener = ReminderOpener.shared
 
     func body(content: Content) -> some View {
         content
@@ -42,15 +40,10 @@ private struct DailyReminderKeeper: ViewModifier {
                     break
                 }
             }
-            .onChange(of: opener.deckListRequested, initial: true) { _, requested in
-                guard requested else { return }
-                opener.deckListRequested = false
-                openDeckList()
-            }
     }
 
     private var schedule: ReminderSchedule {
-        ReminderSchedule(store: store, centre: SystemNotificationCentre())
+        ReminderSchedule(store: store, centre: SystemNotificationCentre(), profileID: profileID)
     }
 
     /// Asks iOS for a little time before the app is suspended, so a change

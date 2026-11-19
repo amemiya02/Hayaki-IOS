@@ -1,0 +1,12 @@
+# Generate an app-only Hayaki project for a provisioning profile
+# without the App Groups entitlement.
+include:
+  - project.yml
+
+targets:
+  Hayaki:
+    dependencies:REPLACE:
+      - package: AppShell
+    settings:
+      base:
+        CODE_SIGN_ENTITLEMENTS: ""

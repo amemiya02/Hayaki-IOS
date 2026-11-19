@@ -21,7 +21,9 @@ public struct CoreCall<Response: SwiftProtobuf.Message>: Sendable {
         do {
             return .success(try request.serializedData())
         } catch {
-            return .failure(CoreError(kind: .protoError, message: "Could not encode \(method): \(error)"))
+            return .failure(CoreError(kind: .protoError, message: String(
+                localized: "Could not encode \(String(describing: method)): \(error.localizedDescription)", bundle: .module
+            )))
         }
     }
 
@@ -29,7 +31,9 @@ public struct CoreCall<Response: SwiftProtobuf.Message>: Sendable {
         do {
             return .success(try Response(serializedBytes: bytes))
         } catch {
-            return .failure(CoreError(kind: .protoError, message: "Could not decode \(method): \(error)"))
+            return .failure(CoreError(kind: .protoError, message: String(
+                localized: "Could not decode \(String(describing: method)): \(error.localizedDescription)", bundle: .module
+            )))
         }
     }
 }

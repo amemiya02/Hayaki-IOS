@@ -354,7 +354,21 @@
       }
     },
     "Could Not Open Your Collection" : {
-      "comment" : "Title shown when the collection could not be opened at launch."
+      "comment" : "Title shown when the collection could not be opened at launch.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "コレクションを開けませんでした"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "无法打开你的集合"
+          }
+        }
+      }
     },
     "Done" : {
       "comment" : "Completes setup after visiting Sync from Welcome.",
@@ -374,7 +388,21 @@
       }
     },
     "Opening Your Collection…" : {
-      "comment" : "Shown while the collection opens at launch."
+      "comment" : "Shown while the collection opens at launch.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "コレクションを開いています…"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正在打开你的集合…"
+          }
+        }
+      }
     },
     "Set Up Sync" : {
       "comment" : "Opens the available sync destinations from Welcome.",
@@ -440,6 +468,54 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "欢迎使用 Hayaki"
+          }
+        }
+      }
+    },
+    "Could Not Open Deck" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "デッキを開けませんでした"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "无法打开牌组"
+          }
+        }
+      }
+    },
+    "Review the deck, note type, and fields before adding this note." : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "追加する前にデッキ、ノートタイプ、フィールドを確認してください。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "添加前请检查牌组、笔记类型和字段。"
+          }
+        }
+      }
+    },
+    "Shared Note Destination Changed" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "共有ノートの追加先が変更されました"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "共享笔记的添加位置已更改"
           }
         }
       }

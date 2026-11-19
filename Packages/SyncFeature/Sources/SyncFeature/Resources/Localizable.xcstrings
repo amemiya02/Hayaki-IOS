@@ -178,7 +178,21 @@
       }
     },
     "%@ of %@" : {
-      "comment" : "Upload or download progress: bytes transferred of the total, such as “1.2 MB of 3.4 MB”."
+      "comment" : "Upload or download progress: bytes transferred of the total, such as “1.2 MB of 3.4 MB”.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ / %2$@"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ / %2$@"
+          }
+        }
+      }
     },
     "AnkiWeb" : {
       "comment" : "The hosted sync destination operated by Anki.",
@@ -198,10 +212,38 @@
       }
     },
     "Cancel" : {
-      "comment" : "Button that stops signing in or syncing."
+      "comment" : "Button that stops signing in or syncing.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "キャンセル"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "取消"
+          }
+        }
+      }
     },
     "Choose Which Collection to Keep" : {
-      "comment" : "Title shown when the collection here and on the server cannot be merged."
+      "comment" : "Title shown when the collection here and on the server cannot be merged.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "残すコレクションを選択"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "选择要保留的集合"
+          }
+        }
+      }
     },
     "Collection download complete." : {
       "comment" : "Status shown after the collection has downloaded.",
@@ -255,7 +297,21 @@
       }
     },
     "Connecting…" : {
-      "comment" : "Shown while a sync connects to the server."
+      "comment" : "Shown while a sync connects to the server.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "接続中…"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正在连接…"
+          }
+        }
+      }
     },
     "Could not reach AnkiWeb. Check your internet connection and try again." : {
       "comment" : "Shown when a network error prevents reaching AnkiWeb.",
@@ -275,16 +331,72 @@
       }
     },
     "Could not reach the sync server at %@. Check the address, and that the server is running and reachable from this device." : {
-      "comment" : "Failure: the server could not be reached. The placeholder is the server's host name."
+      "comment" : "Failure: the server could not be reached. The placeholder is the server's host name.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "同期サーバー「%@」に接続できませんでした。アドレスが正しいことと、サーバーが稼働していてこの端末から接続できることを確認してください。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "无法连接到同步服务器 %@。请检查地址，并确认服务器正在运行且此设备可以访问。"
+          }
+        }
+      }
     },
     "Could not use the device's secure storage for the sign-in." : {
-      "comment" : "Failure reading or writing the Keychain."
+      "comment" : "Failure reading or writing the Keychain.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ログインに必要な端末の安全なストレージを使用できませんでした。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "登录时无法使用设备的安全存储。"
+          }
+        }
+      }
     },
     "Download from Server" : {
-      "comment" : "Button that replaces this device's collection with the server's."
+      "comment" : "Button that replaces this device's collection with the server's.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "サーバーからダウンロード"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "从服务器下载"
+          }
+        }
+      }
     },
     "Downloading…" : {
-      "comment" : "Shown while the collection is downloaded from the server."
+      "comment" : "Shown while the collection is downloaded from the server.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ダウンロード中…"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正在下载…"
+          }
+        }
+      }
     },
     "Email Address" : {
       "comment" : "The email address used to sign in to AnkiWeb.",
@@ -304,7 +416,21 @@
       }
     },
     "Enter the server's full address, starting with http:// or https://." : {
-      "comment" : "Shown when the server address is not a web address."
+      "comment" : "Shown when the server address is not a web address.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "http:// または https:// で始まるサーバーの完全なアドレスを入力してください。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "请输入以 http:// 或 https:// 开头的完整服务器地址。"
+          }
+        }
+      }
     },
     "Hayaki stores the sign-in key in this device’s Keychain." : {
       "comment" : "Footer of the sync sign-in form.",
@@ -409,7 +535,21 @@
       }
     },
     "Not Now" : {
-      "comment" : "Button that leaves both collections as they are instead of uploading or downloading."
+      "comment" : "Button that leaves both collections as they are instead of uploading or downloading.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "後で"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "暂不"
+          }
+        }
+      }
     },
     "Off" : {
       "comment" : "Value of the Sync row in Settings when sync is not set up.",
@@ -429,19 +569,89 @@
       }
     },
     "Password" : {
-      "comment" : "Label of the field for the password on the sync server."
+      "comment" : "Label of the field for the password on the sync server.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "パスワード"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "密码"
+          }
+        }
+      }
     },
     "Replace the collection on the server with the one on this device. Changes that only the server has, from your other devices, are lost." : {
-      "comment" : "Explains what uploading overwrites."
+      "comment" : "Explains what uploading overwrites.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "サーバー上のコレクションをこの端末のもので置き換えます。他の端末による変更のうち、サーバーにしかないものは失われます。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "用此设备上的集合替换服务器上的集合。其他设备上仅同步到服务器的更改将丢失。"
+          }
+        }
+      }
     },
     "Replace the collection on this device with the one on the server. Changes that only this device has are lost." : {
-      "comment" : "Explains what downloading overwrites."
+      "comment" : "Explains what downloading overwrites.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "この端末のコレクションをサーバー上のもので置き換えます。この端末にしかない変更は失われます。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "用服务器上的集合替换此设备上的集合。仅保存在此设备上的更改将丢失。"
+          }
+        }
+      }
     },
     "Replace the empty collection on this device with the one on the server." : {
-      "comment" : "Explains downloading into an empty collection."
+      "comment" : "Explains downloading into an empty collection.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "この端末の空のコレクションをサーバー上のもので置き換えます。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "用服务器上的集合替换此设备上的空集合。"
+          }
+        }
+      }
     },
     "Required" : {
-      "comment" : "Placeholder of a sign-in field that must be filled in."
+      "comment" : "Placeholder of a sign-in field that must be filled in.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "必須"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "必须"
+          }
+        }
+      }
     },
     "Retry Media Sync" : {
       "comment" : "Button that retries the media stage with the current sync destination.",
@@ -478,7 +688,21 @@
       }
     },
     "Send the collection on this device to the server, so your other devices can download it." : {
-      "comment" : "Explains uploading to a server that has no collection yet."
+      "comment" : "Explains uploading to a server that has no collection yet.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "この端末のコレクションをサーバーに送信して、他の端末でダウンロードできるようにします。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "将此设备上的集合发送到服务器，以便其他设备下载。"
+          }
+        }
+      }
     },
     "Server Address" : {
       "comment" : "Label of the field for the sync server's web address.",
@@ -498,22 +722,106 @@
       }
     },
     "Sign In" : {
-      "comment" : "Button that signs in to the sync server."
+      "comment" : "Button that signs in to the sync server.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ログイン"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "登录"
+          }
+        }
+      }
     },
     "Sign Out" : {
-      "comment" : "Button that signs out of the sync server."
+      "comment" : "Button that signs out of the sync server.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ログアウト"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "退出登录"
+          }
+        }
+      }
     },
     "Signing In…" : {
-      "comment" : "Shown while signing in to the sync server."
+      "comment" : "Shown while signing in to the sync server.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ログイン中…"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正在登录…"
+          }
+        }
+      }
     },
     "Signing in failed." : {
-      "comment" : "Sign-in failure for any other reason; the cause is shown below it."
+      "comment" : "Sign-in failure for any other reason; the cause is shown below it.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ログインできませんでした。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "登录失败。"
+          }
+        }
+      }
     },
     "Signing in was cancelled." : {
-      "comment" : "Shown after the learner cancelled signing in."
+      "comment" : "Shown after the learner cancelled signing in.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ログインをキャンセルしました。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已取消登录。"
+          }
+        }
+      }
     },
     "Signing out removes the server's key from this device. Your collection stays on this device." : {
-      "comment" : "Footer under Sign Out."
+      "comment" : "Footer under Sign Out.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ログアウトすると、この端末からサーバーの認証キーが削除されます。コレクションは端末に残ります。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "退出登录会从设备中移除服务器的认证密钥，集合仍保留在设备上。"
+          }
+        }
+      }
     },
     "Sync" : {
       "comment" : "Title of the Sync row in Settings and of the sync screen.",
@@ -550,7 +858,21 @@
       }
     },
     "Sync Now" : {
-      "comment" : "Button that syncs the collection with the server."
+      "comment" : "Button that syncs the collection with the server.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "今すぐ同期"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "立即同步"
+          }
+        }
+      }
     },
     "Syncing Media…" : {
       "comment" : "Status shown while the core syncs media.",
@@ -570,46 +892,242 @@
       }
     },
     "Syncing sends the changes made on this device to the server and brings in the changes made on your other devices." : {
-      "comment" : "Footer explaining what syncing does."
+      "comment" : "Footer explaining what syncing does.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "同期すると、この端末での変更がサーバーに送られ、他の端末での変更が取り込まれます。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "同步会将此设备上的更改发送到服务器，并下载其他设备上的更改。"
+          }
+        }
+      }
     },
     "Syncing…" : {
-      "comment" : "Shown while changes are exchanged with the server."
+      "comment" : "Shown while changes are exchanged with the server.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "同期中…"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正在同步…"
+          }
+        }
+      }
     },
     "The collection on this device is empty. Nothing has been changed yet." : {
-      "comment" : "Shown before downloading into an empty collection."
+      "comment" : "Shown before downloading into an empty collection.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "この端末のコレクションは空です。まだ何も変更されていません。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "此设备上的集合为空。尚未进行任何更改。"
+          }
+        }
+      }
     },
     "The device's secure storage reported an error: %@" : {
-      "comment" : "Keychain error; the placeholder is the system's description."
+      "comment" : "Keychain error; the placeholder is the system's description.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "端末の安全なストレージでエラーが発生しました：%@"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "设备的安全存储发生错误：%@"
+          }
+        }
+      }
     },
     "The server did not accept this user name and password." : {
-      "comment" : "Sign-in failure: wrong user name or password."
+      "comment" : "Sign-in failure: wrong user name or password.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ユーザー名またはパスワードがサーバーに拒否されました。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "服务器拒绝了此用户名和密码。"
+          }
+        }
+      }
     },
     "The server has no collection yet. Nothing has been changed yet." : {
-      "comment" : "Shown before the first upload to an empty server."
+      "comment" : "Shown before the first upload to an empty server.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "サーバーにコレクションがありません。まだ何も変更されていません。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "服务器上还没有集合。尚未进行任何更改。"
+          }
+        }
+      }
     },
     "The server no longer accepts this device's sign-in. Sign out, then sign in again." : {
-      "comment" : "Sync failure: the stored key was refused."
+      "comment" : "Sync failure: the stored key was refused.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "この端末のログイン情報がサーバーに拒否されました。ログアウトしてから、ログインし直してください。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "服务器不再接受此设备的登录凭据。请退出后重新登录。"
+          }
+        }
+      }
     },
     "The sync failed." : {
-      "comment" : "Sync failure for any other reason; the cause is shown below it."
+      "comment" : "Sync failure for any other reason; the cause is shown below it.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "同期できませんでした。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "同步失败。"
+          }
+        }
+      }
     },
     "The sync server redirected to an address outside the selected destination." : {
-      "comment" : "Sync failure for an unexpected server redirect."
+      "comment" : "Sync failure for an unexpected server redirect.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "同期サーバーが選択した接続先以外のアドレスにリダイレクトしました。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "同步服务器重定向到了所选目标以外的地址。"
+          }
+        }
+      }
     },
     "The sync was cancelled before it finished." : {
-      "comment" : "Shown after the learner cancelled a sync."
+      "comment" : "Shown after the learner cancelled a sync.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "完了前に同期をキャンセルしました。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "同步在完成前已取消。"
+          }
+        }
+      }
     },
     "Upload to Server" : {
-      "comment" : "Button that replaces the server's collection with this device's."
+      "comment" : "Button that replaces the server's collection with this device's.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "サーバーにアップロード"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "上传到服务器"
+          }
+        }
+      }
     },
     "Uploading…" : {
-      "comment" : "Shown while the collection is uploaded to the server."
+      "comment" : "Shown while the collection is uploaded to the server.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "アップロード中…"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正在上传…"
+          }
+        }
+      }
     },
     "User Name" : {
-      "comment" : "Label of the field for the user name on the sync server."
+      "comment" : "Label of the field for the user name on the sync server.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ユーザー名"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "用户名"
+          }
+        }
+      }
     },
     "Your Sync Server" : {
-      "comment" : "Header of the section with the sync server's address and the sign-in fields."
+      "comment" : "Header of the section with the sync server's address and the sign-in fields.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "同期サーバー"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "你的同步服务器"
+          }
+        }
+      }
     }
   },
   "version" : "1.0"

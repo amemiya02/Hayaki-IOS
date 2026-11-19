@@ -2,226 +2,3358 @@
   "sourceLanguage" : "en",
   "strings" : {
     "%@ copy" : {
-      "comment" : "Suggested name for a copy of a preset. The placeholder is the preset's name."
+      "comment" : "Suggested name for a copy of a preset. The placeholder is the preset's name.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@のコピー"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ 的副本"
+          }
+        }
+      }
     },
     "Add" : {
-      "comment" : "Alert button that adds a preset with the name typed."
+      "comment" : "Alert button that adds a preset with the name typed.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "追加"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "添加"
+          }
+        }
+      }
     },
     "Add Preset" : {
-      "comment" : "Command and alert title: add a new preset with Anki's default options."
+      "comment" : "Command and alert title: add a new preset with Anki's default options.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "プリセットを追加"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "添加预设"
+          }
+        }
+      }
     },
     "Ascending ease" : {
-      "comment" : "Review sort order: cards with the lowest ease first."
+      "comment" : "Review sort order: cards with the lowest ease first.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "容易さの昇順"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "简易度升序"
+          }
+        }
+      }
     },
     "Ascending intervals" : {
-      "comment" : "Review sort order: cards with the shortest interval first."
+      "comment" : "Review sort order: cards with the shortest interval first.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "間隔の昇順"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "间隔升序"
+          }
+        }
+      }
     },
     "Ascending position" : {
-      "comment" : "New card gather order: cards added first come first."
+      "comment" : "New card gather order: cards added first come first.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "位置の昇順"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "位置升序"
+          }
+        }
+      }
     },
     "Ascending retrievability" : {
-      "comment" : "Review sort order: cards most likely forgotten first."
+      "comment" : "Review sort order: cards most likely forgotten first.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "想起可能性の昇順"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "可提取性升序"
+          }
+        }
+      }
     },
     "Bury interday learning siblings" : {
-      "comment" : "Toggle: other learning cards of the same note, due on a later day, wait until the next day."
+      "comment" : "Toggle: other learning cards of the same note, due on a later day, wait until the next day.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "日をまたぐ学習中の兄弟カードを延期"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "搁置跨天学习的同胞卡片"
+          }
+        }
+      }
     },
     "Bury new siblings" : {
-      "comment" : "Toggle: other new cards of the same note wait until the next day."
+      "comment" : "Toggle: other new cards of the same note wait until the next day.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "新規の兄弟カードを延期"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "搁置新同胞卡片"
+          }
+        }
+      }
     },
     "Bury review siblings" : {
-      "comment" : "Toggle: other review cards of the same note wait until the next day."
+      "comment" : "Toggle: other review cards of the same note wait until the next day.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "復習中の兄弟カードを延期"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "搁置待复习的同胞卡片"
+          }
+        }
+      }
     },
     "Burying" : {
-      "comment" : "Section header of the burying options."
+      "comment" : "Section header of the burying options.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "延期"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "搁置"
+          }
+        }
+      }
     },
     "Cancel" : {
-      "comment" : "Button that closes deck options or an alert without saving."
+      "comment" : "Button that closes deck options or an alert without saving.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "キャンセル"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "取消"
+          }
+        }
+      }
     },
     "Card type, then order gathered" : {
-      "comment" : "New card sort order: by card template, then in the order gathered."
+      "comment" : "New card sort order: by card template, then in the order gathered.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "カードタイプ順、次に取得順"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "先按卡片类型，再按收集顺序"
+          }
+        }
+      }
     },
     "Card type, then random" : {
-      "comment" : "New card sort order: by card template, then randomly."
+      "comment" : "New card sort order: by card template, then randomly.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "カードタイプ順、次にランダム"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "先按卡片类型，再随机排序"
+          }
+        }
+      }
     },
     "Clone Preset" : {
-      "comment" : "Command and alert title: add a copy of the current preset."
+      "comment" : "Command and alert title: add a copy of the current preset.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "プリセットを複製"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "复制预设"
+          }
+        }
+      }
     },
     "Could Not Save Deck Options" : {
-      "comment" : "Title of the alert shown when saving deck options failed."
+      "comment" : "Title of the alert shown when saving deck options failed.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "デッキオプションを保存できませんでした"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "无法保存牌组选项"
+          }
+        }
+      }
     },
     "Could Not Show Deck Options" : {
-      "comment" : "Title shown when a deck's options could not be read from the collection."
+      "comment" : "Title shown when a deck's options could not be read from the collection.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "デッキオプションを表示できませんでした"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "无法显示牌组选项"
+          }
+        }
+      }
     },
     "Daily Limits" : {
-      "comment" : "Section header of the daily limits for new cards and reviews."
+      "comment" : "Section header of the daily limits for new cards and reviews.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1日の上限"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "每日上限"
+          }
+        }
+      }
     },
     "Deck" : {
-      "comment" : "New card gather order: deck by deck."
+      "comment" : "New card gather order: deck by deck.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "デッキ"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "牌组"
+          }
+        }
+      }
     },
     "Deck Options" : {
-      "comment" : "Title of the deck options screen."
+      "comment" : "Title of the deck options screen.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "デッキオプション"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "牌组选项"
+          }
+        }
+      }
     },
     "Deck, then due date" : {
-      "comment" : "Review sort order: deck by deck, then by due date."
+      "comment" : "Review sort order: deck by deck, then by due date.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "デッキ順、次に期限順"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "先按牌组，再按到期日期"
+          }
+        }
+      }
     },
     "Deck, then random notes" : {
-      "comment" : "New card gather order: deck by deck, random notes within each deck."
+      "comment" : "New card gather order: deck by deck, random notes within each deck.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "デッキ順、次にノートをランダム"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "先按牌组，再随机抽取笔记"
+          }
+        }
+      }
     },
     "Delete Preset" : {
-      "comment" : "Command and confirmation button: delete the current preset."
+      "comment" : "Command and confirmation button: delete the current preset.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "プリセットを削除"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "删除预设"
+          }
+        }
+      }
     },
     "Delete “%@”?" : {
-      "comment" : "Title of the confirmation before deleting a preset. The placeholder is the preset's name."
+      "comment" : "Title of the confirmation before deleting a preset. The placeholder is the preset's name.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "「%@」を削除しますか？"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "要删除“%@”吗？"
+          }
+        }
+      }
     },
     "Descending ease" : {
-      "comment" : "Review sort order: cards with the highest ease first."
+      "comment" : "Review sort order: cards with the highest ease first.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "容易さの降順"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "简易度降序"
+          }
+        }
+      }
     },
     "Descending intervals" : {
-      "comment" : "Review sort order: cards with the longest interval first."
+      "comment" : "Review sort order: cards with the longest interval first.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "間隔の降順"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "间隔降序"
+          }
+        }
+      }
     },
     "Descending position" : {
-      "comment" : "New card gather order: cards added last come first."
+      "comment" : "New card gather order: cards added last come first.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "位置の降順"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "位置降序"
+          }
+        }
+      }
     },
     "Descending retrievability" : {
-      "comment" : "Review sort order: cards least likely forgotten first."
+      "comment" : "Review sort order: cards least likely forgotten first.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "想起可能性の降順"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "可提取性降序"
+          }
+        }
+      }
     },
     "Discard Changes" : {
-      "comment" : "Button that closes deck options without saving the edits."
+      "comment" : "Button that closes deck options without saving the edits.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "変更を破棄"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "放弃更改"
+          }
+        }
+      }
     },
     "Discard your changes to these deck options?" : {
-      "comment" : "Title of the confirmation shown when cancelling deck options with unsaved edits."
+      "comment" : "Title of the confirmation shown when cancelling deck options with unsaved edits.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "デッキオプションの変更を破棄しますか？"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "要放弃对此牌组选项的更改吗？"
+          }
+        }
+      }
     },
     "Display Order" : {
-      "comment" : "Section header of the options for the order in which cards are shown."
+      "comment" : "Section header of the options for the order in which cards are shown.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "表示順序"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "显示顺序"
+          }
+        }
+      }
     },
     "Due date, then deck" : {
-      "comment" : "Review sort order: by due date, then deck by deck."
+      "comment" : "Review sort order: by due date, then deck by deck.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "期限順、次にデッキ順"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "先按到期日期，再按牌组"
+          }
+        }
+      }
     },
     "Due date, then random" : {
-      "comment" : "Review sort order: by due date, then randomly."
+      "comment" : "Review sort order: by due date, then randomly.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "期限順、次にランダム"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "先按到期日期，再随机排序"
+          }
+        }
+      }
     },
     "Interday learning/review order" : {
-      "comment" : "Picker: whether learning cards due on a later day are mixed with reviews or shown before or after them."
+      "comment" : "Picker: whether learning cards due on a later day are mixed with reviews or shown before or after them.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "日をまたぐ学習カードと復習カードの順序"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "跨天学习卡片与复习卡片的顺序"
+          }
+        }
+      }
     },
     "Keep Editing" : {
-      "comment" : "Button that returns to deck options instead of discarding the edits."
+      "comment" : "Button that returns to deck options instead of discarding the edits.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "編集を続ける"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "继续编辑"
+          }
+        }
+      }
     },
     "Lapses" : {
-      "comment" : "Section header of the options for review cards that were forgotten."
+      "comment" : "Section header of the options for review cards that were forgotten.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "忘却"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "遗忘"
+          }
+        }
+      }
     },
     "Learning steps" : {
-      "comment" : "Field for the delays at which a new card is shown again while it is learned."
+      "comment" : "Field for the delays at which a new card is shown again while it is learned.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "学習ステップ"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "学习步骤"
+          }
+        }
+      }
     },
     "Manage Presets" : {
-      "comment" : "Menu with commands to add, clone, rename and delete presets."
+      "comment" : "Menu with commands to add, clone, rename and delete presets.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "プリセットを管理"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "管理预设"
+          }
+        }
+      }
     },
     "Maximum reviews/day" : {
-      "comment" : "Field for the most review cards shown per day."
+      "comment" : "Field for the most review cards shown per day.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1日の最大復習数"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "每日复习上限"
+          }
+        }
+      }
     },
     "Mix with reviews" : {
-      "comment" : "New/review order and interday learning order: mixed with review cards."
+      "comment" : "New/review order and interday learning order: mixed with review cards.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "復習カードに混ぜる"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "与复习卡片混合"
+          }
+        }
+      }
     },
     "Name" : {
-      "comment" : "Placeholder of the text field for a preset's name."
+      "comment" : "Placeholder of the text field for a preset's name.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "名前"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "名称"
+          }
+        }
+      }
     },
     "New Cards" : {
-      "comment" : "Section header of the options for cards not studied yet."
+      "comment" : "Section header of the options for cards not studied yet.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "新規カード"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "新卡片"
+          }
+        }
+      }
     },
     "New card gather order" : {
-      "comment" : "Picker: which new cards are gathered first."
+      "comment" : "Picker: which new cards are gathered first.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "新規カードの取得順序"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "新卡片收集顺序"
+          }
+        }
+      }
     },
     "New card sort order" : {
-      "comment" : "Picker: how gathered new cards are sorted."
+      "comment" : "Picker: how gathered new cards are sorted.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "新規カードの並べ替え順序"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "新卡片排序方式"
+          }
+        }
+      }
     },
     "New cards/day" : {
-      "comment" : "Field for how many new cards are introduced per day."
+      "comment" : "Field for how many new cards are introduced per day.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1日の新規カード数"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "每日新卡片数"
+          }
+        }
+      }
     },
     "New/review order" : {
-      "comment" : "Picker: whether new cards are mixed with reviews or shown before or after them."
+      "comment" : "Picker: whether new cards are mixed with reviews or shown before or after them.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "新規カードと復習カードの順序"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "新卡片与复习卡片的顺序"
+          }
+        }
+      }
     },
     "OK" : {
-      "comment" : "Button that closes an error alert."
+      "comment" : "Button that closes an error alert.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "OK"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "好"
+          }
+        }
+      }
     },
     "Order added" : {
-      "comment" : "Review sort order: by when the card was added."
+      "comment" : "Review sort order: by when the card was added.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "追加順"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "添加顺序"
+          }
+        }
+      }
     },
     "Order gathered" : {
-      "comment" : "New card sort order: in the order the cards were gathered."
+      "comment" : "New card sort order: in the order the cards were gathered.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "取得順"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "收集顺序"
+          }
+        }
+      }
     },
     "Other" : {
-      "comment" : "Shown for an order this version of Hayaki does not know, set by a newer Anki."
+      "comment" : "Shown for an order this version of Hayaki does not know, set by a newer Anki.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "その他"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "其他"
+          }
+        }
+      }
     },
     "Preset" : {
-      "comment" : "Section header and picker label: the named set of deck options this deck uses."
+      "comment" : "Section header and picker label: the named set of deck options this deck uses.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "プリセット"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "预设"
+          }
+        }
+      }
     },
     "Random" : {
-      "comment" : "New card or review sort order: randomly."
+      "comment" : "New card or review sort order: randomly.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ランダム"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "随机"
+          }
+        }
+      }
     },
     "Random cards" : {
-      "comment" : "New card gather order: random cards."
+      "comment" : "New card gather order: random cards.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "カードをランダムに選択"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "随机抽取卡片"
+          }
+        }
+      }
     },
     "Random note, then card type" : {
-      "comment" : "New card sort order: random notes, then by card template."
+      "comment" : "New card sort order: random notes, then by card template.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ノートをランダムに選び、カードタイプ順に表示"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "先随机抽取笔记，再按卡片类型排序"
+          }
+        }
+      }
     },
     "Random notes" : {
-      "comment" : "New card gather order: random notes."
+      "comment" : "New card gather order: random notes.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ノートをランダムに選択"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "随机抽取笔记"
+          }
+        }
+      }
     },
     "Relative overdueness" : {
-      "comment" : "Review sort order: the most overdue cards relative to their interval first."
+      "comment" : "Review sort order: the most overdue cards relative to their interval first.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "相対的な期限超過"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "相对逾期程度"
+          }
+        }
+      }
     },
     "Relearning steps" : {
-      "comment" : "Field for the delays at which a forgotten review card is shown again."
+      "comment" : "Field for the delays at which a forgotten review card is shown again.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "再学習ステップ"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "重新学习步骤"
+          }
+        }
+      }
     },
     "Rename" : {
-      "comment" : "Alert button that renames the preset."
+      "comment" : "Alert button that renames the preset.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "名前を変更"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "重命名"
+          }
+        }
+      }
     },
     "Rename Preset" : {
-      "comment" : "Command and alert title: give the current preset a new name."
+      "comment" : "Command and alert title: give the current preset a new name.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "プリセットの名前を変更"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "重命名预设"
+          }
+        }
+      }
     },
     "Reverse order added" : {
-      "comment" : "Review sort order: the most recently added cards first."
+      "comment" : "Review sort order: the most recently added cards first.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "追加順の逆"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "添加顺序倒序"
+          }
+        }
+      }
     },
     "Review sort order" : {
-      "comment" : "Picker: how review cards are sorted."
+      "comment" : "Picker: how review cards are sorted.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "復習カードの並べ替え順序"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "复习卡片排序方式"
+          }
+        }
+      }
     },
     "Save" : {
-      "comment" : "Button that saves the deck options."
+      "comment" : "Button that saves the deck options.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "保存"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "保存"
+          }
+        }
+      }
     },
     "Show after reviews" : {
-      "comment" : "New/review order and interday learning order: after all review cards."
+      "comment" : "New/review order and interday learning order: after all review cards.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "復習カードの後に表示"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "在复习卡片之后显示"
+          }
+        }
+      }
     },
     "Show before reviews" : {
-      "comment" : "New/review order and interday learning order: before all review cards."
+      "comment" : "New/review order and interday learning order: before all review cards.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "復習カードの前に表示"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "在复习卡片之前显示"
+          }
+        }
+      }
     },
     "The %lld decks using it will use the Default preset instead. Takes effect when you save." : {
-      "comment" : "Message of the confirmation before deleting a preset several decks use. The placeholder is how many."
+      "comment" : "Message of the confirmation before deleting a preset several decks use. The placeholder is how many.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "このプリセットを使う%lld個のデッキは、保存時に既定のプリセットに切り替わります。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "使用此预设的 %lld 个牌组会改用默认预设。保存后生效。"
+          }
+        }
+      }
     },
     "This deck has its own limits, set in Anki on another device. They apply instead of these and are kept." : {
-      "comment" : "Footer of the daily limits when the deck has deck-only or today-only limits, which this screen does not edit."
+      "comment" : "Footer of the daily limits when the deck has deck-only or today-only limits, which this screen does not edit.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "このデッキでは別の端末のAnkiで設定した上限が優先され、その設定は維持されます。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "此牌组有在另一台设备上的 Anki 中设定的专用上限。这些专用上限将保留并优先使用。"
+          }
+        }
+      }
     },
     "This deck will use the Default preset instead. Takes effect when you save." : {
-      "comment" : "Message of the confirmation before deleting a preset only this deck uses."
+      "comment" : "Message of the confirmation before deleting a preset only this deck uses.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "このデッキは、保存時に既定のプリセットに切り替わります。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "此牌组会改用默认预设。保存后生效。"
+          }
+        }
+      }
     },
     "Try Again" : {
-      "comment" : "Button that reads the deck options again after it failed."
+      "comment" : "Button that reads the deck options again after it failed.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "再試行"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "重试"
+          }
+        }
+      }
     },
     "Used by %lld decks. Changes apply to all of them." : {
-      "comment" : "Footer of the preset picker when several decks share the preset. The placeholder is how many."
+      "comment" : "Footer of the preset picker when several decks share the preset. The placeholder is how many.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld個のデッキが使用しています。変更はすべての該当デッキに適用されます。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "有 %lld 个牌组使用此预设。更改会应用到所有这些牌组。"
+          }
+        }
+      }
     },
     "Used only by this deck." : {
-      "comment" : "Footer of the preset picker when no other deck uses the preset."
+      "comment" : "Footer of the preset picker when no other deck uses the preset.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "このデッキだけが使用しています。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "仅此牌组使用。"
+          }
+        }
+      }
     },
     "When a forgotten review card comes back. Leave empty to skip relearning." : {
-      "comment" : "Footer explaining relearning steps."
+      "comment" : "Footer explaining relearning steps.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "忘れた復習カードが再び表示されるまでの間隔です。再学習を省略するには空欄にします。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "遗忘的复习卡片再次出现前的等待时间。留空可跳过重新学习。"
+          }
+        }
+      }
     },
     "When a new card comes back while you learn it, such as 1m 10m 1d." : {
-      "comment" : "Footer explaining learning steps; 1m, 10m and 1d mean one minute, ten minutes and one day."
+      "comment" : "Footer explaining learning steps; 1m, 10m and 1d mean one minute, ten minutes and one day.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "学習中の新規カードが再び表示されるまでの間隔です（例：1m 10m 1d）。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "学习新卡片时，卡片再次出现前的等待时间，例如 1m 10m 1d。"
+          }
+        }
+      }
     },
     "When you study a card, other cards of the same note wait until the next day." : {
-      "comment" : "Footer explaining burying."
+      "comment" : "Footer explaining burying.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "カードを学習すると、同じノートから作られた他のカードは翌日まで延期されます。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "学习一张卡片后，同一笔记生成的其他卡片会搁置到次日。"
+          }
+        }
+      }
     },
     "“%@” is not a step. Enter delays such as 1m 10m 1d, using s, m, h or d." : {
-      "comment" : "Shown under a learning or relearning steps field when part of what was typed is not a delay. The placeholder is the part that is wrong."
+      "comment" : "Shown under a learning or relearning steps field when part of what was typed is not a delay. The placeholder is the part that is wrong.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "「%@」は有効なステップではありません。s、m、h、dを使い、1m 10m 1dのように間隔を入力してください。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "“%@”不是有效的步骤。请使用 s、m、h 或 d 输入等待时间，例如 1m 10m 1d。"
+          }
+        }
+      }
+    },
+    "A delay of zero disables the timed action for that side." : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "0秒にすると、その面では時間指定の操作が無効になります。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "设为 0 秒可关闭该面的定时操作。"
+          }
+        }
+      }
+    },
+    "Above 95%, the number of reviews can increase sharply." : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "95%を超えると、復習回数が急増することがあります。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "高于 95% 时，复习次数可能急剧增加。"
+          }
+        }
+      }
+    },
+    "Additional new cards" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "追加の新規カード"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "额外新卡片"
+          }
+        }
+      }
+    },
+    "Advanced Scheduling" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "高度なスケジュール設定"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "高级排程"
+          }
+        }
+      }
+    },
+    "Advanced Settings" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "詳細設定"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "高级设置"
+          }
+        }
+      }
+    },
+    "Answer action" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "解答面の操作"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "答案面操作"
+          }
+        }
+      }
+    },
+    "Answer Again" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "「もう一度」で回答"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "评为“重来”"
+          }
+        }
+      }
+    },
+    "Answer Good" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "「正解」で回答"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "评为“良好”"
+          }
+        }
+      }
+    },
+    "Answer Hard" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "「難しい」で回答"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "评为“困难”"
+          }
+        }
+      }
+    },
+    "Answers per day" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1日の回答数"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "每日作答数"
+          }
+        }
+      }
+    },
+    "Apply these options to the shared preset?" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "この設定を共有プリセットに適用しますか？"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "要将这些选项应用于共享预设吗？"
+          }
+        }
+      }
+    },
+    "Apply to Preset" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "プリセットに適用"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "应用到预设"
+          }
+        }
+      }
+    },
+    "Ascending difficulty" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "難易度の昇順"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "难度升序"
+          }
+        }
+      }
+    },
+    "Audio" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "音声"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "音频"
+          }
+        }
+      }
+    },
+    "Auto Advance" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "自動で進める"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "自动前进"
+          }
+        }
+      }
+    },
+    "Below 80%, you may spend more time relearning forgotten cards." : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "80%未満では、忘れたカードの再学習に時間がかかることがあります。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "低于 80% 时，你可能需要花更多时间重新学习已遗忘的卡片。"
+          }
+        }
+      }
+    },
+    "Bury card" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "カードを保留"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "暂缓卡片"
+          }
+        }
+      }
+    },
+    "Cancel Optimization" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "最適化をキャンセル"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "取消优化"
+          }
+        }
+      }
+    },
+    "Cancelling…" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "キャンセル中…"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正在取消…"
+          }
+        }
+      }
+    },
+    "Cards remembered" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "覚えているカード数"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "记住的卡片数"
+          }
+        }
+      }
+    },
+    "Cards remembered per hour" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1時間あたりに覚えられるカード数"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "每小时记住的卡片数"
+          }
+        }
+      }
+    },
+    "Changing the weights manually can make scheduling less accurate." : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "重みを手動で変更すると、スケジュールの精度が下がることがあります。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "手动修改权重可能降低排程的准确度。"
+          }
+        }
+      }
+    },
+    "Check parameter fit during optimization" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "最適化中にパラメーターの適合度を確認する"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "优化时检查参数拟合程度"
+          }
+        }
+      }
+    },
+    "Checking for improvement…" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "改善があるか確認しています…"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正在检查是否有所改进…"
+          }
+        }
+      }
+    },
+    "Clear Last Simulation" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "前回のシミュレーションを消去"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "清除上次模拟"
+          }
+        }
+      }
+    },
+    "Compare Desired Retention" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "目標記憶保持率を比較"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "比较期望记忆保留率"
+          }
+        }
+      }
+    },
+    "Custom Scheduling" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "カスタムスケジュール"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "自定义排程"
+          }
+        }
+      }
+    },
+    "Custom scheduling code" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "カスタムスケジュールのコード"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "自定义排程代码"
+          }
+        }
+      }
+    },
+    "Custom scheduling is a collection-wide setting." : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "カスタムスケジュールはコレクション全体に適用されます。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "自定义排程设置适用于整个集合。"
+          }
+        }
+      }
+    },
+    "Days to simulate" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "シミュレーションする日数"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "模拟天数"
+          }
+        }
+      }
+    },
+    "Deck Options Help" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "デッキオプションのヘルプ"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "牌组选项帮助"
+          }
+        }
+      }
+    },
+    "Deck options saved and all presets optimized." : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "デッキオプションを保存し、すべてのプリセットを最適化しました。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已保存牌组选项并优化全部预设。"
+          }
+        }
+      }
+    },
+    "Descending difficulty" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "難易度の降順"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "难度降序"
+          }
+        }
+      }
+    },
+    "Desired retention" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "目標記憶保持率"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "期望记忆保留率"
+          }
+        }
+      }
+    },
+    "Desired Retention" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "目標記憶保持率"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "期望记忆保留率"
+          }
+        }
+      }
+    },
+    "Desired retention (%)" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "目標記憶保持率（%）"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "期望记忆保留率（%）"
+          }
+        }
+      }
+    },
+    "Done" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "完了"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "完成"
+          }
+        }
+      }
+    },
+    "Earliest review date" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "最も古い復習日"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "最早复习日期"
+          }
+        }
+      }
+    },
+    "Easy bonus" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "簡単ボーナス"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "简单奖励"
+          }
+        }
+      }
+    },
+    "Easy Days" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "負担を減らす日"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "轻松日"
+          }
+        }
+      }
+    },
+    "Easy interval (days)" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "「簡単」の間隔（日）"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "简单间隔（天）"
+          }
+        }
+      }
+    },
+    "Edit Weights" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "重みを編集"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "编辑权重"
+          }
+        }
+      }
+    },
+    "Enable FSRS" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "FSRSを有効にする"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "启用 FSRS"
+          }
+        }
+      }
+    },
+    "Enter 17, 19, or 21 comma-separated numbers, or leave the field empty to use defaults." : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "17個、19個、または21個の数値をカンマで区切って入力してください。空欄の場合は既定値を使います。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "请输入用英文逗号分隔的 17、19 或 21 个数字，留空则使用默认值。"
+          }
+        }
+      }
+    },
+    "Estimate" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "見積もる"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "估算"
+          }
+        }
+      }
+    },
+    "Estimated Workload" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "予想学習量"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "预计学习量"
+          }
+        }
+      }
+    },
+    "Evaluate Parameters" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "パラメーターを評価"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "评估参数"
+          }
+        }
+      }
+    },
+    "Experiment with limits and retention to estimate the workload before changing the preset." : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "プリセットを変更する前に、上限や目標記憶保持率を調整して学習量を見積もれます。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "先试用不同的上限和记忆保留率来估算学习量，再更改预设。"
+          }
+        }
+      }
+    },
+    "FSRS" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "FSRS"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "FSRS"
+          }
+        }
+      }
+    },
+    "FSRS estimates how well you remember each card, then uses your desired retention to schedule reviews. This setting applies to the whole collection." : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "FSRSはカードごとの記憶の定着度を推定し、目標記憶保持率に合わせて復習を予定します。この設定はコレクション全体に適用されます。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "FSRS 会估算你对每张卡片的记忆程度，再根据期望记忆保留率安排复习。此设置适用于整个集合。"
+          }
+        }
+      }
+    },
+    "FSRS Parameters" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "FSRSパラメーター"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "FSRS 参数"
+          }
+        }
+      }
+    },
+    "FSRS Simulations" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "FSRSシミュレーション"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "FSRS 模拟"
+          }
+        }
+      }
+    },
+    "FSRS Simulator" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "FSRSシミュレーター"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "FSRS 模拟器"
+          }
+        }
+      }
+    },
+    "Graduating interval (days)" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "学習終了時の間隔（日）"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "毕业间隔（天）"
+          }
+        }
+      }
+    },
+    "Hard interval" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "「難しい」の間隔"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "困难间隔"
+          }
+        }
+      }
+    },
+    "Historical retention" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "過去の記憶保持率"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "历史记忆保留率"
+          }
+        }
+      }
+    },
+    "Ignore reviews before a date" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "指定日より前の復習を無視"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "忽略指定日期之前的复习"
+          }
+        }
+      }
+    },
+    "Insertion order" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "挿入順序"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "插入顺序"
+          }
+        }
+      }
+    },
+    "Interval modifier" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "間隔の調整率"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "间隔修正系数"
+          }
+        }
+      }
+    },
+    "Leech action" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "苦手カードの処理"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "疑难卡片处理方式"
+          }
+        }
+      }
+    },
+    "Leech threshold" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "苦手カードのしきい値"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "疑难卡片阈值"
+          }
+        }
+      }
+    },
+    "Limit" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "上限"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "上限"
+          }
+        }
+      }
+    },
+    "Limits start from top" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "最上位デッキから上限を適用"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "从顶层牌组应用上限"
+          }
+        }
+      }
+    },
+    "Log loss %@ · RMSE %@" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "対数損失 %@ · RMSE %@"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "对数损失 %@ · RMSE %@"
+          }
+        }
+      }
+    },
+    "Maximum answer seconds" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "回答時間の上限（秒）"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "最长作答时间（秒）"
+          }
+        }
+      }
+    },
+    "Maximum interval (days)" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "最大間隔（日）"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "最长间隔（天）"
+          }
+        }
+      }
+    },
+    "Minimum" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "最小"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "最少"
+          }
+        }
+      }
+    },
+    "Minimum interval (days)" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "最小間隔（日）"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "最短间隔（天）"
+          }
+        }
+      }
+    },
+    "Minutes per day" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1日あたりの学習時間（分）"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "每日学习时间（分钟）"
+          }
+        }
+      }
+    },
+    "More than 30 days have passed since all presets were optimized." : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "すべてのプリセットを最適化してから30日以上経過しました。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "距离上次优化全部预设已超过 30 天。"
+          }
+        }
+      }
+    },
+    "New cards ignore review limit" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "新規カードは復習上限の対象外"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "新卡片不受复习上限限制"
+          }
+        }
+      }
+    },
+    "New interval" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "新しい間隔"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "新间隔"
+          }
+        }
+      }
+    },
+    "Normal" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "通常"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正常"
+          }
+        }
+      }
+    },
+    "Optimization cancelled. Your parameters were kept." : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "最適化をキャンセルしました。パラメーターに変更はありません。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已取消优化，参数保持原样。"
+          }
+        }
+      }
+    },
+    "Optimization uses your review history. Save to apply new parameters." : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "最適化には復習履歴が使われます。新しいパラメーターを適用するには保存してください。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "优化会使用你的复习记录。保存后将应用新参数。"
+          }
+        }
+      }
+    },
+    "Optimize Current Preset" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "現在のプリセットを最適化"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "优化当前预设"
+          }
+        }
+      }
+    },
+    "Override active" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "個別の上限を適用中"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已应用单独上限"
+          }
+        }
+      }
+    },
+    "Override for this deck" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "このデッキで個別に設定"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "单独设置此牌组"
+          }
+        }
+      }
+    },
+    "Parameters optimized. Save to apply them." : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "パラメーターを最適化しました。適用するには保存してください。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "参数已优化。保存后将应用这些参数。"
+          }
+        }
+      }
+    },
+    "Play audio automatically" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "音声を自動再生"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "自动播放音频"
+          }
+        }
+      }
+    },
+    "Preparing optimization…" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "最適化の準備中…"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正在准备优化…"
+          }
+        }
+      }
+    },
+    "Preset %u of %u · %u reviews" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "プリセット %1$u / %2$u · 復習%3$u回"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "预设 %1$u / %2$u · %3$u 次复习"
+          }
+        }
+      }
+    },
+    "Processing %u reviews" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%u回の復習を処理中"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正在处理 %u 次复习"
+          }
+        }
+      }
+    },
+    "Question action" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "問題面の操作"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "问题面操作"
+          }
+        }
+      }
+    },
+    "Reduced" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "少なめ"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "减少"
+          }
+        }
+      }
+    },
+    "Reschedule cards on change" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "変更時にカードの予定を組み直す"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "更改时重新安排卡片"
+          }
+        }
+      }
+    },
+    "Restore Default" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "デフォルトに戻す"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "恢复默认"
+          }
+        }
+      }
+    },
+    "Retention (%)" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "記憶保持率（%）"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "记忆保留率（%）"
+          }
+        }
+      }
+    },
+    "Save and Optimize" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "保存して最適化"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "保存并优化"
+          }
+        }
+      }
+    },
+    "Save and Optimize All Presets" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "保存してすべてのプリセットを最適化"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "保存并优化全部预设"
+          }
+        }
+      }
+    },
+    "Save changes and optimize all presets?" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "変更を保存して、すべてのプリセットを最適化しますか？"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "要保存更改并优化全部预设吗？"
+          }
+        }
+      }
+    },
+    "Save preset changes before optimizing." : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "最適化する前に、プリセットの変更を保存してください。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "请先保存预设更改，再进行优化。"
+          }
+        }
+      }
+    },
+    "Save the preset and weights before running a simulation." : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "シミュレーションを開始する前に、プリセットと重みを保存してください。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "请先保存预设和权重，再运行模拟。"
+          }
+        }
+      }
+    },
+    "Save to All Subdecks" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "すべての子デッキに保存"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "保存到所有子牌组"
+          }
+        }
+      }
+    },
+    "Saving may make many cards due immediately. Rescheduling applies across the collection and adds entries to review history." : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "保存すると、多くのカードがすぐに復習待ちになることがあります。予定の組み直しはコレクション全体に適用され、復習履歴に記録されます。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "保存后，许多卡片可能立即到期。重新排程适用于整个集合，并会添加复习记录。"
+          }
+        }
+      }
+    },
+    "Search for optimization" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "最適化に使う検索式"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "用于优化的搜索条件"
+          }
+        }
+      }
+    },
+    "Seconds to show answer" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "解答を表示するまでの秒数"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "显示答案前的等待秒数"
+          }
+        }
+      }
+    },
+    "Seconds to show question" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "問題を表示するまでの秒数"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "显示问题前的等待秒数"
+          }
+        }
+      }
+    },
+    "Sequential" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "順番どおり"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "按顺序"
+          }
+        }
+      }
+    },
+    "Shared preset" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "共有プリセット"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "共享预设"
+          }
+        }
+      }
+    },
+    "Show" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "表示"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "显示"
+          }
+        }
+      }
+    },
+    "Show answer" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "解答を表示"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "显示答案"
+          }
+        }
+      }
+    },
+    "Show on-screen timer" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "画面にタイマーを表示"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "在屏幕上显示计时器"
+          }
+        }
+      }
+    },
+    "Show reminder" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "リマインダーを表示"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "显示提醒"
+          }
+        }
+      }
+    },
+    "Simulate" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "シミュレーションを実行"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "运行模拟"
+          }
+        }
+      }
+    },
+    "Simulating…" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "シミュレーション中…"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正在模拟…"
+          }
+        }
+      }
+    },
+    "Simulation" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "シミュレーション"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "模拟"
+          }
+        }
+      }
+    },
+    "Simulation %lld" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "シミュレーション%lld"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "模拟 %lld"
+          }
+        }
+      }
+    },
+    "Simulation Settings" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "シミュレーション設定"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "模拟设置"
+          }
+        }
+      }
+    },
+    "Skip question audio when replaying answer" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "解答面で音声を再生し直すときに問題の音声を省略"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "重播答案面音频时跳过问题音频"
+          }
+        }
+      }
+    },
+    "Smooth graphs" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "グラフを平滑化"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "平滑图表"
+          }
+        }
+      }
+    },
+    "Space future reviews away from days with less study time." : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "学習時間が少ない日を避けて、今後の復習を分散します。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "分散未来的复习安排，避开学习时间较少的日期。"
+          }
+        }
+      }
+    },
+    "Starting ease" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "初期容易さ"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "起始简易度"
+          }
+        }
+      }
+    },
+    "Stop timer when showing answer" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "解答を表示したらタイマーを停止"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "显示答案时停止计时器"
+          }
+        }
+      }
+    },
+    "Study day" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "学習日"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "学习日"
+          }
+        }
+      }
+    },
+    "Suspend card" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "カードを対象外にする"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "暂停卡片"
+          }
+        }
+      }
+    },
+    "Suspend leeches" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "苦手カードを保留"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "暂停疑难卡片"
+          }
+        }
+      }
+    },
+    "Tag only" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "タグのみ"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "仅添加标签"
+          }
+        }
+      }
+    },
+    "The current parameters already fit your review history." : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "現在のパラメーターはすでに復習履歴に適合しています。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "当前参数已适合你的复习记录。"
+          }
+        }
+      }
+    },
+    "The first two values are shared by every deck using this preset. Deck and today overrides affect this deck. Both switches apply to the whole collection." : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "最初の2つの値は、このプリセットを使うすべてのデッキで共通です。このデッキ用と今日用の個別設定は、このデッキに適用されます。2つのスイッチはどちらもコレクション全体に適用されます。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "前两项数值由使用此预设的所有牌组共享。牌组专用和仅今天的设置只影响此牌组。两个开关均作用于整个集合。"
+          }
+        }
+      }
+    },
+    "The parameters fit your review history." : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "パラメーターは復習履歴に適合しています。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "参数适合你的复习记录。"
+          }
+        }
+      }
+    },
+    "The parameters may fit your review history poorly." : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "パラメーターが復習履歴に十分適合していない可能性があります。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "参数可能与复习记录的拟合程度较低。"
+          }
+        }
+      }
+    },
+    "The target percentage of cards you remember when they are due." : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "復習期限になったときに思い出せるカードの目標割合です。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "目标是在卡片到期时仍能记住的卡片比例。"
+          }
+        }
+      }
+    },
+    "There is not enough review history for this search. Keep reviewing or broaden the search." : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "この検索条件に一致する復習履歴が足りません。復習を続けるか、検索範囲を広げてください。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "此搜索条件下的复习记录不足。请继续复习或扩大搜索范围。"
+          }
+        }
+      }
+    },
+    "This deck" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "このデッキ"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "此牌组"
+          }
+        }
+      }
+    },
+    "Timer" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "タイマー"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "计时器"
+          }
+        }
+      }
+    },
+    "Today only" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "今日のみ"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "仅今天"
+          }
+        }
+      }
+    },
+    "Use default weights" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "既定の重みを使う"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "使用默认权重"
+          }
+        }
+      }
+    },
+    "Use These Options in the Preset" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "この設定をプリセットで使用"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "在预设中使用这些选项"
+          }
+        }
+      }
+    },
+    "Wait for audio" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "音声の終了を待つ"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "等待音频播放结束"
+          }
+        }
+      }
+    },
+    "Weights" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "重み"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "权重"
+          }
+        }
+      }
     }
   },
   "version" : "1.0"

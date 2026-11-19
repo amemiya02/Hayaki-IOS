@@ -1,4 +1,10 @@
+import HayakiAppearance
 import SwiftUI
+
+public enum StudyDisplayPreferences {
+    public static let focusTypedAnswerKey = "hayaki.reviewer.focusTypedAnswer"
+    public static let inspectCardContentKey = "hayaki.developer.inspectCardContent"
+}
 
 /// A card side for the card host page to show.
 struct CardDisplay: Equatable, Encodable {
@@ -53,6 +59,11 @@ struct CardTemplateContext {
 /// collection's media and the bundled MathJax come through the card URL
 /// scheme (`CardResources`), never from the network.
 struct CardWebView: UIViewRepresentable {
+    @Environment(\.hayakiTheme) private var theme
+    @AppStorage(StudyDisplayPreferences.focusTypedAnswerKey) private var focusTypedAnswer = true
+    #if DEBUG
+    @AppStorage(StudyDisplayPreferences.inspectCardContentKey) private var inspectCardContent = false
+    #endif
     let display: CardDisplay
     /// The collection's media folder, which the card's images, sounds and
     /// fonts come from.
@@ -120,20 +131,26 @@ struct CardWebView: UIViewRepresentable {
         webView.scrollView.backgroundColor = .clear
         webView.navigationDelegate = context.coordinator
         #if DEBUG
-        webView.isInspectable = true
+        webView.isInspectable = inspectCardContent
         #endif
         context.coordinator.webView = webView
+        context.coordinator.updateAppearance(theme)
         context.coordinator.loadHostPage()
         return webView
     }
 
     func updateUIView(_ webView: WKWebView, context: Context) {
         context.coordinator.onEvent = onEvent
+        context.coordinator.updateAppearance(theme)
         context.coordinator.onTemplateRequest = onTemplateRequest
         context.coordinator.allowsExternalApps = allowsExternalApps
         if webView.pageZoom != zoom {
             webView.pageZoom = zoom
         }
+        #if DEBUG
+        webView.isInspectable = inspectCardContent
+        #endif
+        context.coordinator.focusTypedAnswer = focusTypedAnswer
         context.coordinator.updateReviewer(reviewer)
         context.coordinator.show(display)
         context.coordinator.schedule(customScheduling, completion: onCustomSchedule)
@@ -160,6 +177,7 @@ struct CardWebView: UIViewRepresentable {
         private var schedulingCompletion: (UUID, String?) -> Void = { _, _ in }
 
         weak var webView: WKWebView?
+        var focusTypedAnswer = true
         var onEvent: (CardPageEvent) -> Void = { _ in }
         var onTemplateRequest: ((TemplateRequest, CardTemplateContext) async -> TemplateReply)?
         var allowsExternalApps = false
@@ -171,6 +189,7 @@ struct CardWebView: UIViewRepresentable {
         /// The side last handed to the page.
         private var shown: CardDisplay?
         private var pageLoaded = false
+        private var theme: HayakiTheme?
 
         func loadHostPage() {
             pageLoaded = false
@@ -221,6 +240,24 @@ struct CardWebView: UIViewRepresentable {
             }
         }
 
+        func updateAppearance(_ theme: HayakiTheme) {
+            guard self.theme != theme else { return }
+            self.theme = theme
+            webView?.overrideUserInterfaceStyle = theme == .light ? .light : .dark
+            sendAppearance()
+        }
+
+        private func sendAppearance() {
+            guard pageLoaded, let theme, let webView else { return }
+            let canvas = String(format: "#%06X", theme.backgroundRGB)
+            // The template's own styling can supply --canvas or style .nightMode.
+            webView.callAsyncJavaScript(
+                "window.hayaki.appearance(canvas, legacyDark)",
+                arguments: ["canvas": canvas, "legacyDark": theme == .dark],
+                in: nil, in: .page, completionHandler: nil
+            )
+        }
+
         func show(_ display: CardDisplay) {
             if wanted != display { reloaded = nil }
             wanted = display
@@ -236,7 +273,7 @@ struct CardWebView: UIViewRepresentable {
             templateToken = token
             awaitingTemplateRequests = 0
             shown = wanted
-            webView.evaluateJavaScript("hayaki.show(\(argument), '\(token)'); true") { _, error in
+            webView.evaluateJavaScript("hayaki.show(\(argument), '\(token)', \(focusTypedAnswer)); true") { _, error in
                 if let error {
                     Self.log.error("The card host page could not show a card: \(error, privacy: .public)")
                 }
@@ -245,6 +282,7 @@ struct CardWebView: UIViewRepresentable {
 
         func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
             pageLoaded = true
+            sendAppearance()
             sendIfReady()
             sendScheduleIfReady()
             sendReviewerOptions()

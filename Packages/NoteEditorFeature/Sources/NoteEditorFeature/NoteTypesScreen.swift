@@ -144,6 +144,7 @@ private struct AddNoteTypeSheet: View {
 }
 
 private struct NoteTypeDetailScreen: View {
+    @Environment(\.locale) private var locale
     let manager: NoteTypeManager
     let entry: ManagedNoteType
     @Environment(\.dismiss) private var dismiss
@@ -312,7 +313,7 @@ private struct NoteTypeDetailScreen: View {
                             .foregroundStyle(.secondary)
                     }
                     if let language {
-                        Text(Locale.current.localizedString(forIdentifier: language) ?? language)
+                        Text(locale.localizedString(forIdentifier: language) ?? language)
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
