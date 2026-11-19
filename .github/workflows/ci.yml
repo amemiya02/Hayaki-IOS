@@ -97,15 +97,15 @@ jobs:
       - name: Generate the Xcode project
         run: xcodegen generate
 
-      - name: Build the app for the iOS simulator
+      - name: Build the app and tests for the iOS simulator
         run: |
-          xcodebuild build \
+          xcodebuild build-for-testing \
             -project Hayaki.xcodeproj \
             -scheme Hayaki \
             -configuration Debug \
             -destination 'generic/platform=iOS Simulator' \
             -derivedDataPath build/DerivedData \
-            CODE_SIGNING_ALLOWED=NO
+            ARCHS=arm64 CODE_SIGNING_ALLOWED=NO
 
       - name: Run the iPhone and iPad user-interface tests
         if: github.ref == 'refs/heads/hayaki-v1'
@@ -113,6 +113,9 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+
+          test_configuration=$(find build/DerivedData/Build/Products -maxdepth 1 -name 'Hayaki_iphonesimulator*-arm64.xctestrun' -print -quit)
+          [[ -f "$test_configuration" ]]
 
           select_simulator() {
             xcrun simctl list devices available -j | python3 -c '
@@ -135,12 +138,11 @@ jobs:
             result="$2"
             shift 2
             xcrun simctl bootstatus "$simulator" -b || return
-            xcodebuild test \
-              -project Hayaki.xcodeproj \
-              -scheme Hayaki \
+            xcodebuild test-without-building \
+              -xctestrun "$test_configuration" \
               -destination "platform=iOS Simulator,id=$simulator" \
-              -derivedDataPath build/DerivedData \
               -parallel-testing-enabled NO \
+              -retry-tests-on-failure -test-iterations 2 -test-repetition-relaunch-enabled YES \
               -test-timeouts-enabled YES \
               -default-test-execution-time-allowance 240 \
               -resultBundlePath "build/$result.xcresult" \

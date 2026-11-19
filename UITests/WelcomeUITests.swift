@@ -13,9 +13,7 @@ final class WelcomeUITests: XCTestCase {
         XCTAssertTrue(app.descendants(matching: .any)["shared-decks"].firstMatch.exists)
 
         app.buttons["Import a Package…"].tap()
-        let cancel = app.buttons["Cancel"]
-        XCTAssertTrue(cancel.waitForExistence(timeout: 10), "Import opens the Files picker")
-        cancel.tap()
+        app.cancelFilesPicker()
         XCTAssertTrue(startEmpty.waitForExistence(timeout: 10))
 
         app.buttons["shared-decks"].tap()

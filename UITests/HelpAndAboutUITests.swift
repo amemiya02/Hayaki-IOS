@@ -66,10 +66,7 @@ final class HelpAndAboutUITests: XCTestCase {
         reveal(importPackage)
         importPackage.tap()
 
-        let cancel = app.buttons.matching(NSPredicate(format: "label == %@ OR label == %@", "Cancel", "Close")).firstMatch
-        XCTAssertTrue(cancel.waitForExistence(timeout: 30), "Files shows its dismissal control")
-        XCTAssertTrue(cancel.isHittable)
-        cancel.tap()
+        app.cancelFilesPicker()
         XCTAssertTrue(app.navigationBars["Transfer Guide"].waitForExistence(timeout: 10))
     }
 
