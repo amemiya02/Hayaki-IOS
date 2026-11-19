@@ -31,6 +31,9 @@ public struct DeckListScreen: View {
                     ToolbarItem(placement: .secondaryAction) {
                         SharedDecksLink()
                     }
+                    ToolbarItem(placement: .secondaryAction) {
+                        TextImportButton(store: store)
+                    }
                 }
                 .deckManagement(model) { deck in
                     selectedDeckID = deck.id
