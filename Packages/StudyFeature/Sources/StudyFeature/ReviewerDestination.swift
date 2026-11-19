@@ -7,7 +7,7 @@ public enum ReviewerDestination: Hashable, Identifiable, Sendable {
     case statistics(deckID: Int64)
     case deckOptions(deckID: Int64)
     case cardInfo(cardID: Int64)
-    case addNote
+    case addNote(homeDeckID: Int64?)
 
     public var id: Self { self }
 }

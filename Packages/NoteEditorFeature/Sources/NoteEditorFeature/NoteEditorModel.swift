@@ -55,9 +55,8 @@ public enum EditOutcome: Equatable, Sendable {
 /// The note editor: edits an existing note or builds a note of a chosen note type, with fields, tags
 /// and images, and adds it to a chosen deck.
 ///
-/// The note type and deck start as the ones last added with, which the core
-/// remembers in the collection (as desktop Anki does), so several notes can
-/// be added in a row, and again the next time.
+/// The core chooses the initial note type and deck using the collection’s
+/// adding preference. Repeated additions keep the choices in this editor.
 @MainActor
 @Observable
 public final class NoteEditorModel {
@@ -77,6 +76,7 @@ public final class NoteEditorModel {
 
     public private(set) var editingNoteID: Int64?
     private let editingCardID: Int64?
+    private let homeDeckID: Int64?
     public var isEditing: Bool { editingCardID != nil || editingNoteID != nil }
     public private(set) var preferredPreviewOrdinal: UInt32 = 0
     @ObservationIgnored private let store: CollectionStore
@@ -92,15 +92,17 @@ public final class NoteEditorModel {
     public private(set) var occlusionMasks: [ImageOcclusionMask] = []
     public var isImageOcclusion: Bool { occlusionFields != nil }
 
-    public init(store: CollectionStore, editingNoteID: Int64? = nil) {
+    public init(store: CollectionStore, editingNoteID: Int64? = nil, homeDeckID: Int64? = nil) {
         self.store = store
         self.editingNoteID = editingNoteID
         editingCardID = nil
+        self.homeDeckID = homeDeckID
     }
 
     public init(store: CollectionStore, editingCardID: Int64) {
         self.store = store
         self.editingCardID = editingCardID
+        homeDeckID = nil
     }
 
     public var mediaFolder: URL { store.location.mediaFolder }
@@ -123,7 +125,7 @@ public final class NoteEditorModel {
     /// type last added with, in the deck last added to with it.
     public func load() async {
         guard state == .loading else { return }
-        do {
+        do throws(CoreError) {
             if let editingCardID {
                 let card = try await store.core.getCard(.with { $0.cid = editingCardID })
                 editingNoteID = card.noteID
@@ -137,16 +139,15 @@ public final class NoteEditorModel {
             }
             notetypes = try await notetypeChoices()
             decks = try await deckChoices()
-            let defaults = try await store.core.defaultsForAdding(.init())
-            var notetype = defaults.notetypeID
-            if let last = await lastNotetypeAddedWith(), notetypes.contains(where: { $0.id == last }) {
-                notetype = last
-            } else if !notetypes.contains(where: { $0.id == notetype }), let first = notetypes.first {
-                notetype = first.id
+            let defaults = try await store.core.defaultsForAdding(.with {
+                $0.homeDeckOfCurrentReviewCard = homeDeckID ?? 0
+            })
+            let notetype = notetypes.first(where: { $0.id == defaults.notetypeID }) ?? notetypes.first
+            guard let notetype else {
+                throw CoreError(kind: .invalidInput, message: String(localized: "No note types are available.", bundle: .module))
             }
-            let lastDeck = try await store.core.defaultDeckForNotetype(.with { $0.ntid = notetype }).did
-            deckID = decks.contains { $0.id == lastDeck } ? lastDeck : defaults.deckID
-            try await startNote(notetypeID: notetype)
+            deckID = defaults.deckID
+            try await startNote(notetypeID: notetype.id)
             state = .ready
         } catch {
             state = .failed(message: error.message)
@@ -208,15 +209,6 @@ public final class NoteEditorModel {
             $0.skipEmptyDefault = false
             $0.includeFiltered = false
         }).entries.map { Choice(id: $0.id, name: $0.name) }
-    }
-
-    /// The note type the core recorded as last added with ("curModel", which
-    /// desktop Anki and AnkiDroid share), if any.
-    private func lastNotetypeAddedWith() async -> Int64? {
-        guard let json = try? await store.core.getConfigJson(.with { $0.val = "curModel" }).json else {
-            return nil
-        }
-        return try? JSONDecoder().decode(Int64.self, from: json)
     }
 
     private func startNote(notetypeID: Int64) async throws(CoreError) {
@@ -463,9 +455,9 @@ public final class NoteEditorModel {
 
     // MARK: Editing
 
-    public func setText(_ text: String, ofField index: Int) {
+    public func setText(_ text: String, ofField index: Int, replaceNewlines: Bool = true) {
         guard fields.indices.contains(index) else { return }
-        fields[index].setText(text)
+        fields[index].setText(text, replaceNewlines: replaceNewlines)
     }
 
     public func setMarkup(_ markup: String, ofField index: Int) {
@@ -492,9 +484,19 @@ public final class NoteEditorModel {
     /// Formats other than JPEG, PNG, GIF and WebP, such as the iPhone's HEIC,
     /// are converted to JPEG so the card shows on every Anki client.
     public func attachImage(_ data: Data, toField index: Int) async throws(AttachImageError) {
+        try await attachImage(data, toField: index, asPNG: false)
+    }
+
+    public func pasteImage(_ data: Data, intoField index: Int) async throws {
+        let asPNG = try await store.core.getConfigBool(.with { $0.key = .pasteImagesAsPng }).val
+        try await attachImage(data, toField: index, asPNG: asPNG)
+    }
+
+    private func attachImage(_ data: Data, toField index: Int, asPNG: Bool) async throws(AttachImageError) {
         guard fields.indices.contains(index) else { return }
-        guard let image = ImageMedia(data: data) else { throw .notAnImage }
+        guard let image = ImageMedia(data: data, asPNG: asPNG) else { throw .notAnImage }
         let stored = try await storeImage(image)
+        guard fields.indices.contains(index) else { return }
         fields[index].attachImage(named: stored)
     }
 

@@ -32,8 +32,8 @@ struct ReviewerDestinationView: View {
                         ToolbarItem(placement: .cancellationAction) { close }
                     }
             }
-        case .addNote:
-            NoteEditorScreen(store: store)
+        case .addNote(let homeDeckID):
+            NoteEditorScreen(store: store, homeDeckID: homeDeckID)
         }
     }
 

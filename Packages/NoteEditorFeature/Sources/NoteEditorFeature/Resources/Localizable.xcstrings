@@ -3557,6 +3557,40 @@
           }
         }
       }
+    },
+    "No note types are available." : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "使用できるノートタイプがありません。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "没有可用的笔记类型。"
+          }
+        }
+      },
+      "extractionState" : "manual"
+    },
+    "Paste Image" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "画像を貼り付ける"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "粘贴图片"
+          }
+        }
+      },
+      "extractionState" : "manual"
     }
   },
   "version" : "1.0"

@@ -1143,6 +1143,777 @@
           }
         }
       }
+    },
+    "General" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "一般"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "通用"
+          }
+        }
+      },
+      "extractionState" : "manual"
+    },
+    "Appearance" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "外観"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "外观"
+          }
+        }
+      },
+      "extractionState" : "manual"
+    },
+    "Accessibility" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "アクセシビリティ"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "辅助功能"
+          }
+        }
+      },
+      "extractionState" : "manual"
+    },
+    "Advanced" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "詳細設定"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "高级"
+          }
+        }
+      },
+      "extractionState" : "manual"
+    },
+    "Developer Options" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "開発者向けオプション"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "开发者选项"
+          }
+        }
+      },
+      "extractionState" : "manual"
+    },
+    "Search Settings" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "設定を検索"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "搜索设置"
+          }
+        }
+      },
+      "extractionState" : "manual"
+    },
+    "Theme" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "テーマ"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "主题"
+          }
+        }
+      },
+      "extractionState" : "manual"
+    },
+    "System" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "システム"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "跟随系统"
+          }
+        }
+      },
+      "extractionState" : "manual"
+    },
+    "Light" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ライト"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "浅色"
+          }
+        }
+      },
+      "extractionState" : "manual"
+    },
+    "Dark" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ダーク"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "深色"
+          }
+        }
+      },
+      "extractionState" : "manual"
+    },
+    "Black" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ブラック"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "纯黑"
+          }
+        }
+      },
+      "extractionState" : "manual"
+    },
+    "System Night Theme" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "システムの夜間テーマ"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "系统夜间主题"
+          }
+        }
+      },
+      "extractionState" : "manual"
+    },
+    "The system theme uses Light during the day and your night theme when the device uses Dark Mode." : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "システムを選ぶと、端末の外観がライトのときはライトテーマ、ダークのときは選択した夜間テーマを使います。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "跟随系统时，设备使用浅色外观时应用浅色主题，开启深色模式时应用所选的夜间主题。"
+          }
+        }
+      },
+      "extractionState" : "manual"
+    },
+    "Choose Background Image" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "背景画像を選択"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "选择背景图像"
+          }
+        }
+      },
+      "extractionState" : "manual"
+    },
+    "Remove Background Image" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "背景画像を削除"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "移除背景图像"
+          }
+        }
+      },
+      "extractionState" : "manual"
+    },
+    "Deck List Background" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "デッキ一覧の背景"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "牌组列表背景"
+          }
+        }
+      },
+      "extractionState" : "manual"
+    },
+    "Could Not Update Background" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "背景を更新できませんでした"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "无法更新背景"
+          }
+        }
+      },
+      "extractionState" : "manual"
+    },
+    "Could Not Update Preferences" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "設定を更新できませんでした"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "无法更新设置"
+          }
+        }
+      },
+      "extractionState" : "manual"
+    },
+    "Editing" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "編集"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "编辑"
+          }
+        }
+      },
+      "extractionState" : "manual"
+    },
+    "Use Current Deck" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "現在のデッキを使用"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "使用当前牌组"
+          }
+        }
+      },
+      "extractionState" : "manual"
+    },
+    "Decide by Note Type" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ノートタイプで決める"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "按笔记类型决定"
+          }
+        }
+      },
+      "extractionState" : "manual"
+    },
+    "Deck for New Cards" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "新規カードのデッキ"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "新卡片的牌组"
+          }
+        }
+      },
+      "extractionState" : "manual"
+    },
+    "Paste Clipboard Images as PNG" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "クリップボードの画像をPNGで貼り付ける"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "以 PNG 格式粘贴剪贴板图片"
+          }
+        }
+      },
+      "extractionState" : "manual"
+    },
+    "Browse Text Size" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ブラウザーの文字サイズ"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "浏览器字体大小"
+          }
+        }
+      },
+      "extractionState" : "manual"
+    },
+    "Card zoom, image zoom, button size, press duration and card animations are in Reviewer settings." : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "カードや画像の拡大率、ボタンサイズ、長押しの時間、カードのアニメーションはレビュアー設定にあります。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "可在复习设置中调整卡片缩放、图片缩放、按钮大小、长按时间和卡片动画。"
+          }
+        }
+      },
+      "extractionState" : "manual"
+    },
+    "Focus Typed Answer" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "解答入力欄にフォーカスする"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "自动聚焦输入答案框"
+          }
+        }
+      },
+      "extractionState" : "manual"
+    },
+    "Inspect Card Web Views" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "カードのWebビューを検証"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "检查卡片网页视图"
+          }
+        }
+      },
+      "extractionState" : "manual"
+    },
+    "Privacy" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "プライバシー"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "隐私"
+          }
+        }
+      },
+      "extractionState" : "manual"
+    },
+    "Hayaki sends no usage analytics or automatic crash reports." : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hayakiは使用状況の分析データや自動クラッシュレポートを送信しません。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hayaki 不会发送使用分析数据或自动崩溃报告。"
+          }
+        }
+      },
+      "extractionState" : "manual"
+    },
+    "Profiles switch profile rename delete" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "プロファイル プロファイルの切り替え 名前変更 削除"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "配置 切换配置 重命名 删除"
+          }
+        }
+      },
+      "extractionState" : "manual"
+    },
+    "General language editing deck for new cards paste clipboard images PNG show media filenames in browse" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "一般 言語 編集 新規カードのデッキ クリップボード 画像 貼り付け PNG 音声 ファイル名 表示 ブラウザー"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "通用 语言 编辑 新卡片的牌组 剪贴板 图片 粘贴 PNG 浏览器 显示 媒体文件名"
+          }
+        }
+      },
+      "extractionState" : "manual"
+    },
+    "Appearance theme system light dark black night deck list background image wallpaper" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "外観 テーマ システム ライト ダーク ブラック 夜間 デッキ一覧 背景 画像 壁紙"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "外观 主题 跟随系统 浅色 深色 纯黑 夜间 牌组列表 背景 图像 壁纸"
+          }
+        }
+      },
+      "extractionState" : "manual"
+    },
+    "Accessibility dynamic type voiceover browse font scaling text size animations" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "アクセシビリティ 文字 拡大 サイズ フォント ブラウザー アニメーション VoiceOver"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "辅助功能 浏览器 字体缩放 文字大小 动画 旁白"
+          }
+        }
+      },
+      "extractionState" : "manual"
+    },
+    "Sync AnkiWeb account server timeout media internet certificate network automatic one-way" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "同期 AnkiWeb アカウント サーバー タイムアウト メディア ネットワーク 証明書 自動 片方向"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "同步 AnkiWeb 账号 服务器 超时 媒体 网络 证书 自动 单向"
+          }
+        }
+      },
+      "extractionState" : "manual"
+    },
+    "Daily Reminder Deck Review Reminders notifications schedule alerts permission" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "毎日のリマインダー 復習リマインダー デッキ 通知 スケジュール 許可"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "每日提醒 牌组复习提醒 通知 日程 权限"
+          }
+        }
+      },
+      "extractionState" : "manual"
+    },
+    "Backups retention automatic daily weekly monthly restore recovery" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "バックアップ 保持 自動 日次 週次 月次 復元"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "备份 保留 自动 每日 每周 每月 恢复"
+          }
+        }
+      },
+      "extractionState" : "manual"
+    },
+    "Manage Space storage collection media check database delete unused" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "容量の管理 ストレージ コレクション メディア チェック データベース 削除 未使用"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "管理空间 存储 集合 媒体 检查 数据库 删除 未使用"
+          }
+        }
+      },
+      "extractionState" : "manual"
+    },
+    "Note Types fields card template layout" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ノートタイプ フィールド カードテンプレート レイアウト"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "笔记类型 字段 卡片模板 布局"
+          }
+        }
+      },
+      "extractionState" : "manual"
+    },
+    "Transfer Guide import export deck collection package" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "転送ガイド インポート エクスポート デッキ コレクション パッケージ"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "迁移指南 导入 导出 牌组 集合 包"
+          }
+        }
+      },
+      "extractionState" : "manual"
+    },
+    "Help manual report issue" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ヘルプ マニュアル 問題 報告"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "帮助 手册 报告 问题"
+          }
+        }
+      },
+      "extractionState" : "manual"
+    },
+    "About version build engine FSRS acknowledgements license credits source code notices changelog privacy diagnostics" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "アプリについて バージョン ビルド エンジン FSRS ライセンス クレジット ソースコード 変更履歴 プライバシー 診断"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "关于 版本 构建 引擎 FSRS 许可证 致谢 源代码 更新日志 隐私 诊断"
+          }
+        }
+      },
+      "extractionState" : "manual"
+    },
+    "Developer Options web inspector debugging test" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "開発者向けオプション Webインスペクタ デバッグ テスト"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "开发者选项 网页检查器 调试 测试"
+          }
+        }
+      },
+      "extractionState" : "manual"
+    },
+    "Replace Newlines with HTML" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "改行をHTMLに置き換える"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "将换行替换为 HTML"
+          }
+        }
+      },
+      "extractionState" : "manual"
+    },
+    "Advanced script permissions security audio recording external links focus type in answer replace newlines HTML" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "詳細設定 スクリプト 権限 セキュリティ 録音 外部リンク 解答入力 フォーカス 改行 HTML"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "高级 脚本 权限 安全 录音 外部链接 聚焦 输入答案 换行 HTML"
+          }
+        }
+      },
+      "extractionState" : "manual"
+    },
+    "Reviewer studying controls gestures keyboard controller toolbar action tap timebox rollover start next day learn ahead zoom image answer size rating time hold double tap interval speech frame card" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "レビュアー 学習 操作 ジェスチャー キーボード コントローラー ツールバー タップ タイムボックス 日付変更 翌日の始まり 学習の先取り 拡大 画像 回答 ボタン 評価 長押し 二度押し 間隔 音声 読み上げ カード 枠"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "复习 学习 操作 手势 键盘 手柄 工具栏 点击 限时 新一天 提前学习 缩放 图片 答案 按钮 评价 长按 双击 间隔 朗读 卡片 边框"
+          }
+        }
+      },
+      "extractionState" : "manual"
+    },
+    "Show Media Filenames in Browse" : {
+      "localizations" : {
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "ブラウザーにメディアのファイル名を表示" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "在浏览器中显示媒体文件名" } }
+      }
     }
   },
   "version" : "1.0"

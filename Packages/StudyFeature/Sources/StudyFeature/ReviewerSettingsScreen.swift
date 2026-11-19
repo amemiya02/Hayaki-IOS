@@ -1,6 +1,7 @@
 import AnkiCore
 import AnkiProto
 import CollectionStore
+import HayakiAppearance
 import SwiftUI
 
 /// Settings shared by the reviewer and the app's More screen.
@@ -16,7 +17,10 @@ public struct ReviewerSettingsScreen: View {
 
     public var body: some View {
         Form {
-            if let store { ReviewerCollectionSettings(store: store) }
+            if let store {
+                SchedulingPreferenceSection(store: store)
+                ReviewerCollectionSettings(store: store)
+            }
             Section(reviewerLocalized("Studying")) {
                 Toggle(reviewerLocalized("Keep Screen On"), isOn: $preferences.keepScreenOn)
                 Toggle(reviewerLocalized("Center Card Vertically"), isOn: $preferences.centerVertically)
@@ -81,6 +85,7 @@ public struct ReviewerSettingsScreen: View {
                 }
             }
         }
+        .hayakiScrollBackground()
         .navigationTitle(reviewerLocalized("Reviewer"))
         .onChange(of: preferences) { _, value in value.save() }
         .sheet(isPresented: $selectingInput) {
@@ -126,9 +131,74 @@ private struct ToolbarActionsSettings: View {
     }
 }
 
+private struct SchedulingPreferenceSection: View {
+    let store: CollectionStore
+    @State private var scheduling: Anki_Config_Preferences.Scheduling?
+    @State private var saveTask: Task<Void, Never>?
+    @State private var error: String?
+
+    var body: some View {
+        Section {
+            if let scheduling {
+                Picker(selection: Binding(
+                    get: { scheduling.rollover },
+                    set: { update(\.rollover, value: $0) }
+                )) {
+                    ForEach(0..<24) { hour in
+                        Text("\(hour):00").tag(UInt32(hour))
+                    }
+                } label: { Text("Start of Next Day", bundle: .module) }
+
+                Stepper(
+                    value: Binding(
+                        get: { Int(scheduling.learnAheadSecs / 60) },
+                        set: { update(\.learnAheadSecs, value: UInt32($0 * 60)) }
+                    ),
+                    in: 0...999
+                ) {
+                    LabeledContent {
+                        Text((Double(scheduling.learnAheadSecs) / 60).formatted(.number.precision(.fractionLength(0))))
+                            .monospacedDigit()
+                    } label: {
+                        Text("Learn Ahead Limit (Minutes)", bundle: .module)
+                    }
+                }
+            }
+        } header: {
+            Text("Scheduling", bundle: .module)
+        }
+        .task {
+            do { scheduling = try await store.core.getPreferences().scheduling }
+            catch { self.error = error.localizedDescription }
+        }
+        .alert(Text("Could Not Update Scheduling", bundle: .module), isPresented: Binding(
+            get: { error != nil }, set: { if !$0 { error = nil } }
+        )) {
+            Button(role: .cancel) { error = nil } label: { Text("OK", bundle: .module) }
+        } message: {
+            Text(verbatim: error ?? "")
+        }
+    }
+
+    private func update(_ key: WritableKeyPath<Anki_Config_Preferences.Scheduling, UInt32> & Sendable, value: UInt32) {
+        scheduling?[keyPath: key] = value
+        let previous = saveTask
+        saveTask = Task {
+            await previous?.value
+            do {
+                try await store.updateSchedulingPreferences { $0[keyPath: key] = value }
+            } catch {
+                self.error = error.localizedDescription
+                scheduling = try? await store.core.getPreferences().scheduling
+            }
+        }
+    }
+}
+
 private struct ReviewerCollectionSettings: View {
     let store: CollectionStore
     @State private var reviewing: Anki_Config_Preferences.Reviewing?
+    @AppStorage("hayaki.reviewer.customTimeboxMinutes") private var customTimeboxMinutes = 20
     @State private var saveTask: Task<Void, Never>?
     @State private var saveError: String?
 
@@ -143,13 +213,28 @@ private struct ReviewerCollectionSettings: View {
                 ))
                 Toggle(reviewerLocalized("Interrupt Audio When Answering"), isOn: preference(\.interruptAudioWhenAnswering, reviewing))
                 let minutes = Int(reviewing.timeLimitSecs) / 60
-                Stepper(
-                    minutes == 0 ? "Timebox Off" : "Timebox: \(minutes) min",
-                    value: Binding(
-                        get: { Int(self.reviewing?.timeLimitSecs ?? 0) / 60 },
-                        set: { update(\.timeLimitSecs, to: UInt32($0 * 60)) }
-                    ), in: 0...240
-                )
+                Toggle(isOn: Binding(
+                    get: { reviewing.timeLimitSecs > 0 },
+                    set: { enabled in
+                        if !enabled, minutes > 0 { customTimeboxMinutes = minutes }
+                        update(\.timeLimitSecs, to: enabled ? UInt32(customTimeboxMinutes * 60) : 0)
+                    }
+                )) {
+                    Text("Use Timebox", bundle: .module)
+                }
+                if reviewing.timeLimitSecs > 0 {
+                    Stepper(value: Binding(
+                        get: { max(1, minutes) },
+                        set: { newValue in
+                            customTimeboxMinutes = newValue
+                            update(\.timeLimitSecs, to: UInt32(newValue * 60))
+                        }
+                    ), in: 1...9999) {
+                        LabeledContent {
+                            Text(max(1, minutes), format: .number).monospacedDigit()
+                        } label: { Text("Timebox (Minutes)", bundle: .module) }
+                    }
+                }
             }
         }
         .task {
@@ -179,9 +264,9 @@ private struct ReviewerCollectionSettings: View {
         saveTask = Task { @MainActor in
             await previous?.value
             do {
-                var config = try await store.core.getPreferences()
-                config.reviewing[keyPath: field] = value
-                try await store.modify(.setPreferences(config))
+                var latest = try await store.core.getPreferences().reviewing
+                latest[keyPath: field] = value
+                try await store.modify(.setPreferences(.with { $0.reviewing = latest }))
             } catch {
                 saveError = error.localizedDescription
                 reviewing = try? await store.core.getPreferences().reviewing

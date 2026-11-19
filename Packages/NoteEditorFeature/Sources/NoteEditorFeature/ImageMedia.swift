@@ -29,7 +29,7 @@ struct ImageMedia {
     /// Formats card web views on every platform show, kept as they are.
     private static let keptFormats: [UTType] = [.jpeg, .png, .gif, .webP]
 
-    init?(data original: Data) {
+    init?(data original: Data, asPNG: Bool = false) {
         guard let source = CGImageSourceCreateWithData(original as CFData, nil),
               let identifier = CGImageSourceGetType(source),
               let format = UTType(identifier as String),
@@ -37,9 +37,12 @@ struct ImageMedia {
         else { return nil }
 
         let output: (data: Data, format: UTType)
-        if Self.keptFormats.contains(format) {
+        if asPNG && format != .png {
+            guard let png = Self.convert(source, to: .png) else { return nil }
+            output = (png, .png)
+        } else if Self.keptFormats.contains(format) {
             output = (Self.withoutLocation(source, format: format) ?? original, format)
-        } else if let jpeg = Self.jpeg(from: source) {
+        } else if let jpeg = Self.convert(source, to: .jpeg) {
             output = (jpeg, .jpeg)
         } else {
             return nil
@@ -89,11 +92,9 @@ struct ImageMedia {
         return output as Data
     }
 
-    /// The first image of `source` as a JPEG, keeping its orientation but
-    /// not its location.
-    private static func jpeg(from source: CGImageSource) -> Data? {
+    private static func convert(_ source: CGImageSource, to format: UTType) -> Data? {
         let output = NSMutableData()
-        guard let destination = CGImageDestinationCreateWithData(output, UTType.jpeg.identifier as CFString, 1, nil)
+        guard let destination = CGImageDestinationCreateWithData(output, format.identifier as CFString, 1, nil)
         else { return nil }
         let properties = [
             kCGImageDestinationLossyCompressionQuality: 0.9,

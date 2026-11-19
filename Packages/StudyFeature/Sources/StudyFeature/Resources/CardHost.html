@@ -243,7 +243,7 @@
         await window.MathJax.typesetPromise([container]);
     }
 
-    async function render(side) {
+    async function render(side, focusTypedAnswer) {
         document.getElementById("card-style").textContent = side.css;
         shownBodyClass = side.bodyClass;
         applyColorScheme();
@@ -279,7 +279,7 @@
                     post({ submit: true });
                 }
             });
-            typeans.focus();
+            if (focusTypedAnswer) typeans.focus();
         }
     }
 
@@ -287,8 +287,8 @@
     // lets an older side finish drawing over a newer one.
     let drawing = Promise.resolve();
 
-    function show(side) {
-        drawing = drawing.then(function () { return render(side); }).catch(console.error);
+    function show(side, focusTypedAnswer) {
+        drawing = drawing.then(function () { return render(side, focusTypedAnswer); }).catch(console.error);
     }
 
     dark.addEventListener("change", applyColorScheme);

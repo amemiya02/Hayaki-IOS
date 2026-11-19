@@ -10,6 +10,9 @@ public struct DeckListScreen: View {
     @State private var model: DeckListModel
     @State private var studying: StudyDeck?
     @State private var selectedDeckID: DeckNode.ID?
+    @Environment(\.hayakiTheme) private var theme
+    @AppStorage(DeckBackground.revisionKey) private var backgroundRevision = ""
+    @State private var backgroundImage: CGImage?
     @Environment(\.scenePhase) private var scenePhase
     private let store: CollectionStore
 
@@ -45,6 +48,10 @@ public struct DeckListScreen: View {
                 }
         }
         .task { await model.run() }
+        .task(id: backgroundRevision) {
+            let image = await DeckBackground(collectionFolder: store.location.folder).image()
+            if !Task.isCancelled { backgroundImage = image }
+        }
         .onChange(of: scenePhase) { _, phase in
             if phase == .active {
                 Task { await model.refresh() }
@@ -104,10 +111,28 @@ public struct DeckListScreen: View {
                     DeckRows(deck: deck, selectedDeckID: selection, study: study)
                 }
             }
-            .hayakiScrollBackground()
+            .scrollContentBackground(.hidden)
+            .background { deckBackground }
             .refreshable { await model.refresh() }
             .environment(model)
         }
+    }
+
+    private var deckBackground: some View {
+        GeometryReader { geometry in
+            if let backgroundImage {
+                Image(decorative: backgroundImage, scale: 1)
+                    .resizable()
+                    .scaledToFill()
+                    .frame(width: geometry.size.width, height: geometry.size.height)
+                    .clipped()
+                    .overlay(theme.background.opacity(0.65))
+            } else {
+                theme.background
+            }
+        }
+        .ignoresSafeArea()
+        .accessibilityHidden(true)
     }
 
     private var selectedDeck: DeckNode? {

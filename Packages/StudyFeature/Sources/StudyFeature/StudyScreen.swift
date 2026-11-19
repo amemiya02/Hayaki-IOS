@@ -255,7 +255,7 @@ public struct StudyScreen: View {
             if let id = model.state.card?.id { route = .cardInfo(cardID: id) }
         case .previousCardInfo:
             if let id = model.previousCardID { route = .cardInfo(cardID: id) }
-        case .addNote: route = .addNote
+        case .addNote: route = .addNote(homeDeckID: model.state.card?.homeDeckID)
         case .showHint:
             webCommand = ReviewerWebCommand(javascript: """
             if (window.ankidroid?.showHint) {
@@ -670,18 +670,18 @@ private struct AnswerBar: View {
     let onShortPress: () -> Void
     let onRate: (Rating) -> Void
     @State private var lastPress: ContinuousClock.Instant?
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     var body: some View {
         Group {
             if showingAnswer {
-                HStack(spacing: 8) {
-                    ForEach(hideHardAndEasy ? [.again, .good] : Rating.allCases, id: \.self) { rating in
-                        RatingButton(
-                            rating: rating, interval: showsIntervals ? card.intervals[rating] : nil,
-                            buttonHeight: buttonHeight
-                        ) {
-                            guarded { onRate(rating) }
+                Group {
+                    if dynamicTypeSize.isAccessibilitySize {
+                        LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 8) {
+                            ratingButtons
                         }
+                    } else {
+                        HStack(spacing: 8) { ratingButtons }
                     }
                 }
                 .disabled(isAnswering)
@@ -701,6 +701,16 @@ private struct AnswerBar: View {
             }
         }
         .frame(minHeight: 60)
+    }
+
+    private var ratingButtons: some View {
+        ForEach(hideHardAndEasy ? [.again, .good] : Rating.allCases, id: \.self) { rating in
+            RatingButton(
+                rating: rating, interval: showsIntervals ? card.intervals[rating] : nil, buttonHeight: buttonHeight
+            ) {
+                guarded { onRate(rating) }
+            }
+        }
     }
 
     private func guarded(_ action: () -> Void) {

@@ -1,6 +1,11 @@
 import HayakiAppearance
 import SwiftUI
 
+public enum StudyDisplayPreferences {
+    public static let focusTypedAnswerKey = "hayaki.reviewer.focusTypedAnswer"
+    public static let inspectCardContentKey = "hayaki.developer.inspectCardContent"
+}
+
 /// A card side for the card host page to show.
 struct CardDisplay: Equatable, Encodable {
     let html: String
@@ -45,6 +50,10 @@ import WebKit
 /// scheme (`CardResources`), never from the network.
 struct CardWebView: UIViewRepresentable {
     @Environment(\.hayakiTheme) private var theme
+    @AppStorage(StudyDisplayPreferences.focusTypedAnswerKey) private var focusTypedAnswer = true
+    #if DEBUG
+    @AppStorage(StudyDisplayPreferences.inspectCardContentKey) private var inspectCardContent = false
+    #endif
     let display: CardDisplay
     /// The collection's media folder, which the card's images, sounds and
     /// fonts come from.
@@ -88,7 +97,7 @@ struct CardWebView: UIViewRepresentable {
         webView.scrollView.backgroundColor = .clear
         webView.navigationDelegate = context.coordinator
         #if DEBUG
-        webView.isInspectable = true
+        webView.isInspectable = inspectCardContent
         #endif
         context.coordinator.webView = webView
         context.coordinator.updateAppearance(theme)
@@ -102,6 +111,10 @@ struct CardWebView: UIViewRepresentable {
         if webView.pageZoom != zoom {
             webView.pageZoom = zoom
         }
+        #if DEBUG
+        webView.isInspectable = inspectCardContent
+        #endif
+        context.coordinator.focusTypedAnswer = focusTypedAnswer
         context.coordinator.updateReviewer(reviewer)
         context.coordinator.show(display)
     }
@@ -121,6 +134,7 @@ struct CardWebView: UIViewRepresentable {
         private var command: ReviewerWebCommand?
 
         weak var webView: WKWebView?
+        var focusTypedAnswer = true
         var onEvent: (CardPageEvent) -> Void = { _ in }
         /// The side the page should show.
         private var wanted: CardDisplay?
@@ -185,7 +199,7 @@ struct CardWebView: UIViewRepresentable {
                 return
             }
             shown = wanted
-            webView.evaluateJavaScript("hayaki.show(\(argument)); true") { _, error in
+            webView.evaluateJavaScript("hayaki.show(\(argument), \(focusTypedAnswer)); true") { _, error in
                 if let error {
                     Self.log.error("The card host page could not show a card: \(error, privacy: .public)")
                 }

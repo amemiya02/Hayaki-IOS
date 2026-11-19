@@ -2088,6 +2088,69 @@
           }
         }
       }
+    },
+    "Start of Next Day": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "翌日の始まり"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "新一天开始时间"
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "Learn Ahead Limit (Minutes)": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "学習の先取り上限（分）"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "提前学习上限（分钟）"
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "Could Not Update Scheduling": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "スケジュールを更新できませんでした"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无法更新排程"
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "Use Timebox": {
+      "localizations": {
+        "ja": { "stringUnit": { "state": "translated", "value": "タイムボックスを使う" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "启用限时学习" } }
+      }
+    },
+    "Timebox (Minutes)": {
+      "localizations": {
+        "ja": { "stringUnit": { "state": "translated", "value": "タイムボックス（分）" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "限时时长（分钟）" } }
+      }
     }
   },
   "version" : "1.0"

@@ -3,6 +3,7 @@ import AnkiProto
 import CollectionStore
 import CollectionTesting
 import DecksFeature
+import Foundation
 import NoteEditorFeature
 import Testing
 
@@ -22,6 +23,50 @@ struct AddNoteTests {
             #expect(model.fields.map(\.text) == ["", ""])
             #expect(model.notetypes.map(\.name).contains("Cloze"))
             #expect(model.decks.map(\.name) == ["Default"])
+        }
+    }
+
+    @Test("The collection can use the current deck instead of the last deck for the note type")
+    func addsToCurrentDeckWhenPreferred() async throws {
+        try await withTemporaryCollection { store in
+            let historyDeck = try await store.addDeck(named: "Prior")
+            let currentDeck = try await store.addDeck(named: "Current")
+            let previous = NoteEditorModel(store: store)
+            await previous.load()
+            previous.selectDeck(historyDeck)
+            previous.setText("Hola", ofField: 0)
+            previous.setText("Hello", ofField: 1)
+            #expect(await previous.add().cardCount == 1)
+            try await store.modify(.setCurrentDeck(.with { $0.did = currentDeck }))
+
+            try await store.modify(.setConfigBool(.with {
+                $0.key = .addingDefaultsToCurrentDeck
+                $0.value = true
+            }))
+            let editor = NoteEditorModel(store: store)
+            await editor.load()
+            #expect(editor.deckID == currentDeck)
+        }
+    }
+
+    @Test("Clipboard images follow the collection’s PNG preference")
+    func clipboardImageUsesPreferredFormat() async throws {
+        try await withTemporaryCollection { store in
+            let editor = NoteEditorModel(store: store)
+            await editor.load()
+            let gif = try #require(Data(base64Encoded: "R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"))
+            try await editor.pasteImage(gif, intoField: 0)
+            #expect(editor.fields[0].images.first?.hasSuffix(".gif") == true)
+
+            try await store.modify(.setConfigBool(.with {
+                $0.key = .pasteImagesAsPng
+                $0.value = true
+            }))
+            try await editor.pasteImage(gif, intoField: 1)
+            let name = try #require(editor.fields[1].images.first)
+            #expect(name.hasSuffix(".png"))
+            let file = editor.mediaFolder.appendingPathComponent(name)
+            #expect(try Data(contentsOf: file).prefix(4) == Data([137, 80, 78, 71]))
         }
     }
 
@@ -128,6 +173,10 @@ struct AddNoteTests {
     @Test("Opening the editor again starts with the note type and deck last used")
     func remembersLastNotetypeAndDeck() async throws {
         try await withTemporaryCollection { store in
+            try await store.modify(.setConfigBool(.with {
+                $0.key = .addingDefaultsToCurrentDeck
+                $0.value = false
+            }))
             let spanish = try await store.addDeck(named: "Spanish")
             try await store.addDeck(named: "Geography")
             let first = NoteEditorModel(store: store)
