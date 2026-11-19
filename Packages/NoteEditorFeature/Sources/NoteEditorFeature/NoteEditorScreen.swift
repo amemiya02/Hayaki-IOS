@@ -2,13 +2,20 @@ import CollectionStore
 import PhotosUI
 import SwiftUI
 
-/// Adding notes: note type, deck, fields, images and tags. Shown as a sheet
-/// from anywhere in the app; it stays open after each note so several can be
-/// added in a row.
+/// Adds or edits notes in a sheet. When adding, the editor stays open for
+/// the next note.
 public struct NoteEditorScreen: View {
     @State private var model: NoteEditorModel
     @Environment(\.dismiss) private var dismiss
-    @State private var isAdding = false
+    @State private var isBusy = false
+    @State private var confirmDeletion = false
+    @State private var confirmDiscard = false
+    @State private var preview: PreviewRequest?
+    @State private var newTag = ""
+    @State private var markupFields: Set<Int> = []
+    @State private var selections: [Int: TextSelection] = [:]
+    @AppStorage("noteEditorToolbarLayout") private var toolbarLayout = EditorToolbarLayout.scroll
+    private let onDelete: () -> Void
     @State private var warning: AddWarning?
     @State private var refusal: AddProblem?
     @State private var failure: String?
@@ -17,35 +24,87 @@ public struct NoteEditorScreen: View {
 
     public init(store: CollectionStore) {
         _model = State(initialValue: NoteEditorModel(store: store))
+        onDelete = {}
+    }
+
+    public init(store: CollectionStore, editingCardID: Int64, onDelete: @escaping () -> Void = {}) {
+        _model = State(initialValue: NoteEditorModel(store: store, editingCardID: editingCardID))
+        self.onDelete = onDelete
     }
 
     public var body: some View {
         NavigationStack {
             content
-                .navigationTitle(Text("Add Note", bundle: .module))
+                .navigationTitle(model.isEditing ? Text("Edit Note", bundle: .module) : Text("Add Note", bundle: .module))
                 .toolbarTitleDisplayModeInline()
                 .toolbar {
                     ToolbarItem(placement: .cancellationAction) {
-                        Button(role: .close) { dismiss() }
+                        Button(role: .close, action: close)
+                            .disabled(isBusy)
+                    }
+                    ToolbarItemGroup(placement: .primaryAction) {
+                        Button {
+                            Task { await showPreview() }
+                        } label: {
+                            Label { Text("Preview", bundle: .module) } icon: { Image(systemName: "eye") }
+                        }
+                        .accessibilityIdentifier("preview-note")
+                        .disabled(model.state != .ready || isBusy)
+                        editorMenu
                     }
                     ToolbarItem(placement: .confirmationAction) {
                         Button(role: .confirm) {
-                            Task { await add() }
+                            Task { await submit() }
                         } label: {
-                            Text("Add", bundle: .module)
+                            if model.isEditing { Text("Save", bundle: .module) }
+                            else { Text("Add", bundle: .module) }
                         }
-                        .disabled(model.state != .ready || isAdding)
+                        .accessibilityIdentifier("submit-note")
+                        .disabled(model.state != .ready || isBusy)
                         .keyboardShortcut(.return, modifiers: .command)
                     }
                 }
-                .safeAreaInset(edge: .bottom) { addedBanner }
+                .safeAreaInset(edge: .bottom, spacing: 0) {
+                    VStack(spacing: 0) {
+                        addedBanner
+                        if model.state == .ready {
+                            EditorFormattingToolbar(layout: toolbarLayout, isCloze: model.isCloze, format: applyFormat)
+                                .disabled(isBusy)
+                        }
+                    }
+                }
+                .navigationDestination(isPresented: isPresent($preview)) {
+                    if let preview {
+                        NotePreviewScreen(
+                            cards: preview.cards,
+                            initialOrdinal: model.preferredPreviewOrdinal,
+                            mediaFolder: model.mediaFolder
+                        )
+                    }
+                }
         }
         .task { await model.load() }
+        .interactiveDismissDisabled(isBusy || model.hasChanges || !newTag.isEmpty)
+        .alert(Text("Discard Changes?", bundle: .module), isPresented: $confirmDiscard) {
+            Button(role: .destructive) { dismiss() } label: { Text("Discard", bundle: .module) }
+            Button(role: .cancel) {}
+        }
+        .alert(Text("Delete Note?", bundle: .module), isPresented: $confirmDeletion) {
+            Button(role: .destructive) {
+                Task { await deleteNote() }
+            } label: {
+                Text("Delete", bundle: .module)
+            }
+            Button(role: .cancel) {} label: { Text("Cancel", bundle: .module) }
+        } message: {
+            Text("This deletes the note and all its cards.", bundle: .module)
+        }
         .alert(warningTitle, isPresented: isPresent($warning), presenting: warning) { warning in
             Button {
-                Task { await add(confirming: warning) }
+                Task { await submit(confirming: warning) }
             } label: {
-                Text("Add Anyway", bundle: .module)
+                if model.isEditing { Text("Save Anyway", bundle: .module) }
+                else { Text("Add Anyway", bundle: .module) }
             }
             Button(role: .cancel) {}
         } message: { warning in
@@ -56,7 +115,7 @@ public struct NoteEditorScreen: View {
         } message: { refusal in
             refusalMessage(refusal)
         }
-        .alert(Text("Could Not Add the Note", bundle: .module), isPresented: isPresent($failure), presenting: failure) { _ in
+        .alert(Text("Could Not Change the Note", bundle: .module), isPresented: isPresent($failure), presenting: failure) { _ in
             Button(role: .cancel) {} label: { Text("OK", bundle: .module) }
         } message: { message in
             Text(message)
@@ -71,7 +130,8 @@ public struct NoteEditorScreen: View {
         case .failed(let message):
             ContentUnavailableView {
                 Label {
-                    Text("Could Not Start a Note", bundle: .module)
+                    if model.isEditing { Text("Could Not Open the Note", bundle: .module) }
+                    else { Text("Could Not Start a Note", bundle: .module) }
                 } icon: {
                     Image(systemName: "exclamationmark.triangle")
                 }
@@ -79,53 +139,182 @@ public struct NoteEditorScreen: View {
                 Text(message)
             }
         case .ready:
-            form
+            form.disabled(isBusy)
         }
     }
 
     private var form: some View {
         Form {
             Section {
-                Picker(selection: notetypeSelection) {
-                    ForEach(model.notetypes) { notetype in
-                        Text(notetype.name).tag(notetype.id)
+                if model.isEditing {
+                    if let name = model.notetypeName {
+                        LabeledContent { Text(name) } label: { Text("Note Type", bundle: .module) }
                     }
-                } label: {
-                    Text("Note Type", bundle: .module)
-                }
-                Picker(selection: deckSelection) {
-                    ForEach(model.decks) { deck in
-                        Text(deck.name).tag(deck.id)
+                    if let name = model.deckName {
+                        LabeledContent { Text(name) } label: { Text("Deck", bundle: .module) }
                     }
-                } label: {
-                    Text("Deck", bundle: .module)
+                } else {
+                    Picker(selection: notetypeSelection) {
+                        ForEach(model.notetypes) { notetype in
+                            Text(notetype.name).tag(notetype.id)
+                        }
+                    } label: {
+                        Text("Note Type", bundle: .module)
+                    }
+                    Picker(selection: deckSelection) {
+                        ForEach(model.decks) { deck in
+                            Text(deck.name).tag(deck.id)
+                        }
+                    } label: {
+                        Text("Deck", bundle: .module)
+                    }
+                    .navigationLinkPickerStyle()
                 }
-                .navigationLinkPickerStyle()
             }
             ForEach(Array(model.fields.enumerated()), id: \.offset) { index, field in
-                FieldSection(model: model, index: index, field: field, focusedField: $focusedField)
+                FieldSection(
+                    model: model, index: index, field: field,
+                    focusedField: $focusedField,
+                    selection: Binding(get: { selections[index] }, set: { selections[index] = $0 }),
+                    showsMarkup: field.requiresMarkup || markupFields.contains(index),
+                    toggleMarkup: {
+                        selections[index] = nil
+                        if markupFields.contains(index) { markupFields.remove(index) }
+                        else { markupFields.insert(index) }
+                    },
+                    toggleSticky: { Task { await setSticky(index) } }
+                )
             }
-            TagsSection(model: model)
+            TagsSection(model: model, newTag: $newTag)
         }
     }
 
-    // MARK: Adding
-
-    private func add(confirming accepted: AddWarning? = nil) async {
-        isAdding = true
-        defer { isAdding = false }
-        switch await model.add(confirming: accepted) {
-        case .added(let note):
-            withAnimation { added = note }
-            focusedField = 0
-            AccessibilityNotification.Announcement(addedMessage(note)).post()
-        case .needsConfirmation(let warning):
-            self.warning = warning
-        case .refused(let problem):
-            refusal = problem
-        case .failed(let message):
-            failure = message
+    private var editorMenu: some View {
+        Menu {
+            Picker(selection: $toolbarLayout) {
+                ForEach(EditorToolbarLayout.allCases, id: \.self) { layout in
+                    layout.title.tag(layout)
+                }
+            } label: {
+                Text("Toolbar Layout", bundle: .module)
+            }
+            if model.isEditing {
+                Button(role: .destructive) {
+                    confirmDeletion = true
+                } label: {
+                    Label { Text("Delete Note", bundle: .module) } icon: { Image(systemName: "trash") }
+                }
+            }
+        } label: {
+            Label { Text("Editor Options", bundle: .module) } icon: { Image(systemName: "ellipsis.circle") }
         }
+        .disabled(model.state != .ready || isBusy)
+    }
+
+    private func close() {
+        if model.hasChanges || !newTag.isEmpty { confirmDiscard = true }
+        else { dismiss() }
+    }
+
+    private func commitTags() {
+        model.addTags(newTag)
+        newTag = ""
+    }
+
+    private func submit(confirming accepted: AddWarning? = nil) async {
+        guard !isBusy else { return }
+        isBusy = true
+        defer { isBusy = false }
+        commitTags()
+        if model.isEditing {
+            switch await model.save(confirming: accepted) {
+            case .saved: dismiss()
+            case .needsConfirmation(let warning): self.warning = warning
+            case .refused(let problem): refusal = problem
+            case .failed(let message): failure = message
+            }
+        } else {
+            switch await model.add(confirming: accepted) {
+            case .added(let note):
+                withAnimation { added = note }
+                markupFields = []
+                selections = [:]
+                focusedField = 0
+                AccessibilityNotification.Announcement(addedMessage(note)).post()
+            case .needsConfirmation(let warning): self.warning = warning
+            case .refused(let problem): refusal = problem
+            case .failed(let message): failure = message
+            }
+        }
+    }
+
+    private func deleteNote() async {
+        guard !isBusy else { return }
+        isBusy = true
+        defer { isBusy = false }
+        do {
+            try await model.delete()
+            onDelete()
+            dismiss()
+        } catch {
+            failure = error.message
+        }
+    }
+
+    private func showPreview() async {
+        guard !isBusy else { return }
+        isBusy = true
+        defer { isBusy = false }
+        commitTags()
+        do {
+            preview = PreviewRequest(cards: try await model.preview())
+        } catch {
+            failure = error.message
+        }
+    }
+
+    private func setSticky(_ index: Int) async {
+        guard !isBusy else { return }
+        isBusy = true
+        defer { isBusy = false }
+        do {
+            try await model.setSticky(!model.isSticky(index), ofField: index)
+        } catch {
+            failure = error.message
+        }
+    }
+
+    private func applyFormat(_ format: EditorTextFormat) {
+        let index = focusedField ?? 0
+        guard model.fields.indices.contains(index) else { return }
+        let field = model.fields[index]
+        let editingMarkup = field.requiresMarkup || markupFields.contains(index)
+        let displayed = editingMarkup ? field.content : field.text
+        let selected: Range<String.Index>
+        if case .selection(let range) = selections[index]?.indices,
+           range.lowerBound >= displayed.startIndex, range.upperBound <= displayed.endIndex,
+           displayed.indices.contains(range.lowerBound) || range.lowerBound == displayed.endIndex,
+           displayed.indices.contains(range.upperBound) || range.upperBound == displayed.endIndex {
+            selected = range
+        } else {
+            selected = displayed.endIndex..<displayed.endIndex
+        }
+        let before = String(displayed[..<selected.lowerBound])
+        let selectedText = String(displayed[selected])
+        let after = String(displayed[selected.upperBound...])
+        let wrap = format.wrapper(fields: model.fields)
+        let start = (editingMarkup ? before : FieldMarkup.html(fromPlainText: before)) + wrap.prefix
+        let middle = editingMarkup ? selectedText : FieldMarkup.html(fromPlainText: selectedText)
+        var html = start + middle + wrap.suffix + (editingMarkup ? after : FieldMarkup.html(fromPlainText: after))
+        if !editingMarkup {
+            html += field.images.map { "<img src=\"\(FieldMarkup.escaped($0, quotes: true))\">" }.joined()
+        }
+        model.setMarkup(html, ofField: index)
+        markupFields.insert(index)
+        let lower = html.index(html.startIndex, offsetBy: start.count)
+        let upper = html.index(lower, offsetBy: middle.count)
+        selections[index] = TextSelection(range: lower..<upper)
+        focusedField = index
     }
 
     @ViewBuilder
@@ -168,7 +357,7 @@ public struct NoteEditorScreen: View {
     }
 
     private var refusalTitle: Text {
-        Text("Cannot Add the Note", bundle: .module)
+        model.isEditing ? Text("Cannot Save the Note", bundle: .module) : Text("Cannot Add the Note", bundle: .module)
     }
 
     private func refusalMessage(_ problem: AddProblem) -> Text {
@@ -184,8 +373,19 @@ public struct NoteEditorScreen: View {
 
     // MARK: Bindings
 
+    private func selectNotetype(_ id: Int64) async {
+        guard !isBusy, id != model.notetypeID else { return }
+        isBusy = true
+        defer { isBusy = false }
+        await model.selectNotetype(id)
+        selections = [:]
+        markupFields = []
+    }
+
     private var notetypeSelection: Binding<Int64> {
-        Binding(get: { model.notetypeID }, set: { id in Task { await model.selectNotetype(id) } })
+        Binding(get: { model.notetypeID }, set: { id in
+            Task { await selectNotetype(id) }
+        })
     }
 
     private var deckSelection: Binding<Int64> {
@@ -197,6 +397,10 @@ public struct NoteEditorScreen: View {
     }
 }
 
+private struct PreviewRequest {
+    let cards: [DraftCard]
+}
+
 /// One field: its text, the images attached to it, and a button to attach
 /// another from the photo library.
 private struct FieldSection: View {
@@ -204,40 +408,63 @@ private struct FieldSection: View {
     let index: Int
     let field: EditableField
     @FocusState.Binding var focusedField: Int?
+    @Binding var selection: TextSelection?
+    let showsMarkup: Bool
+    let toggleMarkup: () -> Void
+    let toggleSticky: () -> Void
     @State private var photo: PhotosPickerItem?
     @State private var isLoadingPhoto = false
     @State private var attachError: AttachImageError?
 
     var body: some View {
         Section {
-            TextField(text: text, axis: .vertical) {
+            TextField(text: text, selection: $selection, axis: .vertical) {
                 Text(field.name)
             }
             .lineLimit(1...12)
             .focused($focusedField, equals: index)
             .accessibilityLabel(Text(field.name))
+            .accessibilityIdentifier("note-field-\(index)")
+            .font(showsMarkup ? .body.monospaced() : .body)
+            .disableMarkupAutocorrection(showsMarkup)
             ForEach(field.images, id: \.self) { name in
                 ImageRow(file: model.mediaFile(named: name), fieldName: field.name) {
                     model.removeImage(named: name, fromField: index)
                 }
             }
             PhotosPicker(selection: $photo, matching: .images, preferredItemEncoding: .current) {
-                HStack {
-                    Label {
-                        Text("Add Image", bundle: .module)
-                    } icon: {
-                        Image(systemName: "photo.badge.plus")
-                    }
-                    if isLoadingPhoto {
-                        Spacer()
-                        ProgressView()
-                    }
+                Label {
+                    Text("Add Image", bundle: .module)
+                } icon: {
+                    Image(systemName: "photo.badge.plus")
                 }
             }
             .disabled(isLoadingPhoto)
             .accessibilityLabel(Text("Add Image to \(field.name)", bundle: .module))
         } header: {
-            Text(field.name)
+            HStack {
+                Text(field.name)
+                Spacer()
+                if !field.requiresMarkup {
+                    Button(action: toggleMarkup) {
+                        Image(systemName: showsMarkup ? "textformat" : "chevron.left.forwardslash.chevron.right")
+                    }
+                    .buttonStyle(.borderless)
+                    .accessibilityLabel(showsMarkup ? Text("Edit Text", bundle: .module) : Text("Edit HTML", bundle: .module))
+                } else {
+                    Text("HTML", bundle: .module)
+                        .font(.caption.monospaced())
+                }
+                if !model.isEditing {
+                    let pinned = model.isSticky(index)
+                    Button(action: toggleSticky) {
+                        Image(systemName: pinned ? "pin.fill" : "pin")
+                    }
+                    .buttonStyle(.borderless)
+                    .accessibilityLabel(pinned ? Text("Unpin Field", bundle: .module) : Text("Pin Field", bundle: .module))
+                    .accessibilityIdentifier("sticky-field-\(index)")
+                }
+            }
         }
         .onChange(of: photo) { _, item in
             guard let item else { return }
@@ -258,7 +485,10 @@ private struct FieldSection: View {
     }
 
     private var text: Binding<String> {
-        Binding(get: { field.text }, set: { model.setText($0, ofField: index) })
+        Binding(get: { showsMarkup ? field.content : field.text }, set: {
+            if showsMarkup { model.setMarkup($0, ofField: index) }
+            else { model.setText($0, ofField: index) }
+        })
     }
 
     private func attach(_ item: PhotosPickerItem) async {
@@ -325,7 +555,7 @@ private struct ImageRow: View {
 /// The note's tags, each removable, and a field to add more.
 private struct TagsSection: View {
     let model: NoteEditorModel
-    @State private var newTag = ""
+    @Binding var newTag: String
 
     var body: some View {
         Section {
@@ -369,6 +599,16 @@ private struct TagsSection: View {
 }
 
 private extension View {
+    @ViewBuilder
+    func disableMarkupAutocorrection(_ enabled: Bool) -> some View {
+        #if os(iOS)
+        if enabled { autocorrectionDisabled().textInputAutocapitalization(.never) }
+        else { self }
+        #else
+        autocorrectionDisabled(enabled)
+        #endif
+    }
+
     /// Inline titles and no automatic capitalisation exist only on iOS; the
     /// package also builds for macOS so its tests run there.
     @ViewBuilder
