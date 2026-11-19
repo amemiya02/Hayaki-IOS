@@ -126,6 +126,7 @@ struct AdvancedSchedulingSection: View {
                     }, in: ...Date.now, displayedComponents: .date) {
                         Text("Earliest review date", bundle: .module)
                     }
+                    FSRSCutoffEstimateLabel(model: model)
                 }
             } else {
                 DecimalOptionRow(value: $model.initialEase, percentage: true) {
