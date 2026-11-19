@@ -92,6 +92,7 @@ public final class CardBrowserModel {
 
     /// Why the last bulk action or undo failed, in the core's words.
     public var failure: String?
+    public internal(set) var isPerformingAction = false
 
     public internal(set) var savedSearches: [SavedBrowserSearch] = []
     @ObservationIgnored var updatingSavedSearches = false

@@ -7,6 +7,16 @@ public enum BulkAction: Hashable, Sendable {
     case suspend
     /// Lets suspended (and buried) cards be studied again.
     case unsuspend
+    case toggleSuspend
+    case toggleBury
+    case toggleMark
+    case addTags(String)
+    case removeTags(String)
+    case setDueDate(String)
+    case resetProgress(restorePosition: Bool, resetCounts: Bool)
+    case reposition(start: UInt32, step: UInt32, randomize: Bool, shiftExisting: Bool)
+    case grade(CardDetail.Review.Rating)
+    case findAndReplace(search: String, replacement: String, field: String, regex: Bool, matchCase: Bool, onlySelection: Bool)
     /// Sets a flag, replacing any other; nil takes the flag off.
     case flag(CardRow.Flag?)
     /// Moves the cards to a deck, by id. Cards borrowed by a filtered deck
@@ -26,6 +36,7 @@ public struct CompletedAction: Equatable, Sendable {
     /// The core's name for the operation, in its language, such as "Set
     /// Flag": what undoing it reverts.
     public let undoName: String
+    let undoStep: UInt32
 }
 
 /// What deleting the selected cards would delete.
@@ -42,49 +53,193 @@ public struct DeletionSummary: Equatable, Sendable {
 }
 
 extension CardBrowserModel {
-    /// Carries out an action on every selected card through the core, as one
-    /// operation the core can undo, then lists the cards again. On failure,
-    /// `failure` holds the core's explanation and nothing is changed.
+    /// Applies the action to the current selection as a single undoable operation.
     public func perform(_ action: BulkAction) async {
-        let cardIDs = Array(selection)
-        guard !cardIDs.isEmpty else { return }
+        guard !isPerformingAction else { return }
+        let selected = rowIDs.filter { selection.contains($0) }
+        let mode = mode
+        if case .findAndReplace(_, _, _, _, _, false) = action {
+            // The unscoped Find and Replace action searches all notes.
+        } else if selected.isEmpty {
+            return
+        }
+        isPerformingAction = true
         failure = nil
+        completedAction = nil
+        defer { isPerformingAction = false }
         do {
-            var cardCount = cardIDs.count
-            switch action {
-            case .suspend:
-                try await store.modify(.buryOrSuspendCards(.with {
-                    $0.cardIds = cardIDs
-                    $0.mode = .suspend
-                }))
-            case .unsuspend:
-                try await store.modify(.restoreBuriedAndSuspendedCards(.with { $0.cids = cardIDs }))
-            case .flag(let flag):
-                try await store.modify(.setFlag(.with {
-                    $0.cardIds = cardIDs
-                    $0.flag = UInt32(flag?.rawValue ?? 0)
-                }))
-            case .move(let deckID):
-                try await store.modify(.setDeck(.with {
-                    $0.cardIds = cardIDs
-                    $0.deckID = deckID
-                }))
-            case .delete:
-                cardCount = try await summarizeDeletion(of: cardIDs).cardCount
-                try await store.modify(.removeNotes(.with { $0.cardIds = cardIDs }))
+            let undoBefore = try await store.core.getUndoStatus()
+            let result = try await apply(action, selected: selected, mode: mode)
+            let undo = try await store.core.getUndoStatus()
+            if !CollectionChange(result.changes).isEmpty, !undo.undo.isEmpty, undo.lastStep != undoBefore.lastStep {
+                completedAction = CompletedAction(
+                    action: action, cardCount: result.cardCount, undoName: undo.undo, undoStep: undo.lastStep
+                )
             }
-            let undoName = try await store.undoableAction() ?? ""
-            completedAction = CompletedAction(action: action, cardCount: cardCount, undoName: undoName)
         } catch {
             failure = error.message
         }
         await search()
     }
 
-    /// How many notes and cards deleting the selected cards would delete,
-    /// for the learner to confirm; nil if the core cannot say.
+    private func apply(_ action: BulkAction, selected: [Int64], mode: Mode) async throws(CoreError)
+        -> (changes: Anki_Collection_OpChanges, cardCount: Int)
+    {
+        switch action {
+        case .delete, .toggleMark, .addTags, .removeTags, .findAndReplace:
+            return try await applyToNotes(action, selected: selected, mode: mode)
+        default:
+            let cardIDs = try await cardIDs(for: selected, mode: mode)
+            guard !cardIDs.isEmpty else { return (.init(), 0) }
+            let changes = try await applyToCards(action, ids: cardIDs)
+            return (changes, cardIDs.count)
+        }
+    }
+
+    private func applyToCards(_ action: BulkAction, ids: [Int64]) async throws(CoreError) -> Anki_Collection_OpChanges {
+        switch action {
+        case .suspend:
+            return try await setCardQueue(.suspend, ids: ids)
+        case .unsuspend:
+            return try await store.modify(.restoreBuriedAndSuspendedCards(.with { $0.cids = ids }))
+        case .toggleSuspend:
+            return try await toggleQueue(matches: "is:suspended", otherwise: .suspend, ids: ids)
+        case .toggleBury:
+            return try await toggleQueue(matches: "is:buried", otherwise: .buryUser, ids: ids)
+        case .flag(let flag):
+            return try await store.modify(.setFlag(.with {
+                $0.cardIds = ids
+                $0.flag = UInt32(flag?.rawValue ?? 0)
+            })).changes
+        case .move(let deckID):
+            return try await store.modify(.setDeck(.with {
+                $0.cardIds = ids
+                $0.deckID = deckID
+            })).changes
+        case .setDueDate(let days):
+            return try await store.modify(.setDueDate(.with {
+                $0.cardIds = ids
+                $0.days = days
+                $0.configKey = .with { $0.key = .setDueBrowser }
+            }))
+        case .resetProgress(let restorePosition, let resetCounts):
+            return try await store.modify(.scheduleCardsAsNew(.with {
+                $0.cardIds = ids
+                $0.log = true
+                $0.context = .browser
+                $0.restorePosition = restorePosition
+                $0.resetCounts = resetCounts
+            }))
+        case .reposition(let start, let step, let randomize, let shiftExisting):
+            return try await store.modify(.sortCards(.with {
+                $0.cardIds = ids
+                $0.startingFrom = start
+                $0.stepSize = step
+                $0.randomize = randomize
+                $0.shiftExisting = shiftExisting
+            })).changes
+        case .grade(let rating):
+            return try await store.modify(.gradeNow(.with {
+                $0.cardIds = ids
+                $0.rating = switch rating {
+                case .again: .again
+                case .hard: .hard
+                case .good: .good
+                case .easy: .easy
+                }
+            }))
+        case .delete, .toggleMark, .addTags, .removeTags, .findAndReplace:
+            return .init()
+        }
+    }
+
+    private func applyToNotes(_ action: BulkAction, selected: [Int64], mode: Mode) async throws(CoreError)
+        -> (changes: Anki_Collection_OpChanges, cardCount: Int)
+    {
+        if case let .findAndReplace(search, replacement, field, regex, matchCase, onlySelection) = action {
+            let notes = onlySelection ? try await noteIDs(for: selected, mode: mode) : []
+            guard !onlySelection || !notes.isEmpty else { return (.init(), 0) }
+            let result: Anki_Collection_OpChangesWithCount
+            if field == "Tags" {
+                result = try await store.modify(.findAndReplaceTag(.with {
+                    $0.noteIds = notes
+                    $0.search = search
+                    $0.replacement = replacement
+                    $0.regex = regex
+                    $0.matchCase = matchCase
+                }))
+            } else {
+                result = try await store.modify(.findAndReplace(.with {
+                    $0.nids = notes
+                    $0.search = search
+                    $0.replacement = replacement
+                    $0.fieldName = field
+                    $0.regex = regex
+                    $0.matchCase = matchCase
+                }))
+            }
+            return (result.changes, Int(result.count))
+        }
+        let notes = try await noteIDs(for: selected, mode: mode)
+        guard !notes.isEmpty else { return (.init(), 0) }
+        let cardCount = try await cardIDs(for: notes, mode: .notes).count
+        let changes: Anki_Collection_OpChanges
+        switch action {
+        case .delete:
+            changes = try await store.modify(.removeNotes(.with { $0.noteIds = notes })).changes
+        case .toggleMark:
+            let marked = try await store.core.searchNotes(.with {
+                $0.search = "\(Self.idSearch("nid", notes)) tag:marked"
+            }).ids
+            changes = try await setTags("marked", add: marked.count != notes.count, noteIDs: notes)
+        case .addTags(let tags):
+            changes = try await setTags(tags, add: true, noteIDs: notes)
+        case .removeTags(let tags):
+            changes = try await setTags(tags, add: false, noteIDs: notes)
+        default:
+            changes = .init()
+        }
+        return (changes, cardCount)
+    }
+
+    private func setTags(_ tags: String, add: Bool, noteIDs: [Int64]) async throws(CoreError) -> Anki_Collection_OpChanges {
+        let request = Anki_Tags_NoteIdsAndTagsRequest.with {
+            $0.noteIds = noteIDs
+            $0.tags = tags
+        }
+        return try await store.modify(add ? .addNoteTags(request) : .removeNoteTags(request)).changes
+    }
+
+    private func setCardQueue(_ mode: Anki_Scheduler_BuryOrSuspendCardsRequest.Mode, ids: [Int64]) async throws(CoreError)
+        -> Anki_Collection_OpChanges
+    {
+        try await store.modify(.buryOrSuspendCards(.with {
+            $0.cardIds = ids
+            $0.mode = mode
+        })).changes
+    }
+
+    private func toggleQueue(matches: String, otherwise: Anki_Scheduler_BuryOrSuspendCardsRequest.Mode, ids: [Int64])
+        async throws(CoreError) -> Anki_Collection_OpChanges
+    {
+        let matches = try await store.core.searchCards(.with {
+            $0.search = "\(Self.idSearch("cid", ids)) \(matches)"
+        }).ids
+        if matches.count == ids.count {
+            return try await store.modify(.restoreBuriedAndSuspendedCards(.with { $0.cids = ids }))
+        }
+        return try await setCardQueue(otherwise, ids: ids)
+    }
+
+    /// How many notes and cards deleting the selection would remove.
     public func deletionSummary() async -> DeletionSummary? {
-        try? await summarizeDeletion(of: Array(selection))
+        guard let notes = await selectedNoteIDs(), !notes.isEmpty else { return nil }
+        do {
+            return DeletionSummary(noteCount: notes.count, cardCount: try await cardIDs(for: notes, mode: .notes).count)
+        } catch {
+            failure = error.message
+            return nil
+        }
     }
 
     /// Undoes the last bulk action, unless the collection was changed in
@@ -92,11 +247,12 @@ extension CardBrowserModel {
     /// it was undone.
     @discardableResult
     public func undoLastAction() async -> Bool {
-        guard let completedAction else { return false }
+        guard let completedAction, !isPerformingAction else { return false }
         self.completedAction = nil
         failure = nil
         do {
-            guard try await store.undoableAction() == completedAction.undoName else { return false }
+            let undo = try await store.core.getUndoStatus()
+            guard undo.lastStep == completedAction.undoStep, undo.undo == completedAction.undoName else { return false }
             try await store.undo()
         } catch {
             failure = error.message
@@ -113,25 +269,45 @@ extension CardBrowserModel {
     }
 
     func selectedNoteIDs() async -> [Int64]? {
-        guard !selection.isEmpty else { return [] }
         do {
-            return try await notes(of: Array(selection))
+            return try await noteIDs(for: Array(selection), mode: mode)
         } catch {
             failure = error.message
             return nil
         }
     }
 
-    private func notes(of cardIDs: [Int64]) async throws(CoreError) -> [Int64] {
-        let cards = cardIDs.map(String.init).joined(separator: ",")
-        return try await store.core.searchNotes(.with { $0.search = "cid:\(cards)" }).ids
+    func cardID(forRow id: Int64) async -> Int64? {
+        if mode == .cards { return id }
+        do {
+            return try await store.core.cardsOfNote(.with { $0.nid = id }).cids.first
+        } catch {
+            failure = error.message
+            return nil
+        }
     }
 
-    private func summarizeDeletion(of cardIDs: [Int64]) async throws(CoreError) -> DeletionSummary {
-        let notes = try await notes(of: cardIDs)
-        let allCards = try await store.core.searchCards(.with {
-            $0.search = "nid:\(notes.map(String.init).joined(separator: ","))"
-        }).ids
-        return DeletionSummary(noteCount: notes.count, cardCount: allCards.count)
+    func previewCardIDs(selectedOnly: Bool) async -> [Int64] {
+        let rows = selectedOnly ? rowIDs.filter { selection.contains($0) } : rowIDs
+        do {
+            return try await cardIDs(for: rows, mode: mode)
+        } catch {
+            failure = error.message
+            return []
+        }
+    }
+
+    private func noteIDs(for rows: [Int64], mode: Mode) async throws(CoreError) -> [Int64] {
+        if mode == .notes || rows.isEmpty { return rows }
+        return try await store.core.searchNotes(.with { $0.search = Self.idSearch("cid", rows) }).ids
+    }
+
+    private func cardIDs(for rows: [Int64], mode: Mode) async throws(CoreError) -> [Int64] {
+        if mode == .cards || rows.isEmpty { return rows }
+        return try await store.core.searchCards(.with { $0.search = Self.idSearch("nid", rows) }).ids
+    }
+
+    private static func idSearch(_ key: String, _ ids: [Int64]) -> String {
+        "\(key):\(ids.map(String.init).joined(separator: ","))"
     }
 }

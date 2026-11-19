@@ -184,6 +184,7 @@ struct UndoBanner: View {
         case .flag: Text("Flagged \(count) cards", bundle: .module)
         case .move: Text("Moved \(count) cards", bundle: .module)
         case .delete: Text("Deleted \(count) cards", bundle: .module)
+        default: Text(verbatim: completed.undoName)
         }
     }
 }

@@ -123,3 +123,49 @@ extension BrowserParityTests {
         }
     }
 }
+
+extension BrowserParityTests {
+    @Test("Selecting notes across pages applies card actions to siblings and undo restores the query")
+    func notesBulkActions() async throws {
+        try await withTemporaryCollection { store in
+            let deck = try await store.addDeck(named: "Languages")
+            let fields = (0...CardBrowserModel.pageSize).map { ["term \($0)", "answer \($0)"] }
+            try await store.addNotes(ofType: "Basic (and reversed card)", fields: fields, toDeck: deck)
+            let model = CardBrowserModel(store: store)
+            model.searchText = "deck:Languages"
+            await model.setMode(.notes)
+            let first = try #require(model.rowIDs.first)
+            let last = try #require(model.rowIDs.last)
+            await model.loadRow(first)
+            model.selection.insert(first)
+            await model.loadRow(last)
+            model.selection.insert(last)
+
+            await model.perform(.flag(.blue))
+            #expect(try await store.cardCount(matching: "flag:4") == 4)
+            #expect(await model.undoLastAction())
+            #expect(try await store.cardCount(matching: "flag:4") == 0)
+            #expect(model.searchedText == "deck:Languages")
+            #expect(model.selection == [first, last])
+
+            await model.perform(.toggleMark)
+            #expect(try await store.cardCount(matching: "tag:marked") == 4)
+            await model.perform(.toggleMark)
+            #expect(try await store.cardCount(matching: "tag:marked") == 0)
+            #expect(await model.undoLastAction())
+            #expect(try await store.cardCount(matching: "tag:marked") == 4)
+
+            await model.perform(.setDueDate("3"))
+            #expect(try await store.cardCount(matching: "prop:due=3") == 4)
+            #expect(await model.undoLastAction())
+            #expect(try await store.cardCount(matching: "prop:due=3") == 0)
+
+            #expect(await model.deletionSummary() == DeletionSummary(noteCount: 2, cardCount: 4))
+            await model.perform(.delete)
+            #expect(model.rowIDs.count == fields.count - 2)
+            #expect(await model.undoLastAction())
+            #expect(model.rowIDs.count == fields.count)
+            #expect(model.searchedText == "deck:Languages")
+        }
+    }
+}
