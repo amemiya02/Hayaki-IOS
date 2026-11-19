@@ -2,11 +2,17 @@ import SwiftUI
 
 struct CalendarSection: View {
     let graphs: StatisticsGraphs
+    @Environment(\.statisticsReportPeriod) private var reportPeriod
+    @Environment(\.locale) private var locale
     @Binding var firstWeekday: StatisticsWeekday
     @State private var selectedYear: Int?
     @State private var selectedDay: Date?
 
-    private var calendar: Calendar { .statisticsCalendar }
+    private var calendar: Calendar {
+        var calendar = Calendar.statisticsCalendar
+        calendar.locale = locale
+        return calendar
+    }
     private var latestYear: Int { calendar.component(.year, from: graphs.studyDate) }
     private var earliestDate: Date {
         if graphs.period == .allTime {
@@ -21,32 +27,37 @@ struct CalendarSection: View {
     var body: some View {
         let counts = Dictionary(uniqueKeysWithValues: graphs.activityDays().map { ($0.date, $0.count) })
         Section {
-            HStack {
-                Button {
-                    selectedYear = year - 1
-                } label: {
-                    Image(systemName: "chevron.left")
-                }
-                .accessibilityLabel(Text("Previous Year", bundle: .module))
-                .disabled(year <= earliestYear)
-                Spacer()
+            if reportPeriod != nil {
                 Text(year.formatted(.number.grouping(.never))).monospacedDigit()
-                Spacer()
-                Button {
-                    selectedYear = year + 1
+            } else {
+                HStack {
+                    Button {
+                        selectedYear = year - 1
+                    } label: {
+                        Image(systemName: "chevron.left")
+                    }
+                    .accessibilityLabel(Text("Previous Year", bundle: .module))
+                    .disabled(year <= earliestYear)
+                    Spacer()
+                    Text(year.formatted(.number.grouping(.never))).monospacedDigit()
+                    Spacer()
+                    Button {
+                        selectedYear = year + 1
+                    } label: {
+                        Image(systemName: "chevron.right")
+                    }
+                    .accessibilityLabel(Text("Next Year", bundle: .module))
+                    .disabled(year >= latestYear)
+                }
+                .buttonStyle(.borderless)
+                Picker(selection: $firstWeekday) {
+                    ForEach(StatisticsWeekday.allCases, id: \.self) { day in
+                        Text(calendar.weekdaySymbols[day.rawValue - 1]).tag(day)
+                    }
                 } label: {
-                    Image(systemName: "chevron.right")
+                    Text("First Day of the Week", bundle: .module)
                 }
-                .accessibilityLabel(Text("Next Year", bundle: .module))
-                .disabled(year >= latestYear)
-            }
-            .buttonStyle(.borderless)
-            Picker(selection: $firstWeekday) {
-                ForEach(StatisticsWeekday.allCases, id: \.self) { day in
-                    Text(calendar.weekdaySymbols[day.rawValue - 1]).tag(day)
-                }
-            } label: {
-                Text("First Day of the Week", bundle: .module)
+
             }
 
             if counts.isEmpty {
@@ -70,46 +81,58 @@ struct CalendarSection: View {
     }
 
     private func heatmap(counts: [Date: Int]) -> some View {
-        let rows = Array(repeating: GridItem(.fixed(15), spacing: 3), count: 7)
+        let exporting = reportPeriod != nil
+        let size: CGFloat = exporting ? 7 : 15
+        let spacing: CGFloat = exporting ? 2 : 3
+        let rows = Array(repeating: GridItem(.fixed(size), spacing: spacing), count: 7)
         let days = calendarDays
         let offset = days.first.map { (calendar.component(.weekday, from: $0) - firstWeekday.rawValue + 7) % 7 } ?? 0
         let maxCount = max(1, counts.values.max() ?? 0)
-        return HStack(alignment: .top, spacing: 8) {
-            VStack(alignment: .trailing, spacing: 3) {
-                ForEach(0..<7) { index in
-                    Text(calendar.shortWeekdaySymbols[(firstWeekday.rawValue - 1 + index) % 7])
-                        .font(.caption2)
-                        .frame(height: 15)
-                }
+        let grid = LazyHGrid(rows: rows, spacing: spacing) {
+            ForEach(0..<offset, id: \.self) { _ in
+                Color.clear.frame(width: size, height: size).accessibilityHidden(true)
             }
-            .accessibilityHidden(true)
-            ScrollView(.horizontal) {
-                LazyHGrid(rows: rows, spacing: 3) {
-                    ForEach(0..<offset, id: \.self) { _ in
-                        Color.clear.frame(width: 15, height: 15).accessibilityHidden(true)
-                    }
-                    ForEach(days, id: \.self) { date in
-                        let count = counts[date] ?? 0
-                        Button {
-                            selectedDay = date
-                        } label: {
-                            RoundedRectangle(cornerRadius: 2)
-                                .fill(count == 0 ? Color.secondary.opacity(0.22) :
-                                    Color.blue.opacity(0.35 + 0.65 * sqrt(Double(count) / Double(maxCount))))
-                                .overlay {
-                                    if selectedDay == date {
-                                        RoundedRectangle(cornerRadius: 2).strokeBorder(.primary, lineWidth: 1)
-                                    }
-                                }
-                                .frame(width: 15, height: 15)
+            ForEach(days, id: \.self) { date in
+                let count = counts[date] ?? 0
+                let cell = RoundedRectangle(cornerRadius: 2)
+                    .fill(count == 0 ? Color.secondary.opacity(0.22) :
+                        Color.blue.opacity(0.35 + 0.65 * sqrt(Double(count) / Double(maxCount))))
+                    .frame(width: size, height: size)
+                if exporting {
+                    cell
+                } else {
+                    Button {
+                        selectedDay = date
+                    } label: {
+                        cell.overlay {
+                            if selectedDay == date {
+                                RoundedRectangle(cornerRadius: 2).strokeBorder(.primary, lineWidth: 1)
+                            }
                         }
-                        .buttonStyle(.plain)
-                        .accessibilityLabel(Text(date, format: .dateTime.weekday(.wide).month(.wide).day().year()))
-                        .accessibilityValue(reviewCount(count))
                     }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(Text(date, format: .dateTime.weekday(.wide).month(.wide).day().year()))
+                    .accessibilityValue(reviewCount(count))
                 }
             }
-            .defaultScrollAnchor(.trailing)
+        }
+        return HStack(alignment: .top, spacing: 8) {
+            if exporting {
+                grid
+            } else {
+                VStack(alignment: .trailing, spacing: spacing) {
+                    ForEach(0..<7) { index in
+                        Text(calendar.shortWeekdaySymbols[(firstWeekday.rawValue - 1 + index) % 7])
+                            .font(.caption2)
+                            .frame(height: size)
+                    }
+                }
+                .accessibilityHidden(true)
+                ScrollView(.horizontal) {
+                    grid
+                }
+                .defaultScrollAnchor(.trailing)
+            }
         }
     }
 

@@ -3,6 +3,7 @@ import SwiftUI
 
 struct DistributionSection: View {
     let data: CardDistribution
+    @Environment(\.statisticsReportPeriod) private var reportPeriod
     @State private var range: DistributionRange?
     @State private var showCumulative = false
     @State private var position: Double?
@@ -40,7 +41,8 @@ struct DistributionSection: View {
 
     private var selectedRange: Binding<DistributionRange> {
         Binding {
-            range ?? (data.kind.usesDays ? .middle95 : .all)
+            if reportPeriod != nil { return .all }
+            return range ?? (data.kind.usesDays ? .middle95 : .all)
         } set: { selected in
             range = selected
             position = nil
@@ -83,7 +85,7 @@ struct DistributionSection: View {
     var body: some View {
         let shown = bins(in: bounds)
         Section {
-            if !availableRanges.isEmpty {
+            if reportPeriod == nil, !availableRanges.isEmpty {
                 Picker(selection: selectedRange) {
                     ForEach(availableRanges, id: \.self) { range in
                         range.title(for: data.kind).tag(range)
@@ -96,7 +98,9 @@ struct DistributionSection: View {
                 Text("There are no cards in this range.", bundle: .module)
                     .foregroundStyle(.secondary)
             } else {
-                Toggle(isOn: $showCumulative) { Text("Running Total", bundle: .module) }
+                if reportPeriod == nil {
+                    Toggle(isOn: $showCumulative) { Text("Running Total", bundle: .module) }
+                }
                 chart(shown)
                 summary
                 if let position {
