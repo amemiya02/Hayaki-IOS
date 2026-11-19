@@ -1,12 +1,12 @@
 # Hayaki
 
-A free, open-source, standalone client for Anki collections on iPhone and iPad. The v1 spec is in `docs/specs/hayaki-v1.md`.
+The native iPhone and iPad edition of Android Hayaki. Use `docs/specs/hayaki-v1.md` for the pinned Android acceptance baseline and `docs/specs/ios-parity-tickets.md` for the matching iOS work.
 
 ## Agent skills
 
 ### Issue tracker
 
-Issues and specs live as GitHub issues on `amemiya02/Hayaki`; writes must run as the `amemiya02` account. See `docs/agents/issue-tracker.md`.
+Issues and specs live as GitHub issues on `amemiya02/Hayaki-IOS`; writes must run as the `amemiya02` account. See `docs/agents/issue-tracker.md`.
 
 ### Triage labels
 

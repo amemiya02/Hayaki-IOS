@@ -12,7 +12,7 @@ Packages/
                       (a sheet, opened from a deck's Options menu item)
   BrowseFeature/      CardBrowserModel (search, rows fetched a page at a time, quick filters, selection,
                       undoable bulk actions), BrowseScreen, CardDetailModel, CardDetailScreen
-  StatisticsFeature/  placeholder
+  StatisticsFeature/  StatisticsModel and native views for today, card counts and ratings
   SettingsFeature/    SettingsScreen: one row per area
   PackagesFeature/    PackageImportModel, the import sheets (packageImport(_:)), ImportPackageButton;
                       PackageExportModel, PackageExportScreen (a sheet), ExportPackageButton

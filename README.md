@@ -1,8 +1,8 @@
 # Hayaki
 
-A free, open-source, standalone client for Anki collections on iPhone and iPad. Hayaki keeps the learner's whole collection on the device, works offline, and reads and writes the same collection that desktop Anki and AnkiDroid do, because it embeds the same Anki core they use: upstream Anki's Rust core, pinned to Anki 26.09.4.
+The native iPhone and iPad edition of [Hayaki for Android](https://github.com/amemiya02/Hayaki). The feature port is in progress. Hayaki keeps the learner's whole collection on the device, works offline, and reads and writes the same collection that desktop Anki and AnkiDroid do, because it embeds the same Anki core they use: upstream Anki's Rust core, pinned to Anki 26.09.4.
 
-Hayaki is built from source and installed on the simulator or on your own device; it is not distributed through the App Store. It does not sign in to AnkiWeb (see [docs/adr/0002-no-ankiweb.md](docs/adr/0002-no-ankiweb.md)).
+Hayaki is built from source and installed on the simulator or on your own device; it is not distributed through the App Store. The current build supports self-hosted sync. AnkiWeb sign-in is a parity target pending permission for the iOS client ([sync decision](docs/adr/0005-android-parity.md)).
 
 ## Not affiliated with Anki
 
@@ -13,8 +13,8 @@ Hayaki is an independent project. It is not affiliated with, endorsed by or supp
 Prerequisites: a Mac with Apple silicon, Xcode 27, [rustup](https://rustup.rs), `protoc` and XcodeGen (`brew install protobuf xcodegen`). The Rust version (1.97.1) and the iOS and macOS targets are pinned in `core/rust-toolchain.toml` and installed by rustup automatically.
 
 ```sh
-git clone https://github.com/amemiya02/Hayaki.git
-cd Hayaki
+git clone --branch hayaki-v1 https://github.com/amemiya02/Hayaki-IOS.git
+cd Hayaki-IOS
 scripts/build-core.sh     # builds Anki's core for iOS, the simulator and macOS (long the first time)
 scripts/test.sh           # runs every package's tests on the Mac, against the real core
 xcodegen generate         # writes Hayaki.xcodeproj from project.yml

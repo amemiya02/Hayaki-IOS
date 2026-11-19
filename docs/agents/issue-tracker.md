@@ -1,6 +1,6 @@
 # Issue tracker: GitHub
 
-Issues and specs for this repo live as GitHub issues on `amemiya02/Hayaki`. Use the `gh` CLI for all operations.
+Issues and specs for this repo live as GitHub issues on `amemiya02/Hayaki-IOS`. Use the `gh` CLI for all operations.
 
 ## Acting as the right account
 
@@ -26,7 +26,7 @@ GH_TOKEN="$(gh auth token --user amemiya02)" gh issue create ...
 
 Infer the repo from `git remote -v`; `gh` does this automatically when run inside a clone.
 
-File issues only into this repo. Never file into `mattpocock/skills` (the repo these skills come from), and never into upstream `ankitects/anki`, `ankidroid/Anki-Android` or `antigluten/amgi`. Before the first `gh issue create` of a session, check the target with `gh repo view --json nameWithOwner` and confirm it with the user if it is not `amemiya02/Hayaki`.
+File issues only into this repo. Never file into `mattpocock/skills` (the repo these skills come from), and never into upstream `ankitects/anki`, `ankidroid/Anki-Android` or `antigluten/amgi`. Before the first `gh issue create` of a session, check the target with `gh repo view --json nameWithOwner` and confirm it with the user if it is not `amemiya02/Hayaki-IOS`.
 
 ## Pull requests as a triage surface
 

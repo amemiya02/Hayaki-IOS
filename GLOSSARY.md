@@ -1,6 +1,6 @@
 # Hayaki
 
-A free, open-source, standalone client for Anki collections on iPhone and iPad. It keeps the whole collection on the device and stays compatible with desktop Anki and AnkiDroid. Hayaki is not affiliated with or endorsed by Anki's makers.
+The iPhone and iPad edition of Hayaki, the offline study app for Anki collections. It keeps the whole collection on the device and stays compatible with desktop Anki and AnkiDroid. Hayaki is not affiliated with or endorsed by Anki's makers.
 
 Terms follow upstream Anki's vocabulary exactly. Where AnkiDroid or older Anki versions use a different word, the upstream word wins.
 
@@ -10,7 +10,11 @@ Terms follow upstream Anki's vocabulary exactly. Where AnkiDroid or older Anki v
 
 **Collection**:
 Everything one person studies: all their decks, notes, cards, note types, settings and review history, kept together as a single unit.
-_Avoid_: Database, library, account, profile
+_Avoid_: Database, library, account
+
+**Profile**:
+A learner’s local study environment, with its own collection, media and sync destination.
+_Avoid_: Account, collection
 
 **Note**:
 One piece of knowledge to remember, held as a set of field values and shaped by a note type. A note produces one or more cards.
@@ -73,11 +77,11 @@ Reconciling the collection on this device with the copy held by a sync server, s
 _Avoid_: Backup, upload, cloud save
 
 **Sync Server**:
-A service that holds a copy of a collection for syncing. In this project it means one the learner runs or chooses themselves.
+A service that holds a copy of a collection for syncing. The destination can be AnkiWeb or a self-hosted server.
 _Avoid_: Cloud, backend, remote
 
 **AnkiWeb**:
-The sync server operated by Anki's makers. It accepts only clients they have approved, and this project is not one of them.
+The sync server operated by Anki's makers.
 _Avoid_: Anki cloud, Anki account, the server
 
 **Collection Package**:
