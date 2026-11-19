@@ -82,6 +82,17 @@ public final class StudySessionModel {
     public private(set) var reviewedCount = 0
     /// Whether an answer is being sent to the core, so another one is not.
     public private(set) var isAnswering = false
+    public private(set) var isPerformingAction = false
+    public var isBusy: Bool { isAnswering || isPerformingAction }
+
+    public private(set) var canUndo = false
+    public private(set) var canRedo = false
+    public private(set) var actionError: String?
+
+    // The core assigns a new counter whenever it applies, undoes or redoes
+    // a step. Keep only review counters from this session in these sets.
+    @ObservationIgnored private var appliedReviews: Set<UInt32> = []
+    @ObservationIgnored private var revertedReviews: Set<UInt32> = []
 
     @ObservationIgnored private let store: CollectionStore
     public let deckID: Int64
@@ -125,6 +136,7 @@ public final class StudySessionModel {
         }
         for await change in changes where !change.isDisjoint(with: [.note, .noteText, .notetype]) {
             await redrawShownCard()
+            await refreshUndoStatus()
         }
     }
 
@@ -148,6 +160,7 @@ public final class StudySessionModel {
     /// or the finished state when there is none. Call it after anything that
     /// changes the queue, such as undoing, burying or suspending.
     public func showNextCard() async {
+        await refreshUndoStatus()
         do {
             let queued = try await store.core.getQueuedCards(.with { $0.fetchLimit = 1 })
             counts = StudyCounts(queued)
@@ -168,7 +181,7 @@ public final class StudySessionModel {
     /// learner to type the answer, the answer side shows the expected answer,
     /// as when nothing was typed.
     public func showAnswer() {
-        guard case .question(let card) = state else { return }
+        guard case .question(let card) = state, !isBusy else { return }
         typedAnswer = ""
         state = .answer(card)
     }
@@ -177,7 +190,7 @@ public final class StudySessionModel {
     /// learner to type the answer shows the core's comparison of `typed`
     /// with the expected answer. Other cards ignore `typed`.
     public func showAnswer(typed: String) async {
-        guard case .question(let card) = state else { return }
+        guard case .question(let card) = state, !isBusy else { return }
         guard card.asksForTypedAnswer else {
             showAnswer()
             return
@@ -196,7 +209,7 @@ public final class StudySessionModel {
     /// Rates the review of the card whose answer is shown, sends it to the
     /// core, and moves on to the next card.
     public func answer(_ rating: Rating) async {
-        guard case .answer(let card) = state, !isAnswering else { return }
+        guard case .answer(let card) = state, !isBusy else { return }
         isAnswering = true
         defer { isAnswering = false }
         do {
@@ -217,11 +230,100 @@ public final class StudySessionModel {
                     + taken.components.attoseconds / 1_000_000_000_000_000)
             }))
             reviewedCount += 1
+            if let status = try? await store.core.getUndoStatus(), !status.undo.isEmpty {
+                appliedReviews.insert(status.lastStep)
+            }
+            revertedReviews.removeAll()
         } catch {
             state = .failed(message: error.message)
             return
         }
         await showNextCard()
+    }
+
+    public func undo() async {
+        guard canUndo else { return }
+        await runAction { () async throws(CoreError) in
+            let result = try await store.modify(.undo())
+            if appliedReviews.remove(result.counter) != nil {
+                reviewedCount -= 1
+                revertedReviews.insert(result.newStatus.lastStep)
+            }
+            await showNextCard()
+        }
+    }
+
+    public func redo() async {
+        guard canRedo else { return }
+        await runAction { () async throws(CoreError) in
+            let result = try await store.modify(.redo())
+            if revertedReviews.remove(result.counter) != nil {
+                reviewedCount += 1
+                appliedReviews.insert(result.newStatus.lastStep)
+            }
+            await showNextCard()
+        }
+    }
+
+    public func bury(note: Bool) async {
+        await skip(note: note, mode: .buryUser)
+    }
+
+    public func suspend(note: Bool) async {
+        await skip(note: note, mode: .suspend)
+    }
+
+    private func skip(note: Bool, mode: Anki_Scheduler_BuryOrSuspendCardsRequest.Mode) async {
+        guard let card = state.card else { return }
+        await runAction { () async throws(CoreError) in
+            try await store.modify(.buryOrSuspendCards(.with {
+                if note { $0.noteIds = [card.noteID] } else { $0.cardIds = [card.id] }
+                $0.mode = mode
+            }))
+            await showNextCard()
+        }
+    }
+
+    public func unburyDeck() async {
+        guard state.finished?.hasBuried == true else { return }
+        await runAction { () async throws(CoreError) in
+            try await store.modify(.unburyDeck(.with { $0.deckID = deckID }))
+            await showNextCard()
+        }
+    }
+
+    public func setFlag(_ flag: UInt32) async {
+        guard let card = state.card, flag < 8 else { return }
+        await runAction { () async throws(CoreError) in
+            try await store.modify(.setFlag(.with {
+                $0.cardIds = [card.id]
+                $0.flag = flag
+            }))
+            await redrawShownCard()
+            await refreshUndoStatus()
+        }
+    }
+
+    public func clearActionError() {
+        actionError = nil
+    }
+
+    private func runAction(_ action: () async throws(CoreError) -> Void) async {
+        guard !isBusy else { return }
+        isPerformingAction = true
+        defer { isPerformingAction = false }
+        do {
+            try await action()
+        } catch {
+            actionError = error.message
+        }
+    }
+
+    private func refreshUndoStatus() async {
+        let status = try? await store.core.getUndoStatus()
+        canUndo = status?.undo.isEmpty == false
+        canRedo = status?.redo.isEmpty == false
+        if !canRedo { revertedReviews.removeAll() }
     }
 
     private func summary() async throws(CoreError) -> SessionSummary {

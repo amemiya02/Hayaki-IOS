@@ -27,6 +27,29 @@ struct AppModelTests {
         try await later.close()
     }
 
+    @Test("Starting empty skips Welcome on the next launch, even before creating a deck")
+    func startingEmptyCompletesWelcome() async throws {
+        let folder = try TemporaryFolder()
+        let location = CollectionLocation(folder: folder.url.appendingPathComponent("Collection"))
+        let suiteName = UUID().uuidString
+        let preferences = try #require(UserDefaults(suiteName: suiteName))
+        defer { preferences.removePersistentDomain(forName: suiteName) }
+
+        let first = AppModel(location: { location }, language: "en", preferences: preferences)
+        await first.open()
+        #expect(first.showsWelcome)
+        first.completeWelcome()
+        #expect(!first.showsWelcome)
+        try await #require(first.store).close()
+
+        let later = AppModel(location: { location }, language: "en", preferences: preferences)
+        await later.open()
+        #expect(!later.showsWelcome)
+        let store = try #require(later.store)
+        #expect(try await store.deckNames() == ["Default"])
+        try await store.close()
+    }
+
     @Test("When the collection cannot be opened, the app says why instead of crashing")
     func openingFails() async throws {
         let folder = try TemporaryFolder()

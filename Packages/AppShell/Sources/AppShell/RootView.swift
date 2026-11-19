@@ -2,13 +2,22 @@ import CollectionStore
 import PackagesFeature
 import ReminderFeature
 import SwiftUI
+import SyncFeature
 
 /// The whole app: a short opening state while the collection opens, then the
 /// sections.
 public struct RootView: View {
-    @State private var model = AppModel()
+    @State private var model: AppModel
 
-    public init() {}
+    public init() {
+        #if DEBUG
+        if let emptyCollection = UITestLaunch.emptyCollectionModel {
+            _model = State(initialValue: emptyCollection)
+            return
+        }
+        #endif
+        _model = State(initialValue: AppModel())
+    }
 
     /// Work that must be done before the app finishes launching. The app
     /// calls it from its initializer.
@@ -27,8 +36,7 @@ public struct RootView: View {
                 }
             case .ready(let store):
                 if let packageImport = model.packageImport {
-                    SectionsView(store: store)
-                        .packageImport(packageImport)
+                    ReadyView(store: store, model: model, packageImport: packageImport)
                 }
             case .failed(let message):
                 ContentUnavailableView {
@@ -47,6 +55,36 @@ public struct RootView: View {
         // another app's share sheet.
         .onOpenURL { url in
             Task { await model.openPackage(url) }
+        }
+    }
+}
+
+private struct ReadyView: View {
+    let store: CollectionStore
+    let model: AppModel
+    let packageImport: PackageImportModel
+    @State private var sync: SyncModel
+
+    init(store: CollectionStore, model: AppModel, packageImport: PackageImportModel) {
+        self.store = store
+        self.model = model
+        self.packageImport = packageImport
+        _sync = State(initialValue: SyncModel(store: store))
+    }
+
+    var body: some View {
+        Group {
+            if model.showsWelcome {
+                WelcomeScreen(sync: sync, onContinue: model.completeWelcome)
+            } else {
+                SectionsView(store: store, sync: sync)
+            }
+        }
+        .packageImport(packageImport)
+        .onChange(of: packageImport.step) { _, step in
+            if model.showsWelcome, case .finished = step {
+                model.completeWelcome()
+            }
         }
     }
 }

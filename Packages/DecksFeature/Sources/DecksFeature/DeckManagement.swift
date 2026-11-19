@@ -30,15 +30,8 @@ private struct DeckManagement: ViewModifier {
             .environment(request)
             .toolbar {
                 ToolbarItem(placement: .primaryAction) {
-                    Button {
-                        request.pending = .create(inside: nil)
-                    } label: {
-                        Label {
-                            Text("New Deck", bundle: .module)
-                        } icon: {
-                            Image(systemName: "rectangle.stack.badge.plus")
-                        }
-                    }
+                    NewDeckButton()
+                        .environment(request)
                 }
             }
             .sheet(item: sheet) { action in
@@ -176,6 +169,22 @@ private struct DeckManagement: ViewModifier {
                 try await model.deleteDeck(deck.id)
             } catch {
                 failure = Failure(title: Text("Could Not Delete Deck", bundle: .module), message: error.message)
+            }
+        }
+    }
+}
+
+struct NewDeckButton: View {
+    @Environment(DeckActionRequest.self) private var request: DeckActionRequest
+
+    var body: some View {
+        Button {
+            request.pending = .create(inside: nil)
+        } label: {
+            Label {
+                Text("New Deck", bundle: .module)
+            } icon: {
+                Image(systemName: "rectangle.stack.badge.plus")
             }
         }
     }

@@ -11,6 +11,20 @@ import Foundation
 /// every test run sees the same cards. `HAYAKI_UI_TEST_DUE_TODAY`, an Anki
 /// search, also makes the matching cards due today.
 enum UITestLaunch {
+    /// A UI test can keep the same new collection and its own preferences
+    /// across launches by passing the same fresh UUID.
+    @MainActor
+    static var emptyCollectionModel: AppModel? {
+        guard
+            let argument = ProcessInfo.processInfo.environment["HAYAKI_UI_TEST_EMPTY_COLLECTION"],
+            let id = UUID(uuidString: argument),
+            let preferences = UserDefaults(suiteName: "HayakiUITests.\(id.uuidString)")
+        else { return nil }
+        let folder = FileManager.default.temporaryDirectory
+            .appendingPathComponent("UITestCollection-\(id.uuidString)", isDirectory: true)
+        return AppModel(location: { CollectionLocation(folder: folder) }, preferences: preferences)
+    }
+
     static var collectionPackage: URL? {
         ProcessInfo.processInfo.environment["HAYAKI_UI_TEST_COLLECTION_PACKAGE"].map {
             URL(fileURLWithPath: $0)
