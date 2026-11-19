@@ -1,17 +1,19 @@
 import CollectionStore
 import SwiftUI
 
-struct FilteredDeckScreen: View {
+public struct FilteredDeckScreen: View {
     @State private var model: FilteredDeckModel
     @Environment(\.dismiss) private var dismiss
     private let newDeck: Bool
+    private let initialSearch: String?
 
-    init(store: CollectionStore, deckID: Int64?) {
+    public init(store: CollectionStore, deckID: Int64? = nil, initialSearch: String? = nil) {
         newDeck = deckID == nil
+        self.initialSearch = initialSearch
         _model = State(initialValue: FilteredDeckModel(store: store, deckID: deckID))
     }
 
-    var body: some View {
+    public var body: some View {
         @Bindable var editor = model
         NavigationStack {
             Form {
@@ -81,7 +83,7 @@ struct FilteredDeckScreen: View {
             }
         }
         .interactiveDismissDisabled(model.isWorking)
-        .task { await model.load() }
+        .task { await model.load(initialSearch: initialSearch) }
     }
 }
 

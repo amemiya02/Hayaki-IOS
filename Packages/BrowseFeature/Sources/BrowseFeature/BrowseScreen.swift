@@ -1,4 +1,5 @@
 import CollectionStore
+import DecksFeature
 import NoteEditorFeature
 import PackagesFeature
 import SwiftUI
@@ -257,6 +258,14 @@ public struct BrowseScreen: View {
             }
             .disabled(model.rowIDs.isEmpty)
             Button {
+                sheet = .filteredDeck(model.searchedText)
+            } label: {
+                Label {
+                    Text("New Filtered Deck", bundle: .module)
+                } icon: { Image(systemName: "line.3.horizontal.decrease.circle") }
+            }
+            .disabled(model.state != .loaded)
+            Button {
                 actionPrompt = .replace
             } label: {
                 Label {
@@ -277,6 +286,7 @@ public struct BrowseScreen: View {
         case .columns: BrowserColumnsSheet(model: model)
         case .savedSearches: BrowserSavedSearchesSheet(model: model)
         case .flags: BrowserFlagLabelsSheet(model: model)
+        case .filteredDeck(let search): FilteredDeckScreen(store: store, initialSearch: search)
         case .editing(let cardID): NoteEditorScreen(store: store, editingCardID: cardID)
         case .preview(let cardIDs): BrowserPreviewScreen(store: store, cardIDs: cardIDs)
         case .textExport(let selection): TextExportScreen(store: store, selection: selection)
@@ -435,7 +445,7 @@ public struct BrowseScreen: View {
 
 private enum BrowseSheet: Identifiable {
     case filters, columns, savedSearches, flags, editing(Int64), preview([Int64])
-    case textExport(ExportSelection), packageExport(ExportSelection)
+    case textExport(ExportSelection), packageExport(ExportSelection), filteredDeck(String)
 
     var id: Int {
         switch self {
@@ -447,6 +457,7 @@ private enum BrowseSheet: Identifiable {
         case .textExport: 5
         case .packageExport: 6
         case .flags: 7
+        case .filteredDeck: 8
         }
     }
 }
