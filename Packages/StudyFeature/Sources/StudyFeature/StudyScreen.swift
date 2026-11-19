@@ -281,20 +281,35 @@ private struct FinishedView: View {
     var body: some View {
         ContentUnavailableView {
             Label {
-                Text("All Done for Today", bundle: .module)
+                switch summary.reason {
+                case .dailyLimit: Text("Daily Limit Reached", bundle: .module)
+                case .learningLater: Text("More Cards Later Today", bundle: .module)
+                case .buried: Text("Cards Buried for Today", bundle: .module)
+                case .done: Text("All Done for Today", bundle: .module)
+                }
             } icon: {
-                Image(systemName: "checkmark.circle")
-                    .foregroundStyle(.green)
+                Image(systemName: summary.reason == .done ? "checkmark.circle" : "clock")
+                    .foregroundStyle(summary.reason == .done ? Color.green : Color.secondary)
             }
         } description: {
             VStack(spacing: 8) {
                 if summary.reviewed > 0 {
                     Text("You reviewed \(summary.reviewed) cards in this session.", bundle: .module)
-                } else {
-                    Text("This deck has nothing left to study today.", bundle: .module)
+                } else if summary.reason == .done {
+                    if summary.isFiltered {
+                        Text("This filtered deck is finished. Rebuild it to look for more cards.", bundle: .module)
+                    } else {
+                        Text("This deck has nothing left to study today.", bundle: .module)
+                    }
                 }
-                if summary.learningLaterToday > 0 {
+                if let nextLearningAt = summary.nextLearningAt {
+                    let nextTime = nextLearningAt.formatted(date: .omitted, time: .shortened)
                     Text("\(summary.learningLaterToday) learning cards come due later today.", bundle: .module)
+                    Text("Next learning card at \(nextTime).", bundle: .module)
+                }
+                if summary.dailyLimitReached || summary.hasBuried {
+                    let resetTime = summary.nextDayStartsAt.formatted(date: .abbreviated, time: .shortened)
+                    Text("The next study day starts at \(resetTime).", bundle: .module)
                 }
                 if summary.reviewed > 0, !summary.studiedToday.isEmpty {
                     Text(summary.studiedToday.replacingOccurrences(of: "\n", with: " "))
