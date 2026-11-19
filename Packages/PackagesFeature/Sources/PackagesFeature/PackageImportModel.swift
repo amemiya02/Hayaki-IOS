@@ -64,12 +64,19 @@ public final class PackageImportModel {
         if case .importing = step { true } else { false }
     }
 
+    public var isBusy: Bool {
+        switch step {
+        case .preparing, .importing: true
+        default: false
+        }
+    }
+
     /// Takes in a package the learner chose or opened from another app, and
     /// asks for confirmation (collection package) or merge choices (deck
     /// package). Nothing in the collection changes yet. Ignored while an
     /// import is running.
     public func open(_ url: URL) async {
-        guard !isImporting else { return }
+        guard store.allowsNewProfileWork, !isBusy else { return }
         discardPendingPackage()
         step = .preparing(name: url.lastPathComponent)
         do {
@@ -99,6 +106,7 @@ public final class PackageImportModel {
 
     /// Imports the package waiting for confirmation or merge choices.
     public func startImport() async {
+        guard store.allowsNewProfileWork else { return }
         let package: PackageFile
         switch step {
         case .confirmingReplace(let waiting), .choosingMergeOptions(let waiting):
@@ -162,12 +170,7 @@ public final class PackageImportModel {
         let backupMade = try await store.backUp(to: backupFolder, force: true)
         try throwIfCancelled()
         try await store.replace { core, location in
-            let operation = core.start(.importCollectionPackage(.with {
-                $0.colPath = location.collectionFile.path
-                $0.backupPath = package.url.path
-                $0.mediaFolder = location.mediaFolder.path
-                $0.mediaDb = location.mediaDatabase.path
-            }))
+            let operation = core.start(.importCollectionPackage(location.importRequest(from: package)))
             follow(operation, importing: package)
             _ = try await operation.result
         }
@@ -206,6 +209,51 @@ public final class PackageImportModel {
             package.discard()
         default:
             break
+        }
+    }
+}
+
+
+// The database cannot be opened, so no native Anki backup can be taken from it.
+extension PackageImportModel {
+    @concurrent
+    public static func restoreAfterFailedOpen(
+        from source: URL,
+        core: CoreClient,
+        location: CollectionLocation,
+        backupFolder: URL
+    ) async throws {
+        guard PackageKind(fileExtension: source.pathExtension) == .collectionPackage else { throw NotAPackage() }
+        let package = try await PackageFile.stage(source)
+        defer { package.discard() }
+
+        let manager = FileManager.default
+        try manager.createDirectory(at: location.mediaFolder, withIntermediateDirectories: true)
+        let collection = location.collectionFile
+        let sidecars = ["-wal", "-shm"].map { URL(fileURLWithPath: collection.path + $0) }
+        if manager.fileExists(atPath: collection.path) {
+            let archive = backupFolder.appendingPathComponent("Recovery", isDirectory: true)
+                .appendingPathComponent(UUID().uuidString, isDirectory: true)
+            try manager.createDirectory(at: archive, withIntermediateDirectories: true)
+            for url in [collection] + sidecars where manager.fileExists(atPath: url.path) {
+                try manager.copyItem(at: url, to: archive.appendingPathComponent(url.lastPathComponent))
+            }
+        }
+
+        try await core.importCollectionPackage(location.importRequest(from: package))
+        for file in sidecars where manager.fileExists(atPath: file.path) {
+            try manager.removeItem(at: file)
+        }
+    }
+}
+
+private extension CollectionLocation {
+    func importRequest(from package: PackageFile) -> Anki_ImportExport_ImportCollectionPackageRequest {
+        .with {
+            $0.colPath = collectionFile.path
+            $0.backupPath = package.url.path
+            $0.mediaFolder = mediaFolder.path
+            $0.mediaDb = mediaDatabase.path
         }
     }
 }

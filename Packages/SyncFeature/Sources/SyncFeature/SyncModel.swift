@@ -20,6 +20,7 @@ public final class SyncModel {
         /// The two sides cannot be merged; one must replace the other. Waits
         /// for `upload()`, `download()` or `keepBoth()`.
         case choosingDirection(FullSyncChoice)
+        case fullSyncRequested
         case synced(SyncOutcome)
         case failed(SyncFailure)
 
@@ -34,7 +35,7 @@ public final class SyncModel {
     public var serverAddress: String {
         get { customServerAddress }
         set {
-            guard !isBusy, account == nil, destination == .selfHosted else { return }
+            guard canEditSignIn, destination == .selfHosted else { return }
             if newValue.trimmed != customServerAddress.trimmed {
                 clearSignInForm()
             }
@@ -49,6 +50,11 @@ public final class SyncModel {
     public private(set) var account: SyncAccount?
     public private(set) var status: Status = .idle
     public private(set) var mediaStatus: MediaSyncStatus = .idle
+
+    private var statusBeforeDestinationChange: Status?
+    private var markingFullSync = false
+
+    public var isChangingDestination: Bool { statusBeforeDestinationChange != nil }
 
     @ObservationIgnored private let store: CollectionStore
     @ObservationIgnored private let storage: any SyncAccountStorage
@@ -80,21 +86,26 @@ public final class SyncModel {
 
     /// Whether signing in or a collection or media sync is under way.
     public var isBusy: Bool {
-        switch status {
+        if markingFullSync { return true }
+        return switch status {
         case .signingIn, .syncing: true
         default:
             if case .syncing = mediaStatus { true } else { false }
         }
     }
 
+    private var canEditSignIn: Bool {
+        store.allowsNewProfileWork && !isBusy && (account == nil || isChangingDestination)
+    }
+
     public var canSignIn: Bool {
-        !isBusy && account == nil
+        canEditSignIn
             && (destination == .ankiWeb || !serverAddress.trimmed.isEmpty)
             && !userName.trimmed.isEmpty && !password.isEmpty
     }
 
     public var canRetryMediaSync: Bool {
-        guard !isBusy, account != nil, case .synced = status else { return false }
+        guard store.allowsNewProfileWork, !isBusy, !isChangingDestination, account != nil, case .synced = status else { return false }
         return switch mediaStatus {
         case .cancelled, .interrupted, .failed: true
         default: false
@@ -102,7 +113,7 @@ public final class SyncModel {
     }
 
     public func selectDestination(_ destination: Destination) {
-        guard !isBusy, account == nil, destination != self.destination else { return }
+        guard canEditSignIn, destination != self.destination else { return }
         self.destination = destination
         clearSignInForm()
     }
@@ -111,6 +122,23 @@ public final class SyncModel {
         userName = ""
         password = ""
         status = .idle
+    }
+
+    /// Edits the destination while keeping the current sign-in available if the change fails.
+    public func beginDestinationChange() {
+        guard store.allowsNewProfileWork, !isBusy, account != nil, !isChangingDestination else { return }
+        statusBeforeDestinationChange = status
+        clearSignInForm()
+    }
+
+    public func cancelDestinationChange() {
+        guard !isBusy, let account, let previousStatus = statusBeforeDestinationChange else { return }
+        statusBeforeDestinationChange = nil
+        destination = account.server == nil ? .ankiWeb : .selfHosted
+        customServerAddress = account.server?.absoluteString ?? ""
+        userName = account.userName
+        password = ""
+        status = previousStatus
     }
 
     // MARK: Signing in and out
@@ -158,13 +186,15 @@ public final class SyncModel {
             return
         }
         self.account = account
+        mediaStatus = .idle
+        statusBeforeDestinationChange = nil
         userName = account.userName
         status = .idle
     }
 
     /// Forgets the sign-in and removes the server's key from this device.
     public func signOut() {
-        guard !isBusy else { return }
+        guard store.allowsNewProfileWork, !isBusy, !isChangingDestination else { return }
         do {
             try storage.remove()
         } catch {
@@ -182,7 +212,7 @@ public final class SyncModel {
     /// fetches the server's. When the two cannot be merged, stops at
     /// `.choosingDirection` without changing either side.
     public func sync() async {
-        guard let account, !isBusy else { return }
+        guard store.allowsNewProfileWork, let account, !isBusy, !isChangingDestination else { return }
         SyncClientIdentity.install()
         status = .syncing(.connecting)
         let request = Anki_Sync_SyncCollectionRequest.with {
@@ -212,6 +242,37 @@ public final class SyncModel {
         case .noChanges, .normalSync, .UNRECOGNIZED:
             // A finished normal sync reports no further changes required.
             await finishCollectionSync(SyncOutcome(kind: .merged, serverMessage: response.serverMessage.nilIfEmpty))
+        }
+    }
+
+    public var canForceFullSync: Bool {
+        guard store.allowsNewProfileWork, account != nil, !isBusy, !isChangingDestination else { return false }
+        if case .choosingDirection = status { return false }
+        return status != .fullSyncRequested
+    }
+
+    /// Asks the core to require an upload or download at the next sync.
+    @discardableResult
+    public func forceFullSync() async -> Bool {
+        guard canForceFullSync, let account else { return false }
+        markingFullSync = true
+        defer { markingFullSync = false }
+
+        // The pinned core exposes the database command Android uses for
+        // Collection.setSchemaModified(). Keep its schema and modified times
+        // newer than the prior sync even if the device's clock changed.
+        let now = Int64(Date().timeIntervalSince1970 * 1_000)
+        let command = Data("""
+            {"kind":"query","sql":"UPDATE col SET scm=max(?, scm+1, ls+1), mod=max(?, mod+1)","args":[\(now),\(now)],"first_row_only":false}
+            """.utf8)
+        do {
+            _ = try await store.core.runDbCommand(.with { $0.json = command })
+            store.signal(.everything)
+            status = .fullSyncRequested
+            return true
+        } catch {
+            status = .failed(SyncFailure(error, server: account.server, signingIn: false))
+            return false
         }
     }
 
@@ -245,7 +306,7 @@ public final class SyncModel {
     }
 
     private func fullSync(upload: Bool) async {
-        guard let account, case .choosingDirection(let choice) = status,
+        guard store.allowsNewProfileWork, !isChangingDestination, let account, case .choosingDirection(let choice) = status,
               upload ? choice.allowsUpload : choice.allowsDownload
         else { return }
         status = .syncing(upload ? .uploading(transferred: 0, total: 0) : .downloading(transferred: 0, total: 0))

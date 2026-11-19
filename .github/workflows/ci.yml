@@ -105,3 +105,63 @@ jobs:
             -destination 'generic/platform=iOS Simulator' \
             -derivedDataPath build/DerivedData \
             CODE_SIGNING_ALLOWED=NO
+
+      - name: Run the iPhone and iPad user-interface tests
+        if: github.ref == 'refs/heads/hayaki-v1'
+        timeout-minutes: 35
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          select_simulator() {
+            xcrun simctl list devices available -j | python3 -c '
+          import json, sys
+          family, preferred = sys.argv[1:]
+          available = [
+              device for runtime, devices in json.load(sys.stdin)["devices"].items()
+              if ".iOS-" in runtime
+              for device in devices if device["isAvailable"] and device["name"].startswith(family)
+          ]
+          if not available:
+              sys.exit("No available iOS " + family + " simulator")
+          print(next((device for device in available if device["name"] == preferred), available[0])["udid"])
+          ' "$1" "$2"
+          }
+
+          run_ui_tests() {
+            simulator="$1"
+            result="$2"
+            shift 2
+            xcodebuild test \
+              -project Hayaki.xcodeproj \
+              -scheme Hayaki \
+              -destination "platform=iOS Simulator,id=$simulator" \
+              -derivedDataPath build/DerivedData \
+              -parallel-testing-enabled NO \
+              -test-timeouts-enabled YES \
+              -default-test-execution-time-allowance 240 \
+              -resultBundlePath "build/$result.xcresult" \
+              CODE_SIGNING_ALLOWED=NO \
+              "$@"
+          }
+
+          phone=$(select_simulator iPhone "iPhone 17")
+          tablet=$(select_simulator iPad "iPad Pro 11-inch (M5)")
+          phone_result=0
+          run_ui_tests "$phone" UITests-iPhone || phone_result=$?
+          xcrun simctl shutdown "$phone" || true
+          tablet_result=0
+          run_ui_tests "$tablet" UITests-iPad -only-testing:HayakiUITests/NavigationUITests || tablet_result=$?
+          xcrun simctl shutdown "$tablet" || true
+
+          if (( phone_result != 0 || tablet_result != 0 )); then
+            exit 1
+          fi
+
+      - name: Keep simulator results
+        if: always() && github.ref == 'refs/heads/hayaki-v1'
+        uses: actions/upload-artifact@v4
+        with:
+          name: hayaki-simulator-results
+          path: build/UITests-*.xcresult
+          if-no-files-found: ignore

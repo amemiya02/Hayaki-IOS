@@ -1,58 +1,53 @@
 import Foundation
 
-/// One field of a note as the learner edits it: plain text, plus images
-/// attached to the field.
-///
-/// The field keeps the content it was stored with. Until the learner changes
-/// the text or the images, `content` is that stored content, byte for byte,
-/// so saving a note never alters a field nobody touched. Once changed, the
-/// field is written as Anki writes typed text: special characters escaped,
-/// line breaks as `<br>`, and each image as an `<img>` tag after the text.
+/// A field keeps its original HTML and changes only when the learner edits it.
 public struct EditableField: Equatable, Sendable {
     public let name: String
-    /// The field as the collection held it when the editor opened it (HTML).
     public let storedContent: String
+    public private(set) var content: String
+    public var text: String { FieldMarkup.plainText(fromHTML: content) }
+    public var images: [String] { FieldMarkup.imageNames(inHTML: content) }
+    public var isEdited: Bool { !storedContent.utf8.elementsEqual(content.utf8) }
 
-    /// The field's text as the learner sees and edits it, without markup.
-    public var text: String {
-        didSet { if text != oldValue { isEdited = true } }
+    /// Text that can be represented losslessly by the plain-text editor,
+    /// with canonical image tags at its end.
+    public var requiresMarkup: Bool {
+        !content.utf8.elementsEqual(Self.plainHTML(text, images: images).utf8)
     }
-
-    /// The media file names of the images attached to the field, in order.
-    public private(set) var images: [String] {
-        didSet { if images != oldValue { isEdited = true } }
-    }
-
-    /// Whether the learner changed the text or the images.
-    public private(set) var isEdited = false
 
     public init(name: String, storedContent: String) {
         self.name = name
         self.storedContent = storedContent
-        text = FieldMarkup.plainText(fromHTML: storedContent)
-        images = FieldMarkup.imageNames(inHTML: storedContent)
+        content = storedContent
     }
 
-    /// What is saved in the note: the stored content if the learner left the
-    /// field alone, otherwise the edited text and images.
-    public var content: String {
-        guard isEdited else { return storedContent }
-        return FieldMarkup.html(fromPlainText: text)
-            + images.map { "<img src=\"\(FieldMarkup.escaped($0, quotes: true))\">" }.joined()
+    mutating func setText(_ text: String) {
+        guard !requiresMarkup else { return }
+        content = Self.plainHTML(text, images: images)
+    }
+
+    mutating func setMarkup(_ markup: String) {
+        content = markup
     }
 
     mutating func attachImage(named name: String) {
-        images.append(name)
+        content += Self.imageHTML(named: name)
     }
 
     mutating func removeImage(named name: String) {
-        images.removeAll { $0 == name }
+        content = content.replacing(FieldMarkup.imageTag) { match in
+            FieldMarkup.plainText(fromHTML: String(match.output.1)) == name
+                ? ""
+                : String(match.output.0)
+        }
     }
 
-    /// Takes over what the learner entered in a field of another note type.
-    mutating func carryOver(_ other: EditableField) {
-        text = other.text
-        images = other.images
+    private static func plainHTML(_ text: String, images: [String]) -> String {
+        FieldMarkup.html(fromPlainText: text) + images.map(Self.imageHTML).joined()
+    }
+
+    private static func imageHTML(named name: String) -> String {
+        "<img src=\"\(FieldMarkup.escaped(name, quotes: true))\">"
     }
 }
 
@@ -88,9 +83,11 @@ enum FieldMarkup {
         return text
     }
 
+    nonisolated(unsafe) static let imageTag = /<img\b[^>]*?\ssrc\s*=\s*["']([^"']+)["'][^>]*>/.ignoresCase()
+
     /// The file names of the images a field's HTML shows.
     static func imageNames(inHTML html: String) -> [String] {
-        html.matches(of: /<img[^>]*?\ssrc\s*=\s*["']([^"']+)["']/.ignoresCase()).map {
+        html.matches(of: imageTag).map {
             plainText(fromHTML: String($0.output.1))
         }
     }

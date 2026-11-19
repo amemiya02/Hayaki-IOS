@@ -14,6 +14,7 @@ let package = Package(
     dependencies: [
         .package(path: "../AnkiCore"),
         .package(path: "../CollectionStore"),
+        .package(path: "../StudyFeature"),
         // Tests only: to see that deck counts update after adding.
         .package(path: "../DecksFeature"),
     ],
@@ -23,6 +24,7 @@ let package = Package(
             dependencies: [
                 .product(name: "AnkiCore", package: "AnkiCore"),
                 .product(name: "CollectionStore", package: "CollectionStore"),
+                .product(name: "StudyFeature", package: "StudyFeature"),
             ],
             resources: [.process("Resources")]
         ),
@@ -32,7 +34,8 @@ let package = Package(
                 "NoteEditorFeature",
                 .product(name: "CollectionTesting", package: "CollectionStore"),
                 .product(name: "DecksFeature", package: "DecksFeature"),
-            ]
+            ],
+            resources: [.copy("Fixtures")]
         ),
     ],
     swiftLanguageModes: [.v6]

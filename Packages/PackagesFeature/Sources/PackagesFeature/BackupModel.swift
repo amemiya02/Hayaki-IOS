@@ -1,3 +1,5 @@
+import AnkiCore
+import AnkiProto
 import CollectionStore
 import Foundation
 import Observation
@@ -8,6 +10,24 @@ public struct CollectionBackup: Equatable, Identifiable, Sendable {
     public let date: Date
 
     fileprivate let url: URL
+}
+
+public struct BackupRetention: Equatable, Sendable {
+    public var intervalMinutes: UInt32
+    public var daily: UInt32
+    public var weekly: UInt32
+    public var monthly: UInt32
+
+    public init(intervalMinutes: UInt32, daily: UInt32, weekly: UInt32, monthly: UInt32) {
+        self.intervalMinutes = intervalMinutes
+        self.daily = daily
+        self.weekly = weekly
+        self.monthly = monthly
+    }
+
+    public var isValid: Bool {
+        (5...99_999).contains(intervalMinutes) && daily <= 99_999 && weekly <= 99_999 && monthly <= 99_999
+    }
 }
 
 /// The backups for the collection currently open in the app.
@@ -28,7 +48,9 @@ public final class BackupModel {
     @ObservationIgnored private let store: CollectionStore
     @ObservationIgnored private let folder: URL
     @ObservationIgnored private let importer: PackageImportModel
-    @ObservationIgnored private var creatingAutomaticBackup = false
+    private var creatingAutomaticBackup = false
+
+    public var isBusy: Bool { status == .creating || creatingAutomaticBackup }
 
     public init(store: CollectionStore, folder: URL, importer: PackageImportModel) {
         self.store = store
@@ -45,7 +67,7 @@ public final class BackupModel {
     }
 
     public func createBackup() async {
-        guard status != .creating, !creatingAutomaticBackup, !importer.isImporting else { return }
+        guard store.allowsNewProfileWork, !isBusy, !importer.isImporting else { return }
         status = .creating
         do {
             let created = try await store.backUp(to: folder, force: true)
@@ -57,7 +79,7 @@ public final class BackupModel {
     }
 
     public func createAutomaticBackup() async {
-        guard status != .creating, !creatingAutomaticBackup, !importer.isImporting else { return }
+        guard store.allowsNewProfileWork, !isBusy, !importer.isImporting else { return }
         creatingAutomaticBackup = true
         defer { creatingAutomaticBackup = false }
         do {
@@ -70,10 +92,38 @@ public final class BackupModel {
     }
 
     public func prepareRestore(_ entry: CollectionBackup) async {
-        guard status != .creating, entries.contains(entry) else { return }
+        guard store.allowsNewProfileWork, !isBusy, entries.contains(entry) else { return }
         // The common package importer stages the file before asking for
         // replacement, so the pre-restore backup can thin older backups.
         await importer.open(entry.url)
+    }
+
+    public func loadRetention() async -> BackupRetention? {
+        do {
+            let limits = try await store.core.getPreferences().backups
+            return BackupRetention(intervalMinutes: limits.minimumIntervalMins,
+                                   daily: limits.daily, weekly: limits.weekly, monthly: limits.monthly)
+        } catch {
+            status = .failed(error.localizedDescription)
+            return nil
+        }
+    }
+
+    @discardableResult
+    public func saveRetention(_ retention: BackupRetention) async -> Bool {
+        guard store.allowsNewProfileWork, retention.isValid, !importer.isImporting else { return false }
+        do {
+            var preferences = try await store.core.getPreferences()
+            preferences.backups.minimumIntervalMins = retention.intervalMinutes
+            preferences.backups.daily = retention.daily
+            preferences.backups.weekly = retention.weekly
+            preferences.backups.monthly = retention.monthly
+            try await store.modify(.setPreferences(preferences))
+            return true
+        } catch {
+            status = .failed(error.localizedDescription)
+            return false
+        }
     }
 
     private func reload() throws {

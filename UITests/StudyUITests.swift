@@ -89,6 +89,82 @@ final class StudyUITests: XCTestCase {
         attachScreen("6 nothing left")
     }
 
+    func testEditingFromReviewerReturnsToTheSameAnswer() {
+        openDeck("Geography")
+        let counts = app.descendants(matching: .any)["study-counts"]
+        XCTAssertTrue(counts.waitForExistence(timeout: 20))
+        let countsBefore = counts.label
+
+        app.buttons["show-answer"].tap()
+        let good = app.buttons["rating-good"]
+        XCTAssertTrue(good.waitForExistence(timeout: 10))
+        app.buttons["Study Actions"].tap()
+        app.buttons["Edit Note"].tap()
+
+        let extra = app.descendants(matching: .any)["note-field-1"].firstMatch
+        XCTAssertTrue(extra.waitForExistence(timeout: 10))
+        extra.tap()
+        extra.typeText("UpdatedEditorAnswer")
+        app.buttons["submit-note"].tap()
+
+        XCTAssertTrue(good.waitForExistence(timeout: 10))
+        let editedAnswer = app.webViews.staticTexts
+            .matching(NSPredicate(format: "label CONTAINS %@", "UpdatedEditorAnswer")).firstMatch
+        XCTAssertTrue(editedAnswer.waitForExistence(timeout: 30))
+        XCTAssertEqual(counts.label, countsBefore)
+        attachScreen("Edited card in the same study session")
+    }
+
+    func testEditingPreviewingAndDeletingFromBrowse() {
+        if UIDevice.current.userInterfaceIdiom == .pad {
+            app.staticTexts["Browse"].firstMatch.tap()
+        } else {
+            app.tabBars.buttons["Browse"].tap()
+        }
+        let card = app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "gracias")).firstMatch
+        XCTAssertTrue(card.waitForExistence(timeout: 20))
+        card.tap()
+
+        let edit = app.buttons["Edit Note"]
+        XCTAssertTrue(edit.waitForExistence(timeout: 10))
+        edit.tap()
+        let back = app.descendants(matching: .any)["note-field-1"].firstMatch
+        XCTAssertTrue(back.waitForExistence(timeout: 10))
+        back.tap()
+        back.typeText("BrowseEditorAnswer")
+
+        let preview = app.buttons["preview-note"]
+        preview.tap()
+        XCTAssertTrue(app.webViews.staticTexts["gracias"].waitForExistence(timeout: 30))
+        attachScreen("Draft question")
+        app.buttons["flip-note-preview"].tap()
+        let answer = app.webViews.staticTexts
+            .matching(NSPredicate(format: "label CONTAINS %@", "BrowseEditorAnswer")).firstMatch
+        XCTAssertTrue(answer.waitForExistence(timeout: 30))
+        attachScreen("Draft answer")
+        app.navigationBars["Preview"].buttons.firstMatch.tap()
+        app.buttons["submit-note"].tap()
+
+        XCTAssertTrue(edit.waitForExistence(timeout: 10), "Browse keeps the same card open")
+        let saved = app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "BrowseEditorAnswer")).firstMatch
+        XCTAssertTrue(saved.waitForExistence(timeout: 10), "The same card's detail shows the edited note")
+        edit.tap()
+
+        app.buttons["Editor Options"].tap()
+        app.buttons["Delete Note"].tap()
+        let confirmation = app.alerts["Delete Note?"]
+        XCTAssertTrue(confirmation.waitForExistence(timeout: 10))
+        confirmation.buttons["Cancel"].tap()
+        XCTAssertTrue(app.buttons["submit-note"].exists)
+        app.buttons["Editor Options"].tap()
+        app.buttons["Delete Note"].tap()
+        XCTAssertTrue(confirmation.waitForExistence(timeout: 10))
+        confirmation.buttons["Delete"].tap()
+
+        XCTAssertTrue(app.navigationBars["Browse"].waitForExistence(timeout: 10))
+        XCTAssertTrue(card.waitForNonExistence(timeout: 10))
+    }
+
     private func deckRow(_ name: String) -> XCUIElement {
         app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", name)).firstMatch
     }

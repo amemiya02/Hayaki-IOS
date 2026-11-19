@@ -11,20 +11,28 @@ public enum SettingsSection {
 }
 
 /// The More section: one row per area, each leading to its own screen.
-public struct SettingsScreen: View {
+public struct SettingsScreen<ProfileEntry: View>: View {
     private let store: CollectionStore
     private let backups: BackupModel?
+    private let profileEntry: ProfileEntry
     @State private var sync: SyncModel
 
-    public init(store: CollectionStore, sync: SyncModel? = nil, backups: BackupModel? = nil) {
+    public init(
+        store: CollectionStore,
+        sync: SyncModel? = nil,
+        backups: BackupModel? = nil,
+        @ViewBuilder profileEntry: () -> ProfileEntry
+    ) {
         self.store = store
         self.backups = backups
+        self.profileEntry = profileEntry()
         _sync = State(initialValue: sync ?? SyncModel(store: store))
     }
 
     public var body: some View {
         NavigationStack {
             List {
+                profileEntry
                 SyncSettingsRow(model: sync)
                 ReminderSettingsRow(store: store)
                 if let backups {
@@ -38,9 +46,24 @@ public struct SettingsScreen: View {
                         }
                     }
                 }
+                NavigationLink {
+                    CollectionMaintenanceScreen(store: store, sync: sync)
+                } label: {
+                    Label {
+                        Text("Manage Space", bundle: .module)
+                    } icon: {
+                        Image(systemName: "externaldrive")
+                    }
+                }
                 HelpAndAboutSection(store: store, sync: sync)
             }
             .navigationTitle(SettingsSection.title)
         }
+    }
+}
+
+extension SettingsScreen where ProfileEntry == EmptyView {
+    public init(store: CollectionStore, sync: SyncModel? = nil, backups: BackupModel? = nil) {
+        self.init(store: store, sync: sync, backups: backups) { EmptyView() }
     }
 }

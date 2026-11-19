@@ -1,4 +1,5 @@
 import CollectionStore
+import StudyFeature
 import SwiftUI
 
 public extension View {
@@ -8,6 +9,9 @@ public extension View {
     /// Apply it to the app's `TabView`.
     func addNoteAction(store: CollectionStore) -> some View {
         modifier(AddNoteAction(store: store))
+            .studyNoteEditor { cardID in
+                NoteEditorScreen(store: store, editingCardID: cardID)
+            }
     }
 }
 

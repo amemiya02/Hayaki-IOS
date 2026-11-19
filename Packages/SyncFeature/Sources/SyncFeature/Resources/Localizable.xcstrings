@@ -1,6 +1,182 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "Force Full Sync…" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "完全同期を強制…"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "强制完整同步…"
+          }
+        }
+      }
+    },
+    "Force Full Sync?" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "完全同期を強制しますか？"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "强制完整同步？"
+          }
+        }
+      }
+    },
+    "Force Full Sync" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "完全同期を強制"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "强制完整同步"
+          }
+        }
+      }
+    },
+    "The next sync will ask whether to upload or download the collection." : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "次回の同期時に、コレクションをアップロードするかダウンロードするかを確認します。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "下次同步时，将询问要上传还是下载集合。"
+          }
+        }
+      }
+    },
+    "A full sync will run next time you sync." : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "次回は完全同期が実行されます。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "下次同步将进行完整同步。"
+          }
+        }
+      }
+    },
+    "A one-way sync replaces one collection with the other. Choose which collection to keep." : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "一方向の同期では一方のコレクションが上書きされます。残すコレクションを選択してください。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "单向同步会用一份集合替换另一份。请选择要保留的集合。"
+          }
+        }
+      }
+    },
+    "Keep Current Sign-In" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "現在のログインを維持"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "保留当前登录"
+          }
+        }
+      }
+    },
+    "Change Sync Destination…" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "同期先を変更…"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "更改同步目标…"
+          }
+        }
+      }
+    },
+    "Change Sync Destination?" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "同期先を変更しますか？"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "更改同步目标？"
+          }
+        }
+      }
+    },
+    "Continue" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "続ける"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "继续"
+          }
+        }
+      }
+    },
+    "Your current sign-in will stay active until you sign in to the new destination." : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "新しい同期先にログインするまで、現在のログインは維持されます。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "登录新目标前，当前登录将保持有效。"
+          }
+        }
+      }
+    },
     "%@ of %@" : {
       "comment" : "Upload or download progress: bytes transferred of the total, such as “1.2 MB of 3.4 MB”."
     },
@@ -398,9 +574,6 @@
     },
     "Syncing…" : {
       "comment" : "Shown while changes are exchanged with the server."
-    },
-    "The collection on this device and the one on the server have changed in ways that cannot be merged, so one must replace the other. Nothing has been changed yet." : {
-      "comment" : "Explains why the learner must choose between uploading and downloading."
     },
     "The collection on this device is empty. Nothing has been changed yet." : {
       "comment" : "Shown before downloading into an empty collection."
