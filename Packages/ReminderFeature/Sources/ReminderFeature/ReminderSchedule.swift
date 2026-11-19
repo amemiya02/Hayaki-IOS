@@ -106,7 +106,7 @@ public final class ReminderSchedule {
 
         let wanted: [ScheduledReminder]
         do {
-            wanted = try await reminders(for: preferences, from: .now)
+            wanted = try await reminders(for: preferences, snoozes: pending, from: .now)
         } catch {
             // The collection may be changing during sync or import.
             return
@@ -121,8 +121,10 @@ public final class ReminderSchedule {
         // slots to the soonest deck reminders across all profiles.
         let combined = wanted + retained
         let daily = combined.filter { !$0.identifier.hasPrefix(DeckReminderDestination.prefix) }
-        let decks = combined.filter { $0.identifier.hasPrefix(DeckReminderDestination.prefix) }
+        let deckReminders = combined.filter { $0.identifier.hasPrefix(DeckReminderDestination.prefix) }
             .sorted { ($0.delivery, $0.identifier) < ($1.delivery, $1.identifier) }
+        let decks = deckReminders.filter { DeckReminderDestination(identifier: $0.identifier)?.isSnoozed == true }
+            + deckReminders.filter { DeckReminderDestination(identifier: $0.identifier)?.isSnoozed == false }
         let selection = Array(daily.prefix(64)) + Array(decks.prefix(max(0, 64 - daily.count)))
         let selectedIDs = Set(selection.map(\.identifier))
         await centre.removeReminders(withIdentifiers: pending.map(\.identifier).filter { !selectedIDs.contains($0) })
@@ -132,8 +134,15 @@ public final class ReminderSchedule {
         }
     }
 
-    private func reminders(for preferences: ReminderPreferences, from now: Date) async throws(CoreError) -> [ScheduledReminder] {
-        var deliveries: [Date: [DeckReminder]] = [:]
+    private struct Delivery {
+        let rule: DeckReminder
+        var snoozedIdentifier: String?
+    }
+
+    private func reminders(
+        for preferences: ReminderPreferences, snoozes: [ScheduledReminder], from now: Date
+    ) async throws(CoreError) -> [ScheduledReminder] {
+        var deliveries: [Date: [Delivery]] = [:]
         let daily = Set(preferences.isOn ? moments(hour: preferences.hour, minute: preferences.minute, after: now) : [])
         var reviewedToday: Set<Int64> = []
         var nextDay: Int64 = 0
@@ -145,8 +154,15 @@ public final class ReminderSchedule {
                 let liveRules = rules.filter { namesByID[$0.deckID] != nil }
                 for rule in liveRules {
                     for date in moments(hour: rule.hour, minute: rule.minute, after: now) {
-                        deliveries[date, default: []].append(rule)
+                        deliveries[date, default: []].append(Delivery(rule: rule))
                     }
+                }
+                for snooze in snoozes {
+                    guard let target = DeckReminderDestination(identifier: snooze.identifier),
+                          target.isSnoozed, target.profileID == profileID,
+                          let rule = liveRules.first(where: { $0.id == target.ruleID && $0.deckID == target.deckID })
+                    else { continue }
+                    deliveries[snooze.delivery, default: []].append(Delivery(rule: rule, snoozedIdentifier: snooze.identifier))
                 }
                 if liveRules.contains(where: \.onlyWithoutReviews) {
                     nextDay = try await store.core.schedTimingToday().nextDayAt
@@ -181,7 +197,8 @@ public final class ReminderSchedule {
                 ))
             }
             guard let profileID else { continue }
-            for rule in rules where deckReminderCount < 64 {
+            for delivery in rules where deckReminderCount < 64 {
+                let rule = delivery.rule
                 guard !rule.onlyWithoutReviews || timestamp >= nextDay || !reviewedToday.contains(rule.deckID),
                       let deck = Self.deck(withID: rule.deckID, in: root.children)
                 else { continue }
@@ -190,7 +207,8 @@ public final class ReminderSchedule {
                     + (rule.countReview ? Int(deck.reviewCount) : 0)
                 guard considered >= rule.minimumCards else { continue }
                 let body = ReminderText.body(for: StudyCounts.sum([deck])) ?? ReminderText.noCards
-                let identifier = DeckReminderDestination.profilePrefix(profileID) + "\(deck.deckID).\(rule.id.uuidString).\(day)"
+                let identifier = delivery.snoozedIdentifier
+                    ?? DeckReminderDestination.profilePrefix(profileID) + "\(deck.deckID).\(rule.id.uuidString).\(day)"
                 reminders.append(ScheduledReminder(identifier: identifier, delivery: date, title: deck.name, body: body))
                 deckReminderCount += 1
             }

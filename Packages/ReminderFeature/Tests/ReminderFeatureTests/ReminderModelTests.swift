@@ -1,7 +1,7 @@
 import CollectionStore
 import CollectionTesting
 import Foundation
-import ReminderFeature
+@testable import ReminderFeature
 import Testing
 
 @MainActor
@@ -268,6 +268,73 @@ func deckReminderOpensItsDeck() async throws {
         #expect(opener.deckRequested?.profileID == profile)
         #expect(opener.deckRequested?.deckID == target)
 
+        await model.delete(rule.id)
+        #expect(await centre.pendingReminders().isEmpty)
+    }
+}
+
+
+@MainActor
+@Test("A denied deck reminder is kept, then scheduled with its threshold when permission is allowed")
+func deniedDeckReminderAndThreshold() async throws {
+    try await withTemporaryCollection { store in
+        let deck = try await store.addDeck(named: "Spanish")
+        try await store.addBasicNotes(count: 3, toDeck: deck)
+        let centre = RecordingNotificationCentre(learnerAllows: false)
+        let defaults = UserDefaults.throwaway()
+        let profile = UUID()
+        let model = DeckReminderModel(store: store, profileID: profile, centre: centre, defaults: defaults)
+        let time = Date.now.addingTimeInterval(3600).hourAndMinute
+        var rule = DeckReminder(deckID: deck, hour: try #require(time.hour), minute: try #require(time.minute))
+        rule.minimumCards = 2
+        rule.countNew = false
+
+        await model.save(rule)
+        #expect(model.notificationsRefused)
+        #expect(await centre.pendingReminders().isEmpty)
+        #expect(DeckReminderModel(store: store, profileID: profile, centre: centre, defaults: defaults).rules == [rule])
+
+        centre.learnerChangesPermission(to: .allowed)
+        await model.refresh()
+        #expect(!model.notificationsRefused)
+        await model.save(rule)
+        #expect(await centre.pendingReminders().isEmpty, "excluded new cards do not contribute toward the minimum")
+
+        rule.countNew = true
+        await model.save(rule)
+        let first = try #require(await centre.pendingReminders().first)
+        #expect(first.body == "3 new cards are ready to learn.")
+    }
+}
+
+@MainActor
+@Test("A snooze keeps the reminder's destination and disappears when the reminder is deleted")
+func snoozingDeckReminder() async throws {
+    try await withTemporaryCollection { store in
+        let deck = try await store.addDeck(named: "Japanese")
+        try await store.addBasicNotes(count: 2, toDeck: deck)
+        let centre = RecordingNotificationCentre(permission: .allowed)
+        let defaults = UserDefaults.throwaway()
+        let profile = UUID()
+        let model = DeckReminderModel(store: store, profileID: profile, centre: centre, defaults: defaults)
+        let time = Date.now.addingTimeInterval(3600).hourAndMinute
+        let rule = DeckReminder(deckID: deck, hour: try #require(time.hour), minute: try #require(time.minute))
+        await model.save(rule)
+        let reminder = try #require(await centre.pendingReminders().first)
+        let target = try #require(DeckReminderDestination(identifier: reminder.identifier))
+        let beforeSnooze = Date.now
+
+        await DeckReminderActions.snooze(.fiveMinutes, target: target, title: reminder.title, body: reminder.body, in: centre)
+
+        let snoozed = try #require(await centre.pendingReminders().first)
+        let opener = ReminderOpener()
+        opener.opened(notificationIdentifier: snoozed.identifier)
+        #expect(opener.deckRequested?.profileID == profile)
+        #expect(opener.deckRequested?.deckID == deck)
+        #expect(abs(snoozed.delivery.timeIntervalSince(beforeSnooze) - 300) < 5)
+
+        await model.save(rule)
+        #expect(await centre.pendingReminders().contains(snoozed))
         await model.delete(rule.id)
         #expect(await centre.pendingReminders().isEmpty)
     }

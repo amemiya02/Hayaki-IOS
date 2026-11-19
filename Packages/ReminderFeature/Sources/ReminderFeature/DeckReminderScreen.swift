@@ -117,6 +117,13 @@ private struct DeckReminderEditor: View {
     @State private var isSaving = false
     @State private var threshold = ""
 
+    private var minimum: Int? {
+        guard let value = try? IntegerFormatStyle<Int>.number.grouping(.never).parseStrategy.parse(threshold),
+              value >= 0
+        else { return nil }
+        return value
+    }
+
     var body: some View {
         NavigationStack {
             Form {
@@ -168,7 +175,7 @@ private struct DeckReminderEditor: View {
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button(role: .confirm) {
-                        guard let minimum = Int(threshold), minimum >= 0 else { return }
+                        guard let minimum else { return }
                         rule.minimumCards = minimum
                         isSaving = true
                         Task {
@@ -178,7 +185,7 @@ private struct DeckReminderEditor: View {
                     } label: {
                         Text("Save", bundle: .module)
                     }
-                    .disabled(isSaving || Int(threshold).map { $0 < 0 } != false)
+                    .disabled(isSaving || minimum == nil)
                 }
             }
             .interactiveDismissDisabled(isSaving)

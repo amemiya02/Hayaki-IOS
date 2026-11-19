@@ -24,7 +24,9 @@ public final class ReminderOpener {
     public func install() {
         let delegate = NotificationDelegate(opener: self)
         self.delegate = delegate
-        UNUserNotificationCenter.current().delegate = delegate
+        let centre = UNUserNotificationCenter.current()
+        centre.setNotificationCategories([DeckReminderActions.category])
+        centre.delegate = delegate
     }
 
     /// The learner opened the notification with this identifier.
@@ -53,9 +55,18 @@ private final class NotificationDelegate: NSObject, UNUserNotificationCenterDele
         didReceive response: UNNotificationResponse,
         withCompletionHandler completionHandler: @escaping @Sendable () -> Void
     ) {
-        let identifier = response.notification.request.identifier
+        let request = response.notification.request
+        let identifier = request.identifier
+        let action = response.actionIdentifier
+        let title = request.content.title
+        let body = request.content.body
         Task { @MainActor in
-            opener.opened(notificationIdentifier: identifier)
+            if action == UNNotificationDefaultActionIdentifier {
+                opener.opened(notificationIdentifier: identifier)
+            } else if let snooze = DeckReminderActions.Snooze(rawValue: action),
+                      let target = DeckReminderDestination(identifier: identifier) {
+                await DeckReminderActions.snooze(snooze, target: target, title: title, body: body)
+            }
             completionHandler()
         }
     }
@@ -69,5 +80,51 @@ private final class NotificationDelegate: NSObject, UNUserNotificationCenterDele
         Task { @MainActor in
             completionHandler([.banner, .list, .sound])
         }
+    }
+}
+
+
+enum DeckReminderActions {
+    static let categoryID = "hayaki.deck-reminder"
+
+    enum Snooze: String {
+        case fiveMinutes = "hayaki.snooze.five-minutes"
+        case oneHour = "hayaki.snooze.one-hour"
+
+        var seconds: TimeInterval {
+            switch self {
+            case .fiveMinutes: 5 * 60
+            case .oneHour: 60 * 60
+            }
+        }
+    }
+
+    static var category: UNNotificationCategory {
+        let fiveMinutes = UNNotificationAction(
+            identifier: Snooze.fiveMinutes.rawValue,
+            title: String(localized: "Snooze 5 Minutes", bundle: .module)
+        )
+        let oneHour = UNNotificationAction(
+            identifier: Snooze.oneHour.rawValue,
+            title: String(localized: "Snooze 1 Hour", bundle: .module)
+        )
+        return UNNotificationCategory(identifier: categoryID, actions: [fiveMinutes, oneHour], intentIdentifiers: [])
+    }
+
+    static func snooze(
+        _ delay: Snooze, target: DeckReminderDestination, title: String, body: String,
+        in centre: any NotificationCentre = SystemNotificationCentre()
+    ) async {
+        let pending = await centre.pendingReminders()
+        if pending.count >= 64,
+           let farthest = pending.reversed().first(where: {
+               DeckReminderDestination(identifier: $0.identifier)?.isSnoozed == false
+           }) {
+            await centre.removeReminders(withIdentifiers: [farthest.identifier])
+        }
+        let id = target.identifierStem + "snoozed-" + UUID().uuidString
+        try? await centre.add(ScheduledReminder(
+            identifier: id, delivery: .now.addingTimeInterval(delay.seconds), title: title, body: body
+        ))
     }
 }

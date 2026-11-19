@@ -9,7 +9,7 @@ public struct DeckReminder: Codable, Equatable, Identifiable, Sendable {
     public var hour: Int
     public var minute: Int
     public var enabled = true
-    public var minimumCards = 0
+    public var minimumCards = 1
     public var countNew = true
     public var countLearning = true
     public var countReview = true
@@ -42,6 +42,8 @@ public struct DeckReminder: Codable, Equatable, Identifiable, Sendable {
 public struct DeckReminderDestination: Equatable, Sendable {
     public let profileID: UUID
     public let deckID: Int64
+    let ruleID: UUID
+    let isSnoozed: Bool
 
     static let prefix = ScheduledReminder.identifierPrefix + "deck."
 
@@ -51,11 +53,15 @@ public struct DeckReminderDestination: Equatable, Sendable {
         guard identifier.hasPrefix(Self.prefix) else { return nil }
         let parts = identifier.dropFirst(Self.prefix.count).split(separator: ".")
         guard parts.count == 4, let profileID = UUID(uuidString: String(parts[0])),
-              let deckID = Int64(parts[1]), deckID > 0, UUID(uuidString: String(parts[2])) != nil
+              let deckID = Int64(parts[1]), deckID > 0, let ruleID = UUID(uuidString: String(parts[2]))
         else { return nil }
         self.profileID = profileID
         self.deckID = deckID
+        self.ruleID = ruleID
+        isSnoozed = parts[3].hasPrefix("snoozed-")
     }
+
+    var identifierStem: String { Self.profilePrefix(profileID) + "\(deckID).\(ruleID.uuidString)." }
 }
 
 @MainActor
