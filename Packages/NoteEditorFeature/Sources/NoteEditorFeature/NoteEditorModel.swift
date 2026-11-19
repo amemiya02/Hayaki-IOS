@@ -43,7 +43,12 @@ public enum AddOutcome: Equatable, Sendable {
     case failed(message: String)
 }
 
-/// The note editor: builds a note of a chosen note type, with fields, tags
+public enum EditOutcome: Equatable, Sendable {
+    case saved
+    case failed(message: String)
+}
+
+/// The note editor: edits an existing note or builds a note of a chosen note type, with fields, tags
 /// and images, and adds it to a chosen deck.
 ///
 /// The note type and deck start as the ones last added with, which the core
@@ -66,12 +71,14 @@ public final class NoteEditorModel {
     public private(set) var fields: [EditableField] = []
     public private(set) var tags: [String] = []
 
+    public let editingNoteID: Int64?
     @ObservationIgnored private let store: CollectionStore
     /// The note being built, as the core made it for the chosen note type.
     @ObservationIgnored private var note = Anki_Notes_Note()
 
-    public init(store: CollectionStore) {
+    public init(store: CollectionStore, editingNoteID: Int64? = nil) {
         self.store = store
+        self.editingNoteID = editingNoteID
     }
 
     public var notetypeName: String? { notetypes.first { $0.id == notetypeID }?.name }
@@ -88,6 +95,11 @@ public final class NoteEditorModel {
     /// type last added with, in the deck last added to with it.
     public func load() async {
         do {
+            if let editingNoteID {
+                try await loadExistingNote(editingNoteID)
+                state = .ready
+                return
+            }
             notetypes = try await notetypeChoices()
             decks = try await deckChoices()
             let defaults = try await store.core.defaultsForAdding(.init())
@@ -104,6 +116,15 @@ public final class NoteEditorModel {
         } catch {
             state = .failed(message: error.message)
         }
+    }
+
+    private func loadExistingNote(_ id: Int64) async throws(CoreError) {
+        note = try await store.core.getNote(.with { $0.nid = id })
+        let type = try await store.core.getNotetype(.with { $0.ntid = note.notetypeID })
+        notetypeID = type.id
+        notetypes = [Choice(id: type.id, name: type.name)]
+        fields = zip(type.fields.map(\.name), note.fields).map { EditableField(name: $0, storedContent: $1) }
+        tags = note.tags
     }
 
     /// Every note type except Image Occlusion, whose notes are made with an
@@ -149,7 +170,7 @@ public final class NoteEditorModel {
     /// Switches to another note type. What was typed and attached is carried
     /// over field by field, in order; fields beyond the new type's are dropped.
     public func selectNotetype(_ id: Int64) async {
-        guard id != notetypeID else { return }
+        guard editingNoteID == nil, id != notetypeID else { return }
         let previous = fields
         do {
             try await startNote(notetypeID: id)
@@ -158,11 +179,12 @@ public final class NoteEditorModel {
             return
         }
         for (index, old) in previous.enumerated() where index < fields.count && old.isEdited {
-            fields[index].carryOver(old)
+            fields[index].setMarkup(old.content)
         }
     }
 
     public func selectDeck(_ id: Int64) {
+        guard editingNoteID == nil else { return }
         deckID = id
     }
 
@@ -170,7 +192,12 @@ public final class NoteEditorModel {
 
     public func setText(_ text: String, ofField index: Int) {
         guard fields.indices.contains(index) else { return }
-        fields[index].text = text
+        fields[index].setText(text)
+    }
+
+    public func setMarkup(_ markup: String, ofField index: Int) {
+        guard fields.indices.contains(index) else { return }
+        fields[index].setMarkup(markup)
     }
 
     /// Adds tags typed by the learner; several may be given, separated by
@@ -210,6 +237,27 @@ public final class NoteEditorModel {
         fields[index].removeImage(named: name)
     }
 
+    /// Saves the current draft to the existing note, preserving its identity.
+    public func save() async -> EditOutcome {
+        guard editingNoteID != nil, state == .ready else {
+            return .failed(message: String(localized: "Could Not Save the Note", bundle: .module))
+        }
+        let candidate = draft
+        do {
+            try await store.modify(.updateNotes(.with { $0.notes = [candidate] }))
+            return .saved
+        } catch {
+            return .failed(message: error.message)
+        }
+    }
+
+    private var draft: Anki_Notes_Note {
+        var draft = note
+        draft.fields = fields.map(\.content)
+        draft.tags = tags
+        return draft
+    }
+
     // MARK: Adding
 
     /// Adds the note if the core's check allows it. A warning the learner
@@ -217,9 +265,10 @@ public final class NoteEditorModel {
     /// stop the note again. After adding, the fields are emptied for the next
     /// note; note type, deck and tags stay.
     public func add(confirming accepted: AddWarning? = nil) async -> AddOutcome {
-        var candidate = note
-        candidate.fields = fields.map(\.content)
-        candidate.tags = tags
+        guard editingNoteID == nil, state == .ready else {
+            return .failed(message: String(localized: "Could Not Add the Note", bundle: .module))
+        }
+        let candidate = draft
         do {
             switch try await store.core.noteFieldsCheck(candidate).state {
             case .normal: break

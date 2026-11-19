@@ -32,7 +32,8 @@ let package = Package(
                 "NoteEditorFeature",
                 .product(name: "CollectionTesting", package: "CollectionStore"),
                 .product(name: "DecksFeature", package: "DecksFeature"),
-            ]
+            ],
+            resources: [.copy("Fixtures")]
         ),
     ],
     swiftLanguageModes: [.v6]
