@@ -40,8 +40,11 @@ public struct BrowseScreen: View {
 
     public var body: some View {
         NavigationStack {
-            content
+            browseLayout
                 .navigationTitle(title)
+                #if os(iOS)
+                .navigationBarTitleDisplayMode(.inline)
+                #endif
                 .navigationDestination(for: CardLink.self) { link in
                     CardInfoScreen(store: store, cardID: link.cardID)
                 }
@@ -49,16 +52,7 @@ public struct BrowseScreen: View {
                     CardInfoScreen(store: store, cardID: link.cardID)
                 }
                 .toolbar { toolbar }
-                .safeAreaInset(edge: .top, spacing: 0) {
-                    if !isSelecting { modePicker }
-                }
                 .selectingCards(isSelecting)
-                .safeAreaInset(edge: .bottom) {
-                    if let completed = model.completedAction {
-                        UndoBanner(model: model, completed: completed)
-                            .transition(.move(edge: .bottom).combined(with: .opacity))
-                    }
-                }
                 .animation(.default, value: model.completedAction)
                 .task(id: model.completedAction) {
                     // The undo offer goes away after a while, unless
@@ -113,8 +107,23 @@ public struct BrowseScreen: View {
                     if isEmpty { isSelecting = false }
                 }
         }
+        .task { await model.run() }
+    }
+
+    private var browseLayout: some View {
+        VStack(spacing: 0) {
+            if !isSelecting { modePicker }
+            content
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .clipped()
+            if let completed = model.completedAction {
+                UndoBanner(model: model, completed: completed)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+            }
+        }
         .searchable(
             text: $model.searchText,
+            placement: searchPlacement,
             prompt: Text("Anki search, such as deck:Spanish", bundle: .module)
         )
         .autocorrectionDisabled()
@@ -130,7 +139,14 @@ public struct BrowseScreen: View {
             // Clearing the field shows every card again.
             if text.isEmpty { Task { await model.search() } }
         }
-        .task { await model.run() }
+    }
+
+    private var searchPlacement: SearchFieldPlacement {
+        #if os(iOS)
+        .navigationBarDrawer(displayMode: .always)
+        #else
+        .automatic
+        #endif
     }
 
     private var title: Text {
@@ -427,9 +443,11 @@ public struct BrowseScreen: View {
             ScrollViewReader { scrolling in
                 List(model.rowIDs, id: \.self, selection: isSelecting ? $model.selection : nil) { rowID in
                     row(rowID)
+                        .accessibilityIdentifier(rowID == model.rowIDs.last ? "browse-last-result" : "browse-result")
                 }
                 .hayakiScrollBackground()
                 .listStyle(.plain)
+                .accessibilityIdentifier("browse-results")
                 .refreshable { await model.refreshResults() }
                 .task(id: model.generation) {
                     guard let cardID = initialCardID else { return }

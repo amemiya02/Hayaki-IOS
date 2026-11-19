@@ -81,6 +81,33 @@ final class NavigationUITests: XCTestCase {
         attachScreen("Nested deck after rename")
     }
 
+    func testBrowseSearchAndLastResultClearTheToolbars() throws {
+        guard UIDevice.current.userInterfaceIdiom == .phone else {
+            throw XCTSkip("This case verifies the iPhone tab and navigation bars.")
+        }
+        select("Browse")
+        let navigation = app.navigationBars["Browse"]
+        XCTAssertTrue(navigation.waitForExistence(timeout: 10))
+        let search = app.searchFields.firstMatch
+        XCTAssertTrue(search.waitForExistence(timeout: 10))
+        XCTAssertTrue(search.isHittable)
+        let mode = app.segmentedControls["browse-mode"]
+        XCTAssertTrue(mode.waitForExistence(timeout: 10))
+        XCTAssertLessThanOrEqual(search.frame.maxY, mode.frame.minY + 1)
+
+        let results = app.descendants(matching: .any)["browse-results"]
+        XCTAssertTrue(results.waitForExistence(timeout: 10))
+        results.swipeUp(velocity: .fast)
+        results.swipeUp(velocity: .fast)
+        let lastResult = results.descendants(matching: .any)["browse-last-result"].firstMatch
+        XCTAssertTrue(lastResult.waitForExistence(timeout: 10))
+        XCTAssertTrue(lastResult.isHittable)
+        let addNote = app.buttons["Add Note"]
+        XCTAssertTrue(addNote.exists)
+        XCTAssertLessThanOrEqual(lastResult.frame.maxY, addNote.frame.minY + 1)
+        attachScreen("Browse search and last result clear of the toolbars")
+    }
+
     func testBrowsePreviewNavigatesAndEditsTheShownCard() {
         select("Browse")
         let browseOptions = app.buttons["Browse Options"]
