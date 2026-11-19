@@ -7,7 +7,11 @@ struct BulkActionMenu: View {
     let model: CardBrowserModel
     @Binding var isMoving: Bool
     @Binding var deletion: DeletionSummary?
-    let changeNoteType: () -> Void
+    @Binding var prompt: BrowserActionPrompt?
+    let onEdit: () -> Void
+    let onInfo: () -> Void
+    let onPreview: () -> Void
+    let onChangeNoteType: () -> Void
 
     var body: some View {
         Menu {
@@ -49,31 +53,39 @@ struct BulkActionMenu: View {
                     Image(systemName: "folder")
                 }
             }
+            Button { prompt = .tags } label: {
+                Label { Text("Edit Tags", bundle: .module) } icon: { Image(systemName: "tag") }
+            }
+            Button { perform(.toggleSuspend) } label: {
+                Label { Text("Toggle Suspend", bundle: .module) } icon: { Image(systemName: "pause.circle") }
+            }
             Divider()
-            Button {
-                perform(.suspend)
-            } label: {
-                Label {
-                    Text("Suspend", bundle: .module)
-                } icon: {
-                    Image(systemName: "pause.circle")
-                }
+            Button(action: onEdit) {
+                Label { Text("Edit Note", bundle: .module) } icon: { Image(systemName: "square.and.pencil") }
             }
-            Button {
-                perform(.unsuspend)
-            } label: {
-                Label {
-                    Text("Unsuspend", bundle: .module)
-                } icon: {
-                    Image(systemName: "play.circle")
-                }
+            .disabled(model.selection.count != 1)
+            Button(action: onPreview) {
+                Label { Text("Preview", bundle: .module) } icon: { Image(systemName: "eye") }
             }
-            Button(action: changeNoteType) {
-                Label {
-                    Text("Change Note Type", bundle: .module)
-                } icon: {
-                    Image(systemName: "rectangle.2.swap")
-                }
+            Button(action: onInfo) {
+                Label { Text("Card Info", bundle: .module) } icon: { Image(systemName: "info.circle") }
+            }
+            Button { perform(.toggleMark) } label: {
+                Label { Text("Toggle Mark", bundle: .module) } icon: { Image(systemName: "star") }
+            }
+            Button(action: onChangeNoteType) {
+                Label { Text("Change Note Type…", bundle: .module) } icon: { Image(systemName: "arrow.left.arrow.right") }
+            }
+            Button { prompt = .replace } label: {
+                Label { Text("Find and Replace", bundle: .module) } icon: { Image(systemName: "text.magnifyingglass") }
+            }
+            Divider()
+            Button { prompt = .dueDate } label: { BrowserActionPrompt.dueDate.title }
+            Button { prompt = .reposition } label: { BrowserActionPrompt.reposition.title }
+            Button { prompt = .grade } label: { BrowserActionPrompt.grade.title }
+            Button { prompt = .reset } label: { BrowserActionPrompt.reset.title }
+            Button { perform(.toggleBury) } label: {
+                Label { Text("Toggle Bury", bundle: .module) } icon: { Image(systemName: "moon.zzz") }
             }
             Divider()
             Button(role: .destructive) {
@@ -122,7 +134,9 @@ struct MoveCardsSheet: View {
                 }
                 .foregroundStyle(.primary)
             }
-            .navigationTitle(Text("Move \(model.selection.count) Cards", bundle: .module))
+            .navigationTitle(model.mode == .cards
+                ? Text("Move \(model.selection.count) Cards", bundle: .module)
+                : Text("Move \(model.selection.count) Notes", bundle: .module))
             #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
             #endif
@@ -184,6 +198,7 @@ struct UndoBanner: View {
         case .flag: Text("Flagged \(count) cards", bundle: .module)
         case .move: Text("Moved \(count) cards", bundle: .module)
         case .delete: Text("Deleted \(count) cards", bundle: .module)
+        default: Text(verbatim: completed.undoName)
         }
     }
 }

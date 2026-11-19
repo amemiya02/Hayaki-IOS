@@ -10,6 +10,7 @@ import Synchronization
 @MainActor
 final class CardAudioPlayer {
     private var queue: Task<Void, Never>?
+    private var pending: [CardSound] = []
     private var player: AVPlayer?
     /// Ends the sound now playing early, when the player is stopped.
     private var currentEnd: PlaybackEnd?
@@ -20,24 +21,36 @@ final class CardAudioPlayer {
         synthesizer.delegate = speechDelegate
     }
 
-    /// Stops what is playing and plays `sounds` in order.
-    func play(_ sounds: [CardSound]) {
-        stop()
+    /// Plays the sounds in order, optionally after sounds already queued for the question.
+    func play(_ sounds: [CardSound], afterCurrent: Bool = false) {
+        if !afterCurrent { stop() }
         guard !sounds.isEmpty else { return }
+        pending.append(contentsOf: sounds)
+        guard queue == nil else { return }
         queue = Task { [weak self] in
-            self?.activateSession()
-            for sound in sounds {
-                guard let self, !Task.isCancelled else { return }
-                await self.playOne(sound)
-            }
             guard let self, !Task.isCancelled else { return }
-            self.deactivateSession()
+            activateSession()
+            while !pending.isEmpty, !Task.isCancelled {
+                let sound = pending.removeFirst()
+                await playOne(sound)
+            }
+            guard !Task.isCancelled else { return }
+            queue = nil
+            currentEnd = nil
+            player = nil
+            deactivateSession()
         }
     }
 
+    func waitForCompletion() async {
+        await queue?.value
+    }
+
     func stop() {
+        let hadQueue = queue != nil
         queue?.cancel()
         queue = nil
+        pending.removeAll()
         player?.pause()
         player = nil
         if synthesizer.isSpeaking {
@@ -45,6 +58,7 @@ final class CardAudioPlayer {
         }
         currentEnd?.signal()
         currentEnd = nil
+        if hadQueue { deactivateSession() }
     }
 
     private func playOne(_ sound: CardSound) async {
@@ -78,10 +92,7 @@ final class CardAudioPlayer {
 
     private static func utterance(_ speech: CardSound.Speech) -> AVSpeechUtterance {
         let utterance = AVSpeechUtterance(string: speech.text)
-        let language = speech.language.replacingOccurrences(of: "_", with: "-")
-        let voices = AVSpeechSynthesisVoice.speechVoices()
-        utterance.voice = voices.first { speech.voices.contains($0.name) || speech.voices.contains($0.identifier) }
-            ?? AVSpeechSynthesisVoice(language: language)
+        utterance.voice = CardSpeechVoice.preferredVoice(for: speech)
         let speed = speech.speed > 0 ? speech.speed : 1
         utterance.rate = min(max(AVSpeechUtteranceDefaultSpeechRate * speed, AVSpeechUtteranceMinimumSpeechRate),
                              AVSpeechUtteranceMaximumSpeechRate)
@@ -104,7 +115,7 @@ final class CardAudioPlayer {
         try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
     }
 
-    private static let log = Logger(subsystem: "io.github.amemiya02.hayaki", category: "CardAudioPlayer")
+    nonisolated private static let log = Logger(subsystem: "io.github.amemiya02.hayaki", category: "CardAudioPlayer")
 }
 
 /// The end of one sound: signalled once, by whichever comes first of the

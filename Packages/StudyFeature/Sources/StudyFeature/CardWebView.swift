@@ -9,20 +9,22 @@ struct CardDisplay: Equatable, Encodable {
     /// Which card this is, so showing the same side of another card with
     /// identical HTML still counts as a change.
     let cardID: Int64
+    let presentation: Int
 
-    init(_ card: StudyCard, isAnswer: Bool) {
+    init(_ card: StudyCard, isAnswer: Bool, presentation: Int = 0) {
         self.init(
             html: isAnswer ? card.answer.html : card.question.html,
-            css: card.css, bodyClass: card.bodyClass, isAnswer: isAnswer, cardID: card.id
+            css: card.css, bodyClass: card.bodyClass, isAnswer: isAnswer, cardID: card.id, presentation: presentation
         )
     }
 
-    init(html: String, css: String, bodyClass: String, isAnswer: Bool, cardID: Int64) {
+    init(html: String, css: String, bodyClass: String, isAnswer: Bool, cardID: Int64, presentation: Int = 0) {
         self.html = html
         self.css = css
         self.bodyClass = bodyClass
         self.isAnswer = isAnswer
         self.cardID = cardID
+        self.presentation = presentation
     }
 
     /// The page reads only these.
@@ -57,19 +59,21 @@ struct CardWebView: UIViewRepresentable {
     let mediaFolder: URL
     /// The page zoom that follows the learner's text size.
     let zoom: CGFloat
+    var reviewer: ReviewerWebOptions? = nil
     /// Called for what the learner does on the card.
     var onTemplateRequest: ((TemplateRequest, CardTemplateContext) async -> TemplateReply)? = nil
     let onEvent: (CardPageEvent) -> Void
     @AppStorage(CardTemplatePreference.externalApps) private var allowsExternalApps = false
 
     init(
-        display: CardDisplay, mediaFolder: URL, zoom: CGFloat,
+        display: CardDisplay, mediaFolder: URL, zoom: CGFloat, reviewer: ReviewerWebOptions? = nil,
         onTemplateRequest: ((TemplateRequest, CardTemplateContext) async -> TemplateReply)? = nil,
         onEvent: @escaping (CardPageEvent) -> Void
     ) {
         self.display = display
         self.mediaFolder = mediaFolder
         self.zoom = zoom
+        self.reviewer = reviewer
         self.onTemplateRequest = onTemplateRequest
         self.onEvent = onEvent
     }
@@ -84,6 +88,16 @@ struct CardWebView: UIViewRepresentable {
         configuration.userContentController.addScriptMessageHandler(
             context.coordinator, contentWorld: .page, name: Coordinator.templateHandler
         )
+        if reviewer != nil,
+           let url = Bundle.module.url(forResource: "ReviewerInput", withExtension: "js"),
+           let source = try? String(contentsOf: url, encoding: .utf8) {
+            configuration.userContentController.add(
+                context.coordinator, contentWorld: .defaultClient, name: Coordinator.inputHandler
+            )
+            configuration.userContentController.addUserScript(
+                WKUserScript(source: source, injectionTime: .atDocumentEnd, forMainFrameOnly: true, in: .defaultClient)
+            )
+        }
         configuration.setURLSchemeHandler(
             CardSchemeHandler(resources: CardResources(mediaFolder: mediaFolder)),
             forURLScheme: CardResources.scheme
@@ -114,6 +128,7 @@ struct CardWebView: UIViewRepresentable {
         if webView.pageZoom != zoom {
             webView.pageZoom = zoom
         }
+        context.coordinator.updateReviewer(reviewer)
         context.coordinator.show(display)
     }
 
@@ -121,12 +136,18 @@ struct CardWebView: UIViewRepresentable {
         webView.configuration.userContentController.removeScriptMessageHandler(forName: Coordinator.messageHandler)
         webView.configuration.userContentController.removeScriptMessageHandler(forName: Coordinator.templateHandler)
         coordinator.invalidateTemplate()
+        webView.configuration.userContentController.removeScriptMessageHandler(
+            forName: Coordinator.inputHandler, contentWorld: .defaultClient
+        )
     }
 
     @MainActor
     final class Coordinator: NSObject, WKNavigationDelegate, WKScriptMessageHandler, WKScriptMessageHandlerWithReply {
         static let messageHandler = "hayaki"
         static let templateHandler = "hayakiTemplate"
+        static let inputHandler = "hayakiReviewerInput"
+        private var reviewer: ReviewerWebOptions?
+        private var command: ReviewerWebCommand?
 
         weak var webView: WKWebView?
         var onEvent: (CardPageEvent) -> Void = { _ in }
@@ -146,6 +167,28 @@ struct CardWebView: UIViewRepresentable {
             invalidateTemplate()
             shown = nil
             webView?.load(URLRequest(url: CardResources.hostPageURL))
+        }
+
+        func updateReviewer(_ options: ReviewerWebOptions?) {
+            guard reviewer != options else { return }
+            reviewer = options
+            sendReviewerOptions()
+        }
+
+        private func sendReviewerOptions() {
+            guard pageLoaded, let reviewer, let webView else { return }
+            webView.callAsyncJavaScript(
+                "window.hayakiReviewerKeys = keys; document.body.style.setProperty('--reviewer-image-zoom', imageZoom); document.body.classList.toggle('reviewer-centered', centered); document.body.classList.toggle('reviewer-hide-audio', hideAudio); document.body.classList.toggle('reviewer-reduced-motion', reducedMotion);",
+                arguments: [
+                    "keys": reviewer.keySignatures, "imageZoom": reviewer.imageZoom, "centered": reviewer.centerVertically,
+                    "hideAudio": reviewer.hidesAudioButtons, "reducedMotion": reviewer.reducedMotion,
+                ],
+                in: nil, in: .defaultClient, completionHandler: nil
+            )
+            if let requested = reviewer.command, command != requested {
+                command = requested
+                webView.evaluateJavaScript(requested.javascript)
+            }
         }
 
         func show(_ display: CardDisplay) {
@@ -173,6 +216,7 @@ struct CardWebView: UIViewRepresentable {
         func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
             pageLoaded = true
             sendIfReady()
+            sendReviewerOptions()
         }
 
         func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: any Error) {
@@ -293,7 +337,10 @@ struct CardWebView: UIViewRepresentable {
         }
 
         func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
-            if let event = CardPageEvent(message: message.body) {
+            guard message.frameInfo.isMainFrame else { return }
+            if message.name == Self.inputHandler {
+                if let input = ReviewerWebInput(message.body) { onEvent(.reviewer(input)) }
+            } else if let event = CardPageEvent(message: message.body) {
                 onEvent(event)
             }
         }
@@ -305,6 +352,7 @@ struct CardWebView: UIViewRepresentable {
 enum CardPageEvent: Equatable {
     /// A tap on the card, not on a link or control.
     case tap
+    case reviewer(ReviewerWebInput)
     /// A tap on a replay button, by its id such as `q:0`.
     case play(String)
     /// The text in a typed-answer field, after it changed.
@@ -330,4 +378,42 @@ enum CardPageEvent: Equatable {
             return nil
         }
     }
+}
+
+/// Physical input crosses the web boundary from an isolated WebKit content world.
+enum ReviewerWebInput: Equatable {
+    case tap(Double, Double)
+    case swipe(Double, Double, Double)
+    case input(ReviewerInput)
+
+    init?(_ body: Any) {
+        guard let values = body as? [String: Any] else { return nil }
+        if let x = values["tapX"] as? Double, let y = values["tapY"] as? Double, x.isFinite, y.isFinite {
+            self = .tap(x, y)
+        } else if let dx = values["dx"] as? Double, let dy = values["dy"] as? Double,
+                  let time = values["time"] as? Double {
+            self = .swipe(dx, dy, time)
+        } else if let key = values["key"] as? String, let modifiers = values["modifiers"] as? [String] {
+            self = .input(.key(key, modifiers: Set(modifiers.compactMap(ReviewerKey.Modifier.init(rawValue:)))))
+        } else if let count = values["fingers"] as? Int, (2...4).contains(count) {
+            self = .input(.gesture([.twoFingerTap, .threeFingerTap, .fourFingerTap][count - 2]))
+        } else {
+            return nil
+        }
+    }
+}
+
+struct ReviewerWebOptions: Equatable {
+    let keySignatures: [String]
+    var imageZoom = 1.0
+    var centerVertically = false
+    var hidesAudioButtons = false
+    var reducedMotion = false
+    let command: ReviewerWebCommand?
+}
+
+/// A native reviewer button may scroll or request an existing template hook.
+struct ReviewerWebCommand: Equatable {
+    var id = UUID()
+    let javascript: String
 }

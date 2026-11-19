@@ -1,5 +1,6 @@
 import BrowseFeature
 import CollectionStore
+import DeckOptionsFeature
 import DecksFeature
 import NoteEditorFeature
 import PackagesFeature
@@ -64,6 +65,9 @@ struct SectionsView: View {
         .tabViewStyle(.sidebarAdaptable)
         .sidebarOnWideScreens()
         .addNoteAction(store: store)
+        .reviewerDestination { route in
+            ReviewerDestinationView(route: route, store: store)
+        }
         .keepingDailyReminderCurrent(store: store) { selection = .decks }
     }
 }

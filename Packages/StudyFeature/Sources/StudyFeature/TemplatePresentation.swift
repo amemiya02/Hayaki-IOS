@@ -52,3 +52,45 @@ final class TemplateNetworkStatus {
     deinit { monitor?.cancel() }
 }
 #endif
+
+import SwiftUI
+
+enum TemplateMenu {
+    case navigation
+    case options
+}
+
+struct TemplateMenuPresentation: ViewModifier {
+    @Binding var selection: TemplateMenu?
+    let dispatch: (ReviewerCommand) -> Void
+    let onSettings: () -> Void
+
+    func body(content: Content) -> some View {
+        content.confirmationDialog(
+            Text("Study Actions", bundle: .module),
+            isPresented: Binding(
+                get: { selection != nil },
+                set: { if !$0 { selection = nil } }
+            ),
+            presenting: selection
+        ) { selection in
+            switch selection {
+            case .navigation:
+                command(.exit)
+                command(.browse)
+                command(.statistics)
+                command(.deckOptions)
+            case .options:
+                command(.mark)
+                command(.editTags)
+                command(.cardInfo)
+                command(.replayMedia)
+                Button(reviewerLocalized("Reviewer Settings"), action: onSettings)
+            }
+        }
+    }
+
+    private func command(_ command: ReviewerCommand) -> some View {
+        Button(reviewerLocalized(command.title)) { dispatch(command) }
+    }
+}

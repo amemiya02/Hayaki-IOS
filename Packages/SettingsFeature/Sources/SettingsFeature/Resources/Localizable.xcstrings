@@ -1,6 +1,12 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "Reviewer" : {
+      "localizations" : {
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "学習画面" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "复习界面" } }
+      }
+    },
     "Backup Retention" : {
       "localizations" : {
         "ja" : {
