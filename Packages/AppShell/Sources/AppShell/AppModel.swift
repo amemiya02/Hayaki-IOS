@@ -177,6 +177,8 @@ public final class AppModel {
         textImport?.dismiss()
         preferences.set(saved, forKey: Self.profilesKey)
         appExtensions?.clearSnapshot()
+        decksRequested = nil
+        deckPresentation = nil
         activeProfile = target
         showCollection(next, backupFolder: folder, welcome: welcome)
     }

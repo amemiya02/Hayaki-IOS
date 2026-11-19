@@ -25,14 +25,19 @@ public struct ExtensionDeck: Codable, Equatable, Identifiable, Sendable {
     public let id: Int64
     public let name: String
     public let isFiltered: Bool
+    public let isVisibleInWidget: Bool
     public let new: Int
     public let learning: Int
     public let review: Int
 
-    public init(id: Int64, name: String, isFiltered: Bool, new: Int, learning: Int, review: Int) {
+    public init(
+        id: Int64, name: String, isFiltered: Bool, new: Int, learning: Int, review: Int,
+        isVisibleInWidget: Bool = true
+    ) {
         self.id = id
         self.name = name
         self.isFiltered = isFiltered
+        self.isVisibleInWidget = isVisibleInWidget
         self.new = new
         self.learning = learning
         self.review = review

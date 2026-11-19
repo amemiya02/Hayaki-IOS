@@ -1,0 +1,262 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "%lld due today" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "今日の学習 %lld 枚"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "今天有 %lld 张卡片待学习"
+          }
+        }
+      }
+    },
+    "Choose a deck to see its study counts." : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "学習枚数を表示するデッキを選びます。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "选择一个牌组以查看学习数量。"
+          }
+        }
+      }
+    },
+    "Choose which decks to show, in order." : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "表示するデッキを順番に選びます。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "按顺序选择要显示的牌组。"
+          }
+        }
+      }
+    },
+    "Deck" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "デッキ"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "牌组"
+          }
+        }
+      }
+    },
+    "Deck List" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "デッキ一覧"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "牌组列表"
+          }
+        }
+      }
+    },
+    "Deck Unavailable" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "デッキを利用できません"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "牌组不可用"
+          }
+        }
+      }
+    },
+    "Decks" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "デッキ"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "牌组"
+          }
+        }
+      }
+    },
+    "Due" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "期限"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "到期"
+          }
+        }
+      }
+    },
+    "Edit the widget to choose decks" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ウィジェットを編集してデッキを選択"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "编辑小组件以选择牌组"
+          }
+        }
+      }
+    },
+    "Learning" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "学習中"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "学习中"
+          }
+        }
+      }
+    },
+    "New" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "新規"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "新卡片"
+          }
+        }
+      }
+    },
+    "One Deck" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "単一デッキ"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "单个牌组"
+          }
+        }
+      }
+    },
+    "Open Hayaki to update" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hayaki を開いて更新"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "打开 Hayaki 以更新"
+          }
+        }
+      }
+    },
+    "Open a deck and see its new, learning, and review counts." : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "デッキを開き、新規・学習中・復習の枚数を確認できます。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "查看新卡片、学习中卡片和复习卡片数量，并打开牌组。"
+          }
+        }
+      }
+    },
+    "Selected decks are unavailable in this profile" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "このプロファイルには選択したデッキがありません"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "所选牌组在此配置中不可用"
+          }
+        }
+      }
+    },
+    "Show study counts for a list of decks." : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "選択したデッキの学習枚数を表示します。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "显示所选牌组的学习数量。"
+          }
+        }
+      }
+    }
+  },
+  "version" : "1.0"
+}

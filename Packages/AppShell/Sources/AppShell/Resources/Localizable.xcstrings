@@ -443,6 +443,54 @@
           }
         }
       }
+    },
+    "Could Not Open Deck" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "デッキを開けませんでした"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "无法打开牌组"
+          }
+        }
+      }
+    },
+    "Review the deck, note type, and fields before adding this note." : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "追加する前にデッキ、ノートタイプ、フィールドを確認してください。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "添加前请检查牌组、笔记类型和字段。"
+          }
+        }
+      }
+    },
+    "Shared Note Destination Changed" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "共有ノートの追加先が変更されました"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "共享笔记的添加位置已更改"
+          }
+        }
+      }
     }
   },
   "version" : "1.0"

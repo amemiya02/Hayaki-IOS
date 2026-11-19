@@ -15,12 +15,18 @@ final class AppExtensions {
     struct EditorDraft: Identifiable {
         let draft: SharedNote
         let editor: NoteEditorModel
+        let destinationChanged: Bool
+        let sceneID: UUID
         var id: UUID { draft.id }
     }
 
-    var editorDraft: EditorDraft?
+    private(set) var editorDraft: EditorDraft?
     private(set) var isConsuming = false
     @ObservationIgnored private let bridge: ExtensionBridge
+    @ObservationIgnored private var noteTypeCache: (profileID: UUID, types: [ExtensionNoteType])?
+    @ObservationIgnored private var noteTypeRevision = 0
+    @ObservationIgnored private var startedPublication = 0
+    @ObservationIgnored private var completedPublication = 0
 
     init(bridge: ExtensionBridge) { self.bridge = bridge }
 
@@ -30,6 +36,7 @@ final class AppExtensions {
         var refresh: Task<Void, Never>?
         defer { refresh?.cancel() }
         for await event in changes where !event.isDisjoint(with: [.deck, .card, .notetype, .note, .config, .deckConfig, .studyQueues]) {
+            if event.contains(.notetype) { invalidateNoteTypes() }
             refresh?.cancel()
             refresh = Task {
                 try? await Task.sleep(for: .milliseconds(400))
@@ -41,19 +48,27 @@ final class AppExtensions {
 
     func publish(store: CollectionStore, profile: CollectionProfile, isCurrent: @escaping () -> Bool) async {
         guard isCurrent(), store.allowsNewProfileWork else { return }
-        let previous = bridge.snapshot()
+        startedPublication += 1
+        let publication = startedPublication
         guard let snapshot = try? await readSnapshot(store: store, profile: profile),
-              isCurrent(), store.allowsNewProfileWork, !Task.isCancelled, snapshot != previous
+              isCurrent(), store.allowsNewProfileWork, !Task.isCancelled, publication > completedPublication
         else { return }
 
-        if (try? bridge.publish(snapshot)) != nil {
+        completedPublication = publication
+        if snapshot != bridge.snapshot(), (try? bridge.publish(snapshot)) != nil {
             reloadWidgets()
         }
     }
 
     func clearSnapshot() {
+        invalidateNoteTypes()
         try? bridge.clearSnapshot()
         reloadWidgets()
+    }
+
+    private func invalidateNoteTypes() {
+        noteTypeRevision += 1
+        noteTypeCache = nil
     }
 
     private func reloadWidgets() {
@@ -73,35 +88,45 @@ final class AppExtensions {
         // The tree can hide an empty Default deck that people may still add to.
         let ids = Set(decks.map(\.id))
         decks.append(contentsOf: normalDecks.entries.filter { !ids.contains($0.id) }.map {
-            ExtensionDeck(id: $0.id, name: $0.name, isFiltered: false, new: 0, learning: 0, review: 0)
+            ExtensionDeck(id: $0.id, name: $0.name, isFiltered: false, new: 0, learning: 0, review: 0, isVisibleInWidget: false)
         })
         let defaults = try await store.core.defaultsForAdding(.init())
+        let types = try await noteTypes(in: store, profileID: profile.id)
+        return ExtensionSnapshot(
+            profileID: profile.id, profileName: profile.name, decks: decks, noteTypes: types,
+            defaultDeckID: defaults.deckID, defaultNoteTypeID: defaults.notetypeID
+        )
+    }
+
+    private func noteTypes(in store: CollectionStore, profileID: UUID) async throws -> [ExtensionNoteType] {
+        if let noteTypeCache, noteTypeCache.profileID == profileID { return noteTypeCache.types }
+        let revision = noteTypeRevision
         let names = try await store.core.getNotetypeNames()
         var noteTypes: [ExtensionNoteType] = []
         for name in names.entries {
+            try Task.checkCancellation()
             let type = try await store.core.getNotetype(.with { $0.ntid = name.id })
             if type.config.originalStockKind != .imageOcclusion, !type.fields.isEmpty {
                 noteTypes.append(ExtensionNoteType(id: type.id, name: type.name, fields: type.fields.map(\.name)))
             }
         }
-        return ExtensionSnapshot(
-            profileID: profile.id, profileName: profile.name, decks: decks, noteTypes: noteTypes,
-            defaultDeckID: defaults.deckID, defaultNoteTypeID: defaults.notetypeID
-        )
+        if revision == noteTypeRevision { noteTypeCache = (profileID, noteTypes) }
+        return noteTypes
     }
 
     private static func deckRows(_ nodes: [Anki_Decks_DeckTreeNode], parent: String? = nil) -> [ExtensionDeck] {
         nodes.flatMap { deck in
             let name = parent.map { "\($0)::\(deck.name)" } ?? deck.name
             let row = ExtensionDeck(id: deck.deckID, name: name, isFiltered: deck.filtered,
-                                    new: Int(deck.newCount), learning: Int(deck.learnCount), review: Int(deck.reviewCount))
+                                    new: Int(deck.newCount), learning: Int(deck.learnCount), review: Int(deck.reviewCount),
+                                    isVisibleInWidget: deck.deckID != 1 || deck.totalIncludingChildren > 0)
             return [row] + deckRows(deck.children, parent: name)
         }
     }
 
     /// Quick Add uses the same validation and collection operation as Add Note.
     /// If the destination changed or needs confirmation, hand the text to the editor.
-    func consumeNotes(profileID: UUID, store: CollectionStore) async {
+    func consumeNotes(profileID: UUID, store: CollectionStore, sceneID: UUID) async {
         guard !isConsuming, editorDraft == nil, store.allowsNewProfileWork else { return }
         guard let pending = try? bridge.pendingNotes(for: profileID), !pending.isEmpty else { return }
         isConsuming = true
@@ -125,7 +150,8 @@ final class AppExtensions {
                 editor.setText(draft.values.filter { !$0.isEmpty }.joined(separator: "\n\n"), ofField: 0)
             }
 
-            if draft.mode == .quickAdd && deckExists && typeExists && fieldsMatch {
+            let destinationChanged = !deckExists || !typeExists || !fieldsMatch
+            if draft.mode == .quickAdd && !destinationChanged {
                 // If the app stops after calling the core, review the draft before retrying.
                 draft.mode = .fullEditor
                 guard (try? bridge.enqueue(draft)) != nil else { return }
@@ -134,14 +160,21 @@ final class AppExtensions {
                     continue
                 }
             }
-            editorDraft = EditorDraft(draft: draft, editor: editor)
+            editorDraft = EditorDraft(
+                draft: draft, editor: editor, destinationChanged: destinationChanged, sceneID: sceneID
+            )
             return
         }
     }
 
     func dismissDraft(_ draft: EditorDraft) {
+        guard editorDraft?.id == draft.id else { return }
         try? bridge.remove(draft.draft)
         editorDraft = nil
+    }
+
+    func releaseDraft(in sceneID: UUID) {
+        if editorDraft?.sceneID == sceneID { editorDraft = nil }
     }
 }
 
@@ -150,6 +183,7 @@ struct ExtensionIntegration: ViewModifier {
     let profile: CollectionProfile
     let model: AppModel
     @Environment(\.scenePhase) private var scenePhase
+    @State private var sceneID = UUID()
 
     func body(content: Content) -> some View {
         content
@@ -157,9 +191,9 @@ struct ExtensionIntegration: ViewModifier {
                 await model.appExtensions?.keepSnapshotCurrent(store: store, profile: profile, isCurrent: isCurrent)
             }
             .task(id: scenePhase) {
-                guard scenePhase == .active, isCurrent() else { return }
+                guard (scenePhase == .active || scenePhase == .background), isCurrent() else { return }
                 await model.appExtensions?.publish(store: store, profile: profile, isCurrent: isCurrent)
-                await consume()
+                if scenePhase == .active { await consume() }
             }
             .onChange(of: model.collectionIsIdle) { _, ready in
                 if ready && scenePhase == .active { Task { await consume() } }
@@ -167,16 +201,36 @@ struct ExtensionIntegration: ViewModifier {
             .onChange(of: model.waitingDeckLink) { _, link in
                 if link == nil && scenePhase == .active { Task { await consume() } }
             }
+            .onDisappear {
+                model.appExtensions?.releaseDraft(in: sceneID)
+            }
             .sheet(item: Binding(
-                get: { model.appExtensions?.editorDraft },
-                set: { next in
-                    guard next == nil, let service = model.appExtensions, let draft = service.editorDraft else { return }
+                get: {
+                    guard let draft = model.appExtensions?.editorDraft, draft.sceneID == sceneID else { return nil }
+                    return draft
+                },
+                set: { (next: AppExtensions.EditorDraft?) in
+                    guard next == nil, let service = model.appExtensions, let draft = service.editorDraft,
+                          draft.sceneID == sceneID
+                    else { return }
                     service.dismissDraft(draft)
                 }
             ), onDismiss: {
                 if scenePhase == .active { Task { await consume() } }
             }) { draft in
                 NoteEditorScreen(sharedDraft: draft.editor)
+                    .safeAreaInset(edge: .top, spacing: 0) {
+                        if draft.destinationChanged {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("Shared Note Destination Changed", bundle: .module).font(.headline)
+                                Text("Review the deck, note type, and fields before adding this note.", bundle: .module)
+                                    .font(.subheadline)
+                            }
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding()
+                            .background(.regularMaterial)
+                        }
+                    }
             }
     }
 
@@ -184,6 +238,6 @@ struct ExtensionIntegration: ViewModifier {
 
     private func consume() async {
         guard isCurrent(), model.canHandleExtensionWork, model.waitingDeckLink == nil else { return }
-        await model.appExtensions?.consumeNotes(profileID: profile.id, store: store)
+        await model.appExtensions?.consumeNotes(profileID: profile.id, store: store, sceneID: sceneID)
     }
 }

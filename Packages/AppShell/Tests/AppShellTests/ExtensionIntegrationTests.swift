@@ -49,9 +49,9 @@ func sharedTextAddsNote() async throws {
         )
         try bridge.enqueue(draft)
 
-        await service.consumeNotes(profileID: UUID(), store: store)
+        await service.consumeNotes(profileID: UUID(), store: store, sceneID: UUID())
         #expect(try await store.cardCount(matching: "deck:Phrases") == 0)
-        await service.consumeNotes(profileID: profile.id, store: store)
+        await service.consumeNotes(profileID: profile.id, store: store, sceneID: UUID())
         #expect(service.editorDraft == nil)
         #expect(try bridge.pendingNotes(for: profile.id).isEmpty)
         let cid = try #require(try await store.core.searchCards(.with { $0.search = "deck:Phrases" }).ids.first)
@@ -65,5 +65,36 @@ func sharedTextAddsNote() async throws {
         try await store.answerNextCard(inDeck: deck, rating: .easy)
         await service.publish(store: store, profile: profile, isCurrent: { true })
         #expect(bridge.snapshot()?.decks.first(where: { $0.id == deck })?.new == 0)
+    }
+}
+
+
+@MainActor
+@Test("A shared full-editor draft can be cancelled without adding a card")
+func cancellingSharedDraft() async throws {
+    try await withTemporaryCollection { store in
+        let folder = try TemporaryFolder()
+        let bridge = ExtensionBridge(directory: folder.url)
+        let service = AppExtensions(bridge: bridge)
+        let profile = CollectionProfile(id: UUID(), name: "Japanese")
+        let deck = try await store.addDeck(named: "Phrases")
+        await service.publish(store: store, profile: profile, isCurrent: { true })
+        let snapshot = try #require(bridge.snapshot())
+        let type = try #require(snapshot.noteTypes.first { $0.name == "Basic" })
+        let draft = SharedNote(
+            profileID: profile.id, deckID: deck, noteTypeID: type.id, fieldNames: type.fields,
+            values: ["apples", "りんご"], mode: .fullEditor
+        )
+        try bridge.enqueue(draft)
+        let scene = UUID()
+        await service.consumeNotes(profileID: profile.id, store: store, sceneID: scene)
+
+        let editorDraft = try #require(service.editorDraft)
+        #expect(editorDraft.sceneID == scene)
+        #expect(editorDraft.editor.fields.map(\.text) == ["apples", "りんご"])
+        #expect(editorDraft.editor.deckID == deck)
+        service.dismissDraft(editorDraft)
+        #expect(try bridge.pendingNotes(for: profile.id).isEmpty)
+        #expect(try await store.cardCount(matching: "deck:Phrases") == 0)
     }
 }

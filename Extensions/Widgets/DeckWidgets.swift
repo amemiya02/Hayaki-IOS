@@ -23,6 +23,11 @@ struct WidgetDeck: AppEntity {
         name = deck.name.replacingOccurrences(of: "::", with: " › ")
     }
 
+    init(unavailableID: String) {
+        id = unavailableID
+        name = String(localized: "Deck Unavailable")
+    }
+
     var displayRepresentation: DisplayRepresentation { DisplayRepresentation(title: "\(name)") }
 
     static func identifier(for deck: ExtensionDeck, profileID: UUID) -> String {
@@ -33,7 +38,7 @@ struct WidgetDeck: AppEntity {
 struct WidgetDeckQuery: EntityStringQuery {
     func entities(for identifiers: [String]) async throws -> [WidgetDeck] {
         let choices = Dictionary(uniqueKeysWithValues: currentDecks.map { ($0.id, $0) })
-        return identifiers.compactMap { choices[$0] }
+        return identifiers.map { choices[$0] ?? WidgetDeck(unavailableID: $0) }
     }
 
     func entities(matching string: String) async throws -> [WidgetDeck] {
@@ -44,7 +49,7 @@ struct WidgetDeckQuery: EntityStringQuery {
 
     private var currentDecks: [WidgetDeck] {
         guard let snapshot = ExtensionBridge.appGroup?.snapshot() else { return [] }
-        return snapshot.decks.map { WidgetDeck($0, profileID: snapshot.profileID) }
+        return snapshot.decks.filter(\.isVisibleInWidget).map { WidgetDeck($0, profileID: snapshot.profileID) }
     }
 }
 
@@ -56,7 +61,7 @@ struct DeckListConfiguration: DeckWidgetIntent {
     static let title: LocalizedStringResource = "Deck List"
     static let description = IntentDescription("Choose which decks to show, in order.")
 
-    @Parameter(title: "Decks", size: .init(min: 1, max: 8))
+    @Parameter(title: "Decks", size: .init(min: 1, max: 5))
     var decks: [WidgetDeck]?
 
     var selectedDecks: [WidgetDeck] { decks ?? [] }
@@ -75,12 +80,13 @@ struct DeckWidgetEntry: TimelineEntry {
     let profileID: UUID?
     let decks: [ExtensionDeck]
     let emptyMessage: LocalizedStringKey
+    var totalDue: Int?
 
     static var placeholder: Self {
         DeckWidgetEntry(
             date: .now, profileID: nil,
             decks: [ExtensionDeck(id: 1, name: "Languages", isFiltered: false, new: 8, learning: 3, review: 12)],
-            emptyMessage: "Open Hayaki to update"
+            emptyMessage: "Open Hayaki to update", totalDue: 23
         )
     }
 
@@ -108,14 +114,18 @@ struct DeckWidgetProvider<Intent: DeckWidgetIntent>: AppIntentTimelineProvider {
             return DeckWidgetEntry(date: .now, profileID: nil, decks: [], emptyMessage: "Open Hayaki to update")
         }
         let selected = configuration.selectedDecks
-        let available = Dictionary(uniqueKeysWithValues: data.decks.map {
+        let available = Dictionary(uniqueKeysWithValues: data.decks.filter(\.isVisibleInWidget).map {
             (WidgetDeck.identifier(for: $0, profileID: data.profileID), $0)
         })
-        let decks = selected.compactMap { available[$0.id] }
+        var seen: Set<String> = []
+        let decks = selected.compactMap { seen.insert($0.id).inserted ? available[$0.id] : nil }
         let message: LocalizedStringKey = selected.isEmpty
             ? "Edit the widget to choose decks"
             : "Selected decks are unavailable in this profile"
-        return DeckWidgetEntry(date: .now, profileID: data.profileID, decks: decks, emptyMessage: message)
+        let total = data.decks.filter { !$0.name.contains("::") }.reduce(0) {
+            $0 + $1.new + $1.learning + $1.review
+        }
+        return DeckWidgetEntry(date: .now, profileID: data.profileID, decks: decks, emptyMessage: message, totalDue: total)
     }
 }
 
@@ -156,7 +166,16 @@ private struct DeckListWidgetView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 5) {
             Link(destination: entry.deckListDestination) {
-                Text("Decks").font(.headline)
+                HStack {
+                    Text("Decks").font(.headline)
+                    Spacer(minLength: 2)
+                    if let total = entry.totalDue {
+                        Text("\(total) due today")
+                            .font(.caption.monospacedDigit())
+                            .foregroundStyle(.secondary)
+                            .privacySensitive()
+                    }
+                }
             }
             if entry.decks.isEmpty {
                 Text(entry.emptyMessage).font(.footnote).foregroundStyle(.secondary)
@@ -166,7 +185,7 @@ private struct DeckListWidgetView: View {
                     countHeaders
                 }
                 .accessibilityHidden(true)
-                ForEach(entry.decks.prefix(family == .systemLarge ? 8 : 3)) { deck in
+                ForEach(entry.decks.prefix(family == .systemLarge ? 5 : 3)) { deck in
                     Link(destination: entry.destination(for: deck)) {
                         HStack {
                             Text(verbatim: deck.name.replacingOccurrences(of: "::", with: " › "))
@@ -175,7 +194,7 @@ private struct DeckListWidgetView: View {
                             Spacer(minLength: 4)
                             count(deck.new, "New")
                             count(deck.learning, "Learning")
-                            count(deck.review, "Review")
+                            count(deck.review, "Due")
                         }
                     }
                     .privacySensitive()
@@ -222,7 +241,7 @@ private struct SingleDeckWidgetView: View {
                 Spacer(minLength: 0)
                 metric("New", deck.new)
                 metric("Learning", deck.learning)
-                metric("Review", deck.review)
+                metric("Due", deck.review)
             } else {
                 Text("One Deck").font(.headline)
                 Text(entry.emptyMessage).font(.footnote).foregroundStyle(.secondary)

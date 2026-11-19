@@ -26,7 +26,7 @@ struct SectionsView: View {
     var body: some View {
         TabView(selection: $selection) {
             Tab(value: AppSection.decks) {
-                DeckListScreen(store: store, presentation: $model.deckPresentation)
+                DeckListScreen(store: store, profileID: model.activeProfile.id, presentation: $model.deckPresentation)
             } label: {
                 Label { DecksSection.title } icon: { Image(systemName: DecksSection.systemImage) }
             }

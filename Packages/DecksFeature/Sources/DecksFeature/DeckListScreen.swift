@@ -26,9 +26,15 @@ public struct DeckListScreen: View {
     @State private var selectedDeckID: DeckNode.ID?
     @Environment(\.scenePhase) private var scenePhase
     private let store: CollectionStore
+    private let profileID: UUID?
 
-    public init(store: CollectionStore, presentation: Binding<DeckPresentation?> = .constant(nil)) {
+    public init(
+        store: CollectionStore,
+        profileID: UUID? = nil,
+        presentation: Binding<DeckPresentation?> = .constant(nil)
+    ) {
         self.store = store
+        self.profileID = profileID
         _presentation = presentation
         _model = State(initialValue: DeckListModel(store: store))
     }
@@ -54,7 +60,7 @@ public struct DeckListScreen: View {
                         TextExportButton(store: store)
                     }
                 }
-                .deckManagement(model) { deck in
+                .deckManagement(model, profileID: profileID) { deck in
                     selectedDeckID = deck.id
                     studying = deck
                 }

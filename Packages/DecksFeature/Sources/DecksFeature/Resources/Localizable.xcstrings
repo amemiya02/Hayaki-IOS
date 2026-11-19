@@ -1047,6 +1047,22 @@
     },
     "Try Again" : {
       "comment" : "Button that reads the deck list again after it failed."
+    },
+    "Review Reminders" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "復習リマインダー"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "复习提醒"
+          }
+        }
+      }
     }
   },
   "version" : "1.0"

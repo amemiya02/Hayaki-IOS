@@ -16,6 +16,7 @@ let package = Package(
         .package(path: "../DeckOptionsFeature"),
         .package(path: "../PackagesFeature"),
         .package(path: "../StudyFeature"),
+        .package(path: "../ReminderFeature"),
     ],
     targets: [
         .target(
@@ -26,6 +27,7 @@ let package = Package(
                 .product(name: "DeckOptionsFeature", package: "DeckOptionsFeature"),
                 .product(name: "PackagesFeature", package: "PackagesFeature"),
                 .product(name: "StudyFeature", package: "StudyFeature"),
+                .product(name: "ReminderFeature", package: "ReminderFeature"),
             ],
             resources: [.process("Resources")]
         ),
