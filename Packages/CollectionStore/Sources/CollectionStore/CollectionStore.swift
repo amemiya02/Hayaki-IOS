@@ -111,6 +111,14 @@ public final class CollectionStore: Sendable {
         return response
     }
 
+    /// Checks media and publishes the core's repairs to note references.
+    public func checkMedia() async throws(CoreError) -> Anki_Media_CheckMediaResponse {
+        let report = try await core.checkMedia()
+        // CheckMedia repairs fields and may rebuild queues without returning a change summary.
+        signal([.note, .noteText, .browserTable, .studyQueues, .mtime])
+        return report
+    }
+
     public func updateSchedulingPreferences(
         _ update: @Sendable @escaping (inout Anki_Config_Preferences.Scheduling) -> Void
     ) async throws(CoreError) {
