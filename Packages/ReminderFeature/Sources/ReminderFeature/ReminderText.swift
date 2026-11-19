@@ -6,6 +6,8 @@ enum ReminderText {
         String(localized: "Time to Study", bundle: .module, comment: "Title of the daily study reminder notification.")
     }
 
+    static var noCards: String { String(localized: "No cards are due.", bundle: .module) }
+
     /// The language the reminder is written in: the one its strings resolve
     /// to. Plural forms follow it rather than the device's region, so a
     /// device in a language Hayaki has no strings for, which falls back to

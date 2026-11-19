@@ -1,4 +1,5 @@
 import CollectionStore
+import HayakiAppearance
 import DecksFeature
 import NoteEditorFeature
 import PackagesFeature
@@ -424,6 +425,7 @@ public struct BrowseScreen: View {
             List(model.rowIDs, id: \.self, selection: isSelecting ? $model.selection : nil) { rowID in
                 row(rowID)
             }
+            .hayakiScrollBackground()
             .listStyle(.plain)
             .refreshable { await model.refreshResults() }
         }
@@ -581,12 +583,17 @@ private struct CardRowContent: View {
     let columns: [BrowserColumn]
     let truncates: Bool
     let flagLabel: Text?
+    @AppStorage(AppearanceSettings.browseMediaFilenamesKey) private var showsMediaFilenames = false
+    @AppStorage(AppearanceSettings.browseTextScaleKey) private var textScale = 1.0
+    @ScaledMetric(relativeTo: .body) private var primarySize = 17.0
+    @ScaledMetric(relativeTo: .subheadline) private var detailSize = 15.0
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack(alignment: .firstTextBaseline) {
                 if let first = columns.first {
                     Text(verbatim: value(first))
+                        .font(.system(size: primarySize * textScale))
                         .lineLimit(truncates ? 2 : nil)
                         .accessibilityLabel(Text(verbatim: "\(first.label), \(value(first))"))
                 }
@@ -604,7 +611,7 @@ private struct CardRowContent: View {
                                 .foregroundStyle(.secondary)
                                 .lineLimit(truncates ? 1 : nil)
                             Text(verbatim: value(column))
-                                .font(.subheadline)
+                                .font(.system(size: detailSize * textScale))
                                 .lineLimit(truncates ? 1 : nil)
                         }
                     }
@@ -618,7 +625,7 @@ private struct CardRowContent: View {
 
     private func value(_ column: BrowserColumn) -> String {
         guard let row else { return column.label }
-        let value = row.cells[column.id] ?? ""
+        let value = row.displayText(for: column.id, showsMediaFilenames: showsMediaFilenames)
         return value.isEmpty ? "–" : value
     }
 }

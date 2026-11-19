@@ -230,8 +230,8 @@ private struct SchedulingDetails: View {
             item(Text("Ease", bundle: .module), Text(ease, format: .percent.precision(.fractionLength(0...1))))
         }
         if detail.totalSeconds > 0 {
-            item(Text("Average Time", bundle: .module), Text(detail.averageSeconds.formatted(.number.precision(.fractionLength(0...1))) + " s"))
-            item(Text("Total Time", bundle: .module), Text(detail.totalSeconds.formatted(.number.precision(.fractionLength(0...1))) + " s"))
+            item(Text("Average Time", bundle: .module), Text(Duration.seconds(detail.averageSeconds), format: .units(allowed: [.seconds], width: .abbreviated, fractionalPart: .show(length: 1))))
+            item(Text("Total Time", bundle: .module), Text(Duration.seconds(detail.totalSeconds), format: .units(allowed: [.seconds], width: .abbreviated, fractionalPart: .show(length: 1))))
         }
         item(Text("Preset", bundle: .module), Text(verbatim: detail.preset))
         item(Text("Card ID", bundle: .module), Text(verbatim: String(detail.cardID)))

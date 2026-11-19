@@ -92,6 +92,13 @@ public final class CollectionStore: Sendable {
         return response
     }
 
+    public func updateSchedulingPreferences(
+        _ update: @Sendable @escaping (inout Anki_Config_Preferences.Scheduling) -> Void
+    ) async throws(CoreError) {
+        let response = try await core.updateSchedulingPreferences(update)
+        signal(CollectionChange(response.collectionChanges))
+    }
+
     /// Waits for a long operation that modifies the collection, started with
     /// `core.start(_:)` so it can show progress and be cancelled, and signals
     /// what it changed once it succeeds.

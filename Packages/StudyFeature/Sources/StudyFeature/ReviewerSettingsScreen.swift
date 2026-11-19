@@ -1,6 +1,7 @@
 import AnkiCore
 import AnkiProto
 import CollectionStore
+import HayakiAppearance
 import SwiftUI
 
 /// Settings shared by the reviewer and the app's More screen.
@@ -16,7 +17,10 @@ public struct ReviewerSettingsScreen: View {
 
     public var body: some View {
         Form {
-            if let store { ReviewerCollectionSettings(store: store) }
+            if let store {
+                SchedulingPreferenceSection(store: store)
+                ReviewerCollectionSettings(store: store)
+            }
             Section(reviewerLocalized("Studying")) {
                 Toggle(reviewerLocalized("Keep Screen On"), isOn: $preferences.keepScreenOn)
                 Toggle(reviewerLocalized("Center Card Vertically"), isOn: $preferences.centerVertically)
@@ -31,7 +35,7 @@ public struct ReviewerSettingsScreen: View {
             }
             Section(reviewerLocalized("Toolbar")) {
                 Picker(reviewerLocalized("Position"), selection: $preferences.toolbarPosition) {
-                    ForEach(ReviewerToolbarPosition.allCases, id: \.self) { Text($0.rawValue.capitalized).tag($0) }
+                    ForEach(ReviewerToolbarPosition.allCases, id: \.self) { Text(reviewerLocalized($0.rawValue.capitalized)).tag($0) }
                 }
                 NavigationLink(reviewerLocalized("Toolbar Actions")) { ToolbarActionsSettings(preferences: $preferences) }
             }
@@ -40,9 +44,9 @@ public struct ReviewerSettingsScreen: View {
                     Text("Four Edges", bundle: .module).tag(ReviewerTapZones.edges)
                     Text("Nine Zones", bundle: .module).tag(ReviewerTapZones.grid)
                 }
-                LabeledContent("Swipe Sensitivity") {
+                LabeledContent(reviewerLocalized("Swipe Sensitivity")) {
                     Slider(value: decimal(\.swipeSensitivity), in: 50...200, step: 5)
-                    Text("\(preferences.swipeSensitivity)%").monospacedDigit()
+                    Text(Double(preferences.swipeSensitivity) / 100, format: .percent).monospacedDigit()
                 }
                 Picker(reviewerLocalized("Card Side"), selection: $side) {
                     Text("Question", bundle: .module).tag(ReviewerSide.question)
@@ -58,29 +62,30 @@ public struct ReviewerSettingsScreen: View {
             NavigationLink(reviewerLocalized("Text-to-Speech Voices")) { SpeechVoicesScreen() }
             #endif
             Section(reviewerLocalized("Accessibility")) {
-                LabeledContent("Card Zoom") {
+                LabeledContent(reviewerLocalized("Card Zoom")) {
                     Slider(value: decimal(\.cardZoom), in: 10...300, step: 10)
-                    Text("\(preferences.cardZoom)%").monospacedDigit()
+                    Text(Double(preferences.cardZoom) / 100, format: .percent).monospacedDigit()
                 }
-                LabeledContent("Image Zoom") {
+                LabeledContent(reviewerLocalized("Image Zoom")) {
                     Slider(value: decimal(\.imageZoom), in: 50...300, step: 10)
-                    Text("\(preferences.imageZoom)%").monospacedDigit()
+                    Text(Double(preferences.imageZoom) / 100, format: .percent).monospacedDigit()
                 }
-                LabeledContent("Answer Button Size") {
+                LabeledContent(reviewerLocalized("Answer Button Size")) {
                     Slider(value: decimal(\.answerButtonSize), in: 100...200, step: 10)
-                    Text("\(preferences.answerButtonSize)%").monospacedDigit()
+                    Text(Double(preferences.answerButtonSize) / 100, format: .percent).monospacedDigit()
                 }
                 Toggle(reviewerLocalized("Reduce Card Animations"), isOn: $preferences.reducedMotion)
-                LabeledContent("Minimum Answer Press") {
+                LabeledContent(reviewerLocalized("Minimum Answer Press")) {
                     Slider(value: decimal(\.minimumPressMilliseconds), in: 0...2000, step: 10)
-                    Text("\(preferences.minimumPressMilliseconds) ms").monospacedDigit()
+                    Text("\(preferences.minimumPressMilliseconds) ms", bundle: .module).monospacedDigit()
                 }
-                LabeledContent("Double Tap Interval") {
+                LabeledContent(reviewerLocalized("Double Tap Interval")) {
                     Slider(value: decimal(\.doubleTapMilliseconds), in: 0...1000, step: 10)
-                    Text("\(preferences.doubleTapMilliseconds) ms").monospacedDigit()
+                    Text("\(preferences.doubleTapMilliseconds) ms", bundle: .module).monospacedDigit()
                 }
             }
         }
+        .hayakiScrollBackground()
         .navigationTitle(reviewerLocalized("Reviewer"))
         .onChange(of: preferences) { _, value in value.save() }
         .sheet(isPresented: $selectingInput) {
@@ -109,7 +114,7 @@ private struct ToolbarActionsSettings: View {
                     set: { preferences.toolbarVisibility[action] = $0 }
                 )) {
                     ForEach(ReviewerToolbarVisibility.allCases, id: \.self) {
-                        Text($0.rawValue.capitalized).tag($0)
+                        Text(reviewerLocalized($0.rawValue.capitalized)).tag($0)
                     }
                 }
             }
@@ -126,9 +131,74 @@ private struct ToolbarActionsSettings: View {
     }
 }
 
+private struct SchedulingPreferenceSection: View {
+    let store: CollectionStore
+    @State private var scheduling: Anki_Config_Preferences.Scheduling?
+    @State private var saveTask: Task<Void, Never>?
+    @State private var error: String?
+
+    var body: some View {
+        Section {
+            if let scheduling {
+                Picker(selection: Binding(
+                    get: { scheduling.rollover },
+                    set: { update(\.rollover, value: $0) }
+                )) {
+                    ForEach(0..<24) { hour in
+                        Text("\(hour):00").tag(UInt32(hour))
+                    }
+                } label: { Text("Start of Next Day", bundle: .module) }
+
+                Stepper(
+                    value: Binding(
+                        get: { Int(scheduling.learnAheadSecs / 60) },
+                        set: { update(\.learnAheadSecs, value: UInt32($0 * 60)) }
+                    ),
+                    in: 0...999
+                ) {
+                    LabeledContent {
+                        Text((Double(scheduling.learnAheadSecs) / 60).formatted(.number.precision(.fractionLength(0))))
+                            .monospacedDigit()
+                    } label: {
+                        Text("Learn Ahead Limit (Minutes)", bundle: .module)
+                    }
+                }
+            }
+        } header: {
+            Text("Scheduling", bundle: .module)
+        }
+        .task {
+            do { scheduling = try await store.core.getPreferences().scheduling }
+            catch { self.error = error.localizedDescription }
+        }
+        .alert(Text("Could Not Update Scheduling", bundle: .module), isPresented: Binding(
+            get: { error != nil }, set: { if !$0 { error = nil } }
+        )) {
+            Button(role: .cancel) { error = nil } label: { Text("OK", bundle: .module) }
+        } message: {
+            Text(verbatim: error ?? "")
+        }
+    }
+
+    private func update(_ key: WritableKeyPath<Anki_Config_Preferences.Scheduling, UInt32> & Sendable, value: UInt32) {
+        scheduling?[keyPath: key] = value
+        let previous = saveTask
+        saveTask = Task {
+            await previous?.value
+            do {
+                try await store.updateSchedulingPreferences { $0[keyPath: key] = value }
+            } catch {
+                self.error = error.localizedDescription
+                scheduling = try? await store.core.getPreferences().scheduling
+            }
+        }
+    }
+}
+
 private struct ReviewerCollectionSettings: View {
     let store: CollectionStore
     @State private var reviewing: Anki_Config_Preferences.Reviewing?
+    @AppStorage("hayaki.reviewer.customTimeboxMinutes") private var customTimeboxMinutes = 20
     @State private var saveTask: Task<Void, Never>?
     @State private var saveError: String?
 
@@ -143,23 +213,38 @@ private struct ReviewerCollectionSettings: View {
                 ))
                 Toggle(reviewerLocalized("Interrupt Audio When Answering"), isOn: preference(\.interruptAudioWhenAnswering, reviewing))
                 let minutes = Int(reviewing.timeLimitSecs) / 60
-                Stepper(
-                    minutes == 0 ? "Timebox Off" : "Timebox: \(minutes) min",
-                    value: Binding(
-                        get: { Int(self.reviewing?.timeLimitSecs ?? 0) / 60 },
-                        set: { update(\.timeLimitSecs, to: UInt32($0 * 60)) }
-                    ), in: 0...240
-                )
+                Toggle(isOn: Binding(
+                    get: { reviewing.timeLimitSecs > 0 },
+                    set: { enabled in
+                        if !enabled, minutes > 0 { customTimeboxMinutes = minutes }
+                        update(\.timeLimitSecs, to: enabled ? UInt32(customTimeboxMinutes * 60) : 0)
+                    }
+                )) {
+                    Text("Use Timebox", bundle: .module)
+                }
+                if reviewing.timeLimitSecs > 0 {
+                    Stepper(value: Binding(
+                        get: { max(1, minutes) },
+                        set: { newValue in
+                            customTimeboxMinutes = newValue
+                            update(\.timeLimitSecs, to: UInt32(newValue * 60))
+                        }
+                    ), in: 1...9999) {
+                        LabeledContent {
+                            Text(max(1, minutes), format: .number).monospacedDigit()
+                        } label: { Text("Timebox (Minutes)", bundle: .module) }
+                    }
+                }
             }
         }
         .task {
             reviewing = try? await store.core.getPreferences().reviewing
         }
-        .alert("Could Not Save Reviewer Setting", isPresented: Binding(
+        .alert(reviewerLocalized("Could Not Save Reviewer Setting"), isPresented: Binding(
             get: { saveError != nil },
             set: { if !$0 { saveError = nil } }
         )) {
-            Button("OK", role: .cancel) {}
+            Button(reviewerLocalized("OK"), role: .cancel) {}
         } message: {
             Text(verbatim: saveError ?? "")
         }
@@ -179,9 +264,9 @@ private struct ReviewerCollectionSettings: View {
         saveTask = Task { @MainActor in
             await previous?.value
             do {
-                var config = try await store.core.getPreferences()
-                config.reviewing[keyPath: field] = value
-                try await store.modify(.setPreferences(config))
+                var latest = try await store.core.getPreferences().reviewing
+                latest[keyPath: field] = value
+                try await store.modify(.setPreferences(.with { $0.reviewing = latest }))
             } catch {
                 saveError = error.localizedDescription
                 reviewing = try? await store.core.getPreferences().reviewing
@@ -206,8 +291,8 @@ private struct ReviewerNewBinding: View {
 
     var body: some View {
         Form {
-            Section("Keyboard") {
-                Button(capturingKey ? "Press a Key" : "Capture Key") { capturingKey = true }
+            Section(reviewerLocalized("Keyboard")) {
+                Button(reviewerLocalized(capturingKey ? "Press a Key" : "Capture Key")) { capturingKey = true }
                     .focusable()
                     .focused($capturingKey)
                     .onKeyPress { press in
@@ -218,9 +303,9 @@ private struct ReviewerNewBinding: View {
                         capturingKey = false
                         return .handled
                     }
-                TextField("Key Name", text: $keyName)
+                TextField(reviewerLocalized("Key Name"), text: $keyName)
                 ForEach([ReviewerKey.Modifier.command, .control, .option, .shift], id: \.self) { modifier in
-                    Toggle(modifier.rawValue.capitalized, isOn: Binding(
+                    Toggle(reviewerLocalized(modifier.rawValue.capitalized), isOn: Binding(
                         get: { modifiers.contains(modifier) },
                         set: { enabled in
                             if enabled { modifiers.insert(modifier) } else { modifiers.remove(modifier) }
@@ -233,19 +318,19 @@ private struct ReviewerNewBinding: View {
                     )
                 }
             }
-            Section("Gestures") {
+            Section(reviewerLocalized("Gestures")) {
                 ForEach(preferences.tapZones.gestures + ReviewerGesture.allCases.filter { !$0.isTapZone }, id: \.self) {
                     ReviewerBindingPicker(preferences: $preferences, input: .gesture($0), side: side)
                 }
             }
-            Section("Controller") {
+            Section(reviewerLocalized("Controller")) {
                 ForEach(Self.controllerButtons, id: \.self) {
                     ReviewerBindingPicker(preferences: $preferences, input: .controller($0), side: side)
                 }
             }
         }
         .navigationTitle(reviewerLocalized("Add Binding"))
-        .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } } }
+        .toolbar { ToolbarItem(placement: .confirmationAction) { Button(reviewerLocalized("Done")) { dismiss() } } }
     }
 }
 
@@ -259,7 +344,7 @@ private struct ReviewerBindingPicker: View {
             get: { preferences.command(for: input, on: side) },
             set: { preferences.bind($0, to: input, on: side) }
         )) {
-            Text("Unassigned").tag(ReviewerCommand?.none)
+            Text("Unassigned", bundle: .module).tag(ReviewerCommand?.none)
             ForEach(ReviewerCommand.allCases, id: \.self) { command in
                 Text(command.title).tag(Optional(command))
             }
@@ -293,16 +378,22 @@ extension ReviewerKey {
 extension ReviewerInput {
     var title: String {
         switch self {
-        case .gesture(let gesture): gesture.rawValue.reviewerTitle
-        case .controller(let button): button.reviewerTitle
+        case .gesture(let gesture): reviewerLocalized(gesture.rawValue.reviewerTitle)
+        case .controller(let button): reviewerLocalized(button.reviewerTitle)
         case .keyboard(let key):
-            (key.modifiers.map(\.rawValue).sorted().map(\.capitalized) + [key.name.capitalized]).joined(separator: " + ")
+            (key.modifiers.map(\.rawValue).sorted().map { reviewerLocalized($0.capitalized) }
+                + [reviewerLocalized(key.name.capitalized)]).joined(separator: " + ")
         }
     }
 }
 
 extension ReviewerCommand {
-    var title: String { rawValue.reviewerTitle }
+    var title: String {
+        if let number = userActionNumber {
+            return String(localized: "User Action \(number)", bundle: .module)
+        }
+        return reviewerLocalized(rawValue.reviewerTitle)
+    }
 }
 
 private extension String {

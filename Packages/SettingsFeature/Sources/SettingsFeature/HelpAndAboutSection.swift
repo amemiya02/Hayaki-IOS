@@ -5,38 +5,47 @@ import SyncFeature
 struct HelpAndAboutSection: View {
     let store: CollectionStore
     let sync: SyncModel
+    let shows: (SettingsTopic) -> Bool
 
     var body: some View {
         Section {
-            NavigationLink {
-                TransferGuideScreen(store: store, sync: sync)
-            } label: {
-                Label {
-                    Text("Transfer Guide", bundle: .module)
-                } icon: {
-                    Image(systemName: "arrow.left.arrow.right")
+            if shows(.transfer) {
+                NavigationLink {
+                    TransferGuideScreen(store: store, sync: sync)
+                } label: {
+                    Label {
+                        Text("Transfer Guide", bundle: .module)
+                    } icon: {
+                        Image(systemName: "arrow.left.arrow.right")
+                    }
                 }
             }
-            NavigationLink {
-                HelpScreen()
-            } label: {
-                Label {
-                    Text("Help", bundle: .module)
-                } icon: {
-                    Image(systemName: "questionmark.circle")
+            if shows(.help) {
+                NavigationLink {
+                    HelpScreen()
+                } label: {
+                    Label {
+                        Text("Help", bundle: .module)
+                    } icon: {
+                        Image(systemName: "questionmark.circle")
+                    }
                 }
             }
-            NavigationLink {
-                AboutScreen()
-            } label: {
-                Label {
-                    Text("About", bundle: .module)
-                } icon: {
-                    Image(systemName: "info.circle")
+            if shows(.about) {
+                NavigationLink {
+                    AboutScreen()
+                } label: {
+                    Label {
+                        Text("About", bundle: .module)
+                    } icon: {
+                        Image(systemName: "info.circle")
+                    }
                 }
             }
         } header: {
-            Text("Help & About", bundle: .module)
+            if shows(.transfer) || shows(.help) || shows(.about) {
+                Text("Help & About", bundle: .module)
+            }
         }
     }
 }

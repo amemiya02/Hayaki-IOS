@@ -93,10 +93,13 @@ public struct SystemNotificationCentre: NotificationCentre {
         content.body = reminder.body
         content.sound = .default
         content.threadIdentifier = "hayaki.reminder"
+        if DeckReminderDestination(identifier: reminder.identifier) != nil {
+            content.categoryIdentifier = DeckReminderActions.categoryID
+        }
         // A calendar trigger for one moment: year to minute, no repeat. The
         // moment is in the learner's time zone at the time of scheduling.
         let moment = Calendar.current.dateComponents(
-            [.year, .month, .day, .hour, .minute],
+            [.year, .month, .day, .hour, .minute, .second],
             from: reminder.delivery
         )
         let trigger = UNCalendarNotificationTrigger(dateMatching: moment, repeats: false)

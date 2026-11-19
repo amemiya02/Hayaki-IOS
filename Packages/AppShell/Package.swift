@@ -15,6 +15,7 @@ let package = Package(
     dependencies: [
         .package(path: "../AnkiCore"),
         .package(path: "../CollectionStore"),
+        .package(path: "../HayakiAppearance"),
         .package(path: "../DecksFeature"),
         .package(path: "../DeckOptionsFeature"),
         .package(path: "../StudyFeature"),
@@ -25,6 +26,7 @@ let package = Package(
         .package(path: "../PackagesFeature"),
         .package(path: "../NoteEditorFeature"),
         .package(path: "../ReminderFeature"),
+        .package(path: "../ExtensionBridge"),
     ],
     targets: [
         .target(
@@ -32,6 +34,7 @@ let package = Package(
             dependencies: [
                 .product(name: "AnkiCore", package: "AnkiCore"),
                 .product(name: "CollectionStore", package: "CollectionStore"),
+                .product(name: "HayakiAppearance", package: "HayakiAppearance"),
                 .product(name: "DecksFeature", package: "DecksFeature"),
                 .product(name: "DeckOptionsFeature", package: "DeckOptionsFeature"),
                 .product(name: "StudyFeature", package: "StudyFeature"),
@@ -42,6 +45,7 @@ let package = Package(
                 .product(name: "PackagesFeature", package: "PackagesFeature"),
                 .product(name: "NoteEditorFeature", package: "NoteEditorFeature"),
                 .product(name: "ReminderFeature", package: "ReminderFeature"),
+                .product(name: "ExtensionBridge", package: "ExtensionBridge"),
             ],
             resources: [.process("Resources")]
         ),
@@ -49,6 +53,7 @@ let package = Package(
             name: "AppShellTests",
             dependencies: [
                 "AppShell",
+                .product(name: "ExtensionBridge", package: "ExtensionBridge"),
                 .product(name: "SyncFeature", package: "SyncFeature"),
                 .product(name: "SyncTesting", package: "SyncFeature"),
                 .product(name: "CollectionTesting", package: "CollectionStore"),

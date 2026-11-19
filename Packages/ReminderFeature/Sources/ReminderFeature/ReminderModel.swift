@@ -24,12 +24,13 @@ public final class ReminderModel {
     public init(
         store: CollectionStore,
         centre: any NotificationCentre = SystemNotificationCentre(),
-        defaults: UserDefaults = .standard
+        defaults: UserDefaults = .standard,
+        profileID: UUID? = nil
     ) {
         self.store = store
         self.centre = centre
         self.defaults = defaults
-        schedule = ReminderSchedule(store: store, centre: centre, defaults: defaults)
+        schedule = ReminderSchedule(store: store, centre: centre, defaults: defaults, profileID: profileID)
         let preferences = ReminderPreferences(from: defaults)
         isOn = preferences.isOn
         time = Self.today(at: preferences)
@@ -92,7 +93,7 @@ public final class ReminderModel {
 
     private func rescheduled() async {
         await schedule.update()
-        nextReminder = await centre.pendingReminders().first
+        nextReminder = await centre.pendingReminders().first { !$0.identifier.hasPrefix(DeckReminderDestination.prefix) }
     }
 
     private static func today(at preferences: ReminderPreferences) -> Date {

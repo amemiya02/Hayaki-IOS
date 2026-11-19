@@ -1,5 +1,6 @@
 import AnkiCore
 import CollectionStore
+import HayakiAppearance
 import SwiftUI
 
 /// A deck the learner chose to study.
@@ -78,7 +79,7 @@ public struct StudyScreen: View {
     @State private var deckName: String
     private let profileFolder: URL
     @Environment(\.dismiss) private var dismiss
-    @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.hayakiTheme) private var theme
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 
@@ -102,7 +103,7 @@ public struct StudyScreen: View {
                 reviewerActions
             }
         }
-        .background(Color.studyBackground.ignoresSafeArea())
+        .background(theme.background.ignoresSafeArea())
         .task(id: ObjectIdentifier(model)) { await model.run() }
         .task(id: autoAdvanceTask) { await runAutoAdvance() }
         .task(id: feedback) {
@@ -121,7 +122,7 @@ public struct StudyScreen: View {
         }
         .overlay(alignment: .top) {
             if let feedback {
-                Text(feedback.text)
+                feedback.label
                     .padding(8)
                     .background(.regularMaterial, in: Capsule())
                     .padding(.top, 60)
@@ -158,7 +159,7 @@ public struct StudyScreen: View {
             Button(reviewerLocalized("Finish")) { dismiss() }
         } message: {
             if let timebox {
-                Text("You reviewed \(timebox.reviewed) cards in \(timebox.limit.components.seconds / 60) minutes.")
+                Text("You reviewed \(timebox.reviewed) cards in \(timebox.limit.components.seconds / 60) minutes.", bundle: .module)
             }
         }
         .focusable()
@@ -186,16 +187,16 @@ public struct StudyScreen: View {
             recorder.discard()
             audio.stop()
         }
-        .alert("Recording", isPresented: Binding(
+        .alert(reviewerLocalized("Recording"), isPresented: Binding(
             get: { recorder.errorMessage != nil },
             set: { if !$0 { recorder.clearError() } }
         )) {
             if recorder.permissionDenied {
-                Button("Open Settings") {
+                Button(reviewerLocalized("Open Settings")) {
                     if let url = URL(string: UIApplication.openSettingsURLString) { UIApplication.shared.open(url) }
                 }
             }
-            Button("OK", role: .cancel) { recorder.clearError() }
+            Button(reviewerLocalized("OK"), role: .cancel) { recorder.clearError() }
         } message: {
             Text(verbatim: recorder.errorMessage ?? "")
         }
@@ -212,7 +213,7 @@ public struct StudyScreen: View {
                 ReviewerSettingsScreen(store: store)
                     .toolbar {
                         ToolbarItem(placement: .confirmationAction) {
-                            Button("Done") { showingSettings = false }
+                            Button(reviewerLocalized("Done")) { showingSettings = false }
                         }
                     }
             }
@@ -289,7 +290,9 @@ public struct StudyScreen: View {
         case .deleteNote, .setDueDate, .resetProgress: requestedAction = command
         case .toggleAutoAdvance:
             autoAdvance.toggle()
-            feedback = ReviewFeedback(text: autoAdvance ? "Auto Advance Enabled" : "Auto Advance Disabled")
+            feedback = ReviewFeedback(label: autoAdvance
+                ? Text("Auto Advance Enabled", bundle: .module)
+                : Text("Auto Advance Disabled", bundle: .module))
         case .browse:
             guard destinations != nil else { return }
             Task {
@@ -302,7 +305,7 @@ public struct StudyScreen: View {
             if let id = model.state.card?.id { route = .cardInfo(cardID: id) }
         case .previousCardInfo:
             if let id = model.previousCardID { route = .cardInfo(cardID: id) }
-        case .addNote: route = .addNote
+        case .addNote: route = .addNote(homeDeckID: model.state.card?.homeDeckID)
         case .showHint:
             webCommand = ReviewerWebCommand(javascript: """
             if (window.ankidroid?.showHint) {
@@ -353,7 +356,7 @@ public struct StudyScreen: View {
                 let typed = typedAnswer
                 Task {
                     if await model.perform(command, typed: typed), preferences.showFeedback, let rating = command.rating {
-                        feedback = ReviewFeedback(text: rating.titleKey)
+                        feedback = ReviewFeedback(label: rating.title)
                     }
                 }
             }
@@ -418,7 +421,9 @@ public struct StudyScreen: View {
         if let command = task.plan.command {
             dispatch(command)
         } else {
-            feedback = ReviewFeedback(text: task.side == .question ? "Question Time Elapsed" : "Answer Time Elapsed")
+            feedback = ReviewFeedback(label: task.side == .question
+                ? Text("Question Time Elapsed", bundle: .module)
+                : Text("Answer Time Elapsed", bundle: .module))
         }
     }
 
@@ -528,6 +533,7 @@ public struct StudyScreen: View {
                 .frame(maxWidth: horizontalSizeClass == .regular ? 820 : .infinity)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .padding(preferences.cardFrame ? 8 : 0)
+                .background(preferences.cardFrame ? theme.surface : Color.clear)
                 .clipShape(.rect(cornerRadius: preferences.cardFrame ? 18 : 0))
                 .overlay {
                     if preferences.cardFrame {
@@ -574,7 +580,7 @@ public struct StudyScreen: View {
                 ) {
                     dispatch(.showAnswer)
                 } onShortPress: {
-                    feedback = ReviewFeedback(text: String(localized: "Hold Show Answer to reveal the card.", bundle: .module))
+                    feedback = ReviewFeedback(label: Text("Hold Show Answer to reveal the card.", bundle: .module))
                 } onRate: { rating in
                     dispatch(rating.reviewerCommand)
                 }
@@ -651,7 +657,7 @@ public struct StudyScreen: View {
         guard context.isCurrent(), store.allowsNewProfileWork, timebox == nil,
               model.state.card?.id == context.cardID else { return .unavailable }
         switch request.command {
-        case "isInNightMode": return .value(.boolean(colorScheme == .dark))
+        case "isInNightMode": return .value(.boolean(theme != .light))
         case "isInFullscreen": return .value(.boolean(!templateFullscreen.showsTopBar))
         case "isTopbarShown": return .value(.boolean(templateFullscreen.showsTopBar))
         case "setFullscreenButtonsAndMenu": templateFullscreen = .buttonsAndMenu
@@ -665,7 +671,10 @@ public struct StudyScreen: View {
             route = .browse(search: query)
         case "showToast":
             guard let toast = request.decoded(TemplateToast.self) else { return .unavailable }
-            feedback = ReviewFeedback(text: toast.decodedText, duration: .seconds(toast.shortLength ? 2 : 4))
+            feedback = ReviewFeedback(
+                label: Text(verbatim: toast.decodedText),
+                duration: .seconds(toast.shortLength ? 2 : 4)
+            )
         case "isActiveNetworkMetered":
             return .value(.boolean(await templateNetwork.isMetered()))
         default:
@@ -740,12 +749,13 @@ private struct SideShown: Equatable {
 /// The new, learning and due counts left today, in Anki's blue, red and green.
 private struct StudyCountsView: View {
     let counts: StudyCounts
+    @Environment(\.hayakiTheme) private var theme
 
     var body: some View {
         HStack(spacing: 14) {
-            Text(counts.new, format: .number).foregroundStyle(.blue)
-            Text(counts.learning, format: .number).foregroundStyle(.red)
-            Text(counts.due, format: .number).foregroundStyle(.green)
+            Text(counts.new, format: .number).foregroundStyle(theme.color(for: .new))
+            Text(counts.learning, format: .number).foregroundStyle(theme.color(for: .learning))
+            Text(counts.due, format: .number).foregroundStyle(theme.color(for: .due))
         }
         .font(.subheadline.monospacedDigit().weight(.medium))
         .accessibilityElement(children: .ignore)
@@ -773,18 +783,18 @@ private struct AnswerBar: View {
     let onShortPress: () -> Void
     let onRate: (Rating) -> Void
     @State private var lastPress: ContinuousClock.Instant?
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     var body: some View {
         Group {
             if showingAnswer {
-                HStack(spacing: 8) {
-                    ForEach(hideHardAndEasy ? [.again, .good] : Rating.allCases, id: \.self) { rating in
-                        RatingButton(
-                            rating: rating, interval: showsIntervals ? card.intervals[rating] : nil,
-                            buttonHeight: buttonHeight
-                        ) {
-                            guarded { onRate(rating) }
+                Group {
+                    if dynamicTypeSize.isAccessibilitySize {
+                        LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 8) {
+                            ratingButtons
                         }
+                    } else {
+                        HStack(spacing: 8) { ratingButtons }
                     }
                 }
                 .disabled(isAnswering)
@@ -806,6 +816,16 @@ private struct AnswerBar: View {
         .frame(minHeight: 60)
     }
 
+    private var ratingButtons: some View {
+        ForEach(hideHardAndEasy ? [.again, .good] : Rating.allCases, id: \.self) { rating in
+            RatingButton(
+                rating: rating, interval: showsIntervals ? card.intervals[rating] : nil, buttonHeight: buttonHeight
+            ) {
+                guarded { onRate(rating) }
+            }
+        }
+    }
+
     private func guarded(_ action: () -> Void) {
         let now = ContinuousClock.now
         guard lastPress.map({ now - $0 >= cooldown }) != false else { return }
@@ -819,6 +839,7 @@ private struct RatingButton: View {
     let interval: String?
     let buttonHeight: Double
     let action: () -> Void
+    @Environment(\.hayakiTheme) private var theme
 
     var body: some View {
         Button(action: action) {
@@ -834,7 +855,7 @@ private struct RatingButton: View {
             .frame(maxWidth: .infinity, minHeight: buttonHeight)
         }
         .buttonStyle(.bordered)
-        .tint(rating.color)
+        .tint(theme.color(for: rating.semanticColor))
         .accessibilityLabel(rating.title)
         .accessibilityValue(Text(interval ?? ""))
         .accessibilityIdentifier("rating-\(rating)")
@@ -957,12 +978,12 @@ extension Rating {
     }
 
     /// Anki's colours for the ratings.
-    var color: Color {
+    var semanticColor: SemanticColor {
         switch self {
-        case .again: .red
-        case .hard: .orange
-        case .good: .green
-        case .easy: .blue
+        case .again: .again
+        case .hard: .hard
+        case .good: .good
+        case .easy: .easy
         }
     }
 
@@ -974,16 +995,6 @@ extension Rating {
         case .good: "3"
         case .easy: "4"
         }
-    }
-}
-
-private extension Color {
-    static var studyBackground: Color {
-        #if os(iOS)
-        Color(uiColor: .systemBackground)
-        #else
-        Color(nsColor: .windowBackgroundColor)
-        #endif
     }
 }
 
@@ -1018,20 +1029,15 @@ private struct AutoAdvanceTask: Equatable {
 
 private struct ReviewFeedback: Equatable {
     let id = UUID()
-    let text: String
+    let label: Text
     var duration: Duration = .seconds(2)
+
+    static func == (lhs: Self, rhs: Self) -> Bool {
+        lhs.id == rhs.id
+    }
 }
 
 private extension Rating {
-    var titleKey: String {
-        switch self {
-        case .again: "Again"
-        case .hard: "Hard"
-        case .good: "Good"
-        case .easy: "Easy"
-        }
-    }
-
     var reviewerCommand: ReviewerCommand {
         switch self {
         case .again: .rateAgain

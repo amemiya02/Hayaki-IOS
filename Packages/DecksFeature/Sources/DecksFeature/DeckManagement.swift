@@ -1,6 +1,7 @@
 import AnkiCore
 import DeckOptionsFeature
 import PackagesFeature
+import ReminderFeature
 import StudyFeature
 import SwiftUI
 
@@ -8,8 +9,10 @@ extension View {
     /// Lets the learner organise the decks of `model`: a toolbar button to
     /// create a deck, and the sheets and alerts behind each deck row's
     /// actions (see `deckActions(for:)`).
-    func deckManagement(_ model: DeckListModel, onStudy: @escaping (StudyDeck) -> Void) -> some View {
-        modifier(DeckManagement(model: model, onStudy: onStudy))
+    func deckManagement(
+        _ model: DeckListModel, profileID: UUID?, onStudy: @escaping (StudyDeck) -> Void
+    ) -> some View {
+        modifier(DeckManagement(model: model, profileID: profileID, onStudy: onStudy))
     }
 }
 
@@ -17,7 +20,7 @@ private struct DeckManagement: ViewModifier {
     let model: DeckListModel
     let onStudy: (StudyDeck) -> Void
     @State private var studyAfterDismiss: StudyDeck?
-    @State private var request = DeckActionRequest()
+    @State private var request: DeckActionRequest
     @State private var renaming: DeckNode?
     @State private var newName = ""
     @State private var deleting: (deck: DeckNode, deletion: DeckDeletion)?
@@ -26,6 +29,12 @@ private struct DeckManagement: ViewModifier {
     struct Failure {
         let title: Text
         let message: String
+    }
+
+    init(model: DeckListModel, profileID: UUID?, onStudy: @escaping (StudyDeck) -> Void) {
+        self.model = model
+        self.onStudy = onStudy
+        _request = State(initialValue: DeckActionRequest(profileID: profileID))
     }
 
     func body(content: Content) -> some View {
@@ -62,6 +71,17 @@ private struct DeckManagement: ViewModifier {
                     DeckOptionsScreen(store: model.store, deckID: deck.id)
                 case .filteredOptions(let id):
                     FilteredDeckScreen(store: model.store, deckID: id)
+                case .reminders(let deck):
+                    if let profileID = request.profileID {
+                        NavigationStack {
+                            DeckReminderScreen(store: model.store, profileID: profileID, deckID: deck.id)
+                                .toolbar {
+                                    ToolbarItem(placement: .cancellationAction) {
+                                        Button(role: .close) { request.pending = nil }
+                                    }
+                                }
+                        }
+                    }
                 case .customStudy(let deck):
                     CustomStudyScreen(store: model.store, deckID: deck.id) { studyAfterDismiss = $0 }
                 case .export(let deck):
@@ -85,7 +105,7 @@ private struct DeckManagement: ViewModifier {
                 case .empty(let deck):
                     request.pending = nil
                     manageFilteredDeck(deck, empty: true)
-                case .create, .move, .options, .filteredOptions, .customStudy, .export, nil:
+                case .create, .move, .options, .filteredOptions, .customStudy, .reminders, .export, nil:
                     break
                 }
             }
@@ -139,7 +159,7 @@ private struct DeckManagement: ViewModifier {
     private var sheet: Binding<DeckAction?> {
         Binding {
             switch request.pending {
-            case .create, .move, .options, .filteredOptions, .customStudy, .export: request.pending
+            case .create, .move, .options, .filteredOptions, .customStudy, .reminders, .export: request.pending
             default: nil
             }
         } set: { request.pending = $0 }
