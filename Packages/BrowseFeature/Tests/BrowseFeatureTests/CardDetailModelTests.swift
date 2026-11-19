@@ -82,3 +82,28 @@ extension CardDetailModel {
         if case .loaded(let detail) = state { detail } else { nil }
     }
 }
+
+extension CardDetailModelTests {
+    @Test("Card info includes the deck preset, identifiers, review dates and timing")
+    func schedulingDetails() async throws {
+        try await withTemporaryCollection { store in
+            let deck = try await store.addDeck(named: "Languages")
+            let id = try await store.addBasicCard(front: "correr", back: "run", inDeck: deck)
+            try await store.answerNextCard(inDeck: deck, rating: .easy)
+
+            let model = CardDetailModel(store: store, cardID: id)
+            await model.refresh()
+            let detail = try #require(model.detail)
+            let review = try #require(detail.history.first)
+            #expect(detail.cardID == id)
+            #expect(detail.noteID > 0)
+            #expect(detail.preset == "Default")
+            #expect(detail.firstReview == review.date)
+            #expect(detail.latestReview == review.date)
+            #expect(detail.averageSeconds == review.secondsTaken)
+            #expect(detail.totalSeconds == review.secondsTaken)
+            #expect(review.intervalSeconds > 0)
+            #expect(review.previousIntervalSeconds == 0)
+        }
+    }
+}
