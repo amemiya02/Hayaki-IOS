@@ -142,6 +142,14 @@ public final class SyncModel {
             return
         }
         password = ""
+        do {
+            // The saved media sequence belongs to the previous sign-in. The
+            // core can rediscover the existing files against this account.
+            try await store.core.resetMediaDatabase(at: store.location.mediaDatabase)
+        } catch {
+            status = .failed(SyncFailure(error, server: server, signingIn: true))
+            return
+        }
         let account = SyncAccount(server: server, userName: request.username, hostKey: auth.hkey)
         do {
             try storage.save(account)
@@ -265,6 +273,7 @@ public final class SyncModel {
 
     private func syncMedia(after outcome: SyncOutcome) async {
         guard var account else { return }
+        mediaStatus = .syncing(nil)
         func save(_ phase: SavedMediaSync.Phase) throws {
             account.mediaSync = SavedMediaSync(phase: phase, collection: outcome)
             try storage.save(account)
@@ -277,8 +286,6 @@ public final class SyncModel {
             mediaStatus = .failed(SyncFailure(storageError: error))
             return
         }
-        mediaStatus = .syncing(nil)
-
         let phase: SavedMediaSync.Phase
         let result: MediaSyncStatus
         do {

@@ -17,10 +17,17 @@ struct SyncTests {
     @Test("A single sync action transfers media in both directions after collection sync")
     func syncsMediaBothWays() async throws {
         let server = try await SyncServer(users: [("alice", "correct horse")])
+        let (image, audio) = try await withTemporaryCollection { fixture in
+            try await fixture.importFixture(.basicDeck)
+            let folder = fixture.location.mediaFolder
+            return (
+                try Data(contentsOf: folder.appendingPathComponent("sol.png")),
+                try Data(contentsOf: folder.appendingPathComponent("adios.m4a"))
+            )
+        }
         try await withTemporaryCollection { phone in
             try await phone.addBasicNotes(count: 1, toDeck: phone.addDeck(named: "Spanish"))
-            let image = Data([0x89, 0x50, 0x4e, 0x47])
-            try image.write(to: phone.location.mediaFolder.appendingPathComponent("example.png"))
+            try image.write(to: phone.location.mediaFolder.appendingPathComponent("sol.png"))
             let phoneSync = try await signedIn(phone, to: server)
             await phoneSync.sync()
             await phoneSync.upload()
@@ -29,14 +36,13 @@ struct SyncTests {
                 let tabletSync = try await signedIn(tablet, to: server)
                 await tabletSync.sync()
                 await tabletSync.download()
-                let receivedImage = tablet.location.mediaFolder.appendingPathComponent("example.png")
+                let receivedImage = tablet.location.mediaFolder.appendingPathComponent("sol.png")
                 #expect(try Data(contentsOf: receivedImage) == image)
 
-                let audio = Data([0x49, 0x44, 0x33])
-                try audio.write(to: tablet.location.mediaFolder.appendingPathComponent("example.mp3"))
+                try audio.write(to: tablet.location.mediaFolder.appendingPathComponent("adios.m4a"))
                 await tabletSync.sync()
                 await phoneSync.sync()
-                let receivedAudio = phone.location.mediaFolder.appendingPathComponent("example.mp3")
+                let receivedAudio = phone.location.mediaFolder.appendingPathComponent("adios.m4a")
                 #expect(try Data(contentsOf: receivedAudio) == audio)
             }
         }
@@ -125,6 +131,77 @@ struct SyncTests {
                 await other.download()
                 let received = tablet.location.mediaFolder.appendingPathComponent("pending.png")
                 #expect(try Data(contentsOf: received) == media)
+            }
+        }
+    }
+
+    @Test("A pending media retry stays with its sign-in, and a new destination reconciles the selected profile")
+    func switchingMediaDestinations() async throws {
+        let first = try await SyncServer(users: [("alice", "correct horse")])
+        let second = try await SyncServer(users: [("alice", "second password")])
+        try await withTemporaryCollection { phone in
+            try await phone.addBasicNotes(count: 1, toDeck: phone.addDeck(named: "First"))
+            let phoneMedia = phone.location.mediaFolder
+            let original = Data("existing media on first".utf8)
+            try original.write(to: phoneMedia.appendingPathComponent("original.png"))
+            let pending = Data("pending media on first".utf8)
+            let storage = MemoryAccountStorage()
+            let model = try await signedIn(phone, to: first, storage: storage)
+            let originalKey = try #require(model.account?.hostKey)
+            await model.sync()
+            await model.upload()
+            #expect(model.mediaStatus == .synced)
+            try pending.write(to: phoneMedia.appendingPathComponent("pending.png"))
+
+            pauseServerWhenMediaStarts(first, model: model)
+            let syncing = Task { await model.sync() }
+            defer {
+                syncing.cancel()
+                first.resume()
+            }
+            try await eventually("the first profile's media to start") {
+                if case .syncing = model.mediaStatus { true } else { false }
+            }
+            model.signOut()
+            #expect(model.account?.hostKey == originalKey)
+
+            try await withTemporaryCollection { tablet in
+                try await tablet.addBasicNotes(count: 2, toDeck: tablet.addDeck(named: "Second"))
+                let secondMedia = Data("existing media on second".utf8)
+                try secondMedia.write(to: tablet.location.mediaFolder.appendingPathComponent("second.png"))
+                let tabletSync = try await signedIn(tablet, to: second, password: "second password")
+                await tabletSync.sync()
+                await tabletSync.upload()
+                #expect(tabletSync.mediaStatus == .synced)
+                #expect(try tablet.mediaFileNames() == ["second.png"])
+
+                model.cancel()
+                await syncing.value
+                first.resume()
+                #expect(model.canRetryMediaSync)
+                model.signOut()
+                model.serverAddress = second.address
+                model.userName = "alice"
+                model.password = "second password"
+                await model.signIn()
+                #expect(model.account?.hostKey != originalKey)
+                #expect(model.account?.server?.absoluteString == second.address)
+                #expect(!model.canRetryMediaSync)
+                await model.retryMediaSync()
+                await tabletSync.sync()
+                #expect(try tablet.mediaFileNames() == ["second.png"])
+
+                // Start and confirm a new collection sync. Both servers began
+                // with one media change, so their sequence numbers are equal
+                // despite holding different files.
+                await model.sync()
+                #expect(model.status == .choosingDirection(.either))
+                await model.download()
+                #expect(model.mediaStatus == .synced)
+                #expect(try Data(contentsOf: phoneMedia.appendingPathComponent("second.png")) == secondMedia)
+                #expect(try Data(contentsOf: phoneMedia.appendingPathComponent("original.png")) == original)
+                await tabletSync.sync()
+                #expect(try tablet.mediaFileNames() == ["original.png", "pending.png", "second.png"])
             }
         }
     }
@@ -416,13 +493,14 @@ struct SyncTests {
     private func signedIn(
         _ store: CollectionStore,
         to server: SyncServer,
-        storage: MemoryAccountStorage = MemoryAccountStorage()
+        storage: MemoryAccountStorage = MemoryAccountStorage(),
+        password: String = "correct horse"
     ) async throws -> SyncModel {
         let model = SyncModel(store: store, storage: storage)
         model.selectDestination(.selfHosted)
         model.serverAddress = server.address
         model.userName = "alice"
-        model.password = "correct horse"
+        model.password = password
         await model.signIn()
         try #require(model.account != nil, "sign-in failed: \(String(describing: model.status))")
         return model

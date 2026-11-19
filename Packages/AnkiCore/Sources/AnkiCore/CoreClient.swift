@@ -12,9 +12,8 @@ import Synchronization
 ///
 /// A long operation is started with `start(_:)` instead, which adds progress
 /// reports and cancellation. Those use a second thread owned by the client,
-/// the monitor, which only ever reads the core's latest progress and makes the
-/// core's abort calls (which take no collection lock), so neither waits behind
-/// the operation they refer to.
+/// the monitor, which reads progress and media sync results and makes the
+/// core's abort calls without waiting behind the operation they refer to.
 ///
 /// A failed call throws `CoreError` with the core's error kind and its
 /// localised message. After a panic inside the core (`CoreError.isPanic`) the
@@ -130,6 +129,34 @@ public final class CoreClient: Sendable {
             }
         }
         return operation
+    }
+
+    /// Discards the derived media sync database so the next sign-in can
+    /// reconcile the existing files against its own server's change sequence.
+    /// The worker excludes other collection calls. An inactive media status
+    /// means the core has joined the background task and closed its database.
+    public func resetMediaDatabase(at database: URL) async throws(CoreError) {
+        let result: Result<Void, CoreError> = await worker.run {
+            self.execute(.mediaSyncStatus()).flatMap { status in
+                guard !status.active else {
+                    return .failure(CoreError(kind: .invalidInput, message: "Media sync is still running."))
+                }
+                do {
+                    for suffix in ["-wal", "-shm", ""] {
+                        let file = URL(filePath: database.path() + suffix)
+                        do {
+                            try FileManager.default.removeItem(at: file)
+                        } catch let error as CocoaError where error.code == .fileNoSuchFile {
+                            continue
+                        }
+                    }
+                    return .success(())
+                } catch {
+                    return .failure(CoreError(kind: .ioError, message: error.localizedDescription))
+                }
+            }
+        }
+        try result.get()
     }
 
     // MARK: Worker thread
