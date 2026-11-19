@@ -24,6 +24,8 @@ Kioku provides a comparison for studying and browsing on a phone, touch and keyb
 
 ## Acceptance evidence
 
+The [acceptance inventory](ios-acceptance.md) records the walkthrough routes, fixtures, observed results and remaining device checks.
+
 1. For each ticket, identify the corresponding Android screen, setting or command at the pin, including reachable behavior outside the gallery. Record the equivalent iOS entry, fixture, expected result and test or device evidence. Record any platform limitation as an open discrepancy for owner review.
 2. Run feature-model tests against the real core and disposable collections. Compare results for scheduling, editing, search, statistics and package exchange. Test sync against a real local sync server, including conflict, failure, retry, cancellation and profile changes. Use UI and device tests for rendering, audible playback, handwriting, share extensions, widgets, notifications and adaptive layouts.
 3. Walk Android and iOS through the same deck and collection packages in both directions, then compare fields, card counts, history, scheduling, options and media. Exercise both a cold launcher entry and a return from Files, sharing or a notification. Verify the relevant iPhone and iPad screens with VoiceOver, Dynamic Type and each supported appearance.
