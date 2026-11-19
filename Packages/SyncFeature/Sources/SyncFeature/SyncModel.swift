@@ -4,7 +4,7 @@ import CollectionStore
 import Foundation
 import Observation
 
-/// Signs in to the selected destination and syncs the collection through Anki's core.
+/// Signs in to the selected destination and syncs the collection and its media through Anki's core.
 @MainActor
 @Observable
 public final class SyncModel {
@@ -48,6 +48,7 @@ public final class SyncModel {
     /// The learner's sign-in, or nil when sync is not set up.
     public private(set) var account: SyncAccount?
     public private(set) var status: Status = .idle
+    public private(set) var mediaStatus: MediaSyncStatus = .idle
 
     @ObservationIgnored private let store: CollectionStore
     @ObservationIgnored private let storage: any SyncAccountStorage
@@ -70,14 +71,19 @@ public final class SyncModel {
                 customServerAddress = server.absoluteString
             }
             userName = account.userName
+            if let saved = account.mediaSync {
+                status = .synced(saved.collection)
+                mediaStatus = saved.status
+            }
         }
     }
 
-    /// Whether signing in or a sync is under way.
+    /// Whether signing in or a collection or media sync is under way.
     public var isBusy: Bool {
         switch status {
         case .signingIn, .syncing: true
-        default: false
+        default:
+            if case .syncing = mediaStatus { true } else { false }
         }
     }
 
@@ -85,6 +91,14 @@ public final class SyncModel {
         !isBusy && account == nil
             && (destination == .ankiWeb || !serverAddress.trimmed.isEmpty)
             && !userName.trimmed.isEmpty && !password.isEmpty
+    }
+
+    public var canRetryMediaSync: Bool {
+        guard !isBusy, account != nil, case .synced = status else { return false }
+        return switch mediaStatus {
+        case .cancelled, .interrupted, .failed: true
+        default: false
+        }
     }
 
     public func selectDestination(_ destination: Destination) {
@@ -128,6 +142,14 @@ public final class SyncModel {
             return
         }
         password = ""
+        do {
+            // The saved media sequence belongs to the previous sign-in. The
+            // core can rediscover the existing files against this account.
+            try await store.core.resetMediaDatabase(at: store.location.mediaDatabase)
+        } catch {
+            status = .failed(SyncFailure(error, server: server, signingIn: true))
+            return
+        }
         let account = SyncAccount(server: server, userName: request.username, hostKey: auth.hkey)
         do {
             try storage.save(account)
@@ -150,6 +172,7 @@ public final class SyncModel {
             return
         }
         account = nil
+        mediaStatus = .idle
         clearSignInForm()
     }
 
@@ -164,7 +187,7 @@ public final class SyncModel {
         status = .syncing(.connecting)
         let request = Anki_Sync_SyncCollectionRequest.with {
             $0.auth = account.auth
-            // Media sync (ticket #17) is not part of this yet.
+            // Start media separately once the collection result is known.
             $0.syncMedia = false
         }
         let response: Anki_Sync_SyncCollectionResponse
@@ -188,8 +211,7 @@ public final class SyncModel {
             status = .choosingDirection(.uploadOnly)
         case .noChanges, .normalSync, .UNRECOGNIZED:
             // A finished normal sync reports no further changes required.
-            store.signal(.everything)
-            status = .synced(SyncOutcome(kind: .merged, serverMessage: response.serverMessage.nilIfEmpty))
+            await finishCollectionSync(SyncOutcome(kind: .merged, serverMessage: response.serverMessage.nilIfEmpty))
         }
     }
 
@@ -209,10 +231,17 @@ public final class SyncModel {
         status = .idle
     }
 
-    /// Stops signing in or the sync under way. The core abandons the sync
-    /// and rolls back what it had applied.
+    /// Stops signing in or the transfer under way. The core keeps completed
+    /// media batches so the next sync can continue.
     public func cancel() {
         cancelRunning?()
+    }
+
+    /// Continues a previous media transfer with the same sign-in.
+    public func retryMediaSync() async {
+        guard canRetryMediaSync, case .synced(let outcome) = status else { return }
+        SyncClientIdentity.install()
+        await syncMedia(after: outcome)
     }
 
     private func fullSync(upload: Bool) async {
@@ -223,7 +252,7 @@ public final class SyncModel {
         let request = Anki_Sync_FullUploadOrDownloadRequest.with {
             $0.auth = account.auth
             $0.upload = upload
-            // Leaving serverUsn unset skips media sync (ticket #17).
+            // Leaving serverUsn unset lets us start media as a separate phase.
         }
         do {
             _ = try await run(store.core.start(.fullUploadOrDownload(request), abortingWith: .abortSync()))
@@ -233,8 +262,52 @@ public final class SyncModel {
         }
         // The core closed the collection and opened it again, replaced when
         // downloading.
+        await finishCollectionSync(SyncOutcome(kind: upload ? .uploaded : .downloaded, serverMessage: nil))
+    }
+
+    private func finishCollectionSync(_ outcome: SyncOutcome) async {
         store.signal(.everything)
-        status = .synced(SyncOutcome(kind: upload ? .uploaded : .downloaded, serverMessage: nil))
+        status = .synced(outcome)
+        await syncMedia(after: outcome)
+    }
+
+    private func syncMedia(after outcome: SyncOutcome) async {
+        guard var account else { return }
+        mediaStatus = .syncing(nil)
+        func save(_ phase: SavedMediaSync.Phase) throws {
+            account.mediaSync = SavedMediaSync(phase: phase, collection: outcome)
+            try storage.save(account)
+            self.account = account
+        }
+
+        do {
+            try save(.transferring)
+        } catch {
+            mediaStatus = .failed(SyncFailure(storageError: error))
+            return
+        }
+        let phase: SavedMediaSync.Phase
+        let result: MediaSyncStatus
+        do {
+            _ = try await run(store.core.startMediaSync(account.auth))
+            phase = .synced
+            result = .synced
+        } catch {
+            if error.isInterrupted {
+                phase = .cancelled
+                result = .cancelled
+            } else {
+                phase = .failed
+                result = .failed(SyncFailure(error, server: account.server, signingIn: false))
+            }
+        }
+
+        do {
+            try save(phase)
+            mediaStatus = result
+        } catch {
+            mediaStatus = .failed(SyncFailure(storageError: error))
+        }
     }
 
     /// Runs a long operation, showing its progress and making it cancellable.
@@ -253,6 +326,10 @@ public final class SyncModel {
     }
 
     private func show(_ report: Anki_Collection_Progress) {
+        if case .syncing = mediaStatus, case .mediaSync(let media) = report.value {
+            mediaStatus = .syncing(MediaSyncProgress(checked: media.checked, added: media.added, removed: media.removed))
+            return
+        }
         guard case .syncing(let current) = status else { return }
         switch report.value {
         case .normalSync(let sync):
@@ -325,8 +402,8 @@ public enum FullSyncChoice: Equatable, Sendable {
     public var allowsDownload: Bool { self != .uploadOnly }
 }
 
-public struct SyncOutcome: Equatable, Sendable {
-    public enum Kind: Equatable, Sendable {
+public struct SyncOutcome: Codable, Equatable, Sendable {
+    public enum Kind: String, Codable, Sendable {
         /// Changes were exchanged both ways (or there were none).
         case merged
         case uploaded

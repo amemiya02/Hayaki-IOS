@@ -12,6 +12,7 @@ public struct SyncAccount: Codable, Equatable, Sendable {
     /// A redirect returned by the core for this sign-in. Keep it separate
     /// from the configured address so it does not change the destination.
     var redirectedEndpoint: URL?
+    var mediaSync: SavedMediaSync?
 
     public init(server: URL?, userName: String, hostKey: String) {
         self.server = server
@@ -22,7 +23,7 @@ public struct SyncAccount: Codable, Equatable, Sendable {
     // The required server key is either a self-hosted URL (including legacy
     // items) or explicit null for AnkiWeb. A missing key indicates invalid data.
     private enum CodingKeys: String, CodingKey {
-        case server, userName, hostKey, redirectedEndpoint
+        case server, userName, hostKey, redirectedEndpoint, mediaSync
     }
 
     public init(from decoder: any Decoder) throws {
@@ -31,6 +32,7 @@ public struct SyncAccount: Codable, Equatable, Sendable {
         userName = try values.decode(String.self, forKey: .userName)
         hostKey = try values.decode(String.self, forKey: .hostKey)
         redirectedEndpoint = try values.decodeIfPresent(URL.self, forKey: .redirectedEndpoint)
+        mediaSync = try values.decodeIfPresent(SavedMediaSync.self, forKey: .mediaSync)
     }
 
     public func encode(to encoder: any Encoder) throws {
@@ -39,6 +41,7 @@ public struct SyncAccount: Codable, Equatable, Sendable {
         try values.encode(userName, forKey: .userName)
         try values.encode(hostKey, forKey: .hostKey)
         try values.encodeIfPresent(redirectedEndpoint, forKey: .redirectedEndpoint)
+        try values.encodeIfPresent(mediaSync, forKey: .mediaSync)
     }
 }
 

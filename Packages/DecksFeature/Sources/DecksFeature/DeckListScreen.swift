@@ -8,6 +8,8 @@ import SwiftUI
 public struct DeckListScreen: View {
     @State private var model: DeckListModel
     @State private var studying: StudyDeck?
+    @State private var selectedDeckID: DeckNode.ID?
+    @Environment(\.scenePhase) private var scenePhase
     private let store: CollectionStore
 
     public init(store: CollectionStore) {
@@ -26,10 +28,21 @@ public struct DeckListScreen: View {
                     ToolbarItem(placement: .primaryAction) {
                         ExportPackageButton(store: store)
                     }
+                    ToolbarItem(placement: .secondaryAction) {
+                        SharedDecksLink()
+                    }
                 }
                 .deckManagement(model)
         }
         .task { await model.run() }
+        .onChange(of: scenePhase) { _, phase in
+            if phase == .active {
+                Task { await model.refresh() }
+            }
+        }
+        .onChange(of: selectedDeck?.id, initial: true) { _, id in
+            selectedDeckID = id
+        }
         .studySession(of: $studying, store: store)
     }
 
@@ -62,19 +75,82 @@ public struct DeckListScreen: View {
                     Image(systemName: "rectangle.stack")
                 }
             } description: {
-                Text("Bring your cards in from Anki or AnkiDroid by importing a collection package (.colpkg) or a deck package (.apkg).", bundle: .module)
+                Text("Import a deck package (.apkg) or a collection package (.colpkg) from Hayaki, Anki or AnkiDroid.", bundle: .module)
             } actions: {
-                ImportPackageButton()
-                    .buttonStyle(.borderedProminent)
+                VStack {
+                    SharedDecksLink()
+                        .buttonStyle(.borderedProminent)
+                    ImportPackageButton()
+                    NewDeckButton()
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.large)
             }
         case .loaded:
+            let selection = selectedDeck?.id
             List {
+                TodayDeckSummary(due: model.dueToday, studied: model.studiedToday, deck: deckToStudy, onStudy: study)
                 ForEach(model.decks) { deck in
-                    DeckRows(deck: deck) { studying = StudyDeck(id: $0.id, name: $0.name) }
+                    DeckRows(deck: deck, selectedDeckID: selection, study: study)
                 }
             }
             .refreshable { await model.refresh() }
             .environment(model)
+        }
+    }
+
+    private var selectedDeck: DeckNode? {
+        // Keep the selection when an import brings in a different current
+        // deck. Fall back to the core when the chosen deck no longer exists.
+        selectedDeckID.flatMap(model.deck) ?? model.currentDeckID.flatMap(model.deck)
+    }
+
+    private var deckToStudy: DeckNode? {
+        if let selectedDeck, !selectedDeck.counts.isEmpty { return selectedDeck }
+        return model.decks.first { !$0.counts.isEmpty }
+    }
+
+    private func study(_ deck: DeckNode) {
+        selectedDeckID = deck.id
+        studying = StudyDeck(id: deck.id, name: deck.name)
+    }
+}
+
+private struct TodayDeckSummary: View {
+    let due: Int
+    let studied: Int
+    let deck: DeckNode?
+    let onStudy: (DeckNode) -> Void
+
+    var body: some View {
+        Section {
+            VStack(alignment: .leading, spacing: 4) {
+                Group {
+                    if due == 0 {
+                        Text("Nothing due today", bundle: .module)
+                    } else {
+                        Text("\(due) due today", bundle: .module)
+                    }
+                }
+                .font(.headline.monospacedDigit())
+                .accessibilityIdentifier("due-today")
+                Text("\(studied) studied today", bundle: .module)
+                    .font(.subheadline.monospacedDigit())
+                    .foregroundStyle(.secondary)
+                    .accessibilityIdentifier("studied-today")
+                if let deck {
+                    Button {
+                        onStudy(deck)
+                    } label: {
+                        Text("Study Now · \(deck.name)", bundle: .module)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .controlSize(.large)
+                    .padding(.top, 6)
+                    .accessibilityIdentifier("study-selected-deck")
+                }
+            }
+            .padding(.vertical, 6)
         }
     }
 }
@@ -82,23 +158,28 @@ public struct DeckListScreen: View {
 /// A deck and, below it, its child decks, which can be collapsed.
 private struct DeckRows: View {
     let deck: DeckNode
+    let selectedDeckID: DeckNode.ID?
     let study: (DeckNode) -> Void
     @Environment(DeckListModel.self) private var model
 
     var body: some View {
         if deck.children.isEmpty {
-            DeckRow(deck: deck, study: study)
+            row
                 .deckActions(for: deck)
         } else {
             DisclosureGroup(isExpanded: isExpanded) {
                 ForEach(deck.children) { child in
-                    DeckRows(deck: child, study: study)
+                    DeckRows(deck: child, selectedDeckID: selectedDeckID, study: study)
                 }
             } label: {
-                DeckRow(deck: deck, study: study)
+                row
                     .deckActions(for: deck)
             }
         }
+    }
+
+    private var row: some View {
+        DeckRow(deck: deck, isSelected: deck.id == selectedDeckID, study: study)
     }
 
     /// Whether the child decks show; the core remembers it for next time.
@@ -113,6 +194,7 @@ private struct DeckRows: View {
 
 private struct DeckRow: View {
     let deck: DeckNode
+    let isSelected: Bool
     let study: (DeckNode) -> Void
 
     var body: some View {
@@ -121,6 +203,11 @@ private struct DeckRow: View {
         } label: {
             HStack {
                 Text(deck.name)
+                if isSelected {
+                    Image(systemName: "checkmark")
+                        .foregroundStyle(.tint)
+                        .accessibilityHidden(true)
+                }
                 Spacer()
                 CountsView(counts: deck.counts)
             }
@@ -128,6 +215,7 @@ private struct DeckRow: View {
             .accessibilityElement(children: .combine)
         }
         .buttonStyle(.plain)
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
         .accessibilityHint(Text("Studies this deck.", bundle: .module))
     }
 }

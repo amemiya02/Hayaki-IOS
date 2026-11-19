@@ -6,6 +6,7 @@ import ReminderFeature
 import SettingsFeature
 import StatisticsFeature
 import SwiftUI
+import SyncFeature
 
 /// The app's sections. iPhone shows them as tabs; iPad shows them in a
 /// sidebar with the chosen section beside it.
@@ -14,6 +15,7 @@ import SwiftUI
 /// its title and symbol; the shell only arranges them.
 struct SectionsView: View {
     let store: CollectionStore
+    let sync: SyncModel
     @State private var selection: AppSection = .decks
 
     var body: some View {
@@ -31,10 +33,10 @@ struct SectionsView: View {
             Tab(value: AppSection.statistics) {
                 StatisticsScreen(store: store)
             } label: {
-                Label { StatisticsSection.title } icon: { Image(systemName: StatisticsSection.systemImage) }
+                Label { Text("Stats", bundle: .module) } icon: { Image(systemName: StatisticsSection.systemImage) }
             }
-            Tab(value: AppSection.settings) {
-                SettingsScreen(store: store)
+            Tab(value: AppSection.more) {
+                SettingsScreen(store: store, sync: sync)
             } label: {
                 Label { SettingsSection.title } icon: { Image(systemName: SettingsSection.systemImage) }
             }
@@ -64,5 +66,5 @@ enum AppSection: Hashable {
     case decks
     case browse
     case statistics
-    case settings
+    case more
 }

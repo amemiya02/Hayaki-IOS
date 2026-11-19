@@ -12,9 +12,8 @@ import Synchronization
 ///
 /// A long operation is started with `start(_:)` instead, which adds progress
 /// reports and cancellation. Those use a second thread owned by the client,
-/// the monitor, which only ever reads the core's latest progress and makes the
-/// core's abort calls (which take no collection lock), so neither waits behind
-/// the operation they refer to.
+/// the monitor, which reads progress and media sync results and makes the
+/// core's abort calls without waiting behind the operation they refer to.
 ///
 /// A failed call throws `CoreError` with the core's error kind and its
 /// localised message. After a panic inside the core (`CoreError.isPanic`) the
@@ -84,7 +83,7 @@ public final class CoreClient: Sendable {
     /// `SetWantsAbort`, sets the core's abort flag, which only operations that
     /// report progress check, so `cancel()` stops those. Signing in to a sync
     /// server and syncing the collection have an abort call of their own and
-    /// must pass `.abortSync()`; media sync has `.abortMediaSync()`.
+    /// must pass `.abortSync()`. Use `startMediaSync(_:)` for media.
     public func start<Response>(
         _ call: CoreCall<Response>,
         abortingWith abortCall: CoreCall<Anki_Generic_Empty> = .setWantsAbort(),
@@ -109,6 +108,57 @@ public final class CoreClient: Sendable {
         return operation
     }
 
+    /// Starts Anki's background media sync. The worker starts the transfer
+    /// against the open collection and is free to handle other calls while
+    /// the monitor collects progress, the final result and any error.
+    public func startMediaSync(_ auth: Anki_Sync_SyncAuth) -> LongOperation<Anki_Generic_Empty> {
+        let operation = LongOperation<Anki_Generic_Empty> { operation in
+            self.monitor.submit { self.abort(operation, with: .abortMediaSync()) }
+        }
+        worker.submit {
+            let stale = (try? self.call(.latestProgress()).get()) ?? Anki_Collection_Progress()
+            guard operation.begin(staleProgress: stale) else {
+                operation.finish(.failure(.interrupted))
+                return
+            }
+            switch self.execute(.syncMedia(auth)) {
+            case .success:
+                Task { await self.pollMediaSync(operation) }
+            case .failure(let error):
+                operation.finish(.failure(error))
+            }
+        }
+        return operation
+    }
+
+    /// Discards the derived media sync database so the next sign-in can
+    /// reconcile the existing files against its own server's change sequence.
+    /// The worker excludes other collection calls. An inactive media status
+    /// means the core has joined the background task and closed its database.
+    public func resetMediaDatabase(at database: URL) async throws(CoreError) {
+        let result: Result<Void, CoreError> = await worker.run {
+            self.execute(.mediaSyncStatus()).flatMap { status in
+                guard !status.active else {
+                    return .failure(CoreError(kind: .invalidInput, message: "Media sync is still running."))
+                }
+                do {
+                    for suffix in ["-wal", "-shm", ""] {
+                        let file = URL(filePath: database.path() + suffix)
+                        do {
+                            try FileManager.default.removeItem(at: file)
+                        } catch let error as CocoaError where error.code == .fileNoSuchFile {
+                            continue
+                        }
+                    }
+                    return .success(())
+                } catch {
+                    return .failure(CoreError(kind: .ioError, message: error.localizedDescription))
+                }
+            }
+        }
+        try result.get()
+    }
+
     // MARK: Worker thread
 
     private func execute<Response>(_ call: CoreCall<Response>) -> Result<Response, CoreError> {
@@ -127,6 +177,24 @@ public final class CoreClient: Sendable {
     }
 
     // MARK: Monitor thread
+
+    private func pollMediaSync(_ operation: LongOperation<Anki_Generic_Empty>) async {
+        while !operation.isFinished {
+            await monitor.run {
+                self.abort(operation, with: .abortMediaSync())
+                switch self.call(.mediaSyncStatus()) {
+                case .success(let status):
+                    if status.hasProgress {
+                        operation.report(.with { $0.value = .mediaSync(status.progress) })
+                    }
+                    if !status.active { operation.finish(.success(.init())) }
+                case .failure(let error):
+                    operation.finish(.failure(error))
+                }
+            }
+            if !operation.isFinished { try? await Task.sleep(for: .milliseconds(100)) }
+        }
+    }
 
     /// Polls until the operation has finished. Only the sleeping happens on
     /// the concurrency pool; each poll is a quick call on the monitor thread.
