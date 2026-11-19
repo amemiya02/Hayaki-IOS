@@ -1,10 +1,10 @@
 import Foundation
 
-/// Which cards the statistics cover: the whole collection, or one deck
-/// together with its child decks.
+/// Which cards the statistics cover.
 public enum StatisticsScope: Hashable, Sendable {
     case collection
     case deck(id: Int64)
+    case search(String)
 }
 
 /// How far back the statistics look at the learner's review history.

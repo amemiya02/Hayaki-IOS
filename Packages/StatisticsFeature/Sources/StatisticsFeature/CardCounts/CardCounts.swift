@@ -4,8 +4,10 @@ import AnkiProto
 public enum CardState: CaseIterable, Hashable, Sendable {
     /// Never studied.
     case new
-    /// Being learnt or relearnt after a lapse.
+    /// Being learnt for the first time.
     case learning
+    /// Being relearnt after a lapse.
+    case relearning
     /// In review with an interval under 21 days.
     case young
     /// In review with an interval of 21 days or more.
@@ -16,7 +18,8 @@ public enum CardState: CaseIterable, Hashable, Sendable {
     public var title: String {
         switch self {
         case .new: String(localized: "New", bundle: .module, comment: "Card state: never studied.")
-        case .learning: String(localized: "Learning", bundle: .module, comment: "Card state: being learnt or relearnt.")
+        case .learning: String(localized: "Learning", bundle: .module, comment: "Card state: being learnt for the first time.")
+        case .relearning: String(localized: "Relearning", bundle: .module)
         case .young: String(localized: "Young", bundle: .module, comment: "Card state: in review with an interval under 21 days.")
         case .mature: String(localized: "Mature", bundle: .module, comment: "Card state: in review with an interval of 21 days or more.")
         case .suspended: String(localized: "Suspended", bundle: .module, comment: "Card state: suspended by the learner.")
@@ -50,13 +53,13 @@ public struct CardCounts: Equatable, Sendable {
         isEmpty ? 0 : Double(count(state)) / Double(total)
     }
 
-    init(_ counts: Anki_Stats_GraphsResponse.CardCounts) {
-        // The core's counts that keep inactive (suspended, buried) cards apart.
-        let counts = counts.excludingInactive
+    init(_ counts: Anki_Stats_GraphsResponse.CardCounts, separateInactive: Bool) {
+        let counts = separateInactive ? counts.excludingInactive : counts.includingInactive
         entries = CardState.allCases.map { state in
             let count: UInt32 = switch state {
             case .new: counts.newCards
-            case .learning: counts.learn + counts.relearn
+            case .learning: counts.learn
+            case .relearning: counts.relearn
             case .young: counts.young
             case .mature: counts.mature
             case .suspended: counts.suspended
@@ -70,6 +73,10 @@ public struct CardCounts: Equatable, Sendable {
 extension StatisticsGraphs {
     /// The values behind the card counts chart.
     public var cardCounts: CardCounts {
-        CardCounts(response.cardCounts)
+        cardCounts(separateInactive: true)
+    }
+
+    public func cardCounts(separateInactive: Bool) -> CardCounts {
+        CardCounts(response.cardCounts, separateInactive: separateInactive)
     }
 }

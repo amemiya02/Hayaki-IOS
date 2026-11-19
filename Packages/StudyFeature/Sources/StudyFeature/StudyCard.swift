@@ -72,6 +72,7 @@ public struct StudyCard: Equatable, Sendable {
     public let id: Int64
     public let noteID: Int64
     public let flag: UInt32
+    public let isNoteMarked: Bool
     /// The deck the card belongs to, whose options apply to it.
     public let homeDeckID: Int64
     /// The question side. On a card that asks the learner to type the
@@ -100,6 +101,10 @@ public struct StudyCard: Equatable, Sendable {
     /// it.
     public var asksForTypedAnswer: Bool {
         typedAnswerPrompt != nil
+    }
+
+    static func isMarkTag(_ tag: String) -> Bool {
+        tag.caseInsensitiveCompare("marked") == .orderedSame
     }
 
     /// Renders a card the core's queue handed out.
@@ -142,10 +147,12 @@ public struct StudyCard: Equatable, Sendable {
         let question = try await side(rendered.questionNodes, frontSide: "", isQuestion: true, core: core)
         let answer = try await side(rendered.answerNodes, frontSide: question.withMarkers, isQuestion: false, core: core)
         let typing = try await TypedAnswerPrompt.questionSide(question.side.html, card: card, core: core)
+        let note = try await core.getNote(.with { $0.nid = card.noteID })
         return StudyCard(
             id: card.id,
             noteID: card.noteID,
             flag: card.flags & 7,
+            isNoteMarked: note.tags.contains(where: Self.isMarkTag),
             homeDeckID: card.originalDeckID != 0 ? card.originalDeckID : card.deckID,
             question: CardSide(html: typing.html, audio: question.side.audio),
             // Until the learner types something, the comparison shows the

@@ -19,7 +19,11 @@ public struct SyncSettingsRow: View {
             SyncScreen(model: model)
         } label: {
             LabeledContent {
-                if let account = model.account {
+                if case .syncing = model.mediaStatus {
+                    ProgressView()
+                        .controlSize(.small)
+                        .accessibilityLabel(Text("Syncing Media…", bundle: .module))
+                } else if let account = model.account {
                     if let server = account.server {
                         Text(verbatim: server.host() ?? server.absoluteString)
                     } else {
@@ -40,7 +44,7 @@ public struct SyncSettingsRow: View {
     }
 }
 
-/// Choosing a sync destination, signing in, and syncing the collection.
+/// Choosing a sync destination, signing in, and syncing the collection and media.
 public struct SyncScreen: View {
     @Bindable private var model: SyncModel
 
@@ -52,6 +56,7 @@ public struct SyncScreen: View {
         Form {
             if let account = model.account {
                 SignedInSections(model: model, account: account)
+                MediaSyncSection(model: model)
             } else {
                 SignInSections(model: model)
             }
@@ -216,12 +221,71 @@ private struct SignedInSections: View {
                         Image(systemName: "arrow.triangle.2.circlepath")
                     }
                 }
+                .disabled(model.isBusy)
                 if case .synced(let outcome) = model.status {
                     OutcomeRow(outcome: outcome)
                 }
             }
         } footer: {
             Text("Syncing sends the changes made on this device to the server and brings in the changes made on your other devices.", bundle: .module)
+        }
+    }
+}
+
+private struct MediaSyncSection: View {
+    let model: SyncModel
+
+    var body: some View {
+        if model.mediaStatus != .idle {
+            Section {
+                switch model.mediaStatus {
+                case .idle:
+                    EmptyView()
+                case .syncing(let progress):
+                    BusyRow(model: model) {
+                        ProgressView {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("Syncing Media…", bundle: .module)
+                                if let progress {
+                                    VStack(alignment: .leading, spacing: 2) {
+                                        Text(verbatim: progress.checked)
+                                        Text(verbatim: progress.added)
+                                        Text(verbatim: progress.removed)
+                                    }
+                                    .font(.footnote)
+                                    .foregroundStyle(.secondary)
+                                    .accessibilityElement(children: .combine)
+                                }
+                            }
+                        }
+                    }
+                case .synced:
+                    Text("Media sync complete.", bundle: .module)
+                case .cancelled:
+                    Text("Media sync cancelled.", bundle: .module)
+                case .interrupted:
+                    Text("Media sync was interrupted.", bundle: .module)
+                case .failed(let failure):
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Media sync failed.", bundle: .module)
+                        if let failure, let detail = failure.reason == .other ? failure.detail : failure.message {
+                            Text(verbatim: detail)
+                                .font(.footnote)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                }
+                if model.canRetryMediaSync {
+                    Button {
+                        Task { await model.retryMediaSync() }
+                    } label: {
+                        Text("Retry Media Sync", bundle: .module)
+                    }
+                    .accessibilityIdentifier("retry-media-sync")
+                }
+            } header: {
+                Text("Media Sync", bundle: .module)
+            }
         }
     }
 }
@@ -388,11 +452,11 @@ private struct OutcomeRow: View {
             VStack(alignment: .leading, spacing: 2) {
                 switch outcome.kind {
                 case .merged:
-                    Text("This device and the server are in step.", bundle: .module)
+                    Text("Collection sync complete.", bundle: .module)
                 case .uploaded:
-                    Text("The server now has the collection from this device.", bundle: .module)
+                    Text("Collection upload complete.", bundle: .module)
                 case .downloaded:
-                    Text("This device now has the collection from the server.", bundle: .module)
+                    Text("Collection download complete.", bundle: .module)
                 }
                 if let message = outcome.serverMessage {
                     Text(verbatim: message)
