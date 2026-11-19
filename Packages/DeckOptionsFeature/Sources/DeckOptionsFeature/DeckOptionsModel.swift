@@ -59,14 +59,19 @@ public final class DeckOptionsModel {
     /// Whether the scheduler should reschedule cards when saving; only FSRS
     /// settings set it.
     var fsrsReschedule = false
+    public internal(set) var fsrsOutcome: FSRSOutcome?
+    public internal(set) var fsrsProgress: Anki_Collection_ComputeParamsProgress?
+    public internal(set) var isCancellingFSRS = false
+    var fsrsOptimization: LongOperation<Anki_Scheduler_ComputeFsrsParamsResponse>?
     var entries: [PresetEntry] = []
     var selectedID = PresetID(rawValue: 0)
     /// Text being typed into a steps field, kept while the learner edits it.
     var stepsDrafts: [StepsDraftKey: String] = [:]
+    var fsrsParameterDrafts: [PresetID: String] = [:]
 
     @ObservationIgnored let store: CollectionStore
     @ObservationIgnored private var loadedSettings = Anki_DeckConfig_DeckConfigsForUpdate()
-    @ObservationIgnored private var loadedSelectedID = PresetID(rawValue: 0)
+    @ObservationIgnored var loadedSelectedID = PresetID(rawValue: 0)
     @ObservationIgnored private var removedConfigIDs: [Int64] = []
     @ObservationIgnored private var nextUnsavedID: Int64 = -1
 
@@ -97,8 +102,11 @@ public final class DeckOptionsModel {
             loadedSelectedID = selectedID
             removedConfigIDs = []
             stepsDrafts = [:]
+            fsrsParameterDrafts = [:]
             deckName = loaded.currentDeck.name
             saveError = nil
+            fsrsReschedule = false
+            resetFSRSFeedback()
             state = .loaded
         } catch {
             state = .failed(message: error.message)
@@ -132,6 +140,7 @@ public final class DeckOptionsModel {
         set {
             guard entries.contains(where: { $0.id == newValue }) else { return }
             selectedID = newValue
+            resetFSRSFeedback()
         }
     }
 
@@ -177,6 +186,7 @@ public final class DeckOptionsModel {
             removedConfigIDs.append(entry.id.rawValue)
         }
         stepsDrafts = stepsDrafts.filter { $0.key.preset != entry.id }
+        fsrsParameterDrafts[entry.id] = nil
         selectedID = entries.first { $0.id.rawValue == Self.defaultConfigID }?.id ?? entries[0].id
     }
 
@@ -190,11 +200,12 @@ public final class DeckOptionsModel {
             || settings != loadedSettings
             || fsrsReschedule
             || hasInvalidSteps
+            || hasInvalidFSRSParameters
     }
 
     /// Whether every field holds a valid value, so the options can be saved.
     public var canSave: Bool {
-        state == .loaded && !hasInvalidSteps
+        state == .loaded && !hasInvalidSteps && !hasInvalidFSRSParameters && !isOptimizingFSRS
     }
 
     /// Saves the options through the core, which applies them to this deck
