@@ -59,14 +59,20 @@ public final class DeckOptionsModel {
     /// Whether the scheduler should reschedule cards when saving; only FSRS
     /// settings set it.
     var fsrsReschedule = false
+    public internal(set) var fsrsOutcome: FSRSOutcome?
+    public internal(set) var fsrsProgress: Anki_Collection_ComputeParamsProgress?
+    public internal(set) var isCancellingFSRS = false
+    var fsrsActivity: FSRSActivity?
+    @ObservationIgnored var cancelFSRSOperation: (() -> Void)?
     var entries: [PresetEntry] = []
     var selectedID = PresetID(rawValue: 0)
     /// Text being typed into a steps field, kept while the learner edits it.
     var stepsDrafts: [StepsDraftKey: String] = [:]
+    var fsrsParameterDrafts: [PresetID: String] = [:]
 
     @ObservationIgnored let store: CollectionStore
     @ObservationIgnored private var loadedSettings = Anki_DeckConfig_DeckConfigsForUpdate()
-    @ObservationIgnored private var loadedSelectedID = PresetID(rawValue: 0)
+    @ObservationIgnored var loadedSelectedID = PresetID(rawValue: 0)
     @ObservationIgnored private var removedConfigIDs: [Int64] = []
     @ObservationIgnored private var nextUnsavedID: Int64 = -1
 
@@ -97,8 +103,11 @@ public final class DeckOptionsModel {
             loadedSelectedID = selectedID
             removedConfigIDs = []
             stepsDrafts = [:]
+            fsrsParameterDrafts = [:]
             deckName = loaded.currentDeck.name
             saveError = nil
+            fsrsReschedule = false
+            resetFSRSFeedback()
             state = .loaded
         } catch {
             state = .failed(message: error.message)
@@ -132,6 +141,7 @@ public final class DeckOptionsModel {
         set {
             guard entries.contains(where: { $0.id == newValue }) else { return }
             selectedID = newValue
+            resetFSRSFeedback()
         }
     }
 
@@ -177,7 +187,8 @@ public final class DeckOptionsModel {
             removedConfigIDs.append(entry.id.rawValue)
         }
         stepsDrafts = stepsDrafts.filter { $0.key.preset != entry.id }
-        selectedID = entries.first { $0.id.rawValue == Self.defaultConfigID }?.id ?? entries[0].id
+        fsrsParameterDrafts[entry.id] = nil
+        selectedPresetID = entries.first { $0.id.rawValue == Self.defaultConfigID }?.id ?? entries[0].id
     }
 
     // MARK: Saving
@@ -190,35 +201,22 @@ public final class DeckOptionsModel {
             || settings != loadedSettings
             || fsrsReschedule
             || hasInvalidSteps
+            || hasInvalidFSRSParameters
     }
 
     /// Whether every field holds a valid value, so the options can be saved.
     public var canSave: Bool {
-        state == .loaded && !hasInvalidSteps
+        state == .loaded && !hasInvalidSteps && !hasInvalidFSRSParameters && !isOptimizingFSRS
     }
 
     /// Saves the options through the core, which applies them to this deck
     /// and to every deck sharing an edited preset. Returns whether it worked;
     /// on failure `saveError` says why and the edits are kept.
     @discardableResult
-    public func save() async -> Bool {
-        guard canSave, let selected = selectedEntry else { return false }
+    public func save(applyingToSubdecks: Bool = false) async -> Bool {
+        let mode: Anki_DeckConfig_UpdateDeckConfigsMode = applyingToSubdecks ? .applyToChildren : .normal
+        guard canSave, let request = saveRequest(mode: mode) else { return false }
         do {
-            var request = Anki_DeckConfig_UpdateDeckConfigsRequest()
-            request.targetDeckID = deckID
-            request.removedConfigIds = removedConfigIDs
-            // Only presets that changed, then the one the deck uses, which
-            // the core requires last.
-            let edited = entries.filter { $0.id != selectedID && $0.config != $0.saved }.map(\.config)
-            request.configs = edited + [try await configForSaving(selected)]
-            request.mode = .normal
-            request.limits = Self.limitsForSaving(settings.currentDeck.limits)
-            request.cardStateCustomizer = settings.cardStateCustomizer
-            request.newCardsIgnoreReviewLimit = settings.newCardsIgnoreReviewLimit
-            request.applyAllParentLimits = settings.applyAllParentLimits
-            request.fsrs = settings.fsrs
-            request.fsrsHealthCheck = settings.fsrsHealthCheck
-            request.fsrsReschedule = fsrsReschedule
             try await store.modify(.updateDeckConfigs(request))
             saveError = nil
             return true
@@ -233,13 +231,24 @@ public final class DeckOptionsModel {
         saveError = nil
     }
 
-    /// The selected preset as it is sent. If the learner did not edit it, it
-    /// is sent exactly as stored: `GetDeckConfigsForUpdate` fills empty FSRS
-    /// 6 parameters from older ones for display, which would otherwise be
-    /// written back.
-    private func configForSaving(_ entry: PresetEntry) async throws(CoreError) -> Anki_DeckConfig_DeckConfig {
-        guard let saved = entry.saved, entry.config == saved else { return entry.config }
-        return try await store.core.getDeckConfig(.with { $0.dcid = saved.id })
+    func saveRequest(mode: Anki_DeckConfig_UpdateDeckConfigsMode) -> Anki_DeckConfig_UpdateDeckConfigsRequest? {
+        guard let selected = selectedEntry else { return nil }
+        var request = Anki_DeckConfig_UpdateDeckConfigsRequest()
+        request.targetDeckID = deckID
+        request.removedConfigIds = removedConfigIDs
+        // Keep the core's projection of legacy FSRS weights. Sending an empty
+        // FSRS 6 vector would instruct it to clear the legacy vectors too.
+        let edited = entries.filter { $0.id != selectedID && $0.config != $0.saved }.map(\.config)
+        request.configs = edited + [selected.config]
+        request.mode = mode
+        request.limits = Self.limitsForSaving(settings.currentDeck.limits)
+        request.cardStateCustomizer = settings.cardStateCustomizer
+        request.newCardsIgnoreReviewLimit = settings.newCardsIgnoreReviewLimit
+        request.applyAllParentLimits = settings.applyAllParentLimits
+        request.fsrs = settings.fsrs
+        request.fsrsHealthCheck = settings.fsrsHealthCheck
+        request.fsrsReschedule = fsrsReschedule
+        return request
     }
 
     /// The deck's own limits as the core expects them back. A "today only"
@@ -279,7 +288,7 @@ public final class DeckOptionsModel {
         let id = PresetID(rawValue: nextUnsavedID)
         nextUnsavedID -= 1
         entries.append(PresetEntry(id: id, config: config, saved: nil, savedDeckCount: 0))
-        selectedID = id
+        selectedPresetID = id
     }
 
     /// How many decks will use a preset once saved: the stored count, moved

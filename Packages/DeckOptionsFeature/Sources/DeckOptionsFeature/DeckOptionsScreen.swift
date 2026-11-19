@@ -1,9 +1,7 @@
 import CollectionStore
 import SwiftUI
 
-/// A deck's options: its preset, daily limits, learning steps, display order
-/// and burying. Presented as a sheet from the deck list; nothing is saved
-/// until the learner taps Save.
+/// Deck options presented from the deck list. Edits are applied when saved.
 public struct DeckOptionsScreen: View {
     @State private var model: DeckOptionsModel
     @State private var isSaving = false
@@ -24,7 +22,8 @@ public struct DeckOptionsScreen: View {
                 #endif
                 .toolbar { toolbar }
         }
-        .interactiveDismissDisabled(model.hasChanges)
+        .interactiveDismissDisabled(model.hasChanges || model.isOptimizingFSRS)
+        .onDisappear { model.cancelFSRSOptimization() }
         .task {
             // Only the first time: loading again would discard edits.
             if model.state == .loading { await model.load() }
@@ -62,12 +61,28 @@ public struct DeckOptionsScreen: View {
             }
         case .loaded:
             Form {
-                PresetSection(model: model)
-                DailyLimitsSection(model: model)
-                StepsSections(model: model)
-                // Ticket #19 adds the FSRS section here.
-                DisplayOrderSection(model: model)
-                BuryingSection(model: model)
+                Group {
+                    PresetSection(model: model) { save(applyingToSubdecks: true) }
+                    DailyLimitsSection(model: model)
+                    StepsSections(model: model)
+                    DisplayOrderSection(model: model)
+                }
+                .disabled(model.isOptimizingFSRS)
+                FSRSSection(model: model)
+                Group {
+                    BuryingSection(model: model)
+                    AudioSection(model: model)
+                    TimerSection(model: model)
+                    AutoAdvanceSection(model: model)
+                    EasyDaysSection(model: model)
+                    AdvancedSchedulingSection(model: model)
+                    Section {
+                        Link(destination: URL(string: "https://docs.ankiweb.net/deck-options.html")!) {
+                            Text("Deck Options Help", bundle: .module)
+                        }
+                    }
+                }
+                .disabled(model.isOptimizingFSRS)
             }
             .disabled(isSaving)
         }
@@ -81,6 +96,7 @@ public struct DeckOptionsScreen: View {
             } label: {
                 Text("Cancel", bundle: .module)
             }
+            .disabled(model.isOptimizingFSRS || isSaving)
             .confirmationDialog(
                 Text("Discard your changes to these deck options?", bundle: .module),
                 isPresented: $confirmingDiscard,
@@ -110,10 +126,10 @@ public struct DeckOptionsScreen: View {
         }
     }
 
-    private func save() {
+    private func save(applyingToSubdecks: Bool = false) {
         isSaving = true
         Task {
-            let saved = await model.save()
+            let saved = await model.save(applyingToSubdecks: applyingToSubdecks)
             isSaving = false
             if saved { dismiss() }
         }
