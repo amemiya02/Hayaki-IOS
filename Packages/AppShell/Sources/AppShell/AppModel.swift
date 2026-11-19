@@ -197,7 +197,8 @@ public final class AppModel {
         guard pendingProfileDeletions.contains(id), deletingProfiles.insert(id).inserted else { return }
         defer { deletingProfiles.remove(id) }
         let paths = try paths ?? profilePaths(for: id)
-        let storage = accountStorage(id == CollectionProfile.legacyID ? nil : id)
+        let profileID = id == CollectionProfile.legacyID ? nil : id
+        let storage = accountStorage(profileID)
         try await Task.detached(priority: .utility) {
             for folder in [paths.profileFolder, paths.backups] {
                 do {
@@ -209,6 +210,7 @@ public final class AppModel {
             try storage.remove()
         }.value
         preferences.removeObject(forKey: welcomeCompletedKey(for: id))
+        SyncModel.removePolicy(in: preferences, profileID: profileID)
         try saveProfiles(profiles, active: activeProfile, pendingDeletions: pendingProfileDeletions.subtracting([id]))
     }
 

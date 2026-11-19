@@ -29,6 +29,7 @@ struct ProfilesTests {
         let app = launch()
         await app.open()
         let legacy = app.activeProfile
+        app.sync?.policy.automatic = true
         await #expect(throws: ProfileError.lastProfile) { try await app.deleteProfile(legacy.id) }
         let other = try app.addProfile(named: "Second")
         await #expect(throws: ProfileError.activeProfile) { try await app.deleteProfile(legacy.id) }
@@ -40,6 +41,7 @@ struct ProfilesTests {
         await app.backups?.createBackup()
         try await app.switchProfile(to: other.id)
         let current = try #require(app.store)
+        app.sync?.policy.allowsMetered = true
         try await current.addDeck(named: "Kept")
         try await current.addMediaFile(named: "kept.png", data: Data([1]))
         let activeBackups = try #require(app.backups)
@@ -54,6 +56,10 @@ struct ProfilesTests {
         #expect(app.profiles == [other])
         #expect(try legacyAccount.load() == nil)
         #expect(try otherAccount.load()?.hostKey == "kept-key")
+        let removedPolicy = SyncModel(
+            store: current, storage: legacyAccount, preferences: preferences, network: { .offline }
+        ).policy
+        #expect(!removedPolicy.automatic)
         #expect(!FileManager.default.fileExists(atPath: location.folder.path))
         #expect(!FileManager.default.fileExists(atPath: backups.path))
         #expect(try current.mediaFileNames().contains("kept.png"))
@@ -63,6 +69,7 @@ struct ProfilesTests {
         await reopened.open()
         #expect(reopened.profiles == [other])
         #expect(reopened.activeProfile == other)
+        #expect(reopened.sync?.policy.allowsMetered == true)
         #expect(try await reopened.store?.deckNames().contains("Kept") == true)
         reopened.backups?.loadBackups()
         #expect(reopened.backups?.entries.count == 1)
