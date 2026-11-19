@@ -2,6 +2,7 @@ import AnkiCore
 import AnkiProto
 import CollectionStore
 import Foundation
+import Network
 import Observation
 
 /// Signs in to the selected destination and syncs the collection and its media through Anki's core.
@@ -51,6 +52,31 @@ public final class SyncModel {
     public private(set) var status: Status = .idle
     public private(set) var mediaStatus: MediaSyncStatus = .idle
 
+    public var policy: SyncPolicy {
+        didSet {
+            if let data = try? PropertyListEncoder().encode(policy) {
+                preferences?.set(data, forKey: policyKey)
+            }
+        }
+    }
+
+    public var network: SyncNetwork? { networkOverride?() ?? observedNetwork }
+    public var needsMeteredConfirmation: Bool { pendingMeteredAction != nil }
+
+    private enum MeteredAction {
+        case collection
+        case fullSync(upload: Bool)
+        case retryMedia
+    }
+
+    private var pendingMeteredAction: MeteredAction?
+    private var confirmedMeteredConflict = false
+    private var observedNetwork: SyncNetwork? {
+        didSet { networkChanged() }
+    }
+    @ObservationIgnored private var meterPermissionForActiveTransfer: Bool?
+    @ObservationIgnored private var requiresUnmeteredMedia = false
+
     private var statusBeforeDestinationChange: Status?
     private var markingFullSync = false
 
@@ -58,14 +84,31 @@ public final class SyncModel {
 
     @ObservationIgnored private let store: CollectionStore
     @ObservationIgnored private let storage: any SyncAccountStorage
+    @ObservationIgnored private let preferences: UserDefaults?
+    @ObservationIgnored private let policyKey: String
+    @ObservationIgnored private let networkOverride: (() -> SyncNetwork)?
+    @ObservationIgnored private let monitor: NWPathMonitor?
     /// Cancels whatever is running: signing in or a sync.
     @ObservationIgnored private var cancelRunning: (() -> Void)?
 
     /// - Parameter storage: Where the sign-in is kept; the Keychain unless a
     ///   test passes another.
-    public init(store: CollectionStore, storage: any SyncAccountStorage = KeychainSyncAccountStorage()) {
+    public init(
+        store: CollectionStore,
+        storage: any SyncAccountStorage = KeychainSyncAccountStorage(),
+        preferences: UserDefaults? = nil,
+        profileID: UUID? = nil,
+        network: (() -> SyncNetwork)? = nil
+    ) {
         self.store = store
         self.storage = storage
+        self.preferences = preferences
+        let key = profileID.map { "hayakiSyncPolicy.\($0.uuidString)" } ?? "hayakiSyncPolicy"
+        policyKey = key
+        policy = preferences?.data(forKey: key)
+            .flatMap { try? PropertyListDecoder().decode(SyncPolicy.self, from: $0) } ?? SyncPolicy()
+        networkOverride = network
+        monitor = network == nil ? NWPathMonitor() : nil
         do {
             account = try storage.load()
         } catch {
@@ -82,6 +125,15 @@ public final class SyncModel {
                 mediaStatus = saved.status
             }
         }
+        monitor?.pathUpdateHandler = { [weak self] path in
+            let network = SyncNetwork(path)
+            Task { @MainActor [weak self] in self?.observedNetwork = network }
+        }
+        monitor?.start(queue: DispatchQueue(label: "Hayaki Sync Network"))
+    }
+
+    deinit {
+        monitor?.cancel()
     }
 
     /// Whether signing in or a collection or media sync is under way.
@@ -105,7 +157,9 @@ public final class SyncModel {
     }
 
     public var canRetryMediaSync: Bool {
-        guard store.allowsNewProfileWork, !isBusy, !isChangingDestination, account != nil, case .synced = status else { return false }
+        guard store.allowsNewProfileWork, !isBusy, !isChangingDestination, account != nil,
+              policy.media.allows(network), case .synced = status
+        else { return false }
         return switch mediaStatus {
         case .cancelled, .interrupted, .failed: true
         default: false
@@ -128,6 +182,7 @@ public final class SyncModel {
     public func beginDestinationChange() {
         guard store.allowsNewProfileWork, !isBusy, account != nil, !isChangingDestination else { return }
         statusBeforeDestinationChange = status
+        dismissMeteredConfirmation()
         clearSignInForm()
     }
 
@@ -203,6 +258,8 @@ public final class SyncModel {
         }
         account = nil
         mediaStatus = .idle
+        dismissMeteredConfirmation()
+        confirmedMeteredConflict = false
         clearSignInForm()
     }
 
@@ -212,11 +269,62 @@ public final class SyncModel {
     /// fetches the server's. When the two cannot be merged, stops at
     /// `.choosingDirection` without changing either side.
     public func sync() async {
-        guard store.allowsNewProfileWork, let account, !isBusy, !isChangingDestination else { return }
+        await request(.collection)
+    }
+
+    public func dismissMeteredConfirmation() {
+        pendingMeteredAction = nil
+    }
+
+    public func confirmMeteredSync(alwaysAllow: Bool) async {
+        guard let action = pendingMeteredAction else { return }
+        pendingMeteredAction = nil
+        guard store.allowsNewProfileWork, !isBusy, !isChangingDestination, account != nil else { return }
+        if alwaysAllow { policy.allowsMetered = true }
+        await perform(action, meteredConsent: true)
+    }
+
+    private func request(_ action: MeteredAction, meteredConsent: Bool = false) async {
+        guard store.allowsNewProfileWork, !isBusy, !isChangingDestination,
+              account != nil, pendingMeteredAction == nil else { return }
+        if case .retryMedia = action, !canRetryMediaSync { return }
+        if network == .metered && !policy.allowsMetered && !meteredConsent {
+            pendingMeteredAction = action
+        } else {
+            await perform(action, meteredConsent: meteredConsent)
+        }
+    }
+
+    private func perform(_ action: MeteredAction, meteredConsent: Bool) async {
+        meterPermissionForActiveTransfer = policy.allowsMetered || meteredConsent
+        defer { meterPermissionForActiveTransfer = nil }
+        switch action {
+        case .collection:
+            await syncCollection(meteredConsent: meteredConsent)
+        case .fullSync(let upload):
+            await fullSync(upload: upload)
+        case .retryMedia:
+            guard canRetryMediaSync, case .synced(let outcome) = status else { return }
+            SyncClientIdentity.install()
+            await syncMedia(after: outcome)
+        }
+    }
+
+    private func networkChanged() {
+        guard let meterPermissionForActiveTransfer else { return }
+        if network == .offline ||
+            (network == .metered && (!meterPermissionForActiveTransfer || requiresUnmeteredMedia)) {
+            cancel()
+        }
+    }
+
+    private func syncCollection(meteredConsent: Bool) async {
+        guard let account else { return }
+        confirmedMeteredConflict = meteredConsent
         SyncClientIdentity.install()
         status = .syncing(.connecting)
         let request = Anki_Sync_SyncCollectionRequest.with {
-            $0.auth = account.auth
+            $0.auth = account.auth(timeoutSeconds: policy.timeoutSeconds)
             // Start media separately once the collection result is known.
             $0.syncMedia = false
         }
@@ -278,17 +386,21 @@ public final class SyncModel {
 
     /// Replaces the server's collection with this device's.
     public func upload() async {
-        await fullSync(upload: true)
+        guard case .choosingDirection(let choice) = status, choice.allowsUpload else { return }
+        await request(.fullSync(upload: true), meteredConsent: confirmedMeteredConflict)
     }
 
     /// Replaces this device's collection with the server's.
     public func download() async {
-        await fullSync(upload: false)
+        guard case .choosingDirection(let choice) = status, choice.allowsDownload else { return }
+        await request(.fullSync(upload: false), meteredConsent: confirmedMeteredConflict)
     }
 
     /// Leaves both sides as they are, when asked to choose a direction.
     public func keepBoth() {
         guard case .choosingDirection = status else { return }
+        confirmedMeteredConflict = false
+        dismissMeteredConfirmation()
         status = .idle
     }
 
@@ -300,9 +412,7 @@ public final class SyncModel {
 
     /// Continues a previous media transfer with the same sign-in.
     public func retryMediaSync() async {
-        guard canRetryMediaSync, case .synced(let outcome) = status else { return }
-        SyncClientIdentity.install()
-        await syncMedia(after: outcome)
+        await request(.retryMedia)
     }
 
     private func fullSync(upload: Bool) async {
@@ -311,7 +421,7 @@ public final class SyncModel {
         else { return }
         status = .syncing(upload ? .uploading(transferred: 0, total: 0) : .downloading(transferred: 0, total: 0))
         let request = Anki_Sync_FullUploadOrDownloadRequest.with {
-            $0.auth = account.auth
+            $0.auth = account.auth(timeoutSeconds: policy.timeoutSeconds)
             $0.upload = upload
             // Leaving serverUsn unset lets us start media as a separate phase.
         }
@@ -333,7 +443,11 @@ public final class SyncModel {
     }
 
     private func syncMedia(after outcome: SyncOutcome) async {
-        guard var account else { return }
+        guard var account, policy.media.allows(network),
+              network != .metered || meterPermissionForActiveTransfer == true
+        else { return }
+        requiresUnmeteredMedia = policy.media == .onlyUnmetered
+        defer { requiresUnmeteredMedia = false }
         mediaStatus = .syncing(nil)
         func save(_ phase: SavedMediaSync.Phase) throws {
             account.mediaSync = SavedMediaSync(phase: phase, collection: outcome)
@@ -350,7 +464,7 @@ public final class SyncModel {
         let phase: SavedMediaSync.Phase
         let result: MediaSyncStatus
         do {
-            _ = try await run(store.core.startMediaSync(account.auth))
+            _ = try await run(store.core.startMediaSync(account.auth(timeoutSeconds: policy.timeoutSeconds)))
             phase = .synced
             result = .synced
         } catch {
@@ -500,9 +614,10 @@ extension SyncAccount {
         return !url.isAnkiWebHost
     }
 
-    var auth: Anki_Sync_SyncAuth {
+    func auth(timeoutSeconds: Int) -> Anki_Sync_SyncAuth {
         .with {
             $0.hkey = hostKey
+            $0.ioTimeoutSecs = UInt32(timeoutSeconds)
             if let endpoint {
                 $0.endpoint = endpoint.absoluteString
             }
