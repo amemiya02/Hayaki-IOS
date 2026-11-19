@@ -27,6 +27,7 @@ public final class StatisticsModel {
     public private(set) var decks: [StatisticsDeck] = []
     /// The data behind every chart for the selection last loaded.
     public private(set) var graphs: StatisticsGraphs?
+    private(set) var loadedSelection: Selection?
     public private(set) var preferences = StatisticsPreferences(.with {
         $0.cardCountsSeparateInactive = true
         $0.futureDueShowBacklog = true
@@ -124,6 +125,7 @@ public final class StatisticsModel {
             }
             if scope != self.scope { self.scope = scope }
             graphs = StatisticsGraphs(response: response, period: requested.period, studyDate: today)
+            loadedSelection = selection
             state = .loaded
         } catch {
             guard !Task.isCancelled, requested == selection else { return }
