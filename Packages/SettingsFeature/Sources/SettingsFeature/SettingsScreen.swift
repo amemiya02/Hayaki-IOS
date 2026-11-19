@@ -1,4 +1,5 @@
 import CollectionStore
+import HayakiAppearance
 import NoteEditorFeature
 import PackagesFeature
 import ReminderFeature
@@ -77,6 +78,7 @@ public struct SettingsScreen<ProfileEntry: View>: View {
                 }
                 HelpAndAboutSection(store: store, sync: sync)
             }
+            .hayakiScrollBackground()
             .navigationTitle(SettingsSection.title)
         }
     }

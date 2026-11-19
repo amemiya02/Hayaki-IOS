@@ -16,6 +16,7 @@ let package = Package(
     dependencies: [
         .package(path: "../AnkiCore"),
         .package(path: "../CollectionStore"),
+        .package(path: "../HayakiAppearance"),
     ],
     targets: [
         .target(
@@ -23,6 +24,7 @@ let package = Package(
             dependencies: [
                 .product(name: "AnkiCore", package: "AnkiCore"),
                 .product(name: "CollectionStore", package: "CollectionStore"),
+                .product(name: "HayakiAppearance", package: "HayakiAppearance"),
             ],
             resources: [
                 .process("Resources"),

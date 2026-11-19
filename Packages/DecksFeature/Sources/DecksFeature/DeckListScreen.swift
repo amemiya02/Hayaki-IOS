@@ -1,4 +1,5 @@
 import CollectionStore
+import HayakiAppearance
 import PackagesFeature
 import StudyFeature
 import SwiftUI
@@ -103,6 +104,7 @@ public struct DeckListScreen: View {
                     DeckRows(deck: deck, selectedDeckID: selection, study: study)
                 }
             }
+            .hayakiScrollBackground()
             .refreshable { await model.refresh() }
             .environment(model)
         }
@@ -232,12 +234,13 @@ private struct DeckRow: View {
 /// Today's new, learning and due counts in Anki's colours: blue, red and green.
 private struct CountsView: View {
     let counts: DeckCounts
+    @Environment(\.hayakiTheme) private var theme
 
     var body: some View {
         HStack(spacing: 12) {
-            count(counts.new, color: .blue)
-            count(counts.learning, color: .red)
-            count(counts.due, color: .green)
+            count(counts.new, color: theme.color(for: .new))
+            count(counts.learning, color: theme.color(for: .learning))
+            count(counts.due, color: theme.color(for: .due))
         }
         .font(.callout.monospacedDigit())
         .accessibilityElement(children: .ignore)

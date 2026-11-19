@@ -1,3 +1,4 @@
+import HayakiAppearance
 import SwiftUI
 
 /// A card side for the card host page to show.
@@ -43,6 +44,7 @@ import WebKit
 /// collection's media and the bundled MathJax come through the card URL
 /// scheme (`CardResources`), never from the network.
 struct CardWebView: UIViewRepresentable {
+    @Environment(\.hayakiTheme) private var theme
     let display: CardDisplay
     /// The collection's media folder, which the card's images, sounds and
     /// fonts come from.
@@ -89,12 +91,14 @@ struct CardWebView: UIViewRepresentable {
         webView.isInspectable = true
         #endif
         context.coordinator.webView = webView
+        context.coordinator.updateAppearance(theme)
         context.coordinator.loadHostPage()
         return webView
     }
 
     func updateUIView(_ webView: WKWebView, context: Context) {
         context.coordinator.onEvent = onEvent
+        context.coordinator.updateAppearance(theme)
         if webView.pageZoom != zoom {
             webView.pageZoom = zoom
         }
@@ -123,6 +127,7 @@ struct CardWebView: UIViewRepresentable {
         /// The side last handed to the page.
         private var shown: CardDisplay?
         private var pageLoaded = false
+        private var theme: HayakiTheme?
 
         func loadHostPage() {
             pageLoaded = false
@@ -152,6 +157,23 @@ struct CardWebView: UIViewRepresentable {
             }
         }
 
+        func updateAppearance(_ theme: HayakiTheme) {
+            guard self.theme != theme else { return }
+            self.theme = theme
+            webView?.overrideUserInterfaceStyle = theme == .light ? .light : .dark
+            sendAppearance()
+        }
+
+        private func sendAppearance() {
+            guard pageLoaded, let theme, let webView else { return }
+            let canvas = String(format: "#%06X", theme.backgroundRGB)
+            // The template's own styling can supply --canvas or style .nightMode.
+            webView.callAsyncJavaScript(
+                "document.documentElement.style.setProperty('--hayaki-night-canvas', canvas)",
+                arguments: ["canvas": canvas], in: nil, in: .page, completionHandler: nil
+            )
+        }
+
         func show(_ display: CardDisplay) {
             wanted = display
             sendIfReady()
@@ -172,6 +194,7 @@ struct CardWebView: UIViewRepresentable {
 
         func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
             pageLoaded = true
+            sendAppearance()
             sendIfReady()
             sendReviewerOptions()
         }

@@ -29,6 +29,8 @@ packages:
     path: Packages/CollectionStore
   AppShell:
     path: Packages/AppShell
+  HayakiAppearance:
+    path: Packages/HayakiAppearance
   DecksFeature:
     path: Packages/DecksFeature
   BrowseFeature:

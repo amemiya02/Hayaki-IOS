@@ -1,4 +1,5 @@
 import CollectionStore
+import HayakiAppearance
 import PackagesFeature
 import ReminderFeature
 import SwiftUI
@@ -76,6 +77,7 @@ public struct RootView: View {
                 }
             }
         }
+        .hayakiAppearance()
         .task { await model.open() }
         .fileImporter(isPresented: $choosingRecoveryPackage, allowedContentTypes: [.ankiCollectionPackage]) { result in
             switch result {

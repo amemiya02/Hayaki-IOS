@@ -1,4 +1,5 @@
 import CollectionStore
+import HayakiAppearance
 import DecksFeature
 import NoteEditorFeature
 import PackagesFeature
@@ -424,6 +425,7 @@ public struct BrowseScreen: View {
             List(model.rowIDs, id: \.self, selection: isSelecting ? $model.selection : nil) { rowID in
                 row(rowID)
             }
+            .hayakiScrollBackground()
             .listStyle(.plain)
             .refreshable { await model.refreshResults() }
         }
