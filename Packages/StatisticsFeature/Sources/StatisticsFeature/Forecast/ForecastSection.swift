@@ -3,12 +3,14 @@ import SwiftUI
 struct ForecastSection: View {
     let graphs: StatisticsGraphs
     @Binding var includeBacklog: Bool
+    @State private var period: StatisticsPeriod = .month
     @State private var showCumulative = false
     @State private var position: Double?
 
     var body: some View {
-        let forecast = graphs.forecast(includeBacklog: includeBacklog)
+        let forecast = graphs.displaying(period).forecast(includeBacklog: includeBacklog)
         Section {
+            StatisticsPeriodPicker(selection: $period, label: Text("Forecast Period", bundle: .module))
             if forecast.hasBacklog {
                 Toggle(isOn: $includeBacklog) { Text("Show Backlog", bundle: .module) }
             }
@@ -26,22 +28,22 @@ struct ForecastSection: View {
         } header: {
             Text("Future Due", bundle: .module)
         }
-        .onChange(of: graphs.period) { position = nil }
+        .onChange(of: period) { position = nil }
         .onChange(of: includeBacklog) { position = nil }
     }
 
     private func chartRange(for forecast: DueForecast) -> ClosedRange<Int> {
         let earliest = min(forecast.days.first?.offset ?? 0, 0)
-        let latest = graphs.period.latestForecastDay == .max
+        let latest = period.latestForecastDay == .max
             ? max(forecast.days.last?.offset ?? 0, 0)
-            : graphs.period.latestForecastDay
+            : period.latestForecastDay
         return earliest...latest
     }
 
     @ViewBuilder
     private func summary(_ forecast: DueForecast) -> some View {
         let earliest = includeBacklog ? forecast.days.first?.offset ?? 0 : 0
-        let maximum = graphs.period.latestForecastDay
+        let maximum = period.latestForecastDay
         let latest = maximum == .max ? forecast.days.last?.offset ?? 0 : maximum
         let average = Double(forecast.total) / Double(max(1, latest - earliest))
         LabeledContent {

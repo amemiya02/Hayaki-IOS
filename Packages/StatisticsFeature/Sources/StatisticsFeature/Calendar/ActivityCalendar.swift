@@ -28,6 +28,6 @@ extension Calendar {
 
 
 // Foundation's weekday indices are one-based, with Sunday first.
-enum StatisticsWeekday: Int, CaseIterable {
+public enum StatisticsWeekday: Int, CaseIterable, Sendable {
     case sunday = 1, monday = 2, friday = 6, saturday = 7
 }

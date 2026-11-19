@@ -27,23 +27,53 @@ public final class StatisticsModel {
     public private(set) var decks: [StatisticsDeck] = []
     /// The data behind every chart for the selection last loaded.
     public private(set) var graphs: StatisticsGraphs?
+    public private(set) var preferences = StatisticsPreferences(.with {
+        $0.cardCountsSeparateInactive = true
+        $0.futureDueShowBacklog = true
+    })
+    public var preferenceError: String?
 
     public var scope: StatisticsScope = .collection
     public var period: StatisticsPeriod = .month
     public var selection: Selection { Selection(scope: scope, period: period) }
 
     @ObservationIgnored private let store: CollectionStore
+    @ObservationIgnored private var selectCurrentDeckOnFirstLoad: Bool
+    @ObservationIgnored private var preferenceWrite: Task<Void, Never>?
+    @ObservationIgnored private var preferenceVersion = 0
 
     /// Changes after which the statistics or the deck choices may differ.
-    private static let relevantChanges: CollectionChange = [.card, .deck, .config, .deckConfig, .studyQueues]
+    private static let relevantChanges: CollectionChange = [.card, .deck, .config, .deckConfig, .studyQueues, .note, .tag, .notetype, .noteText]
 
-    public init(store: CollectionStore) {
+    public init(store: CollectionStore, selectCurrentDeckOnFirstLoad: Bool = false) {
         self.store = store
+        self.selectCurrentDeckOnFirstLoad = selectCurrentDeckOnFirstLoad
+    }
+
+    /// Updates just one graph option, preserving changes made by other clients.
+    public func setPreference(_ change: StatisticsPreferences.Change) async {
+        let previous = preferenceWrite
+        preferenceVersion += 1
+        let write = Task { @MainActor [weak self, store] in
+            await previous?.value
+            do {
+                var current = try await store.core.getGraphPreferences()
+                change.apply(to: &current)
+                try await store.core.setGraphPreferences(current)
+                self?.preferences = StatisticsPreferences(current)
+                store.signal(.config)
+            } catch {
+                self?.preferenceError = (error as? CoreError)?.message ?? error.localizedDescription
+            }
+        }
+        preferenceWrite = write
+        await write.value
     }
 
     /// Reads the decks and the graphs data for the current selection.
     public func refresh() async {
         let requested = selection
+        let preferenceVersion = self.preferenceVersion
         do {
             let decks = try await store.core.getDeckNames(.with {
                 $0.skipEmptyDefault = true
@@ -52,15 +82,29 @@ public final class StatisticsModel {
                 .map { StatisticsDeck(id: $0.id, fullName: $0.name) }
                 .sorted { $0.fullName.split(separator: "::").lexicographicallyPrecedes($1.fullName.split(separator: "::")) }
 
-            // A deck that no longer exists falls back to the whole collection.
             var scope = requested.scope
+            if selectCurrentDeckOnFirstLoad && scope == .collection,
+               let current = try? await store.core.getCurrentDeck(),
+               decks.contains(where: { $0.id == current.id }) {
+                scope = .deck(id: current.id)
+            }
+            guard !Task.isCancelled, requested == selection else { return }
+            selectCurrentDeckOnFirstLoad = false
+            self.decks = decks
+
+            // A deck that no longer exists falls back to the whole collection.
             var search = ""
-            if case .deck(let id) = scope {
+            switch scope {
+            case .collection:
+                break
+            case .deck(let id):
                 if let deck = decks.first(where: { $0.id == id }) {
                     search = try await store.core.buildSearchString(.with { $0.deck = deck.fullName }).val
                 } else {
                     scope = .collection
                 }
+            case .search(let query):
+                search = query
             }
             let response = try await store.core.graphs(.with {
                 $0.search = search
@@ -68,13 +112,16 @@ public final class StatisticsModel {
             })
 
             let timing = try await store.core.schedTimingToday()
+            let preferences = try await store.core.getGraphPreferences()
             let calendar = Calendar.statisticsCalendar
             let cutoff = Date(timeIntervalSince1970: TimeInterval(timing.nextDayAt))
             let today = calendar.date(byAdding: .day, value: -1, to: calendar.startOfDay(for: cutoff)) ?? cutoff
 
             // A newer selection's load has taken over.
             guard !Task.isCancelled, requested == selection else { return }
-            self.decks = decks
+            if preferenceVersion == self.preferenceVersion {
+                self.preferences = StatisticsPreferences(preferences)
+            }
             if scope != self.scope { self.scope = scope }
             graphs = StatisticsGraphs(response: response, period: requested.period, studyDate: today)
             state = .loaded

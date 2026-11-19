@@ -2,8 +2,11 @@ import Charts
 import SwiftUI
 
 struct ReviewHistorySection: View {
-    let days: [ReviewDay]
-    let earliestDay: Int
+    let graphs: StatisticsGraphs
+    @State private var period: StatisticsPeriod = .month
+
+    private var days: [ReviewDay] { graphs.displaying(period).reviewDays }
+    private var earliestDay: Int { period.earliestReviewDay }
 
     @State private var showTime = false
     @State private var showCumulative = false
@@ -14,6 +17,10 @@ struct ReviewHistorySection: View {
 
     var body: some View {
         Section {
+            StatisticsPeriodPicker(
+                selection: $period, label: Text("Review Period", bundle: .module),
+                allowsAllTime: graphs.period == .allTime
+            )
             Toggle(isOn: $showTime) { Text("Review Time", bundle: .module) }
             if days.isEmpty {
                 Text("There are no reviews in this period.", bundle: .module)
@@ -25,6 +32,13 @@ struct ReviewHistorySection: View {
             }
         } header: {
             Text("Reviews", bundle: .module)
+        }
+        .onChange(of: graphs.period, initial: true) {
+            if graphs.period == .allTime {
+                period = .allTime
+            } else if period == .allTime {
+                period = .year
+            }
         }
     }
 

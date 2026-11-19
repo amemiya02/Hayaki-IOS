@@ -2,23 +2,36 @@ import Charts
 import SwiftUI
 
 struct HourlySection: View {
-    let hours: [HourlyReviews]
+    let graphs: StatisticsGraphs
+    @State private var period: StatisticsPeriod = .year
+    private var hours: [HourlyReviews] { graphs.displaying(period).hourlyReviews }
     @State private var position: Double?
 
     var body: some View {
-        StatisticsSectionView(
-            title: Text("Hourly Breakdown", bundle: .module),
-            emptyMessage: hours.contains { $0.count > 0 } ? nil :
-                Text("There are no reviews in this period.", bundle: .module)
-        ) {
-            chart
-            if let selected = position.map({ Int($0.rounded()) }), let hour = hours.first(where: { $0.hour == selected }) {
-                LabeledContent {
-                    value(for: hour)
-                } label: {
-                    hourLabel(hour.hour)
+        Section {
+            StatisticsPeriodPicker(
+                selection: $period, label: Text("Hourly Period", bundle: .module),
+                allowsAllTime: graphs.period == .allTime
+            )
+            if hours.contains(where: { $0.count > 0 }) {
+                chart
+                if let selected = position.map({ Int($0.rounded()) }), let hour = hours.first(where: { $0.hour == selected }) {
+                    LabeledContent {
+                        value(for: hour)
+                    } label: {
+                        hourLabel(hour.hour)
+                    }
                 }
+            } else {
+                Text("There are no reviews in this period.", bundle: .module)
+                    .foregroundStyle(.secondary)
             }
+        } header: {
+            Text("Hourly Breakdown", bundle: .module)
+        }
+        .onChange(of: period) { position = nil }
+        .onChange(of: graphs.period) {
+            if graphs.period == .year && period == .allTime { period = .year }
         }
     }
 

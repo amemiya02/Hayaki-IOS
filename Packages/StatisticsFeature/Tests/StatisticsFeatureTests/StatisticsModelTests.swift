@@ -187,6 +187,59 @@ struct StatisticsModelTests {
         }
     }
 
+    @Test("Anki search expressions filter charts and can be corrected after an error")
+    func searchScope() async throws {
+        try await withTemporaryCollection { store in
+            let deck = try await store.addDeck(named: "Languages::Spanish")
+            let cards = try await store.addBasicNotes(count: 2, toDeck: deck)
+            let tagged = try await store.core.getCard(.with { $0.cid = cards[0] }).noteID
+            try await store.modify(.addNoteTags(.with { $0.noteIds = [tagged]; $0.tags = "included" }))
+            try await store.review(cards[0], rating: .good)
+
+            let model = StatisticsModel(store: store)
+            model.scope = .search(#"deck:"Languages::Spanish" tag:included"#)
+            await model.refresh()
+            #expect(model.graphs?.cardCounts.total == 1)
+            #expect(model.graphs?.reviewDays.map(\.count) == [1])
+
+            model.scope = .search("(")
+            await model.refresh()
+            guard case .failed = model.state else {
+                Issue.record("A malformed search should show an error")
+                return
+            }
+            model.scope = .deck(id: deck)
+            await model.refresh()
+            #expect(model.state == .loaded)
+            #expect(model.graphs?.cardCounts.total == 2)
+        }
+    }
+
+    @Test("Calendar weekday, inactive cards and forecast backlog preferences are saved in the collection")
+    func chartPreferences() async throws {
+        try await withTemporaryCollection { store in
+            try await store.addSpanishWithKnownHistory()
+            let model = StatisticsModel(store: store)
+            await model.refresh()
+            #expect(model.graphs?.cardCounts.count(.suspended) == 1)
+
+            await model.setPreference(.firstWeekday(.friday))
+            await model.setPreference(.includeBacklog(false))
+            await model.setPreference(.separateInactive(false))
+
+            let reopened = StatisticsModel(store: store)
+            await reopened.refresh()
+            #expect(reopened.preferences.firstWeekday == .friday)
+            #expect(reopened.preferences.includeBacklog == false)
+            #expect(reopened.preferences.separateInactive == false)
+            let combined = try #require(reopened.graphs?.cardCounts(separateInactive: false))
+            #expect(combined.count(.new) == 4)
+            #expect(combined.count(.suspended) == 0)
+            #expect(combined.count(.buried) == 0)
+            #expect(combined.total == 7)
+        }
+    }
+
     @Test("Card counts divide the cards between new, learning, young, mature, suspended and buried")
     func cardCounts() async throws {
         try await withTemporaryCollection { store in
@@ -196,7 +249,7 @@ struct StatisticsModelTests {
 
             let counts = try #require(model.graphs?.cardCounts)
             #expect(counts.summary == [
-                "New: 2", "Learning: 1", "Young: 1", "Mature: 1", "Suspended: 1", "Buried: 1",
+                "New: 2", "Learning: 1", "Relearning: 0", "Young: 1", "Mature: 1", "Suspended: 1", "Buried: 1",
             ])
             #expect(counts.total == 7)
             #expect(counts.fraction(.new) == 2.0 / 7.0)
