@@ -175,6 +175,55 @@ struct SignInTests {
         }
     }
 
+    @Test("Changing a server keeps the previous sign-in until the replacement succeeds",
+          .enabled(if: SyncServer.isBuilt, SyncServer.skipMessage))
+    func changingServerKeepsPreviousSignIn() async throws {
+        let first = try await SyncServer(users: [("alice", "first password")])
+        let second = try await SyncServer(users: [("sam", "second password")])
+        try await withTemporaryCollection { store in
+            let storage = MemoryAccountStorage()
+            let model = SyncModel(store: store, storage: storage)
+            model.selectDestination(.selfHosted)
+            model.serverAddress = first.address
+            model.userName = "alice"
+            model.password = "first password"
+            await model.signIn()
+            let account = try #require(model.account)
+            try await store.addBasicNotes(count: 1, toDeck: store.addDeck(named: "Local"))
+            await model.sync()
+            #expect(model.status == .choosingDirection(.uploadOnly))
+
+            model.beginDestinationChange()
+            model.serverAddress = second.address
+            model.userName = "sam"
+            model.password = "wrong password"
+            await model.signIn()
+
+            #expect(model.status.failure?.reason == .wrongCredentials)
+            #expect(model.account == account)
+            #expect(try storage.load() == account)
+            #expect(SyncModel(store: store, storage: storage).serverAddress == first.address)
+            model.cancelDestinationChange()
+            #expect(model.status == .choosingDirection(.uploadOnly))
+            #expect(model.serverAddress == first.address)
+
+            model.beginDestinationChange()
+            model.serverAddress = second.address
+            model.userName = "sam"
+            model.password = "second password"
+            await model.signIn()
+
+            #expect(model.status == .idle)
+            #expect(model.account?.server?.absoluteString == second.address)
+            #expect(try storage.load() == model.account)
+            #expect(model.account?.hostKey != account.hostKey)
+            await model.upload()
+            #expect(model.status == .idle, "The previous server's pending transfer ended with its sign-in")
+            model.signOut()
+            #expect(try storage.load() == nil)
+        }
+    }
+
     @Test("An unreachable server is reported with the cause")
     func unreachableServer() async throws {
         let address = try unreachableAddress()

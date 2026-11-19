@@ -47,6 +47,7 @@ public struct SyncSettingsRow: View {
 /// Choosing a sync destination, signing in, and syncing the collection and media.
 public struct SyncScreen: View {
     @Bindable private var model: SyncModel
+    @State private var confirmingDestinationChange = false
 
     public init(model: SyncModel) {
         self.model = model
@@ -54,7 +55,7 @@ public struct SyncScreen: View {
 
     public var body: some View {
         Form {
-            if let account = model.account {
+            if let account = model.account, !model.isChangingDestination {
                 SignedInSections(model: model, account: account)
                 MediaSyncSection(model: model)
             } else {
@@ -63,11 +64,40 @@ public struct SyncScreen: View {
             if let failure = model.status.failure {
                 FailureSection(failure: failure)
             }
-            if model.account != nil {
+            if model.isChangingDestination {
+                Section {
+                    Button {
+                        model.cancelDestinationChange()
+                    } label: {
+                        Text("Keep Current Sign-In", bundle: .module)
+                    }
+                    .disabled(model.isBusy)
+                }
+            } else if model.account != nil {
+                Section {
+                    Button {
+                        confirmingDestinationChange = true
+                    } label: {
+                        Text("Change Sync Destination…", bundle: .module)
+                    }
+                    .disabled(model.isBusy)
+                }
                 SignOutSection(model: model)
             }
         }
         .navigationTitle(Text("Sync", bundle: .module))
+        .alert(Text("Change Sync Destination?", bundle: .module), isPresented: $confirmingDestinationChange) {
+            Button {
+                model.beginDestinationChange()
+            } label: {
+                Text("Continue", bundle: .module)
+            }
+            Button(role: .cancel) {} label: {
+                Text("Cancel", bundle: .module)
+            }
+        } message: {
+            Text("Your current sign-in will stay active until you sign in to the new destination.", bundle: .module)
+        }
     }
 }
 

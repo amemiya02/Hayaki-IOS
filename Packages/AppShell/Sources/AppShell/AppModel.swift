@@ -146,7 +146,9 @@ public final class AppModel {
             try? await next.close()
             throw error
         }
+        sync?.cancelDestinationChange()
         sync?.keepBoth()
+        sync?.password = ""
         packageImport?.cancel()
         preferences.set(saved, forKey: Self.profilesKey)
         activeProfile = target
