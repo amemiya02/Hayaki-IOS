@@ -239,6 +239,13 @@ public struct BrowseScreen: View {
                     Text("Saved Searches", bundle: .module)
                 } icon: { Image(systemName: "bookmark") }
             }
+            Button {
+                sheet = .flags
+            } label: {
+                Label {
+                    Text("Rename Flags", bundle: .module)
+                } icon: { Image(systemName: "flag") }
+            }
             Toggle(isOn: $truncatesRows) { Text("Truncate Rows", bundle: .module) }
             Divider()
             Button {
@@ -269,6 +276,7 @@ public struct BrowseScreen: View {
         case .filters: BrowserFiltersSheet(model: model)
         case .columns: BrowserColumnsSheet(model: model)
         case .savedSearches: BrowserSavedSearchesSheet(model: model)
+        case .flags: BrowserFlagLabelsSheet(model: model)
         case .editing(let cardID): NoteEditorScreen(store: store, editingCardID: cardID)
         case .preview(let cardIDs): BrowserPreviewScreen(store: store, cardIDs: cardIDs)
         case .textExport(let selection): TextExportScreen(store: store, selection: selection)
@@ -426,7 +434,7 @@ public struct BrowseScreen: View {
 }
 
 private enum BrowseSheet: Identifiable {
-    case filters, columns, savedSearches, editing(Int64), preview([Int64])
+    case filters, columns, savedSearches, flags, editing(Int64), preview([Int64])
     case textExport(ExportSelection), packageExport(ExportSelection)
 
     var id: Int {
@@ -438,6 +446,7 @@ private enum BrowseSheet: Identifiable {
         case .preview: 4
         case .textExport: 5
         case .packageExport: 6
+        case .flags: 7
         }
     }
 }
@@ -520,11 +529,15 @@ private struct CardRowView: View {
 
     var body: some View {
         let row = model.row(for: cardID)
-        CardRowContent(row: row, columns: model.visibleColumns, truncates: truncates)
+        CardRowContent(row: row, columns: model.visibleColumns, truncates: truncates, flagLabel: flagLabel(row))
             .redacted(reason: row == nil ? .placeholder : [])
             .task(id: RowVersion(cardID: cardID, generation: model.generation)) {
                 await model.loadRow(cardID)
             }
+    }
+
+    private func flagLabel(_ row: CardRow?) -> Text? {
+        if case .flag(let flag)? = row?.mark { model.flagName(flag) } else { nil }
     }
 
     private struct RowVersion: Hashable {
@@ -537,6 +550,7 @@ private struct CardRowContent: View {
     let row: CardRow?
     let columns: [BrowserColumn]
     let truncates: Bool
+    let flagLabel: Text?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
@@ -547,7 +561,7 @@ private struct CardRowContent: View {
                         .accessibilityLabel(Text(verbatim: "\(first.label), \(value(first))"))
                 }
                 Spacer(minLength: 0)
-                if let row, let mark = MarkBadge(mark: row.mark) {
+                if let row, let mark = MarkBadge(mark: row.mark, flagLabel: flagLabel) {
                     mark
                 }
             }
@@ -585,14 +599,14 @@ struct MarkBadge: View {
     let color: Color
     let label: Text
 
-    init?(mark: CardRow.Mark) {
+    init?(mark: CardRow.Mark, flagLabel: Text? = nil) {
         switch mark {
         case .none:
             return nil
         case .flag(let flag):
             symbol = "flag.fill"
             color = flag.color
-            label = flag.label
+            label = flagLabel ?? flag.label
         case .marked:
             symbol = "star.fill"
             color = .purple

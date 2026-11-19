@@ -95,6 +95,7 @@ public final class CardBrowserModel {
     public internal(set) var isPerformingAction = false
 
     public internal(set) var savedSearches: [SavedBrowserSearch] = []
+    public internal(set) var flagNames: [CardRow.Flag: String] = [:]
     @ObservationIgnored var updatingSavedSearches = false
 
     @ObservationIgnored private var searchCount = 0
@@ -381,6 +382,7 @@ public final class CardBrowserModel {
         let changes = store.changes()
         await refreshResults()
         await loadChoices()
+        await loadFlagNames()
         for await change in changes where !change.isDisjoint(with: Self.relevantChanges) {
             if change == .everything {
                 hasLoadedMode = false
@@ -388,6 +390,7 @@ public final class CardBrowserModel {
                 columnSelections.removeAll()
                 selection.removeAll()
                 completedAction = nil
+                await loadFlagNames()
             }
             await refreshResults()
             if !change.isDisjoint(with: [.deck, .tag, .note, .notetype]) {

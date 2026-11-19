@@ -23,7 +23,7 @@ struct BulkActionMenu: View {
                         perform(.flag(flag))
                     } label: {
                         Label {
-                            flag.name
+                            model.flagName(flag)
                         } icon: {
                             Image(systemName: "flag.fill")
                         }

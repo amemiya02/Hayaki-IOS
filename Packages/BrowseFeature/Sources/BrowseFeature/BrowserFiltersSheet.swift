@@ -30,7 +30,7 @@ struct BrowserFiltersSheet: View {
                     choice(.noFlag, Text("No Flag", bundle: .module))
                     choice(.anyFlag, Text("Any Flag", bundle: .module))
                     ForEach(CardRow.Flag.allCases, id: \.self) { flag in
-                        choice(.flag(flag), flag.name)
+                        choice(.flag(flag), model.flagName(flag))
                     }
                 } label: {
                     Text("Flag", bundle: .module)

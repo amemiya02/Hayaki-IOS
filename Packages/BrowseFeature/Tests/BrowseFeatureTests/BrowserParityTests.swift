@@ -194,3 +194,26 @@ extension BrowserParityTests {
         }
     }
 }
+
+extension BrowserParityTests {
+    @Test("Flag labels saved from Browse survive reopening without changing their searches")
+    func customFlagLabels() async throws {
+        try await withTemporaryCollection { store in
+            let deck = try await store.addDeck(named: "Spanish")
+            let card = try await store.addBasicCard(front: "correr", back: "run", inDeck: deck)
+            let model = CardBrowserModel(store: store)
+            await model.search()
+            model.selectAll()
+            await model.perform(.flag(.blue))
+            await model.saveFlagNames([.blue: "Needs Audio"])
+            let reopened = CardBrowserModel(store: store)
+            await reopened.loadFlagNames()
+            #expect(reopened.flagNames == [.blue: "Needs Audio"])
+            await reopened.applyFilters([.flag(.blue)])
+            #expect(reopened.rowIDs == [card])
+            await reopened.saveFlagNames([.blue: " "])
+            await model.loadFlagNames()
+            #expect(model.flagNames.isEmpty)
+        }
+    }
+}
