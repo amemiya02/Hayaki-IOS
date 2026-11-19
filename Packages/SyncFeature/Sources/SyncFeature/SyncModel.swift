@@ -91,6 +91,7 @@ public final class SyncModel {
     // The backend caches server status on the collection, so a new sign-in
     // needs a real collection sync before an automatic media-only transfer.
     private var requiresFreshCollectionSync = false
+    @ObservationIgnored private var hasLookedUpSyncState = false
     private var checkingStatus = false
     @ObservationIgnored private var didCancelStatusCheck = false
     @ObservationIgnored private var lastAttempt: Date? {
@@ -321,7 +322,7 @@ public final class SyncModel {
         }
         self.account = account
         draftCertificate = ""
-        requiresFreshCollectionSync = true
+        requiresFreshCollectionSync = hasLookedUpSyncState
         lastAttempt = nil
         lastKnownBadge = nil
         mediaStatus = .idle
@@ -431,6 +432,7 @@ public final class SyncModel {
     }
 
     private func checkStatus(for account: SyncAccount) async throws(CoreError) -> Anki_Sync_SyncStatusResponse.Required {
+        hasLookedUpSyncState = true
         checkingStatus = true
         didCancelStatusCheck = false
         cancelRunning = { [weak self] in self?.didCancelStatusCheck = true }
@@ -503,6 +505,7 @@ public final class SyncModel {
 
     private func syncCollection(meteredConsent: Bool, automatically: Bool = false) async {
         guard let account else { return }
+        hasLookedUpSyncState = true
         confirmedMeteredConflict = meteredConsent
         SyncClientIdentity.install()
         status = .syncing(.connecting)
