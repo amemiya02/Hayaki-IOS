@@ -133,6 +133,8 @@ public struct StudyScreen: View {
         case .finished(let summary):
             FinishedView(summary: summary) {
                 Task { await model.unburyDeck() }
+            } onRebuild: {
+                Task { await model.rebuildFinishedFilteredDeck() }
             } onDone: {
                 dismiss()
             }
@@ -328,6 +330,7 @@ private struct RatingButton: View {
 private struct FinishedView: View {
     let summary: SessionSummary
     let onUnbury: () -> Void
+    let onRebuild: () -> Void
     let onDone: () -> Void
 
     var body: some View {
@@ -370,6 +373,12 @@ private struct FinishedView: View {
                 }
             }
         } actions: {
+            if summary.isFiltered {
+                Button(action: onRebuild) {
+                    Text("Rebuild Filtered Deck", bundle: .module)
+                }
+                .buttonStyle(.bordered)
+            }
             if summary.hasBuried {
                 Button(action: onUnbury) {
                     Text("Unbury Cards", bundle: .module)

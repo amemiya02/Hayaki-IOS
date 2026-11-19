@@ -1,6 +1,7 @@
 import AnkiCore
 import CollectionTesting
 import DecksFeature
+import StudyFeature
 import Testing
 
 @MainActor
@@ -31,6 +32,45 @@ struct FilteredDeckTests {
             #expect(try await store.cardIDs(matching: "deck:Spanish") == [one])
             #expect(try await store.cardIDs(matching: "deck:Japanese") == [two])
             #expect(try await store.reviewCount() == 0)
+        }
+    }
+}
+
+extension FilteredDeckTests {
+    @Test("Preview reviews preserve the schedule while rescheduling reviews update it", arguments: [false, true])
+    func filteredReview(reschedule: Bool) async throws {
+        try await withTemporaryCollection { store in
+            let source = try await store.addDeck(named: "Spanish")
+            let id = try #require(try await store.addBasicNotes(count: 1, toDeck: source).first)
+            try await store.makeDueToday([id])
+            let before = try await store.core.getCard(.with { $0.cid = id })
+
+            let filter = FilteredDeckModel(store: store)
+            await filter.load()
+            filter.name = "Today"
+            filter.reschedule = reschedule
+            filter.primary = FilteredDeckFilter(search: "deck:Spanish is:due", limit: 1, order: .due)
+            let filtered = try #require(await filter.build())
+            let session = StudySessionModel(store: store, deckID: filtered)
+            await session.start()
+            #expect(session.state.question?.id == id)
+            session.showAnswer()
+            await session.answer(.easy)
+
+            let after = try await store.core.getCard(.with { $0.cid = id })
+            #expect(after.deckID == source)
+            #expect(after.originalDeckID == 0)
+            if reschedule {
+                #expect(after.due > before.due)
+            } else {
+                #expect(after.due == before.due)
+                #expect(after.interval == before.interval)
+                #expect(session.state.finished?.isFiltered == true)
+
+                await session.rebuildFinishedFilteredDeck()
+
+                #expect(session.state.question?.id == id)
+            }
         }
     }
 }

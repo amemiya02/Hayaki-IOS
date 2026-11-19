@@ -296,6 +296,14 @@ public final class StudySessionModel {
         }
     }
 
+    public func rebuildFinishedFilteredDeck() async {
+        guard state.finished?.isFiltered == true else { return }
+        await runAction { () async throws(CoreError) in
+            try await store.modify(.rebuildFilteredDeck(.with { $0.did = deckID }))
+            await showNextCard()
+        }
+    }
+
     public func setFlag(_ flag: UInt32) async {
         guard let card = state.card, flag < 8 else { return }
         await runAction { () async throws(CoreError) in
