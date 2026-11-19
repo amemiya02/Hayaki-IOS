@@ -64,6 +64,7 @@ public final class DeckOptionsModel {
     public internal(set) var isCancellingFSRS = false
     var fsrsActivity: FSRSActivity?
     @ObservationIgnored var cancelFSRSOperation: (() -> Void)?
+    @ObservationIgnored var fsrsWorkloadCache: FSRSWorkloadCache?
     var entries: [PresetEntry] = []
     var selectedID = PresetID(rawValue: 0)
     /// Text being typed into a steps field, kept while the learner edits it.
@@ -107,11 +108,20 @@ public final class DeckOptionsModel {
             deckName = loaded.currentDeck.name
             saveError = nil
             fsrsReschedule = false
+            fsrsWorkloadCache = nil
             resetFSRSFeedback()
             state = .loaded
         } catch {
             state = .failed(message: error.message)
         }
+    }
+
+    var savedEffectiveFSRSRetention: Float? {
+        if selectedID == loadedSelectedID, loadedSettings.currentDeck.limits.hasDesiredRetention {
+            return loadedSettings.currentDeck.limits.desiredRetention
+        }
+        guard let selectedIndex else { return nil }
+        return entries[selectedIndex].saved?.config.desiredRetention
     }
 
     // MARK: Presets
