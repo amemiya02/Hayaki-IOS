@@ -12,20 +12,70 @@ enum EditorToolbarLayout: String, CaseIterable {
     }
 }
 
+enum EditorFontSize: String, CaseIterable {
+    case xxSmall = "xx-small"
+    case xSmall = "x-small"
+    case small, medium, large
+    case xLarge = "x-large"
+    case xxLarge = "xx-large"
+
+    var title: Text {
+        switch self {
+        case .xxSmall: Text("XX-Small", bundle: .module)
+        case .xSmall: Text("X-Small", bundle: .module)
+        case .small: Text("Small", bundle: .module)
+        case .medium: Text("Medium", bundle: .module)
+        case .large: Text("Large", bundle: .module)
+        case .xLarge: Text("X-Large", bundle: .module)
+        case .xxLarge: Text("XX-Large", bundle: .module)
+        }
+    }
+}
+
 enum EditorTextFormat {
-    case bold, italic, underline, inlineMath, displayMath, heading(Int), fontSize(Int), horizontalRule
+    case bold, italic, underline, heading(Int), fontSize(EditorFontSize), horizontalRule
+    case inlineMath, displayMath, chemistryMath
     case cloze(reuseLast: Bool)
     case custom(prefix: String, suffix: String)
 
-    func wrapper(fields: [EditableField]) -> (prefix: String, suffix: String) {
+    func apply(
+        to field: EditableField, selection: Range<String.Index>?, editingMarkup: Bool, fields: [EditableField]
+    ) -> (html: String, selection: Range<String.Index>) {
+        let displayed = editingMarkup ? field.content : field.text
+        let selected: Range<String.Index>
+        if let range = selection,
+           range.lowerBound >= displayed.startIndex, range.upperBound <= displayed.endIndex,
+           displayed.indices.contains(range.lowerBound) || range.lowerBound == displayed.endIndex,
+           displayed.indices.contains(range.upperBound) || range.upperBound == displayed.endIndex {
+            selected = range
+        } else {
+            selected = displayed.endIndex..<displayed.endIndex
+        }
+        let before = String(displayed[..<selected.lowerBound])
+        let selectedText = String(displayed[selected])
+        let after = String(displayed[selected.upperBound...])
+        let wrap = wrapper(fields: fields)
+        let start = (editingMarkup ? before : FieldMarkup.html(fromPlainText: before)) + wrap.prefix
+        let middle = editingMarkup ? selectedText : FieldMarkup.html(fromPlainText: selectedText)
+        var html = start + middle + wrap.suffix + (editingMarkup ? after : FieldMarkup.html(fromPlainText: after))
+        if !editingMarkup {
+            html += field.images.map { "<img src=\"\(FieldMarkup.escaped($0, quotes: true))\">" }.joined()
+        }
+        let lower = html.index(html.startIndex, offsetBy: start.count)
+        let upper = html.index(lower, offsetBy: middle.count)
+        return (html, lower..<upper)
+    }
+
+    private func wrapper(fields: [EditableField]) -> (prefix: String, suffix: String) {
         switch self {
         case .bold: ("<b>", "</b>")
         case .italic: ("<i>", "</i>")
         case .underline: ("<u>", "</u>")
         case .inlineMath: ("\\(", "\\)")
         case .displayMath: ("\\[", "\\]")
+        case .chemistryMath: (#"\( \ce{"#, #"} \)"#)
         case .heading(let level): ("<h\(level)>", "</h\(level)>")
-        case .fontSize(let size): ("<span style=\"font-size: \(size)px\">", "</span>")
+        case .fontSize(let size): ("<span style=\"font-size:\(size.rawValue)\">", "</span>")
         case .horizontalRule: ("<hr>", "")
         case .cloze(let reuseLast):
             ("{{c\(Self.clozeNumber(in: fields, reuseLast: reuseLast))::", "}}")
@@ -44,6 +94,7 @@ enum EditorTextFormat {
 struct EditorFormattingToolbar: View {
     let layout: EditorToolbarLayout
     let isCloze: Bool
+    let availableHeight: CGFloat
     let format: (EditorTextFormat) -> Void
     @AppStorage("noteEditorCustomFormats") private var storedButtons = Data()
     @State private var isEditingButton = false
@@ -80,9 +131,20 @@ struct EditorFormattingToolbar: View {
             }
             .scrollIndicators(.hidden)
         } else {
-            LazyVGrid(columns: [GridItem(.adaptive(minimum: 44), spacing: 0)], spacing: 0) {
-                buttons
+            ViewThatFits(in: .vertical) {
+                stackedButtons.fixedSize(horizontal: false, vertical: true)
+                ScrollView(.vertical) {
+                    stackedButtons
+                }
             }
+            // Keep the fields reachable above the toolbar when the keyboard is open.
+            .frame(maxHeight: min(availableHeight, max(44, availableHeight / 3)))
+        }
+    }
+
+    private var stackedButtons: some View {
+        LazyVGrid(columns: [GridItem(.adaptive(minimum: 44), spacing: 0)], spacing: 0) {
+            buttons
         }
     }
 
@@ -96,12 +158,13 @@ struct EditorFormattingToolbar: View {
                 toolIcon("equal", label: Text("Repeat Cloze Number", bundle: .module))
             }
         }
-        formatButton(.bold, icon: "bold", label: Text("Bold", bundle: .module))
-        formatButton(.italic, icon: "italic", label: Text("Italic", bundle: .module))
-        formatButton(.underline, icon: "underline", label: Text("Underline", bundle: .module))
+        formatButton(.bold, icon: "bold", label: Text("Bold", bundle: .module), key: "b")
+        formatButton(.italic, icon: "italic", label: Text("Italic", bundle: .module), key: "i")
+        formatButton(.underline, icon: "underline", label: Text("Underline", bundle: .module), key: "u")
         Menu {
             Button { format(.inlineMath) } label: { Text("Inline MathJax", bundle: .module) }
             Button { format(.displayMath) } label: { Text("Display MathJax", bundle: .module) }
+            Button { format(.chemistryMath) } label: { Text("Chemistry MathJax", bundle: .module) }
         } label: {
             toolIcon("sum", label: Text("MathJax", bundle: .module))
         }
@@ -113,13 +176,13 @@ struct EditorFormattingToolbar: View {
             toolIcon("textformat", label: Text("Heading", bundle: .module))
         }
         Menu {
-            ForEach([12, 16, 20, 24, 32, 48], id: \.self) { size in
-                Button { format(.fontSize(size)) } label: { Text(size.formatted()) }
+            ForEach(EditorFontSize.allCases, id: \.self) { size in
+                Button { format(.fontSize(size)) } label: { size.title }
             }
         } label: {
             toolIcon("textformat.size", label: Text("Font Size", bundle: .module))
         }
-        formatButton(.horizontalRule, icon: "minus", label: Text("Horizontal Line", bundle: .module))
+        formatButton(.horizontalRule, icon: "minus", label: Text("Horizontal Line", bundle: .module), key: "r")
         ForEach(customButtons) { button in
             Button { format(.custom(prefix: button.prefix, suffix: button.suffix)) } label: {
                 Text(verbatim: button.name)
@@ -141,8 +204,9 @@ struct EditorFormattingToolbar: View {
         }
     }
 
-    private func formatButton(_ action: EditorTextFormat, icon: String, label: Text) -> some View {
+    private func formatButton(_ action: EditorTextFormat, icon: String, label: Text, key: KeyEquivalent) -> some View {
         Button { format(action) } label: { toolIcon(icon, label: label) }
+            .keyboardShortcut(key, modifiers: .command)
     }
 
     private func toolIcon(_ icon: String, label: Text) -> some View {
