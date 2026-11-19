@@ -44,22 +44,32 @@ final class LocalSyncTLS {
         ])
         certificate = try String(contentsOf: workingDirectory.appendingPathComponent("ca.pem"), encoding: .utf8)
 
+        let log = workingDirectory.appendingPathComponent("proxy.log")
+        try Data().write(to: log)
+        let output = try FileHandle(forWritingTo: log)
+        defer { try? output.close() }
+
         let server = Process()
-        server.executableURL = URL(filePath: "/usr/bin/python3")
+        server.executableURL = URL(filePath: "/usr/bin/env")
         server.currentDirectoryURL = workingDirectory
         let syncPort = URL(string: upstream.address)?.port ?? 80
-        server.arguments = ["-c", Self.proxyScript, String(syncPort)]
+        server.arguments = ["python3", "-u", "-c", Self.proxyScript, String(syncPort)]
+        server.standardError = output
         try server.run()
         let portFile = workingDirectory.appendingPathComponent("port")
-        var port = ""
+        var port: Int?
         do {
-            try await eventually("the local TLS endpoint to start") {
-                port = ((try? String(contentsOf: portFile, encoding: .utf8)) ?? "")
-                return Int(port) != nil
+            try await eventually(timeout: .seconds(20), "the local TLS endpoint to start") {
+                port = (try? String(contentsOf: portFile, encoding: .utf8)).flatMap(Int.init)
+                return port != nil || !server.isRunning
             }
         } catch {
             if server.isRunning { server.terminate() }
-            throw error
+            if error is CancellationError { throw error }
+            throw Self.startupError(reason: String(describing: error), log: log)
+        }
+        guard let port, server.isRunning else {
+            throw Self.startupError(reason: "The local TLS proxy exited before listening", log: log)
         }
 
         self.folder = folder
@@ -69,6 +79,15 @@ final class LocalSyncTLS {
 
     deinit {
         if server.isRunning { server.terminate() }
+    }
+
+    private static func startupError(reason: String, log: URL) -> ProxyStartupError {
+        let output = (try? String(contentsOf: log, encoding: .utf8)) ?? ""
+        return ProxyStartupError(description: output.isEmpty ? reason : "\(reason)\n\(output)")
+    }
+
+    private struct ProxyStartupError: Error, CustomStringConvertible {
+        let description: String
     }
 
     private static func openssl(in folder: URL, _ arguments: [String]) throws {
@@ -85,6 +104,7 @@ final class LocalSyncTLS {
     private static let proxyScript = """
     import http.client
     import http.server
+    import os
     import ssl
     import sys
 
@@ -126,8 +146,9 @@ final class LocalSyncTLS {
     tls = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
     tls.load_cert_chain("server.pem", "server.key")
     proxy.socket = tls.wrap_socket(proxy.socket, server_side=True)
-    with open("port", "w") as port_file:
+    with open("port.tmp", "w") as port_file:
         port_file.write(str(proxy.server_port))
+    os.replace("port.tmp", "port")
     proxy.serve_forever()
     """
 }
