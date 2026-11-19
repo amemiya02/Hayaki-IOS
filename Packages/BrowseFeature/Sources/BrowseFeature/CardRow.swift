@@ -3,13 +3,11 @@ import AnkiProto
 /// One card as the browser lists it, with the text the core shows for it.
 public struct CardRow: Identifiable, Equatable, Sendable {
     public let id: Int64
-    /// The card's question, rendered and reduced to plain text by the core.
-    public let question: String
-    /// The full name of the card's deck.
-    public let deck: String
-    /// When the card is due, as the core words it: a date, a position among
-    /// new cards, or a date in parentheses for a suspended or buried card.
-    public let due: String
+    /// The display text from the core, keyed by browser column.
+    public let cells: [String: String]
+    public var question: String { cells["question"] ?? cells["noteFld"] ?? "" }
+    public var deck: String { cells["deck"] ?? "" }
+    public var due: String { cells["cardDue"] ?? "" }
     /// How the core marks the card: flagged, marked, suspended or buried.
     public let mark: Mark
 
@@ -26,15 +24,9 @@ public struct CardRow: Identifiable, Equatable, Sendable {
         case red = 1, orange, green, blue, pink, turquoise, purple
     }
 
-    init(id: Int64, _ row: Anki_Search_BrowserRow) {
+    init(id: Int64, _ row: Anki_Search_BrowserRow, columnIDs: [String]) {
         self.id = id
-        // The cells come in the order of CardBrowserModel.columns.
-        func cell(_ index: Int) -> String {
-            index < row.cells.count ? row.cells[index].text : ""
-        }
-        question = cell(0)
-        deck = cell(1)
-        due = cell(2)
+        cells = Dictionary(uniqueKeysWithValues: zip(columnIDs, row.cells.map(\.text)))
         mark = switch row.color {
         case .flagRed: .flag(.red)
         case .flagOrange: .flag(.orange)

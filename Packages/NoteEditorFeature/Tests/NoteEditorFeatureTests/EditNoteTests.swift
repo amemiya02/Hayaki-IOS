@@ -112,4 +112,24 @@ struct EditNoteTests {
             #expect(try await store.cardIDs().count == 1)
         }
     }
+
+    @Test("An editor open during field reordering refuses to write into the wrong field")
+    func rejectsAReorderedNoteType() async throws {
+        try await withTemporaryCollection { store in
+            let notes = try await store.addNotes(ofType: "Basic", fields: [["harbor", "port"]], toDeck: 1)
+            let noteID = try #require(notes.first)
+            let editor = NoteEditorModel(store: store, editingNoteID: noteID)
+            await editor.load()
+            editor.setText("bay", ofField: 0)
+            let manager = NoteTypeManager(store: store)
+            _ = try await manager.editFields(of: editor.notetypeID, .move(field: "Back", to: 0), confirmingFullSync: true)
+
+            let outcome = await editor.save()
+            guard case .failed = outcome else {
+                Issue.record("The editor wrote into a different field from the one the learner edited.")
+                return
+            }
+            #expect(try await store.core.getNote(.with { $0.nid = noteID }).fields == ["port", "harbor"])
+        }
+    }
 }

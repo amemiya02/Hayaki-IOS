@@ -14,6 +14,7 @@ let package = Package(
         .package(path: "../AnkiCore"),
         .package(path: "../CollectionStore"),
         .package(path: "../NoteEditorFeature"),
+        .package(path: "../StudyFeature"),
     ],
     targets: [
         .target(
@@ -22,6 +23,7 @@ let package = Package(
                 .product(name: "AnkiCore", package: "AnkiCore"),
                 .product(name: "CollectionStore", package: "CollectionStore"),
                 .product(name: "NoteEditorFeature", package: "NoteEditorFeature"),
+                .product(name: "StudyFeature", package: "StudyFeature"),
             ],
             resources: [.process("Resources")]
         ),

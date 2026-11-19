@@ -1,4 +1,5 @@
 import CollectionStore
+import NoteEditorFeature
 import SwiftUI
 
 /// How the Browse section appears in the tab bar and sidebar.
@@ -15,14 +16,21 @@ public struct BrowseScreen: View {
     /// Whether the learner is selecting cards to act on them together.
     @State private var isSelecting = false
     @State private var isMoving = false
+    @State private var conversion: ConversionSelection?
+    @State private var sheet: BrowseSheet?
+    @State private var actionPrompt: BrowserActionPrompt?
+    @State private var inspectedCard: CardLink?
+    @AppStorage("browseTruncatesRows") private var truncatesRows = true
     /// What a deletion the learner asked for would delete, while it waits
     /// for confirmation.
     @State private var deletion: DeletionSummary?
     @Environment(\.accessibilityVoiceOverEnabled) private var voiceOverEnabled
 
-    public init(store: CollectionStore) {
+    public init(store: CollectionStore, initialSearch: String = "") {
         self.store = store
-        _model = State(initialValue: CardBrowserModel(store: store))
+        let model = CardBrowserModel(store: store)
+        model.searchText = initialSearch
+        _model = State(initialValue: model)
     }
 
     public var body: some View {
@@ -30,9 +38,15 @@ public struct BrowseScreen: View {
             content
                 .navigationTitle(title)
                 .navigationDestination(for: CardLink.self) { link in
-                    CardDetailScreen(store: store, cardID: link.cardID)
+                    CardInfoScreen(store: store, cardID: link.cardID)
+                }
+                .navigationDestination(item: $inspectedCard) { link in
+                    CardInfoScreen(store: store, cardID: link.cardID)
                 }
                 .toolbar { toolbar }
+                .safeAreaInset(edge: .top, spacing: 0) {
+                    if !isSelecting { modePicker }
+                }
                 .selectingCards(isSelecting)
                 .safeAreaInset(edge: .bottom) {
                     if let completed = model.completedAction {
@@ -48,8 +62,21 @@ public struct BrowseScreen: View {
                     try? await Task.sleep(for: .seconds(10))
                     if !Task.isCancelled { model.dismissCompletedAction() }
                 }
+                .sheet(item: $sheet) { sheet in
+                    sheetContent(sheet)
+                }
+                .sheet(item: $actionPrompt) { prompt in
+                    BrowserActionSheet(prompt: prompt, model: model)
+                }
                 .sheet(isPresented: $isMoving) {
                     MoveCardsSheet(model: model)
+                }
+                .sheet(item: $conversion) { selection in
+                    ChangeNoteTypeScreen(store: store, noteIDs: selection.noteIDs) {
+                        model.clearSelection()
+                        isSelecting = false
+                        await model.search()
+                    }
                 }
                 // An alert, as in Decks: a dialog would point at the list's
                 // edge, next to the sidebar on iPad.
@@ -77,7 +104,7 @@ public struct BrowseScreen: View {
                 } message: {
                     Text(model.failure ?? "")
                 }
-                .onChange(of: model.cardIDs.isEmpty) { _, isEmpty in
+                .onChange(of: model.rowIDs.isEmpty) { _, isEmpty in
                     if isEmpty { isSelecting = false }
                 }
         }
@@ -109,7 +136,7 @@ public struct BrowseScreen: View {
     private var toolbar: some ToolbarContent {
         if isSelecting {
             ToolbarItem(placement: .cancellationAction) {
-                if model.selection.count == model.cardIDs.count {
+                if model.selection.count == model.rowIDs.count {
                     Button {
                         model.clearSelection()
                     } label: {
@@ -132,13 +159,28 @@ public struct BrowseScreen: View {
                 }
             }
             ToolbarItem(placement: .primaryAction) {
-                BulkActionMenu(model: model, isMoving: $isMoving, deletion: $deletion)
-                    .disabled(model.selection.isEmpty)
+                BulkActionMenu(
+                    model: model,
+                    isMoving: $isMoving,
+                    deletion: $deletion,
+                    prompt: $actionPrompt,
+                    onEdit: { openFirstSelection(asInfo: false) },
+                    onInfo: { openFirstSelection(asInfo: true) },
+                    onPreview: { preview(selectedOnly: true) },
+                    onChangeNoteType: changeNoteType
+                )
+                .disabled(model.selection.isEmpty || model.isPerformingAction)
             }
         } else {
             ToolbarItemGroup(placement: .primaryAction) {
-                QuickFilterMenu(model: model)
-                SortMenu(model: model)
+                Button {
+                    sheet = .filters
+                } label: {
+                    Label {
+                        Text("Filters", bundle: .module)
+                    } icon: { Image(systemName: "line.3.horizontal.decrease") }
+                }
+                configurationMenu
             }
             ToolbarItem(placement: .primaryAction) {
                 Button {
@@ -146,8 +188,116 @@ public struct BrowseScreen: View {
                 } label: {
                     Text("Select", bundle: .module)
                 }
-                .disabled(model.cardIDs.isEmpty)
+                .disabled(model.rowIDs.isEmpty)
             }
+        }
+    }
+
+    private struct ConversionSelection: Identifiable {
+        let noteIDs: [Int64]
+        var id: [Int64] { noteIDs }
+    }
+
+    private var modePicker: some View {
+        Picker(selection: Binding {
+            model.mode
+        } set: { mode in
+            Task { await model.setMode(mode) }
+        }) {
+            Text("Cards", bundle: .module).tag(CardBrowserModel.Mode.cards)
+            Text("Notes", bundle: .module).tag(CardBrowserModel.Mode.notes)
+        } label: {
+            Text("Browse Mode", bundle: .module)
+        }
+        .pickerStyle(.segmented)
+        .frame(maxWidth: 440)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 8)
+        .frame(maxWidth: .infinity)
+        .background(.bar)
+    }
+
+    private var configurationMenu: some View {
+        Menu {
+            SortMenu(model: model)
+            Button {
+                sheet = .columns
+            } label: {
+                Label {
+                    Text("Columns", bundle: .module)
+                } icon: { Image(systemName: "tablecells") }
+            }
+            .disabled(model.availableColumns.isEmpty)
+            Button {
+                sheet = .savedSearches
+            } label: {
+                Label {
+                    Text("Saved Searches", bundle: .module)
+                } icon: { Image(systemName: "bookmark") }
+            }
+            Toggle(isOn: $truncatesRows) { Text("Truncate Rows", bundle: .module) }
+            Divider()
+            Button {
+                preview(selectedOnly: false)
+            } label: {
+                Label {
+                    Text("Preview", bundle: .module)
+                } icon: { Image(systemName: "eye") }
+            }
+            .disabled(model.rowIDs.isEmpty)
+            Button {
+                actionPrompt = .replace
+            } label: {
+                Label {
+                    Text("Find and Replace", bundle: .module)
+                } icon: { Image(systemName: "text.magnifyingglass") }
+            }
+        } label: {
+            Label {
+                Text("Browse Options", bundle: .module)
+            } icon: { Image(systemName: "ellipsis.circle") }
+        }
+    }
+
+    @ViewBuilder
+    private func sheetContent(_ sheet: BrowseSheet) -> some View {
+        switch sheet {
+        case .filters: BrowserFiltersSheet(model: model)
+        case .columns: BrowserColumnsSheet(model: model)
+        case .savedSearches: BrowserSavedSearchesSheet(model: model)
+        case .editing(let cardID): NoteEditorScreen(store: store, editingCardID: cardID)
+        case .preview(let cardIDs): BrowserPreviewScreen(store: store, cardIDs: cardIDs)
+        }
+    }
+
+    private func openFirstSelection(asInfo: Bool) {
+        guard let row = model.rowIDs.first(where: model.selection.contains) else { return }
+        open(row, asInfo: asInfo)
+    }
+
+    private func open(_ rowID: Int64, asInfo: Bool) {
+        Task {
+            guard let cardID = await model.cardID(forRow: rowID) else { return }
+            if asInfo {
+                inspectedCard = CardLink(cardID: cardID)
+            } else {
+                sheet = .editing(cardID)
+            }
+        }
+    }
+
+    private func changeNoteType() {
+        Task {
+            if let noteIDs = await model.selectedNoteIDs(), !noteIDs.isEmpty {
+                conversion = ConversionSelection(noteIDs: noteIDs)
+            }
+        }
+    }
+
+    private func preview(selectedOnly: Bool) {
+        Task {
+            let ids = await model.previewCardIDs(selectedOnly: selectedOnly)
+            if !ids.isEmpty { sheet = .preview(ids) }
         }
     }
 
@@ -198,30 +348,80 @@ public struct BrowseScreen: View {
                     Text("Try Again", bundle: .module)
                 }
             }
-        case .loaded where model.cardIDs.isEmpty:
+        case .loaded where model.rowIDs.isEmpty:
             if model.searchedText.isEmpty {
                 ContentUnavailableView {
                     Label {
-                        Text("No Cards", bundle: .module)
+                        if model.mode == .cards {
+                            Text("No Cards", bundle: .module)
+                        } else {
+                            Text("No Notes", bundle: .module)
+                        }
                     } icon: {
                         Image(systemName: "rectangle.on.rectangle.slash")
                     }
                 } description: {
-                    Text("Cards you add or import appear here.", bundle: .module)
+                    if model.mode == .cards {
+                        Text("Cards you add or import appear here.", bundle: .module)
+                    } else {
+                        Text("Notes you add or import appear here.", bundle: .module)
+                    }
                 }
             } else {
                 ContentUnavailableView.search(text: model.searchedText)
             }
         case .loaded:
-            // Rows can be selected only while selecting; otherwise a tap
-            // opens the card.
-            List(model.cardIDs, id: \.self, selection: isSelecting ? $model.selection : nil) { cardID in
-                NavigationLink(value: CardLink(cardID: cardID)) {
-                    CardRowView(model: model, cardID: cardID)
-                }
+            List(model.rowIDs, id: \.self, selection: isSelecting ? $model.selection : nil) { rowID in
+                row(rowID)
             }
             .listStyle(.plain)
             .refreshable { await model.search() }
+        }
+    }
+    @ViewBuilder
+    private func row(_ rowID: Int64) -> some View {
+        let row = CardRowView(model: model, cardID: rowID, truncates: truncatesRows)
+        if isSelecting {
+            row.tag(rowID)
+        } else {
+            Group {
+                if model.mode == .cards {
+                    NavigationLink(value: CardLink(cardID: rowID)) { row }
+                } else {
+                    Button {
+                        open(rowID, asInfo: false)
+                    } label: { row }
+                    .buttonStyle(.plain)
+                }
+            }
+            .contextMenu {
+                Button { open(rowID, asInfo: false) } label: {
+                    Text("Edit Note", bundle: .module)
+                }
+                Button { open(rowID, asInfo: true) } label: {
+                    Text("Card Info", bundle: .module)
+                }
+                Button {
+                    model.selection = [rowID]
+                    isSelecting = true
+                } label: {
+                    Text("Select", bundle: .module)
+                }
+            }
+        }
+    }
+}
+
+private enum BrowseSheet: Identifiable {
+    case filters, columns, savedSearches, editing(Int64), preview([Int64])
+
+    var id: Int {
+        switch self {
+        case .filters: 0
+        case .columns: 1
+        case .savedSearches: 2
+        case .editing: 3
+        case .preview: 4
         }
     }
 }
@@ -296,25 +496,19 @@ private struct SortMenu: View {
     }
 }
 
-/// One card in the list. Its text is fetched from the core when the row
-/// appears, so only the rows on screen are fetched.
+/// Rows load the visible columns from the core in pages.
 private struct CardRowView: View {
     let model: CardBrowserModel
     let cardID: Int64
+    let truncates: Bool
 
     var body: some View {
-        Group {
-            if let row = model.row(for: cardID) {
-                CardRowContent(row: row)
-            } else {
-                // Placeholder of a row's height while it is fetched.
-                CardRowContent(row: nil)
-                    .redacted(reason: .placeholder)
+        let row = model.row(for: cardID)
+        CardRowContent(row: row, columns: model.visibleColumns, truncates: truncates)
+            .redacted(reason: row == nil ? .placeholder : [])
+            .task(id: RowVersion(cardID: cardID, generation: model.generation)) {
+                await model.loadRow(cardID)
             }
-        }
-        .task(id: RowVersion(cardID: cardID, generation: model.generation)) {
-            await model.loadRow(cardID)
-        }
     }
 
     private struct RowVersion: Hashable {
@@ -325,34 +519,47 @@ private struct CardRowView: View {
 
 private struct CardRowContent: View {
     let row: CardRow?
+    let columns: [BrowserColumn]
+    let truncates: Bool
 
     var body: some View {
-        HStack(alignment: .firstTextBaseline) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text(verbatim: question)
-                    .lineLimit(2)
-                HStack(spacing: 6) {
-                    Text(verbatim: row?.deck ?? "Deck name")
-                        .lineLimit(1)
-                    Text(verbatim: "·")
-                        .accessibilityHidden(true)
-                    Text(verbatim: row?.due ?? "Due date")
-                        .lineLimit(1)
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(alignment: .firstTextBaseline) {
+                if let first = columns.first {
+                    Text(verbatim: value(first))
+                        .lineLimit(truncates ? 2 : nil)
+                        .accessibilityLabel(Text(verbatim: "\(first.label), \(value(first))"))
                 }
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
+                Spacer(minLength: 0)
+                if let row, let mark = MarkBadge(mark: row.mark) {
+                    mark
+                }
             }
-            Spacer(minLength: 0)
-            if let row, let mark = MarkBadge(mark: row.mark) {
-                mark
+            if columns.count > 1 {
+                LazyVGrid(columns: [GridItem(.adaptive(minimum: 92), alignment: .leading)], alignment: .leading) {
+                    ForEach(Array(columns.dropFirst())) { column in
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(verbatim: column.label)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                                .lineLimit(truncates ? 1 : nil)
+                            Text(verbatim: value(column))
+                                .font(.subheadline)
+                                .lineLimit(truncates ? 1 : nil)
+                        }
+                    }
+                }
             }
         }
+        .padding(.vertical, 4)
+        .contentShape(Rectangle())
         .accessibilityElement(children: .combine)
     }
 
-    private var question: String {
-        guard let row else { return "Question of the card" }
-        return row.question.isEmpty ? "–" : row.question
+    private func value(_ column: BrowserColumn) -> String {
+        guard let row else { return column.label }
+        let value = row.cells[column.id] ?? ""
+        return value.isEmpty ? "–" : value
     }
 }
 

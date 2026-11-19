@@ -1,4 +1,5 @@
 import CollectionStore
+import NoteEditorFeature
 import PackagesFeature
 import ReminderFeature
 import StudyFeature
@@ -59,6 +60,15 @@ public struct SettingsScreen<ProfileEntry: View>: View {
                         Text("Manage Space", bundle: .module)
                     } icon: {
                         Image(systemName: "externaldrive")
+                    }
+                }
+                NavigationLink {
+                    NoteTypesScreen(store: store)
+                } label: {
+                    Label {
+                        Text("Note Types", bundle: .module)
+                    } icon: {
+                        Image(systemName: "rectangle.on.rectangle")
                     }
                 }
                 HelpAndAboutSection(store: store, sync: sync)

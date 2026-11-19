@@ -229,8 +229,7 @@ public final class NoteEditorModel {
     public func setSticky(_ sticky: Bool, ofField index: Int) async throws(CoreError) {
         guard !isEditing, notetype.fields.indices.contains(index), isSticky(index) != sticky else { return }
         let id = notetypeID
-        var latest = try await store.core.getNotetype(.with { $0.ntid = id })
-        guard latest.fields.indices.contains(index) else { return }
+        var latest = try await currentTypeWithSameFields()
         latest.fields[index].config.sticky = sticky
         try await store.modify(.updateNotetype(latest))
         if notetypeID == id { notetype = latest }
@@ -316,6 +315,7 @@ public final class NoteEditorModel {
             case .refused(let problem): return .refused(problem)
             case .warning(let warning): return .needsConfirmation(warning)
             }
+            _ = try await currentTypeWithSameFields()
             let updated = candidate
             try await store.modify(.updateNotes(.with { $0.notes = [updated] }))
             return .saved
@@ -330,6 +330,42 @@ public final class NoteEditorModel {
         try await store.modify(.removeNotes(.with { $0.noteIds = [editingNoteID] }))
     }
 
+    func noteTypeConversion() -> NoteTypeConversionModel? {
+        editingNoteID.map { NoteTypeConversionModel(store: store, noteIDs: [$0]) }
+    }
+
+    func discardDraft() {
+        fields = zip(notetype.fields.map(\.name), note.fields).map { EditableField(name: $0, storedContent: $1) }
+        tags = note.tags
+    }
+
+    func reloadAfterNoteTypeChange() async throws(CoreError) {
+        guard let editingNoteID else { return }
+        let ids = try await store.core.cardsOfNote(.with { $0.nid = editingNoteID }).cids
+        let active = editingCardID.flatMap { ids.contains($0) ? $0 : nil } ?? ids.first
+        if let active {
+            let card = try await store.core.getCard(.with { $0.cid = active })
+            preferredPreviewOrdinal = card.templateIdx
+            deckID = card.originalDeckID == 0 ? card.deckID : card.originalDeckID
+        } else {
+            preferredPreviewOrdinal = 0
+            deckID = 0
+        }
+        decks = []
+        try await loadExistingNote(editingNoteID)
+    }
+
+    private func currentTypeWithSameFields() async throws(CoreError) -> Anki_Notetypes_Notetype {
+        let id = notetypeID
+        let current = try await store.core.getNotetype(.with { $0.ntid = id })
+        guard current.fields.map(\.name) == notetype.fields.map(\.name) else {
+            throw CoreError(kind: .invalidInput, message: String(
+                localized: "The note type changed. Reopen the editor to edit the note.", bundle: .module
+            ))
+        }
+        return current
+    }
+
     private var draft: Anki_Notes_Note {
         var draft = note
         draft.fields = fields.map(\.content)
@@ -342,7 +378,7 @@ public final class NoteEditorModel {
     /// The core renders the current draft, including unsaved changes.
     public func preview() async throws(CoreError) -> [DraftCard] {
         let draft = self.draft
-        let type = notetype
+        let type = try await currentTypeWithSameFields()
         let selections: [(UInt32, String, Anki_Notetypes_Notetype.Template)]
         if type.config.kind == .cloze, let template = type.templates.first {
             var ordinals = try await store.core.clozeNumbersInNote(draft).numbers.filter { $0 > 0 }.map { $0 - 1 }
@@ -397,6 +433,7 @@ public final class NoteEditorModel {
             case .refused(let problem): return .refused(problem)
             case .warning(let warning): return .needsConfirmation(warning)
             }
+            _ = try await currentTypeWithSameFields()
             var next = try await store.core.newNote(.with { $0.ntid = candidate.notetypeID })
             let response = try await store.modify(.addNote(.with {
                 $0.note = candidate

@@ -5,11 +5,17 @@ import Foundation
 import Observation
 
 public struct TextImportSummary: Equatable, Sendable {
-    public let changes: MergeResult
+    public let added: Int
+    public let updated: Int
+    public let skipped: Int
     public let invalidRows: Int
 
     init(_ log: Anki_ImportExport_ImportResponse.Log) {
-        changes = MergeResult(log)
+        // The core groups first-field matches under one key for all three policies.
+        let matches = log.firstFieldMatch.count
+        added = log.new.count + (log.dupeResolution == .duplicate ? matches : 0)
+        updated = log.updated.count + (log.dupeResolution == .update ? matches : 0)
+        skipped = log.duplicate.count + log.conflicting.count + (log.dupeResolution == .preserve ? matches : 0)
         invalidRows = log.missingNotetype.count + log.missingDeck.count + log.emptyFirstField.count
     }
 }
@@ -19,6 +25,7 @@ public struct TextImportSummary: Equatable, Sendable {
 public final class TextImportModel {
     public typealias Metadata = Anki_ImportExport_CsvMetadata
 
+    public private(set) var isPresented = false
     public private(set) var fileName: String?
     public private(set) var deckChoices: [Anki_Decks_DeckNameId] = []
     public private(set) var noteTypeChoices: [Anki_Notetypes_NotetypeNameId] = []
@@ -41,17 +48,34 @@ public final class TextImportModel {
 
     deinit { staged?.discard() }
 
-    public func prepare(_ source: URL) async {
-        guard !isWorking else { return }
-        isWorking = true
-        defer { isWorking = false }
+    public func show() {
+        guard store.allowsNewProfileWork else { return }
+        isPresented = true
+    }
 
+    public func dismiss() {
+        guard !isWorking else { return }
+        isPresented = false
+        clearSelection()
+    }
+
+    private func clearSelection() {
         staged?.discard()
         staged = nil
         metadata = nil
         detected = nil
         summary = nil
+        progress = nil
         error = nil
+        fileName = nil
+    }
+
+    public func prepare(_ source: URL) async {
+        guard !isWorking, store.allowsNewProfileWork else { return }
+        clearSelection()
+        show()
+        isWorking = true
+        defer { isWorking = false }
         fileName = source.lastPathComponent
 
         do {
@@ -79,13 +103,13 @@ public final class TextImportModel {
     }
 
     public func updateOptions(_ edit: (inout Metadata) -> Void) {
-        guard var current = metadata, !isWorking else { return }
+        guard var current = metadata, !isWorking, store.allowsNewProfileWork else { return }
         edit(&current)
         metadata = current
     }
 
     public func updatePreview(delimiter: Metadata.Delimiter? = nil, notetypeID: Int64? = nil, html: Bool? = nil) async {
-        guard let staged, let current = metadata, !isWorking else { return }
+        guard let staged, let current = metadata, !isWorking, store.allowsNewProfileWork else { return }
         isWorking = true
         error = nil
         defer { isWorking = false }
@@ -135,7 +159,7 @@ public final class TextImportModel {
     }
 
     public func useFileNoteType() {
-        guard suggestsNoteTypeFromFile, !isWorking else { return }
+        guard suggestsNoteTypeFromFile, !isWorking, store.allowsNewProfileWork else { return }
         updateOptions { $0.notetype = detected?.notetype }
         fieldNames = []
     }
@@ -146,7 +170,7 @@ public final class TextImportModel {
     }
 
     public func startImport() async {
-        guard let staged, let metadata, !isWorking, summary == nil else { return }
+        guard let staged, let metadata, !isWorking, summary == nil, store.allowsNewProfileWork else { return }
         isWorking = true
         isImporting = true
         error = nil

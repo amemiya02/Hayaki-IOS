@@ -17,6 +17,7 @@ let package = Package(
         .package(path: "../SyncFeature"),
         .package(path: "../ReminderFeature"),
         .package(path: "../StudyFeature"),
+        .package(path: "../NoteEditorFeature"),
     ],
     targets: [
         .target(
@@ -28,6 +29,7 @@ let package = Package(
                 .product(name: "SyncFeature", package: "SyncFeature"),
                 .product(name: "ReminderFeature", package: "ReminderFeature"),
                 .product(name: "StudyFeature", package: "StudyFeature"),
+                .product(name: "NoteEditorFeature", package: "NoteEditorFeature"),
             ],
             resources: [.process("Resources")]
         ),
