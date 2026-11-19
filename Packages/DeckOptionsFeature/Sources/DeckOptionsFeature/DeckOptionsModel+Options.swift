@@ -26,14 +26,87 @@ extension DeckOptionsModel {
         set { selectedConfig.reviewsPerDay = UInt32(newValue.clamped(to: Self.dailyLimitRange)) }
     }
 
-    /// Whether this deck has its own daily limits, set in Anki on another
-    /// device, which apply instead of the preset's. The screen does not edit
-    /// them but keeps them.
-    public var deckHasOwnLimits: Bool {
+    public var deckNewCardsLimit: Int? {
+        get {
+            let limits = settings.currentDeck.limits
+            return limits.hasNew ? Int(limits.new) : nil
+        }
+        set {
+            if let limit = Self.dailyLimit(newValue) {
+                settings.currentDeck.limits.new = limit
+            } else {
+                settings.currentDeck.limits.clearNew()
+            }
+        }
+    }
+
+    public var deckReviewsLimit: Int? {
+        get {
+            let limits = settings.currentDeck.limits
+            return limits.hasReview ? Int(limits.review) : nil
+        }
+        set {
+            if let limit = Self.dailyLimit(newValue) {
+                settings.currentDeck.limits.review = limit
+            } else {
+                settings.currentDeck.limits.clearReview()
+            }
+        }
+    }
+
+    public var todayNewCardsLimit: Int? {
+        get {
+            let limits = settings.currentDeck.limits
+            return limits.newTodayActive && limits.hasNewToday ? Int(limits.newToday) : nil
+        }
+        set {
+            if let limit = Self.dailyLimit(newValue) {
+                settings.currentDeck.limits.newToday = limit
+            }
+            settings.currentDeck.limits.newTodayActive = newValue != nil
+        }
+    }
+
+    public var todayReviewsLimit: Int? {
+        get {
+            let limits = settings.currentDeck.limits
+            return limits.reviewTodayActive && limits.hasReviewToday ? Int(limits.reviewToday) : nil
+        }
+        set {
+            if let limit = Self.dailyLimit(newValue) {
+                settings.currentDeck.limits.reviewToday = limit
+            }
+            settings.currentDeck.limits.reviewTodayActive = newValue != nil
+        }
+    }
+
+    var suggestedTodayNewCardsLimit: Int {
         let limits = settings.currentDeck.limits
-        return limits.hasNew || limits.hasReview
-            || (limits.newTodayActive && limits.hasNewToday)
-            || (limits.reviewTodayActive && limits.hasReviewToday)
+        return limits.hasNewToday ? Int(limits.newToday) : (deckNewCardsLimit ?? newCardsPerDay)
+    }
+
+    var suggestedTodayReviewsLimit: Int {
+        let limits = settings.currentDeck.limits
+        return limits.hasReviewToday ? Int(limits.reviewToday) : (deckReviewsLimit ?? reviewsPerDay)
+    }
+
+    public var newCardsIgnoreReviewLimit: Bool {
+        get { settings.newCardsIgnoreReviewLimit }
+        set { settings.newCardsIgnoreReviewLimit = newValue }
+    }
+
+    public var applyAllParentLimits: Bool {
+        get { settings.applyAllParentLimits }
+        set { settings.applyAllParentLimits = newValue }
+    }
+
+    private static func dailyLimit(_ value: Int?) -> UInt32? {
+        value.map { UInt32($0.clamped(to: Self.dailyLimitRange)) }
+    }
+
+    /// Whether this deck currently overrides daily limits from its preset.
+    public var deckHasOwnLimits: Bool {
+        deckNewCardsLimit != nil || deckReviewsLimit != nil || todayNewCardsLimit != nil || todayReviewsLimit != nil
     }
 
     // MARK: Display order
