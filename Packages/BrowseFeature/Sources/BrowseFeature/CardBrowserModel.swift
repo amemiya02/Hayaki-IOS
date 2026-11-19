@@ -34,10 +34,13 @@ public final class CardBrowserModel {
 
         var defaultColumns: [String] {
             switch self {
-            case .cards: ["question", "deck", "cardDue"]
+            case .cards: ["noteFld", "template", "cardDue", "deck"]
             case .notes: ["noteFld", "note", "template", "noteTags"]
             }
         }
+        var columnsKey: String { self == .cards ? "activeCols" : "activeNoteCols" }
+        var sortColumnKey: String { self == .cards ? "sortType" : "noteSortType" }
+        var sortReverseKey: String { self == .cards ? "sortBackwards" : "browserNoteSortBackwards" }
     }
 
     public private(set) var state: State = .loading
@@ -45,7 +48,12 @@ public final class CardBrowserModel {
     @ObservationIgnored private var hasLoadedMode = false
     @ObservationIgnored private var sorts: [Mode: CardSort] = [:]
 
-    public var visibleColumnIDs: [String] { mode.defaultColumns }
+    private var columnSelections: [Mode: [String]] = [:]
+    public private(set) var availableColumns: [BrowserColumn] = []
+    public var visibleColumnIDs: [String] { columnSelections[mode] ?? mode.defaultColumns }
+    public var visibleColumns: [BrowserColumn] {
+        visibleColumnIDs.compactMap { id in availableColumns.first { $0.id == id } }
+    }
 
     /// The search in Anki's search syntax. Empty finds every card.
     public var searchText = ""
@@ -129,20 +137,47 @@ public final class CardBrowserModel {
                 hasLoadedMode = true
             }
             let mode = mode
-            let order = sort.order
-            let columns = visibleColumnIDs
+            let available = try await store.core.allBrowserColumns().columns
+            let known = Set(available.map(\.key))
+            let availableSort = available.filter { column in
+                let sorting = mode == .cards ? column.sortingCards : column.sortingNotes
+                return sorting != .none
+            }
+            let order: CardSort
+            if let remembered = sorts[mode] {
+                order = remembered
+            } else {
+                let key = try await readConfig(String.self, key: mode.sortColumnKey)
+                let reverse = try await readConfig(Bool.self, key: mode.sortReverseKey) ?? false
+                order = key.flatMap { key in
+                    availableSort.contains { $0.key == key } ? CardSort(column: key, reverse: reverse) : nil
+                } ?? .default
+            }
+            let columns: [String]
+            if let remembered = columnSelections[mode] {
+                columns = remembered
+            } else {
+                let saved = try await readConfig([String].self, key: mode.columnsKey) ?? []
+                let valid = Self.validColumns(saved, known: known)
+                columns = valid.isEmpty ? mode.defaultColumns : valid
+            }
+            guard thisSearch == searchCount else { return }
             // Active columns are transient core state and need to be restored after a reopen.
             try await store.core.setActiveBrowserColumns(.with { $0.vals = columns })
-            let available = try await store.core.allBrowserColumns().columns
             let request = Anki_Search_SearchRequest.with {
                 $0.search = text
-                $0.order = order
+                $0.order = order.order
             }
             let found = try await (mode == .cards ? store.core.searchCards(request) : store.core.searchNotes(request))
             guard thisSearch == searchCount else { return }
-            sortColumns = available.compactMap { column in
+            sorts[mode] = order
+            sort = order
+            columnSelections[mode] = columns
+            availableColumns = available.map { column in
+                BrowserColumn(id: column.key, label: mode == .cards ? column.cardsModeLabel : column.notesModeLabel)
+            }
+            sortColumns = availableSort.map { column in
                 let sorting = mode == .cards ? column.sortingCards : column.sortingNotes
-                guard sorting != .none else { return nil }
                 let label = mode == .cards ? column.cardsModeLabel : column.notesModeLabel
                 return SortColumn(id: column.key, label: label, startsDescending: sorting == .descending)
             }
@@ -198,11 +233,56 @@ public final class CardBrowserModel {
         await search()
     }
 
-    /// Sorts the cards differently and searches again.
+    /// Sets the displayed columns, in the learner's chosen order.
+    public func setColumns(_ columnIDs: [String]) async {
+        let columns = Self.validColumns(columnIDs, known: Set(availableColumns.map(\.id)))
+        guard !columns.isEmpty, columns != visibleColumnIDs else { return }
+        let mode = mode
+        do {
+            try await writeConfig(columns, key: mode.columnsKey)
+            columnSelections[mode] = columns
+            if self.mode == mode { await search() }
+        } catch {
+            failure = error.localizedDescription
+        }
+    }
+
+    /// Sorts rows differently and searches again.
     public func setSort(_ newSort: CardSort) async {
+        let mode = mode
         sort = newSort
         sorts[mode] = newSort
-        await search()
+        do {
+            try await writeConfig(newSort.column, key: mode.sortColumnKey)
+            if sorts[mode] == newSort {
+                try await writeConfig(newSort.reverse, key: mode.sortReverseKey)
+            }
+        } catch {
+            failure = error.localizedDescription
+        }
+        if self.mode == mode { await search() }
+    }
+
+    private static func validColumns(_ requested: [String], known: Set<String>) -> [String] {
+        var remaining = known
+        return requested.filter { remaining.remove($0) != nil }
+    }
+
+    func readConfig<Value: Decodable>(_ type: Value.Type, key: String) async throws(CoreError) -> Value? {
+        do {
+            let json = try await store.core.getConfigJson(.with { $0.val = key }).json
+            return try? JSONDecoder().decode(type, from: json)
+        } catch where error.kind == .notFoundError {
+            return nil
+        }
+    }
+
+    func writeConfig(_ value: some Encodable, key: String) async throws {
+        let json = try JSONEncoder().encode(value)
+        _ = try await store.core.setConfigJson(.with {
+            $0.key = key
+            $0.valueJson = json
+        })
     }
 
     /// Sorts the cards by another column, in that column's natural first
