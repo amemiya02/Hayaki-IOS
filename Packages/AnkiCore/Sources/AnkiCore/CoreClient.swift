@@ -111,26 +111,35 @@ public final class CoreClient: Sendable {
                 let key = Anki_Config_ConfigKey.BoolEnum.browserTableShowNotesMode
                 let preferredMode = try self.execute(.getConfigBool(.with { $0.key = key })).get().val
                 _ = try self.execute(.setActiveBrowserColumns(.with { $0.vals = columns })).get()
-                if preferredMode != notesMode {
-                    _ = try self.execute(.setConfigBool(.with {
-                        $0.key = key
-                        $0.value = notesMode
+                let temporarilyChangesMode = preferredMode != notesMode
+                if temporarilyChangesMode {
+                    _ = try self.execute(.runDbCommand(.with {
+                        $0.json = Data(#"{"kind":"begin"}"#.utf8)
                     })).get()
                 }
-                var rows: [Int64: Anki_Search_BrowserRow] = [:]
-                for id in ids {
-                    // The search's IDs may include a row that was since deleted.
-                    if let row = try? self.execute(.browserRowForId(.with { $0.val = id })).get() {
-                        rows[id] = row
+                let result = Result<[Int64: Anki_Search_BrowserRow], CoreError> { () throws(CoreError) in
+                    if temporarilyChangesMode {
+                        _ = try self.execute(.setConfigBool(.with {
+                            $0.key = key
+                            $0.value = notesMode
+                        })).get()
                     }
+                    var rows: [Int64: Anki_Search_BrowserRow] = [:]
+                    for id in ids {
+                        // The search's IDs may include a row that was since deleted.
+                        if let row = try? self.execute(.browserRowForId(.with { $0.val = id })).get() {
+                            rows[id] = row
+                        }
+                    }
+                    return rows
                 }
-                if preferredMode != notesMode {
-                    _ = try self.execute(.setConfigBool(.with {
-                        $0.key = key
-                        $0.value = preferredMode
+                if temporarilyChangesMode {
+                    // A read should leave both the saved preference and sync timestamps intact.
+                    _ = try self.execute(.runDbCommand(.with {
+                        $0.json = Data(#"{"kind":"rollback"}"#.utf8)
                     })).get()
                 }
-                return .success(rows)
+                return result
             } catch {
                 return .failure(error)
             }

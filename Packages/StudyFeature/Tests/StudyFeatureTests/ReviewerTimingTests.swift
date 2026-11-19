@@ -31,8 +31,8 @@ struct ReviewerTimingTests {
         }
     }
 
-    @Test("A leech reports whether the scheduler suspended the card")
-    func suspendedLeech() async throws {
+    @Test("A leech reports whether the scheduler suspended the card", arguments: [true, false])
+    func leechFeedback(suspends: Bool) async throws {
         try await withTemporaryCollection { store in
             let deck = try await store.addDeck(named: "Leeches")
             let id = try await store.addBasicCard(front: "Difficult", back: "Answer", inDeck: deck)
@@ -41,12 +41,20 @@ struct ReviewerTimingTests {
             card.lapses = 7
             let lapsed = card
             try await store.modify(.updateCards(.with { $0.cards = [lapsed] }))
+            let options = try await store.core.getDeckConfigsForUpdate(.with { $0.did = deck })
+            var config = try #require(options.allConfig.first { $0.config.id == options.currentDeck.configID }).config
+            config.config.leechAction = suspends ? .suspend : .tagOnly
+            try await store.modify(.updateDeckConfigs(.with {
+                $0.targetDeckID = deck
+                $0.configs = [config]
+            }))
             let session = StudySessionModel(store: store, deckID: deck)
             await session.start()
             session.showAnswer()
             await session.answer(.again)
-            #expect(session.leechFeedback == .suspended)
-            #expect(try await store.core.getCard(.with { $0.cid = id }).queue == -1)
+            #expect(session.leechFeedback == (suspends ? .suspended : .tagged))
+            let current = try await store.core.getCard(.with { $0.cid = id })
+            #expect((current.queue == -1) == suspends)
         }
     }
 
