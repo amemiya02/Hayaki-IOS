@@ -71,6 +71,7 @@ public struct CardSide: Equatable, Sendable {
 public struct StudyCard: Equatable, Sendable {
     public let id: Int64
     public let noteID: Int64
+    public let flag: UInt32
     /// The deck the card belongs to, whose options apply to it.
     public let homeDeckID: Int64
     /// The question side. On a card that asks the learner to type the
@@ -144,6 +145,7 @@ public struct StudyCard: Equatable, Sendable {
         return StudyCard(
             id: card.id,
             noteID: card.noteID,
+            flag: card.flags & 7,
             homeDeckID: card.originalDeckID != 0 ? card.originalDeckID : card.deckID,
             question: CardSide(html: typing.html, audio: question.side.audio),
             // Until the learner types something, the comparison shows the
