@@ -57,6 +57,7 @@ public final class CardBrowserModel {
 
     /// The search in Anki's search syntax. Empty finds every card.
     public var searchText = ""
+    var filterSelection: (query: String, filters: [QuickFilter], builtQuery: String)?
 
     /// The order of the cards. Change it with `setSort(_:)`.
     public private(set) var sort: CardSort = .default
@@ -358,7 +359,7 @@ public final class CardBrowserModel {
         await loadChoices()
         for await change in changes where !change.isDisjoint(with: Self.relevantChanges) {
             await search()
-            if !change.isDisjoint(with: [.deck, .tag, .note]) {
+            if !change.isDisjoint(with: [.deck, .tag, .note, .notetype]) {
                 await loadChoices()
             }
         }

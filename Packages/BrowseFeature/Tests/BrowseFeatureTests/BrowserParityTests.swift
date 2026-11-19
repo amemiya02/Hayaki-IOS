@@ -98,3 +98,28 @@ extension BrowserParityTests {
         }
     }
 }
+
+extension BrowserParityTests {
+    @Test("Combining filter choices matches any selection within a category and every selected category")
+    func combiningFilters() async throws {
+        try await withTemporaryCollection { store in
+            let spanish = try await store.addDeck(named: "Spanish Verbs")
+            let french = try await store.addDeck(named: "French")
+            let japanese = try await store.addDeck(named: "Japanese")
+            let correr = try await store.addBasicCard(front: "correr", back: "run", inDeck: spanish, tags: ["verb"])
+            let courir = try await store.addBasicCard(front: "courir", back: "run", inDeck: french, tags: ["verb"])
+            try await store.addBasicCard(front: "rojo", back: "red", inDeck: spanish, tags: ["adjective"])
+            try await store.addBasicCard(front: "hashiru", back: "run", inDeck: japanese, tags: ["verb"])
+            let model = CardBrowserModel(store: store)
+            model.searchText = "back:run"
+            await model.search()
+            await model.applyFilters([.deck("Spanish Verbs"), .deck("French"), .tag("verb"), .new, .noteType("Basic")])
+            #expect(Set(model.rowIDs) == [correr, courir])
+            #expect(model.filterDraft.query == "back:run")
+            #expect(model.filterDraft.filters.count == 5)
+            await model.applyFilters([])
+            #expect(model.searchedText == "back:run")
+            #expect(model.rowIDs.count == 3)
+        }
+    }
+}
