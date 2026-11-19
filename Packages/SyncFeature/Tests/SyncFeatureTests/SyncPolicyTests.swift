@@ -40,6 +40,10 @@ struct SyncPolicyTests {
 
             await model.sync()
             #expect(model.needsMeteredConfirmation)
+            await model.confirmMeteredSync(alwaysAllow: true)
+            #expect(model.policy.allowsMetered)
+            #expect(!model.needsMeteredConfirmation)
+            #expect(model.mediaStatus == .idle)
         }
     }
 
@@ -94,6 +98,12 @@ struct SyncPolicyTests {
             #expect(model.status == .synced(SyncOutcome(kind: .merged, serverMessage: nil)))
             #expect(model.mediaStatus == .idle)
 
+            let media = Data("background media".utf8)
+            _ = try await local.addMediaFile(named: "automatic.png", data: media)
+            model.policy.media = .always
+            await model.automaticSync(.background)
+            #expect(model.mediaStatus == .synced)
+
             try await withTemporaryCollection { other in
                 let reader = SyncModel(store: other, storage: MemoryAccountStorage(), network: { .unmetered })
                 reader.selectDestination(.selfHosted)
@@ -105,6 +115,8 @@ struct SyncPolicyTests {
                 await reader.download()
                 let count = try await other.cardCount(matching: "deck:Automatic")
                 #expect(count == 3)
+                let received = try Data(contentsOf: other.location.mediaFolder.appendingPathComponent("automatic.png"))
+                #expect(received == media)
             }
         }
     }
@@ -148,6 +160,99 @@ struct SyncPolicyTests {
             #expect(relaunched.account?.server == account.server)
             relaunched.cancelDestinationChange()
             #expect(!relaunched.customCertificate.isEmpty)
+
+            let removed = await relaunched.updateCustomCertificate("")
+            #expect(removed == nil)
+            #expect(relaunched.customCertificate.isEmpty)
+            await relaunched.sync()
+            #expect(relaunched.status.failure?.reason == .unreachable)
+        }
+    }
+
+    @Test("Automatic sync checks the collection at a newly signed-in destination")
+    func automaticSyncAfterDestinationChange() async throws {
+        let original = try await SyncServer(users: [("alice", "correct horse")])
+        let replacement = try await SyncServer(users: [("alice", "correct horse")])
+        try await withTemporaryCollection { local in
+            let model = SyncModel(store: local, storage: MemoryAccountStorage(), network: { .unmetered })
+            model.selectDestination(.selfHosted)
+            model.serverAddress = original.address
+            model.userName = "alice"
+            model.password = "correct horse"
+            await model.signIn()
+            try #require(model.account != nil)
+            let deck = try await local.addDeck(named: "Conflict")
+            try await local.addBasicNotes(count: 1, toDeck: deck)
+            await model.sync()
+            await model.upload()
+            #expect(model.mediaStatus == .synced)
+
+            model.beginDestinationChange()
+            model.serverAddress = replacement.address
+            model.userName = "alice"
+            model.password = "correct horse"
+            await model.signIn()
+            try #require(model.serverAddress == replacement.address)
+            model.policy.automatic = true
+            await model.automaticSync(.foreground)
+            #expect(model.status == .choosingDirection(.uploadOnly))
+            #expect(model.mediaStatus == .idle)
+        }
+    }
+
+    @Test("Decks can read the collection while the sync badge waits for the server")
+    func badgeDoesNotBlockCollection() async throws {
+        let server = try await SyncServer(users: [("alice", "correct horse")])
+        try await withTemporaryCollection { local in
+            let model = SyncModel(store: local, storage: MemoryAccountStorage(), network: { .unmetered })
+            model.selectDestination(.selfHosted)
+            model.serverAddress = server.address
+            model.userName = "alice"
+            model.password = "correct horse"
+            await model.signIn()
+            try #require(model.account != nil)
+
+            _ = Darwin.kill(server.processIdentifier, SIGSTOP)
+            defer { server.resume() }
+            async let badge: Void = model.refreshBadge()
+            try await eventually("the badge check to begin") { model.isBusy }
+            let resume = Task {
+                try await Task.sleep(for: .seconds(1))
+                server.resume()
+            }
+            let clock = ContinuousClock()
+            let started = clock.now
+            let decks = try await local.deckNames()
+            let elapsed = clock.now - started
+            #expect(decks == ["Default"])
+            #expect(elapsed < .milliseconds(850))
+            try await resume.value
+            await badge
+        }
+    }
+
+    @Test("A configured collection timeout is honored by the upstream core", .timeLimit(.minutes(2)))
+    func collectionTimeout() async throws {
+        let server = try await SyncServer(users: [("alice", "correct horse")])
+        try await withTemporaryCollection { local in
+            let model = SyncModel(store: local, storage: MemoryAccountStorage(), network: { .unmetered })
+            model.selectDestination(.selfHosted)
+            model.serverAddress = server.address
+            model.userName = "alice"
+            model.password = "correct horse"
+            await model.signIn()
+            try #require(model.account != nil)
+            model.policy.setTimeoutSeconds(36)
+
+            _ = Darwin.kill(server.processIdentifier, SIGSTOP)
+            defer { server.resume() }
+            let clock = ContinuousClock()
+            let start = clock.now
+            await model.sync()
+            let elapsed = clock.now - start
+            #expect(model.status.failure?.reason == .unreachable)
+            #expect(elapsed >= .seconds(35))
+            #expect(elapsed < .seconds(50))
         }
     }
 }

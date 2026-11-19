@@ -76,8 +76,9 @@ public struct RootView: View {
 
     fileprivate static func foregroundSync(_ model: AppModel, sync: SyncModel) async {
         guard model.sync === sync, model.collectionIsIdle else { return }
-        await sync.automaticSync(.foreground)
-        await sync.refreshBadge()
+        if await !sync.automaticSync(.foreground) {
+            await sync.refreshBadge()
+        }
     }
 
     public var body: some View {

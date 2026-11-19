@@ -88,6 +88,9 @@ public final class SyncModel {
     }
 
     private var lastKnownBadge: Badge?
+    // The backend caches server status on the collection, so a new sign-in
+    // needs a real collection sync before an automatic media-only transfer.
+    private var requiresFreshCollectionSync = false
     private var checkingStatus = false
     @ObservationIgnored private var didCancelStatusCheck = false
     @ObservationIgnored private var lastAttempt: Date? {
@@ -318,6 +321,7 @@ public final class SyncModel {
         }
         self.account = account
         draftCertificate = ""
+        requiresFreshCollectionSync = true
         lastAttempt = nil
         lastKnownBadge = nil
         mediaStatus = .idle
@@ -346,31 +350,36 @@ public final class SyncModel {
 
     // MARK: Syncing
 
-    /// Syncs the collection with the server: sends this device's changes and
-    /// fetches the server's. When the two cannot be merged, stops at
-    /// `.choosingDirection` without changing either side.
     public var canStartManualSync: Bool {
-        guard account != nil, !isBusy, !isChangingDestination else { return false }
+        guard store.allowsNewProfileWork, account != nil, !isBusy, !isChangingDestination else { return false }
         if case .choosingDirection = status { return false }
         return true
     }
 
+    /// Exchanges collection changes, or asks which side to keep if the core
+    /// requires a one-way sync.
     public func sync() async {
         await request(.collection)
     }
 
     /// Checks the upstream status before transferring. Unchanged collections
     /// can transfer media independently. A background trigger skips the foreground cooldown.
-    public func automaticSync(_ trigger: AutomaticTrigger) async {
+    @discardableResult
+    public func automaticSync(_ trigger: AutomaticTrigger) async -> Bool {
         guard policy.automatic, networkAllowsAutomaticTransfer, let account,
               canCheckStatus, pendingMeteredAction == nil
-        else { return }
-        if trigger == .foreground, let lastAttempt, now().timeIntervalSince(lastAttempt) <= 600 { return }
+        else { return false }
+        if trigger == .foreground, let lastAttempt, now().timeIntervalSince(lastAttempt) <= 600 { return false }
 
         meterPermissionForActiveTransfer = policy.allowsMetered
         defer {
             lastAttempt = now()
             meterPermissionForActiveTransfer = nil
+        }
+
+        if requiresFreshCollectionSync {
+            await syncCollection(meteredConsent: false, automatically: true)
+            return true
         }
 
         let previousStatus = status
@@ -379,15 +388,15 @@ public final class SyncModel {
             let required = try await checkStatus(for: account)
             guard !didCancelStatusCheck, networkAllowsAutomaticTransfer else {
                 status = previousStatus
-                return
+                return true
             }
             if required == .normalSync || required == .fullSync {
-                await syncCollection(meteredConsent: false)
+                await syncCollection(meteredConsent: false, automatically: true)
             } else {
                 // A manually cancelled media transfer stays paused until a manual sync or retry.
                 guard mediaStatus != .cancelled, policy.media.allows(network) else {
                     status = previousStatus
-                    return
+                    return true
                 }
                 let outcome = SyncOutcome(kind: .merged, serverMessage: nil)
                 status = .synced(outcome)
@@ -396,11 +405,12 @@ public final class SyncModel {
         } catch {
             status = .failed(SyncFailure(error, server: account.server, signingIn: false))
         }
+        return true
     }
 
     /// Reads pending collection work for the Decks sync control.
     public func refreshBadge() async {
-        guard policy.showsStatusBadge, networkAllowsAutomaticTransfer,
+        guard policy.showsStatusBadge, networkAllowsAutomaticTransfer, !requiresFreshCollectionSync,
               let account, canCheckStatus
         else { return }
         do {
@@ -430,7 +440,7 @@ public final class SyncModel {
         }
         SyncClientIdentity.install()
         let result = try await withCustomCertificate(account.certificateForRequests) { () async throws(CoreError) in
-            try await store.core.syncStatus(account.auth(timeoutSeconds: policy.timeoutSeconds))
+            try await store.core.lookupSyncStatus(account.auth(timeoutSeconds: policy.timeoutSeconds))
         }
         if result.hasNewEndpoint, let failure = follow(newEndpoint: result.newEndpoint, for: account) {
             throw CoreError(kind: .invalidInput, message: failure.message)
@@ -486,13 +496,12 @@ public final class SyncModel {
 
     private func networkChanged() {
         guard let meterPermissionForActiveTransfer else { return }
-        if network == .offline ||
-            (network == .metered && (!meterPermissionForActiveTransfer || requiresUnmeteredMedia)) {
+        if network == .metered && (!meterPermissionForActiveTransfer || requiresUnmeteredMedia) {
             cancel()
         }
     }
 
-    private func syncCollection(meteredConsent: Bool) async {
+    private func syncCollection(meteredConsent: Bool, automatically: Bool = false) async {
         guard let account else { return }
         confirmedMeteredConflict = meteredConsent
         SyncClientIdentity.install()
@@ -528,7 +537,10 @@ public final class SyncModel {
             status = .choosingDirection(.uploadOnly)
         case .noChanges, .normalSync, .UNRECOGNIZED:
             // A finished normal sync reports no further changes required.
-            await finishCollectionSync(SyncOutcome(kind: .merged, serverMessage: response.serverMessage.nilIfEmpty))
+            await finishCollectionSync(
+                SyncOutcome(kind: .merged, serverMessage: response.serverMessage.nilIfEmpty),
+                syncMedia: !automatically || mediaStatus != .cancelled
+            )
         }
     }
 
@@ -618,11 +630,12 @@ public final class SyncModel {
         await finishCollectionSync(SyncOutcome(kind: upload ? .uploaded : .downloaded, serverMessage: nil))
     }
 
-    private func finishCollectionSync(_ outcome: SyncOutcome) async {
+    private func finishCollectionSync(_ outcome: SyncOutcome, syncMedia: Bool = true) async {
         store.signal(.everything)
+        requiresFreshCollectionSync = false
         lastKnownBadge = nil
         status = .synced(outcome)
-        await syncMedia(after: outcome)
+        if syncMedia { await self.syncMedia(after: outcome) }
     }
 
     private func syncMedia(after outcome: SyncOutcome) async {

@@ -69,7 +69,12 @@ public final class SyncServer {
         process.standardError = pipe
         let output = LogBuffer()
         pipe.fileHandleForReading.readabilityHandler = { handle in
-            output.append(String(decoding: handle.availableData, as: UTF8.self))
+            let data = handle.availableData
+            guard !data.isEmpty else {
+                handle.readabilityHandler = nil
+                return
+            }
+            output.append(String(decoding: data, as: UTF8.self))
         }
         try process.run()
 
