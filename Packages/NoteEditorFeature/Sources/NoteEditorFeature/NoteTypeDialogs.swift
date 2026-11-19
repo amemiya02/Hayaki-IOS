@@ -30,8 +30,11 @@ struct NoteTypeTextSheet: View {
                     .focused($isFocused)
                     .onSubmit { Task { await save() } }
                 if edit.allowsEmpty {
-                    Text("Use a language tag such as ja-JP. Leave it blank to clear the preference.", bundle: .module)
-                        .foregroundStyle(.secondary)
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Use a language tag such as ja-JP. Leave it blank to clear the preference.", bundle: .module)
+                        Text("On iOS, switch languages using the keyboard’s language key.", bundle: .module)
+                    }
+                    .foregroundStyle(.secondary)
                 }
             }
             .disabled(busy)
