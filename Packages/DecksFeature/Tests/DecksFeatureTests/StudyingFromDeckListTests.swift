@@ -17,6 +17,8 @@ struct StudyingFromDeckListTests {
             try await eventually("the deck list loaded") {
                 deckList.outline == ["Languages: 3 new, 0 learning, 0 due", "  Spanish: 3 new, 0 learning, 0 due"]
             }
+            #expect(deckList.dueToday == 3)
+            #expect(deckList.studiedToday == 0)
 
             // Study the parent deck: one card answered Easy, one Again.
             let languages = try await store.deckID(named: "Languages")
@@ -30,6 +32,8 @@ struct StudyingFromDeckListTests {
             try await eventually("the studied cards counted") {
                 deckList.outline == ["Languages: 1 new, 1 learning, 0 due", "  Spanish: 1 new, 1 learning, 0 due"]
             }
+            #expect(deckList.dueToday == 2)
+            #expect(deckList.studiedToday == 2)
             #expect(session.counts == StudyCounts(new: 1, learning: 1, due: 0))
         }
     }

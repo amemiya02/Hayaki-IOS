@@ -1,13 +1,15 @@
 import CollectionStore
 import SwiftUI
+import SyncFeature
 
 struct HelpAndAboutSection: View {
     let store: CollectionStore
+    let sync: SyncModel
 
     var body: some View {
         Section {
             NavigationLink {
-                TransferGuideScreen(store: store)
+                TransferGuideScreen(store: store, sync: sync)
             } label: {
                 Label {
                     Text("Transfer Guide", bundle: .module)

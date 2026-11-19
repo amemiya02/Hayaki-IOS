@@ -4,8 +4,93 @@
     "Could Not Open Your Collection" : {
       "comment" : "Title shown when the collection could not be opened at launch."
     },
+    "Done" : {
+      "comment" : "Completes setup after visiting Sync from Welcome.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "完了"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "完成"
+          }
+        }
+      }
+    },
     "Opening Your Collection…" : {
       "comment" : "Shown while the collection opens at launch."
+    },
+    "Set Up Sync" : {
+      "comment" : "Opens the available sync destinations from Welcome.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "同期を設定する"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "设置同步"
+          }
+        }
+      }
+    },
+    "Start Empty" : {
+      "comment" : "Continues to Decks with a fresh collection.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "空のコレクションで始める"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "从空集合开始"
+          }
+        }
+      }
+    },
+    "Stats" : {
+      "comment" : "Tab and sidebar label for the statistics section.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "統計"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "统计"
+          }
+        }
+      }
+    },
+    "Welcome to Hayaki" : {
+      "comment" : "First-run screen title.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hayaki へようこそ"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "欢迎使用 Hayaki"
+          }
+        }
+      }
     }
   },
   "version" : "1.0"
