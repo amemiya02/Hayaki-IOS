@@ -33,6 +33,17 @@ private struct DeckManagement: ViewModifier {
                     NewDeckButton()
                         .environment(request)
                 }
+                ToolbarItem(placement: .secondaryAction) {
+                    Button {
+                        request.pending = .filteredOptions(nil)
+                    } label: {
+                        Label {
+                            Text("New Filtered Deck", bundle: .module)
+                        } icon: {
+                            Image(systemName: "line.3.horizontal.decrease")
+                        }
+                    }
+                }
             }
             .sheet(item: sheet) { action in
                 switch action {
@@ -46,9 +57,11 @@ private struct DeckManagement: ViewModifier {
                     }
                 case .options(let deck):
                     DeckOptionsScreen(store: model.store, deckID: deck.id)
+                case .filteredOptions(let id):
+                    FilteredDeckScreen(store: model.store, deckID: id)
                 case .export(let deck):
                     PackageExportScreen(store: model.store, decks: [deck.id])
-                case .rename, .delete:
+                case .rename, .delete, .rebuild, .empty:
                     EmptyView()
                 }
             }
@@ -61,7 +74,13 @@ private struct DeckManagement: ViewModifier {
                 case .delete(let deck):
                     request.pending = nil
                     confirmDeletion(of: deck)
-                case .create, .move, .options, .export, nil:
+                case .rebuild(let deck):
+                    request.pending = nil
+                    manageFilteredDeck(deck, empty: false)
+                case .empty(let deck):
+                    request.pending = nil
+                    manageFilteredDeck(deck, empty: true)
+                case .create, .move, .options, .filteredOptions, .export, nil:
                     break
                 }
             }
@@ -115,7 +134,7 @@ private struct DeckManagement: ViewModifier {
     private var sheet: Binding<DeckAction?> {
         Binding {
             switch request.pending {
-            case .create, .move, .options, .export: request.pending
+            case .create, .move, .options, .filteredOptions, .export: request.pending
             default: nil
             }
         } set: { request.pending = $0 }
@@ -140,6 +159,20 @@ private struct DeckManagement: ViewModifier {
     }
 
     // MARK: Actions
+
+    private func manageFilteredDeck(_ deck: DeckNode, empty: Bool) {
+        let editor = FilteredDeckModel(store: model.store, deckID: deck.id)
+        Task {
+            if empty {
+                await editor.empty()
+            } else {
+                await editor.rebuild()
+            }
+            if let error = editor.error {
+                failure = Failure(title: Text("Could Not Update Filtered Deck", bundle: .module), message: error)
+            }
+        }
+    }
 
     /// Counts what goes with the deck, then asks the learner to confirm.
     private func confirmDeletion(of deck: DeckNode) {

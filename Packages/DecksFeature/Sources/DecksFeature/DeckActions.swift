@@ -9,6 +9,9 @@ enum DeckAction: Identifiable, Equatable {
     case move(DeckNode)
     case delete(DeckNode)
     case options(DeckNode)
+    case filteredOptions(DeckNode.ID?)
+    case rebuild(DeckNode)
+    case empty(DeckNode)
     /// Export the deck, with its subdecks, as a deck package.
     case export(DeckNode)
 
@@ -19,6 +22,9 @@ enum DeckAction: Identifiable, Equatable {
         case .move(let deck): "move-\(deck.id)"
         case .delete(let deck): "delete-\(deck.id)"
         case .options(let deck): "options-\(deck.id)"
+        case .filteredOptions(let did): "filtered-options-\(did.map(String.init) ?? "new")"
+        case .rebuild(let deck): "rebuild-\(deck.id)"
+        case .empty(let deck): "empty-\(deck.id)"
         case .export(let deck): "export-\(deck.id)"
         }
     }
@@ -76,6 +82,35 @@ struct DeckActionMenuItems: View {
                     Text("Options", bundle: .module)
                 } icon: {
                     Image(systemName: "gearshape")
+                }
+            }
+        }
+        if deck.isFiltered {
+            Button {
+                request?.pending = .filteredOptions(deck.id)
+            } label: {
+                Label {
+                    Text("Options", bundle: .module)
+                } icon: {
+                    Image(systemName: "gearshape")
+                }
+            }
+            Button {
+                request?.pending = .rebuild(deck)
+            } label: {
+                Label {
+                    Text("Rebuild Filtered Deck", bundle: .module)
+                } icon: {
+                    Image(systemName: "arrow.clockwise")
+                }
+            }
+            Button {
+                request?.pending = .empty(deck)
+            } label: {
+                Label {
+                    Text("Empty Filtered Deck", bundle: .module)
+                } icon: {
+                    Image(systemName: "tray")
                 }
             }
         }
