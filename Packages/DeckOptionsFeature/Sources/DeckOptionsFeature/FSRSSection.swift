@@ -92,6 +92,7 @@ struct FSRSSection: View {
             } else {
                 Text("The target percentage of cards you remember when they are due.", bundle: .module)
             }
+            FSRSWorkloadEstimateLabel(model: model)
         }
     }
 

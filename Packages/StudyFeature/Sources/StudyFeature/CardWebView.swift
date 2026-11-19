@@ -74,11 +74,15 @@ struct CardWebView: UIViewRepresentable {
     /// Called for what the learner does on the card.
     var onTemplateRequest: ((TemplateRequest, CardTemplateContext) async -> TemplateReply)? = nil
     let onEvent: (CardPageEvent) -> Void
+    let customScheduling: CustomSchedulingRequest?
+    let onCustomSchedule: (UUID, String?) -> Void
     @AppStorage(CardTemplatePreference.externalApps) private var allowsExternalApps = false
 
     init(
         display: CardDisplay, mediaFolder: URL, zoom: CGFloat, reviewer: ReviewerWebOptions? = nil,
         onTemplateRequest: ((TemplateRequest, CardTemplateContext) async -> TemplateReply)? = nil,
+        customScheduling: CustomSchedulingRequest? = nil,
+        onCustomSchedule: @escaping (UUID, String?) -> Void = { _, _ in },
         onEvent: @escaping (CardPageEvent) -> Void
     ) {
         self.display = display
@@ -87,6 +91,8 @@ struct CardWebView: UIViewRepresentable {
         self.reviewer = reviewer
         self.onTemplateRequest = onTemplateRequest
         self.onEvent = onEvent
+        self.customScheduling = customScheduling
+        self.onCustomSchedule = onCustomSchedule
     }
 
     func makeCoordinator() -> Coordinator {
@@ -147,6 +153,7 @@ struct CardWebView: UIViewRepresentable {
         context.coordinator.focusTypedAnswer = focusTypedAnswer
         context.coordinator.updateReviewer(reviewer)
         context.coordinator.show(display)
+        context.coordinator.schedule(customScheduling, completion: onCustomSchedule)
     }
 
     static func dismantleUIView(_ webView: WKWebView, coordinator: Coordinator) {
@@ -165,6 +172,9 @@ struct CardWebView: UIViewRepresentable {
         static let inputHandler = "hayakiReviewerInput"
         private var reviewer: ReviewerWebOptions?
         private var command: ReviewerWebCommand?
+        private var schedulingRequest: CustomSchedulingRequest?
+        private var sentSchedule: UUID?
+        private var schedulingCompletion: (UUID, String?) -> Void = { _, _ in }
 
         weak var webView: WKWebView?
         var focusTypedAnswer = true
@@ -183,6 +193,7 @@ struct CardWebView: UIViewRepresentable {
 
         func loadHostPage() {
             pageLoaded = false
+            sentSchedule = nil
             invalidateTemplate()
             shown = nil
             webView?.load(URLRequest(url: CardResources.hostPageURL))
@@ -207,6 +218,25 @@ struct CardWebView: UIViewRepresentable {
             if let requested = reviewer.command, command != requested {
                 command = requested
                 webView.evaluateJavaScript(requested.javascript)
+            }
+        }
+
+        func schedule(_ request: CustomSchedulingRequest?, completion: @escaping (UUID, String?) -> Void) {
+            schedulingRequest = request
+            schedulingCompletion = completion
+            sendScheduleIfReady()
+        }
+
+        private func sendScheduleIfReady() {
+            guard pageLoaded, let webView, let request = schedulingRequest, sentSchedule != request.id else { return }
+            sentSchedule = request.id
+            webView.callAsyncJavaScript(
+                request.javascript,
+                arguments: ["statesJSON": request.statesJSON, "contextJSON": request.contextJSON],
+                in: nil, in: WKContentWorld.world(name: "Hayaki Scheduling")
+            ) { [weak self] result in
+                guard let self, schedulingRequest?.id == request.id else { return }
+                schedulingCompletion(request.id, (try? result.get()) as? String)
             }
         }
 
@@ -254,6 +284,7 @@ struct CardWebView: UIViewRepresentable {
             pageLoaded = true
             sendAppearance()
             sendIfReady()
+            sendScheduleIfReady()
             sendReviewerOptions()
         }
 
