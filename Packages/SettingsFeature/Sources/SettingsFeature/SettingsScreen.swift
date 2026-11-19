@@ -37,7 +37,7 @@ public struct SettingsScreen<ProfileEntry: View>: View {
                 SyncSettingsRow(model: sync)
                 ReminderSettingsRow(store: store)
                 NavigationLink {
-                    ReviewerSettingsScreen()
+                    ReviewerSettingsScreen(store: store)
                 } label: {
                     Label("Reviewer", systemImage: "rectangle.on.rectangle")
                 }

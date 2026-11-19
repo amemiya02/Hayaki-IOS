@@ -144,8 +144,58 @@ public struct ReviewerPreferences: Equatable, Codable, Sendable {
     public var doubleTapMilliseconds = 200
     public var minimumPressMilliseconds = 0
     public var swipeSensitivity = 100
+    var toolbarPosition: ReviewerToolbarPosition = .top
+    var toolbarOrder = ReviewerToolbarAction.allCases
+    var toolbarVisibility: [ReviewerToolbarAction: ReviewerToolbarVisibility] = [:]
+    var showAnswerButtons = true
+    var hideHardAndEasy = false
+    var answerButtonSize = 100
+    var cardZoom = 100
+    var imageZoom = 100
+    var centerVertically = false
+    var keepScreenOn = false
+    var showDeckTitle = false
+    var showProgress = true
+    var showFeedback = true
+    var hideStatusBar = false
+    var hideHomeIndicator = false
+    var cardFrame = false
+    var reducedMotion = false
+
+    func visibility(of action: ReviewerToolbarAction) -> ReviewerToolbarVisibility {
+        toolbarVisibility[action] ?? action.defaultVisibility
+    }
 
     public init() {}
+
+    public init(from decoder: any Decoder) throws {
+        self.init()
+        let values = try decoder.container(keyedBy: CodingKeys.self)
+        bindings = try values.decodeIfPresent([ReviewerBinding].self, forKey: .bindings) ?? bindings
+        tapZones = try values.decodeIfPresent(ReviewerTapZones.self, forKey: .tapZones) ?? tapZones
+        doubleTapMilliseconds = try values.decodeIfPresent(Int.self, forKey: .doubleTapMilliseconds) ?? doubleTapMilliseconds
+        minimumPressMilliseconds = try values.decodeIfPresent(Int.self, forKey: .minimumPressMilliseconds) ?? minimumPressMilliseconds
+        swipeSensitivity = try values.decodeIfPresent(Int.self, forKey: .swipeSensitivity) ?? swipeSensitivity
+        toolbarPosition = try values.decodeIfPresent(ReviewerToolbarPosition.self, forKey: .toolbarPosition) ?? toolbarPosition
+        toolbarOrder = try values.decodeIfPresent([ReviewerToolbarAction].self, forKey: .toolbarOrder) ?? toolbarOrder
+        toolbarVisibility = try values.decodeIfPresent([ReviewerToolbarAction: ReviewerToolbarVisibility].self, forKey: .toolbarVisibility)
+            ?? toolbarVisibility
+        showAnswerButtons = try values.decodeIfPresent(Bool.self, forKey: .showAnswerButtons) ?? showAnswerButtons
+        hideHardAndEasy = try values.decodeIfPresent(Bool.self, forKey: .hideHardAndEasy) ?? hideHardAndEasy
+        answerButtonSize = try values.decodeIfPresent(Int.self, forKey: .answerButtonSize) ?? answerButtonSize
+        cardZoom = try values.decodeIfPresent(Int.self, forKey: .cardZoom) ?? cardZoom
+        imageZoom = try values.decodeIfPresent(Int.self, forKey: .imageZoom) ?? imageZoom
+        centerVertically = try values.decodeIfPresent(Bool.self, forKey: .centerVertically) ?? centerVertically
+        keepScreenOn = try values.decodeIfPresent(Bool.self, forKey: .keepScreenOn) ?? keepScreenOn
+        showDeckTitle = try values.decodeIfPresent(Bool.self, forKey: .showDeckTitle) ?? showDeckTitle
+        showProgress = try values.decodeIfPresent(Bool.self, forKey: .showProgress) ?? showProgress
+        showFeedback = try values.decodeIfPresent(Bool.self, forKey: .showFeedback) ?? showFeedback
+        hideStatusBar = try values.decodeIfPresent(Bool.self, forKey: .hideStatusBar) ?? hideStatusBar
+        hideHomeIndicator = try values.decodeIfPresent(Bool.self, forKey: .hideHomeIndicator) ?? hideHomeIndicator
+        cardFrame = try values.decodeIfPresent(Bool.self, forKey: .cardFrame) ?? cardFrame
+        reducedMotion = try values.decodeIfPresent(Bool.self, forKey: .reducedMotion) ?? reducedMotion
+    }
+
 
     public static func load(from defaults: UserDefaults = .standard) -> Self {
         guard let data = defaults.data(forKey: key),

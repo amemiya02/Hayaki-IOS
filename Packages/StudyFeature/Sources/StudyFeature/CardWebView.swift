@@ -139,8 +139,11 @@ struct CardWebView: UIViewRepresentable {
         private func sendReviewerOptions() {
             guard pageLoaded, let reviewer, let webView else { return }
             webView.callAsyncJavaScript(
-                "window.hayakiReviewerKeys = keys; document.body.style.setProperty('--reviewer-image-zoom', imageZoom); document.body.classList.toggle('reviewer-centered', centered);",
-                arguments: ["keys": reviewer.keySignatures, "imageZoom": reviewer.imageZoom, "centered": reviewer.centerVertically],
+                "window.hayakiReviewerKeys = keys; document.body.style.setProperty('--reviewer-image-zoom', imageZoom); document.body.classList.toggle('reviewer-centered', centered); document.body.classList.toggle('reviewer-hide-audio', hideAudio); document.body.classList.toggle('reviewer-reduced-motion', reducedMotion);",
+                arguments: [
+                    "keys": reviewer.keySignatures, "imageZoom": reviewer.imageZoom, "centered": reviewer.centerVertically,
+                    "hideAudio": reviewer.hidesAudioButtons, "reducedMotion": reviewer.reducedMotion,
+                ],
                 in: nil, in: .defaultClient, completionHandler: nil
             )
             if let requested = reviewer.command, command != requested {
@@ -278,6 +281,8 @@ struct ReviewerWebOptions: Equatable {
     let keySignatures: [String]
     var imageZoom = 1.0
     var centerVertically = false
+    var hidesAudioButtons = false
+    var reducedMotion = false
     let command: ReviewerWebCommand?
 }
 

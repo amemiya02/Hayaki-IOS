@@ -1,3 +1,4 @@
+import AnkiCore
 import CollectionStore
 import SwiftUI
 
@@ -43,12 +44,20 @@ public struct StudyScreen: View {
     /// What the learner typed on a card that asks for typing.
     @State private var typedAnswer = ""
     @State private var editedCard: EditedCard?
+    @State private var editedNoteTags: EditedNoteTags?
     @State private var preferences = ReviewerPreferences.load()
     @State private var webCommand: ReviewerWebCommand?
     @State private var pendingTap: Task<Void, Never>?
     @FocusState private var reviewerFocused: Bool
     @State private var showingSettings = false
     @State private var requestedAction: ReviewerCommand?
+    @State private var route: ReviewerDestination?
+    @State private var autoAdvance = false
+    @State private var timebox: StudyTimebox?
+    @State private var feedback: ReviewFeedback?
+    @State private var initialCount = 0
+    @Environment(\.reviewerDestination) private var destinations
+    @Environment(\.scenePhase) private var scenePhase
     @Environment(\.studyNoteEditor) private var noteEditor
     #if os(iOS)
     @State private var audio = CardAudioPlayer()
@@ -57,6 +66,7 @@ public struct StudyScreen: View {
     @State private var isErasing = false
     @State private var deckTools: ReviewerDeckTools
     #endif
+    private let store: CollectionStore
     private let deckName: String
     private let profileFolder: URL
     @Environment(\.dismiss) private var dismiss
@@ -64,6 +74,7 @@ public struct StudyScreen: View {
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 
     public init(store: CollectionStore, deck: StudyDeck) {
+        self.store = store
         _model = State(initialValue: StudySessionModel(store: store, deckID: deck.id))
         deckName = deck.name
         profileFolder = store.location.folder
@@ -76,9 +87,56 @@ public struct StudyScreen: View {
         VStack(spacing: 0) {
             topBar
             content
+            if preferences.toolbarPosition == .bottom {
+                reviewerActions
+            }
         }
         .background(Color.studyBackground.ignoresSafeArea())
         .task { await model.run() }
+        .task(id: autoAdvanceTask) { await runAutoAdvance() }
+        .task(id: feedback) {
+            guard feedback != nil else { return }
+            try? await Task.sleep(for: .seconds(2))
+            if !Task.isCancelled { feedback = nil }
+        }
+        .onChange(of: model.presentationNumber) {
+            if initialCount == 0, model.state.card != nil {
+                initialCount = model.counts.new + model.counts.learning + model.counts.due
+            }
+        }
+        .onChange(of: model.reviewedCount) {
+            if model.state.card != nil, let progress = model.timeboxProgress() { timebox = progress }
+        }
+        .overlay(alignment: .top) {
+            if let feedback {
+                Text(feedback.text)
+                    .padding(8)
+                    .background(.regularMaterial, in: Capsule())
+                    .padding(.top, 60)
+                    .allowsHitTesting(false)
+                    .accessibilityAddTraits(.updatesFrequently)
+            }
+        }
+        .modifier(ReviewerActionDialogs(model: model, requestedAction: $requestedAction))
+        .sheet(item: $route, onDismiss: {
+            Task { await model.existingReviewerDeckOptionsChanged() }
+        }) { route in
+            destinations?(route)
+        }
+        .alert("Timebox Reached", isPresented: Binding(
+            get: { timebox != nil },
+            set: { if !$0 { timebox = nil } }
+        )) {
+            Button("Continue") {
+                model.restartTimebox()
+                timebox = nil
+            }
+            Button("Finish") { dismiss() }
+        } message: {
+            if let timebox {
+                Text("You reviewed \(timebox.reviewed) cards in \(timebox.limit.components.seconds / 60) minutes.")
+            }
+        }
         .focusable()
         .focused($reviewerFocused)
         .onAppear { reviewerFocused = true }
@@ -86,6 +144,9 @@ public struct StudyScreen: View {
             dispatchInput(.keyboard(ReviewerKey(press))) ? .handled : .ignored
         }
         #if os(iOS)
+        .statusBarHidden(preferences.hideStatusBar)
+        .persistentSystemOverlays(preferences.hideHomeIndicator ? .hidden : .automatic)
+        .modifier(ReviewerIdleTimer(enabled: preferences.keepScreenOn || autoAdvance))
         .modifier(ReviewerController { _ = dispatchInput($0) })
         .modifier(ReviewerShake(
             enabled: side.flatMap { preferences.command(for: .gesture(.shake), on: $0) } != nil
@@ -115,15 +176,21 @@ public struct StudyScreen: View {
             pendingTap?.cancel()
             pendingTap = nil
         }
-        .sheet(isPresented: $showingSettings, onDismiss: { preferences = ReviewerPreferences.load() }) {
+        .sheet(isPresented: $showingSettings, onDismiss: {
+            preferences = ReviewerPreferences.load()
+            Task { await model.refreshReviewerPreferences() }
+        }) {
             NavigationStack {
-                ReviewerSettingsScreen()
+                ReviewerSettingsScreen(store: store)
                     .toolbar {
                         ToolbarItem(placement: .confirmationAction) {
                             Button("Done") { showingSettings = false }
                         }
                     }
             }
+        }
+        .sheet(item: $editedNoteTags) { note in
+            ReviewerTagsSheet(model: model, noteID: note.id)
         }
         .sheet(item: $editedCard) { card in
             noteEditor?(card.id)
@@ -154,18 +221,38 @@ public struct StudyScreen: View {
     }
 
     private func dispatchInput(_ input: ReviewerInput) -> Bool {
-        guard editedCard == nil, !showingSettings, !model.isBusy, let side,
+        guard editedCard == nil, editedNoteTags == nil, !showingSettings, requestedAction == nil,
+              route == nil, timebox == nil, !model.isBusy, let side,
               let command = preferences.command(for: input, on: side) else { return false }
         dispatch(command)
         return true
     }
 
-    private func dispatch(_ command: ReviewerCommand) {
+    func dispatch(_ command: ReviewerCommand) {
+        guard !model.isBusy else { return }
         switch command {
         case .exit: dismiss()
-        case .edit, .editTags:
+        case .edit:
             if let id = model.state.card?.id, noteEditor != nil { editedCard = EditedCard(id: id) }
+        case .editTags:
+            if let noteID = model.state.card?.noteID { editedNoteTags = EditedNoteTags(id: noteID) }
         case .deleteNote, .setDueDate, .resetProgress: requestedAction = command
+        case .toggleAutoAdvance:
+            autoAdvance.toggle()
+            feedback = ReviewFeedback(text: autoAdvance ? "Auto Advance Enabled" : "Auto Advance Disabled")
+        case .browse:
+            guard destinations != nil else { return }
+            Task {
+                let search = try? await store.core.buildSearchString(.with { $0.deck = deckName }).val
+                route = .browse(search: search ?? "")
+            }
+        case .statistics: route = .statistics(deckID: model.deckID)
+        case .deckOptions: route = .deckOptions(deckID: model.state.card?.homeDeckID ?? model.deckID)
+        case .cardInfo:
+            if let id = model.state.card?.id { route = .cardInfo(cardID: id) }
+        case .previousCardInfo:
+            if let id = model.previousCardID { route = .cardInfo(cardID: id) }
+        case .addNote: route = .addNote
         case .showHint:
             webCommand = ReviewerWebCommand(javascript: "document.querySelector('a.hint:not([style*=none])')?.click()")
         case .showAllHints:
@@ -202,7 +289,11 @@ public struct StudyScreen: View {
                 webCommand = ReviewerWebCommand(javascript: "window.ankidroid?.userAction?.(\(number))")
             } else {
                 let typed = typedAnswer
-                Task { await model.perform(command, typed: typed) }
+                Task {
+                    if await model.perform(command, typed: typed), preferences.showFeedback, let rating = command.rating {
+                        feedback = ReviewFeedback(text: rating.titleKey)
+                    }
+                }
             }
         }
     }
@@ -240,14 +331,52 @@ public struct StudyScreen: View {
         }
     }
 
+    private var autoAdvanceTask: AutoAdvanceTask? {
+        guard autoAdvance, let side, let plan = model.autoAdvancePlan,
+              scenePhase == .active, !showingSettings, editedCard == nil, editedNoteTags == nil,
+              requestedAction == nil, route == nil, timebox == nil else { return nil }
+        #if os(iOS)
+        guard recorder.state != .recording, recorder.state != .paused else { return nil }
+        #endif
+        return AutoAdvanceTask(presentation: model.presentationNumber, side: side, plan: plan)
+    }
+
+    private func runAutoAdvance() async {
+        guard let task = autoAdvanceTask else { return }
+        #if os(iOS)
+        if task.plan.waitForAudio {
+            await Task.yield()
+            await audio.waitForCompletion()
+        }
+        #endif
+        do {
+            try await Task.sleep(for: task.plan.delay)
+        } catch { return }
+        guard autoAdvanceTask == task else { return }
+        if let command = task.plan.command {
+            dispatch(command)
+        } else {
+            feedback = ReviewFeedback(text: task.side == .question ? "Question Time Elapsed" : "Answer Time Elapsed")
+        }
+    }
+
     private var topBar: some View {
         ZStack {
             VStack(spacing: 2) {
-                Text(deckName)
+                Text(preferences.showDeckTitle && !model.currentDeckName.isEmpty ? model.currentDeckName : deckName)
                     .font(.subheadline.weight(.semibold))
                     .lineLimit(1)
                 if model.state.card != nil {
-                    StudyCountsView(counts: model.counts)
+                    HStack {
+                        if model.showsRemainingCounts { StudyCountsView(counts: model.counts) }
+                        if model.showsAnswerTimer {
+                            TimelineView(.periodic(from: .now, by: 1)) { _ in
+                                Text(model.answerTimer().formatted(.time(pattern: .minuteSecond)))
+                                    .monospacedDigit()
+                                    .accessibilityLabel("Answer Timer")
+                            }
+                        }
+                    }
                 }
             }
             .padding(.horizontal, 64)
@@ -264,13 +393,25 @@ public struct StudyScreen: View {
                 .accessibilityLabel(Text("Close", bundle: .module))
                 .keyboardShortcut(.cancelAction)
                 Spacer()
-                if model.state.card != nil || model.canUndo || model.canRedo {
+                if preferences.toolbarPosition == .hidden {
+                    Button("Reviewer Settings", systemImage: "gear") { showingSettings = true }
+                        .labelStyle(.iconOnly)
+                        .frame(width: 44, height: 44)
+                } else if preferences.toolbarPosition == .top {
                     reviewerActions
+                        .frame(maxWidth: 188, alignment: .trailing)
                 }
             }
         }
         .padding(.horizontal, 8)
         .padding(.top, 4)
+        .overlay(alignment: .bottom) {
+            if preferences.showProgress, initialCount > 0 {
+                ProgressView(value: Double(min(model.reviewedCount, initialCount)), total: Double(initialCount))
+                    .labelsHidden()
+                    .accessibilityLabel("Study Progress")
+            }
+        }
     }
 
     @ViewBuilder
@@ -323,6 +464,14 @@ public struct StudyScreen: View {
                 // On an iPad, a readable column rather than a stretched line.
                 .frame(maxWidth: horizontalSizeClass == .regular ? 820 : .infinity)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .padding(preferences.cardFrame ? 8 : 0)
+                .clipShape(.rect(cornerRadius: preferences.cardFrame ? 18 : 0))
+                .overlay {
+                    if preferences.cardFrame {
+                        RoundedRectangle(cornerRadius: 18).strokeBorder(.secondary.opacity(0.2))
+                            .allowsHitTesting(false)
+                    }
+                }
                 #if os(iOS)
                 .overlay {
                     if deckTools.whiteboardEnabled && deckTools.drawingShown {
@@ -352,18 +501,22 @@ public struct StudyScreen: View {
                 }
             }
             #endif
-            AnswerBar(
-                card: card, showingAnswer: showingAnswer, isAnswering: model.isBusy,
-                minimumPress: Double(preferences.minimumPressMilliseconds) / 1000
-            ) {
-                dispatch(.showAnswer)
-            } onRate: { rating in
-                Task { await model.answer(rating) }
+            if preferences.showAnswerButtons {
+                AnswerBar(
+                    card: card, showingAnswer: showingAnswer, isAnswering: model.isBusy,
+                    minimumPress: Double(preferences.minimumPressMilliseconds) / 1000,
+                    buttonHeight: Double(preferences.answerButtonSize) * 0.52,
+                    hideHardAndEasy: preferences.hideHardAndEasy, showsIntervals: model.showsRatingIntervals
+                ) {
+                    dispatch(.showAnswer)
+                } onRate: { rating in
+                    dispatch(rating.reviewerCommand)
+                }
+                .frame(maxWidth: 640)
+                .padding(.horizontal, 16)
+                .padding(.top, 12)
+                .padding(.bottom, 8)
             }
-            .frame(maxWidth: 640)
-            .padding(.horizontal, 16)
-            .padding(.top, 12)
-            .padding(.bottom, 8)
         }
     }
 
@@ -371,8 +524,13 @@ public struct StudyScreen: View {
     private func cardView(_ display: CardDisplay) -> some View {
         #if os(iOS)
         CardWebView(
-            display: display, mediaFolder: model.mediaFolder, zoom: dynamicTypeSize.cardZoom,
-            reviewer: ReviewerWebOptions(keySignatures: keySignatures, command: webCommand)
+            display: display, mediaFolder: model.mediaFolder,
+            zoom: dynamicTypeSize.cardZoom * Double(preferences.cardZoom) / 100,
+            reviewer: ReviewerWebOptions(
+                keySignatures: keySignatures, imageZoom: Double(preferences.imageZoom) / 100,
+                centerVertically: preferences.centerVertically, hidesAudioButtons: model.hidesAudioButtons,
+                reducedMotion: preferences.reducedMotion, command: webCommand
+            )
         ) { event in
             switch event {
             case .tap: break
@@ -388,14 +546,17 @@ public struct StudyScreen: View {
         // VoiceOver reads the card's own content inside the web view.
         .accessibilityIdentifier("card")
         // Each side's audio plays when it appears.
-        .onChange(of: SideShown(display), initial: true) {
+        .onChange(of: SideShown(display, presentation: model.presentationNumber), initial: true) {
             if !display.isAnswer { drawing.clear() }
             if recorder.state == .recording || recorder.state == .paused { recorder.stopRecording() }
             recorder.stopPlayback()
             pendingTap?.cancel()
             pendingTap = nil
             typedAnswer = display.isAnswer ? typedAnswer : ""
-            audio.play(model.soundsToAutoplay())
+            audio.play(
+                model.soundsToAutoplay(),
+                afterCurrent: display.isAnswer && !model.interruptsAudioWhenAnswering
+            )
         }
         .onDisappear { audio.stop() }
         #else
@@ -404,12 +565,15 @@ public struct StudyScreen: View {
     }
 
     private var reviewerActions: some View {
-        ReviewerActionsMenu(
-            model: model, showsEditNote: noteEditor != nil, requestedAction: $requestedAction,
-            onSettings: { showingSettings = true },
-            dispatch: dispatch
+        ReviewerToolbar(
+            model: model, preferences: preferences, showsEditNote: noteEditor != nil,
+            onSettings: { showingSettings = true }, dispatch: dispatch
         )
     }
+}
+
+private struct EditedNoteTags: Identifiable {
+    let id: Int64
 }
 
 private struct EditedCard: Identifiable {
@@ -431,10 +595,12 @@ private extension EnvironmentValues {
 private struct SideShown: Equatable {
     let cardID: Int64
     let isAnswer: Bool
+    let presentation: Int
 
-    init(_ display: CardDisplay) {
+    init(_ display: CardDisplay, presentation: Int) {
         cardID = display.cardID
         isAnswer = display.isAnswer
+        self.presentation = presentation
     }
 }
 
@@ -466,6 +632,9 @@ private struct AnswerBar: View {
     let showingAnswer: Bool
     let isAnswering: Bool
     let minimumPress: Double
+    let buttonHeight: Double
+    let hideHardAndEasy: Bool
+    let showsIntervals: Bool
     let onShowAnswer: () -> Void
     let onRate: (Rating) -> Void
 
@@ -473,8 +642,11 @@ private struct AnswerBar: View {
         Group {
             if showingAnswer {
                 HStack(spacing: 8) {
-                    ForEach(Rating.allCases, id: \.self) { rating in
-                        RatingButton(rating: rating, interval: card.intervals[rating], minimumPress: minimumPress) {
+                    ForEach(hideHardAndEasy ? [.again, .good] : Rating.allCases, id: \.self) { rating in
+                        RatingButton(
+                            rating: rating, interval: showsIntervals ? card.intervals[rating] : nil,
+                            minimumPress: minimumPress, buttonHeight: buttonHeight
+                        ) {
                             onRate(rating)
                         }
                     }
@@ -484,7 +656,7 @@ private struct AnswerBar: View {
                 ReviewerPressButton(minimumPress: minimumPress, action: onShowAnswer) {
                     Text("Show Answer", bundle: .module)
                         .font(.headline)
-                        .frame(maxWidth: .infinity, minHeight: 52)
+                        .frame(maxWidth: .infinity, minHeight: buttonHeight)
                 }
                 .buttonStyle(.borderedProminent)
                 .disabled(isAnswering)
@@ -497,26 +669,28 @@ private struct AnswerBar: View {
 
 private struct RatingButton: View {
     let rating: Rating
-    let interval: String
+    let interval: String?
     let minimumPress: Double
+    let buttonHeight: Double
     let action: () -> Void
 
     var body: some View {
         ReviewerPressButton(minimumPress: minimumPress, action: action) {
             VStack(spacing: 2) {
-                Text(interval)
-                    .font(.caption.monospacedDigit().weight(.medium))
+                if let interval {
+                    Text(interval).font(.caption.monospacedDigit().weight(.medium))
+                }
                 rating.title
                     .font(.subheadline.weight(.semibold))
             }
             .lineLimit(1)
             .minimumScaleFactor(0.7)
-            .frame(maxWidth: .infinity, minHeight: 52)
+            .frame(maxWidth: .infinity, minHeight: buttonHeight)
         }
         .buttonStyle(.bordered)
         .tint(rating.color)
         .accessibilityLabel(rating.title)
-        .accessibilityValue(Text(interval))
+        .accessibilityValue(Text(interval ?? ""))
         .accessibilityIdentifier("rating-\(rating)")
     }
 }
@@ -669,3 +843,54 @@ extension DynamicTypeSize {
         }
     }
 }
+
+
+private struct AutoAdvanceTask: Equatable {
+    let presentation: Int
+    let side: ReviewerSide
+    let plan: AutoAdvancePlan
+}
+
+private struct ReviewFeedback: Equatable {
+    let id = UUID()
+    let text: String
+}
+
+private extension Rating {
+    var titleKey: String {
+        switch self {
+        case .again: "Again"
+        case .hard: "Hard"
+        case .good: "Good"
+        case .easy: "Easy"
+        }
+    }
+
+    var reviewerCommand: ReviewerCommand {
+        switch self {
+        case .again: .rateAgain
+        case .hard: .rateHard
+        case .good: .rateGood
+        case .easy: .rateEasy
+        }
+    }
+}
+
+#if os(iOS)
+private struct ReviewerIdleTimer: ViewModifier {
+    let enabled: Bool
+    @State private var previous: Bool?
+
+    func body(content: Content) -> some View {
+        content
+            .onChange(of: enabled, initial: true) { _, enabled in
+                if previous == nil { previous = UIApplication.shared.isIdleTimerDisabled }
+                UIApplication.shared.isIdleTimerDisabled = enabled || (previous ?? false)
+            }
+            .onDisappear {
+                if let previous { UIApplication.shared.isIdleTimerDisabled = previous }
+                previous = nil
+            }
+    }
+}
+#endif
