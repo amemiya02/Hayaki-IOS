@@ -11,9 +11,9 @@ final class SyncDestinationUITests: XCTestCase {
         app.launchEnvironment["HAYAKI_UI_TEST_COLLECTION_PACKAGE"] = package.path
         app.launch()
 
-        let settings = app.tabBars.buttons["Settings"]
-        XCTAssertTrue(settings.waitForExistence(timeout: 60))
-        settings.tap()
+        let more = app.tabBars.buttons["More"]
+        XCTAssertTrue(more.waitForExistence(timeout: 60))
+        more.tap()
         let sync = app.buttons["sync-settings"]
         XCTAssertTrue(sync.waitForExistence(timeout: 10))
         sync.tap()

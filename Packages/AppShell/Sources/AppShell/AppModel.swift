@@ -18,10 +18,14 @@ public final class AppModel {
     public private(set) var state: State = .opening
     /// Importing packages into the open collection, once it is ready.
     public private(set) var packageImport: PackageImportModel?
+    /// Whether the learner should choose how to start the empty collection.
+    public private(set) var showsWelcome = false
 
     @ObservationIgnored private let location: @Sendable () throws -> CollectionLocation
     @ObservationIgnored private let backupFolder: @Sendable () throws -> URL
     @ObservationIgnored private let language: String
+    @ObservationIgnored private let preferences: UserDefaults
+    private static let welcomeCompletedKey = "hayakiWelcomeCompleted"
     /// A package opened from another app before the collection was ready.
     @ObservationIgnored private var waitingPackage: URL?
 
@@ -32,14 +36,17 @@ public final class AppModel {
     ///     test passes another.
     ///   - language: The language for the core's own text, which must be the
     ///     one the app's screens resolved to.
+    ///   - preferences: Where first-run preferences are saved.
     public init(
         location: @escaping @Sendable () throws -> CollectionLocation = { try .standard() },
         backupFolder: @escaping @Sendable () throws -> URL = { try PackageImportModel.standardBackupFolder() },
-        language: String = AppModel.screenLanguage
+        language: String = AppModel.screenLanguage,
+        preferences: UserDefaults = .standard
     ) {
         self.location = location
         self.backupFolder = backupFolder
         self.language = language
+        self.preferences = preferences
     }
 
     /// The open collection, once it is ready.
@@ -62,6 +69,21 @@ public final class AppModel {
             #endif
             let store = try await CollectionStore.open(at: location, core: core)
             let packageImport = PackageImportModel(store: store, backupFolder: try backupFolder())
+            if !preferences.bool(forKey: Self.welcomeCompletedKey) {
+                // Existing collections with cards or user-created decks go
+                // straight to Decks when upgrading.
+                let names = try? await store.core.getDeckNames(.with {
+                    $0.skipEmptyDefault = true
+                    $0.includeFiltered = true
+                })
+                if let names {
+                    if names.entries.isEmpty {
+                        showsWelcome = true
+                    } else {
+                        completeWelcome()
+                    }
+                }
+            }
             self.packageImport = packageImport
             state = .ready(store)
             if let waiting = waitingPackage {
@@ -71,6 +93,12 @@ public final class AppModel {
         } catch {
             state = .failed(message: error.localizedDescription)
         }
+    }
+
+    /// Continues to Decks and remembers the choice on the next launch.
+    public func completeWelcome() {
+        preferences.set(true, forKey: Self.welcomeCompletedKey)
+        showsWelcome = false
     }
 
     /// Starts importing a package the learner opened from Files, AirDrop or

@@ -72,6 +72,23 @@
         }
       }
     },
+    "Get Shared Decks": {
+      "comment": "Opens the shared-deck catalog in a browser.",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "共有デッキを入手"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "获取共享牌组"
+          }
+        }
+      }
+    },
     "Hayaki can import Anki collection packages (.colpkg) and deck packages (.apkg).": {
       "comment": "Shown when the learner opens a file that is not an Anki package."
     },

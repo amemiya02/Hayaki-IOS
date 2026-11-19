@@ -3,26 +3,28 @@ import ReminderFeature
 import SwiftUI
 import SyncFeature
 
-/// How the Settings section appears in the tab bar and sidebar.
+/// How the More section appears in the tab bar and sidebar.
 public enum SettingsSection {
-    public static var title: Text { Text("Settings", bundle: .module) }
-    public static let systemImage = "gearshape"
+    public static var title: Text { Text("More", bundle: .module) }
+    public static let systemImage = "ellipsis.circle"
 }
 
-/// The Settings section: one row per area, each leading to its own screen.
+/// The More section: one row per area, each leading to its own screen.
 public struct SettingsScreen: View {
     private let store: CollectionStore
+    @State private var sync: SyncModel
 
-    public init(store: CollectionStore) {
+    public init(store: CollectionStore, sync: SyncModel? = nil) {
         self.store = store
+        _sync = State(initialValue: sync ?? SyncModel(store: store))
     }
 
     public var body: some View {
         NavigationStack {
             List {
-                SyncSettingsRow(store: store)
+                SyncSettingsRow(model: sync)
                 ReminderSettingsRow(store: store)
-                HelpAndAboutSection(store: store)
+                HelpAndAboutSection(store: store, sync: sync)
             }
             .navigationTitle(SettingsSection.title)
         }
