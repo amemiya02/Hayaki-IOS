@@ -17,7 +17,7 @@ import Foundation
 /// because cards are only studied in Hayaki itself; whenever the collection
 /// changes, the app returns to the foreground or moves to the background, the
 /// whole schedule is computed again. A day with nothing to study gets no
-/// reminder.
+/// daily reminder. Review reminder rules use their own thresholds.
 ///
 /// Limitations, stated plainly:
 /// - Reviews done elsewhere (desktop Anki, AnkiDroid) are only known after a
@@ -118,7 +118,7 @@ public final class ReminderSchedule {
             return target.profileID != profileID
         }
         // Keep the daily reminder's slots and give the remaining system
-        // slots to the soonest deck reminders across all profiles.
+        // slots to the soonest review reminders across all profiles.
         let combined = wanted + retained
         let daily = combined.filter { !$0.identifier.hasPrefix(DeckReminderDestination.prefix) }
         let deckReminders = combined.filter { $0.identifier.hasPrefix(DeckReminderDestination.prefix) }
@@ -144,14 +144,17 @@ public final class ReminderSchedule {
     ) async throws(CoreError) -> [ScheduledReminder] {
         var deliveries: [Date: [Delivery]] = [:]
         let daily = Set(preferences.isOn ? moments(hour: preferences.hour, minute: preferences.minute, after: now) : [])
-        var reviewedToday: Set<Int64> = []
+        var reviewedToday: Set<Int64?> = []
         var nextDay: Int64 = 0
         if let profileID {
             let rules = DeckReminder.load(profileID: profileID, from: defaults).filter(\.enabled)
             if !rules.isEmpty {
                 let names = try await store.core.getDeckNames(.with { $0.includeFiltered = true }).entries
                 let namesByID = Dictionary(uniqueKeysWithValues: names.map { ($0.id, $0.name) })
-                let liveRules = rules.filter { namesByID[$0.deckID] != nil }
+                let liveRules = rules.filter { rule in
+                    guard let deckID = rule.deckID else { return true }
+                    return namesByID[deckID] != nil
+                }
                 for rule in liveRules {
                     for date in moments(hour: rule.hour, minute: rule.minute, after: now) {
                         deliveries[date, default: []].append(Delivery(rule: rule))
@@ -166,15 +169,20 @@ public final class ReminderSchedule {
                 }
                 if liveRules.contains(where: \.onlyWithoutReviews) {
                     nextDay = try await store.core.schedTimingToday().nextDayAt
-                    for id in Set(liveRules.filter(\.onlyWithoutReviews).map(\.deckID)) {
-                        guard let name = namesByID[id] else { continue }
-                        let escaped = name.replacingOccurrences(of: "\\", with: "\\\\")
-                            .replacingOccurrences(of: "\"", with: "\\\"")
-                            .replacingOccurrences(of: "*", with: "\\*")
-                            .replacingOccurrences(of: "_", with: "\\_")
-                        let search = "rated:1 \"deck:\(escaped)\""
+                    for scope in Set(liveRules.filter(\.onlyWithoutReviews).map(\.deckID)) {
+                        let search: String
+                        if let id = scope {
+                            guard let name = namesByID[id] else { continue }
+                            let escaped = name.replacingOccurrences(of: "\\", with: "\\\\")
+                                .replacingOccurrences(of: "\"", with: "\\\"")
+                                .replacingOccurrences(of: "*", with: "\\*")
+                                .replacingOccurrences(of: "_", with: "\\_")
+                            search = "rated:1 \"deck:\(escaped)\""
+                        } else {
+                            search = "rated:1"
+                        }
                         if try await !store.core.searchCards(.with { $0.search = search }).ids.isEmpty {
-                            reviewedToday.insert(id)
+                            reviewedToday.insert(scope)
                         }
                     }
                 }
@@ -199,17 +207,26 @@ public final class ReminderSchedule {
             guard let profileID else { continue }
             for delivery in rules where deckReminderCount < 64 {
                 let rule = delivery.rule
-                guard !rule.onlyWithoutReviews || timestamp >= nextDay || !reviewedToday.contains(rule.deckID),
-                      let deck = Self.deck(withID: rule.deckID, in: root.children)
+                guard !rule.onlyWithoutReviews || timestamp >= nextDay || !reviewedToday.contains(rule.deckID)
                 else { continue }
-                let considered = (rule.countNew ? Int(deck.newCount) : 0)
-                    + (rule.countLearning ? Int(deck.learnCount) : 0)
-                    + (rule.countReview ? Int(deck.reviewCount) : 0)
+                let counts: StudyCounts
+                let title: String
+                if let id = rule.deckID {
+                    guard let deck = Self.deck(withID: id, in: root.children) else { continue }
+                    counts = StudyCounts.sum([deck])
+                    title = deck.name
+                } else {
+                    counts = StudyCounts.sum(root.children)
+                    title = ReminderText.title
+                }
+                let considered = (rule.countNew ? counts.new : 0)
+                    + (rule.countLearning ? counts.learning : 0)
+                    + (rule.countReview ? counts.review : 0)
                 guard considered >= rule.minimumCards else { continue }
-                let body = ReminderText.body(for: StudyCounts.sum([deck])) ?? ReminderText.noCards
-                let identifier = delivery.snoozedIdentifier
-                    ?? DeckReminderDestination.profilePrefix(profileID) + "\(deck.deckID).\(rule.id.uuidString).\(day)"
-                reminders.append(ScheduledReminder(identifier: identifier, delivery: date, title: deck.name, body: body))
+                let body = ReminderText.body(for: counts) ?? ReminderText.noCards
+                let stem = DeckReminderDestination.identifierStem(profileID: profileID, deckID: rule.deckID, ruleID: rule.id)
+                let identifier = delivery.snoozedIdentifier ?? stem + day
+                reminders.append(ScheduledReminder(identifier: identifier, delivery: date, title: title, body: body))
                 deckReminderCount += 1
             }
         }
@@ -248,13 +265,16 @@ public final class ReminderSchedule {
 /// collection, after each deck's daily limits.
 struct StudyCounts: Equatable {
     /// Cards due: review cards and learning cards.
-    var due = 0
+    var due: Int { review + learning }
+    var review = 0
+    var learning = 0
     var new = 0
 
     static func sum(_ decks: [Anki_Decks_DeckTreeNode]) -> StudyCounts {
         // Each top-level deck's counts already include its child decks.
         decks.reduce(into: StudyCounts()) { counts, deck in
-            counts.due += Int(deck.reviewCount) + Int(deck.learnCount)
+            counts.review += Int(deck.reviewCount)
+            counts.learning += Int(deck.learnCount)
             counts.new += Int(deck.newCount)
         }
     }

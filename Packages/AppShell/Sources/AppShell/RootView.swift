@@ -92,7 +92,11 @@ public struct RootView: View {
         .onChange(of: ReminderOpener.shared.deckRequested, initial: true) { _, requested in
             guard let requested else { return }
             ReminderOpener.shared.deckRequested = nil
-            askToOpen(.deck(profileID: requested.profileID, deckID: requested.deckID, action: .study))
+            if let deckID = requested.deckID {
+                askToOpen(.deck(profileID: requested.profileID, deckID: deckID, action: .study))
+            } else {
+                askToOpen(.decks(profileID: requested.profileID))
+            }
         }
         .onChange(of: model.canHandleExtensionWork) { _, ready in
             if ready { Task { await model.routeWaitingDeckLink() } }
