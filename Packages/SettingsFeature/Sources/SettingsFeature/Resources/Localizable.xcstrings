@@ -241,18 +241,18 @@
         }
       }
     },
-    "For AnkiWeb, sync in desktop Anki or AnkiDroid and use a package to move the collection to or from this build of Hayaki." : {
+    "For your own server, choose Self-Hosted. Enter its address and sign in with the user name and password for that server." : {
       "localizations" : {
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "AnkiWeb を使う場合は、デスクトップ版 Anki または AnkiDroid で同期し、パッケージを使ってこのバージョンの Hayaki との間でコレクションを移します。"
+            "value" : "自分のサーバーを使う場合は「セルフホスト」を選びます。サーバーアドレスを入力し、そのサーバーのユーザー名とパスワードでログインします。"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "如果使用 AnkiWeb，请在桌面版 Anki 或 AnkiDroid 中同步，再通过集合包与此版本的 Hayaki 交换集合。"
+            "value" : "如果使用自己的服务器，请选择「自托管」，输入服务器地址，再用该服务器的用户名和密码登录。"
           }
         }
       }
@@ -317,6 +317,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "在 Android 版 Hayaki 或 AnkiDroid 中，从牌组页面的菜单选择「导出」，即可导出整个集合。只导出一个牌组时，请长按该牌组，再选择「导出」。"
+          }
+        }
+      }
+    },
+    "In Sync Destination, choose AnkiWeb and sign in with your AnkiWeb email address and password." : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "「同期先」で AnkiWeb を選び、AnkiWeb のメールアドレスとパスワードでログインします。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "在「同步目标」中选择 AnkiWeb，然后使用你的 AnkiWeb 电子邮件地址和密码登录。"
           }
         }
       }
@@ -468,6 +484,22 @@
         }
       }
     },
+    "Sync with AnkiWeb or a self-hosted Anki sync server." : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "AnkiWeb またはセルフホストの Anki 同期サーバーで同期できます。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "支持使用 AnkiWeb 或自托管 Anki 同步服务器进行同步。"
+          }
+        }
+      }
+    },
     "Tap Share to send the package to the other device. In Hayaki on Android or in AnkiDroid, open the file from the Decks menu with Import. In desktop Anki, choose File > Import." : {
       "localizations" : {
         "ja" : {
@@ -484,22 +516,6 @@
         }
       }
     },
-    "To use a self-hosted Anki sync server, enter its address and sign in with the user name and password for that server. Use the same server on your other devices." : {
-      "localizations" : {
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "自分で運用する Anki 同期サーバーを使うには、そのアドレスを入力し、そのサーバーのユーザー名とパスワードでログインします。ほかの端末でも同じサーバーを使用してください。"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "要使用自建 Anki 同步服务器，请输入服务器地址，并用该服务器的用户名和密码登录。其他设备也应使用同一台服务器。"
-          }
-        }
-      }
-    },
     "Transfer Guide" : {
       "localizations" : {
         "ja" : {
@@ -512,6 +528,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "迁移指南"
+          }
+        }
+      }
+    },
+    "Use the same sync destination on your other devices. To switch destinations, sign out first." : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ほかの端末でも同じ同期先を使用してください。同期先を切り替えるには、先にログアウトします。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "请在其他设备上使用相同的同步目标。要切换同步目标，请先退出登录。"
           }
         }
       }

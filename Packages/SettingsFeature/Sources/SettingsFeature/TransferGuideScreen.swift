@@ -35,8 +35,9 @@ struct TransferGuideScreen: View {
             }
 
             Section {
-                Text("To use a self-hosted Anki sync server, enter its address and sign in with the user name and password for that server. Use the same server on your other devices.", bundle: .module)
-                Text("For AnkiWeb, sync in desktop Anki or AnkiDroid and use a package to move the collection to or from this build of Hayaki.", bundle: .module)
+                Text("In Sync Destination, choose AnkiWeb and sign in with your AnkiWeb email address and password.", bundle: .module)
+                Text("For your own server, choose Self-Hosted. Enter its address and sign in with the user name and password for that server.", bundle: .module)
+                Text("Use the same sync destination on your other devices. To switch destinations, sign out first.", bundle: .module)
                 SyncSettingsRow(store: store)
             } header: {
                 Text("Sync Between Devices", bundle: .module)

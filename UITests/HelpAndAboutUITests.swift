@@ -64,6 +64,17 @@ final class HelpAndAboutUITests: XCTestCase {
         XCTAssertTrue(app.navigationBars["Transfer Guide"].waitForExistence(timeout: 10))
     }
 
+    func testGuideExplainsBothSyncDestinationsAndOpensSyncSettings() {
+        app.buttons["Transfer Guide"].tap()
+        let sync = app.buttons["sync-settings"]
+        reveal(sync)
+        XCTAssertTrue(element("In Sync Destination, choose AnkiWeb and sign in with your AnkiWeb email address and password.").exists)
+        XCTAssertTrue(element("For your own server, choose Self-Hosted. Enter its address and sign in with the user name and password for that server.").exists)
+        screenshot("Sync choices in Transfer Guide")
+        sync.tap()
+        XCTAssertTrue(app.navigationBars["Sync"].waitForExistence(timeout: 10))
+    }
+
     func testHelpPointsToManualsAndHayakiIssues() {
         app.buttons["Help"].tap()
         XCTAssertTrue(element("Desktop Anki Manual").exists)

@@ -72,6 +72,7 @@ private struct ChangelogScreen: View {
             Section {
                 Text("Initial iPhone and iPad development release.", bundle: .module)
                 Text("Study and edit collections offline. Import and export deck and collection packages, review statistics, and change deck options.", bundle: .module)
+                Text("Sync with AnkiWeb or a self-hosted Anki sync server.", bundle: .module)
                 Text("Added an in-app transfer guide, help links and build information.", bundle: .module)
             } header: {
                 Text(verbatim: "0.1.0")
