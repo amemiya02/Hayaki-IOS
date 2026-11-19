@@ -10,13 +10,21 @@ public struct SyncSettingsRow: View {
         _model = State(initialValue: SyncModel(store: store))
     }
 
+    public init(model: SyncModel) {
+        _model = State(initialValue: model)
+    }
+
     public var body: some View {
         NavigationLink {
             SyncScreen(model: model)
         } label: {
             LabeledContent {
                 if let account = model.account {
-                    Text(verbatim: account.server.host() ?? account.server.absoluteString)
+                    if let server = account.server {
+                        Text(verbatim: server.host() ?? server.absoluteString)
+                    } else {
+                        Text("AnkiWeb", bundle: .module)
+                    }
                 } else {
                     Text("Off", bundle: .module)
                 }
@@ -28,11 +36,11 @@ public struct SyncSettingsRow: View {
                 }
             }
         }
+        .accessibilityIdentifier("sync-settings")
     }
 }
 
-/// Signing in to the learner's own sync server, syncing, choosing a direction
-/// when the two sides cannot be merged, and signing out.
+/// Choosing a sync destination, signing in, and syncing the collection.
 public struct SyncScreen: View {
     @Bindable private var model: SyncModel
 
@@ -45,7 +53,6 @@ public struct SyncScreen: View {
             if let account = model.account {
                 SignedInSections(model: model, account: account)
             } else {
-                NoAnkiWebSection()
                 SignInSections(model: model)
             }
             if let failure = model.status.failure {
@@ -53,52 +60,55 @@ public struct SyncScreen: View {
             }
             if model.account != nil {
                 SignOutSection(model: model)
-                NoAnkiWebSection()
             }
         }
         .navigationTitle(Text("Sync", bundle: .module))
     }
 }
 
-/// Why there is no AnkiWeb sign-in (ADR 0002), stated where the learner looks
-/// for one.
-private struct NoAnkiWebSection: View {
-    var body: some View {
-        Section {
-            Text("Hayaki does not sign in to AnkiWeb. AnkiWeb's terms allow only apps its operators have approved, and Hayaki is not one of them. Hayaki syncs only with a sync server you run or choose yourself.", bundle: .module)
-            Text("To move your collection to or from AnkiWeb, export it from Hayaki as a collection package and sync it from desktop Anki or AnkiDroid.", bundle: .module)
-                .foregroundStyle(.secondary)
-        } header: {
-            Text("AnkiWeb", bundle: .module)
-        }
-    }
-}
-
 private struct SignInSections: View {
     @Bindable var model: SyncModel
 
+    private var userNameLabel: Text {
+        model.destination == .ankiWeb
+            ? Text("Email Address", bundle: .module)
+            : Text("User Name", bundle: .module)
+    }
+
     var body: some View {
         Section {
-            FieldRow {
-                Text("Server", bundle: .module)
-            } field: {
-                TextField(text: $model.serverAddress, prompt: Text(verbatim: "https://sync.example.org/")) {
+            Picker(selection: Binding(
+                get: { model.destination },
+                set: { model.selectDestination($0) }
+            )) {
+                Text("AnkiWeb", bundle: .module).tag(SyncModel.Destination.ankiWeb)
+                Text("Self-Hosted", bundle: .module).tag(SyncModel.Destination.selfHosted)
+            } label: {
+                Text("Sync Destination", bundle: .module)
+            }
+            .accessibilityIdentifier("sync-destination")
+            if model.destination == .selfHosted {
+                FieldRow {
                     Text("Server Address", bundle: .module)
+                } field: {
+                    TextField(text: $model.serverAddress, prompt: Text(verbatim: "https://sync.example.org/")) {
+                        Text("Server Address", bundle: .module)
+                    }
+                    .textContentType(.URL)
+                    .autocorrectionDisabled()
+                    .urlEntry()
+                    .accessibilityIdentifier("server-address")
                 }
-                .textContentType(.URL)
-                .autocorrectionDisabled()
-                .urlEntry()
-                .accessibilityIdentifier("server-address")
             }
             FieldRow {
-                Text("User Name", bundle: .module)
+                userNameLabel
             } field: {
                 TextField(text: $model.userName, prompt: Text("Required", bundle: .module)) {
-                    Text("User Name", bundle: .module)
+                    userNameLabel
                 }
                 .textContentType(.username)
                 .autocorrectionDisabled()
-                .noAutocapitalization()
+                .syncUserNameEntry(isEmail: model.destination == .ankiWeb)
                 .accessibilityIdentifier("user-name")
             }
             FieldRow {
@@ -110,10 +120,8 @@ private struct SignInSections: View {
                 .textContentType(.password)
                 .accessibilityIdentifier("password")
             }
-        } header: {
-            Text("Your Sync Server", bundle: .module)
         } footer: {
-            Text("The server's address, and your user name and password on it. Hayaki keeps only the key the server issues in exchange, in this device's Keychain; your password is not stored.", bundle: .module)
+            Text("Hayaki stores the sign-in key in this device’s Keychain.", bundle: .module)
         }
         .disabled(model.isBusy)
 
@@ -169,14 +177,22 @@ private struct SignedInSections: View {
     var body: some View {
         Section {
             LabeledContent {
-                Text(verbatim: account.server.absoluteString)
+                if let server = account.server {
+                    Text(verbatim: server.absoluteString)
+                } else {
+                    Text("AnkiWeb", bundle: .module)
+                }
             } label: {
-                Text("Server", bundle: .module)
+                Text("Sync Destination", bundle: .module)
             }
             LabeledContent {
                 Text(verbatim: account.userName)
             } label: {
-                Text("User Name", bundle: .module)
+                if account.server == nil {
+                    Text("Email Address", bundle: .module)
+                } else {
+                    Text("User Name", bundle: .module)
+                }
             }
         } header: {
             Text("Your Sync Server", bundle: .module)
@@ -443,9 +459,9 @@ private extension View {
     }
 
     @ViewBuilder
-    func noAutocapitalization() -> some View {
+    func syncUserNameEntry(isEmail: Bool) -> some View {
         #if os(iOS)
-        textInputAutocapitalization(.never)
+        keyboardType(isEmail ? .emailAddress : .default).textInputAutocapitalization(.never)
         #else
         self
         #endif

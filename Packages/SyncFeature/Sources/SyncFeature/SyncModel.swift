@@ -4,19 +4,15 @@ import CollectionStore
 import Foundation
 import Observation
 
-/// Syncing the collection with the learner's own sync server.
-///
-/// The learner enters the server's address, their user name and password and
-/// signs in; the server issues a key in exchange, which is kept (in the
-/// Keychain) instead of the password. From then on one tap syncs. When the two
-/// sides cannot be merged, the model stops and asks whether to upload or
-/// download, and nothing is overwritten until the learner chooses.
-///
-/// There is no AnkiWeb sign-in and no default server (ADR 0002): without an
-/// address the learner typed, nothing is ever sent anywhere.
+/// Signs in to the selected destination and syncs the collection through Anki's core.
 @MainActor
 @Observable
 public final class SyncModel {
+    public enum Destination: Hashable, Sendable {
+        case ankiWeb
+        case selfHosted
+    }
+
     public enum Status: Equatable, Sendable {
         case idle
         case signingIn
@@ -32,8 +28,20 @@ public final class SyncModel {
         }
     }
 
-    /// The sign-in form. The address has no default.
-    public var serverAddress = ""
+    public private(set) var destination: Destination = .ankiWeb
+
+    private var customServerAddress = ""
+    public var serverAddress: String {
+        get { customServerAddress }
+        set {
+            guard !isBusy, account == nil, destination == .selfHosted else { return }
+            if newValue.trimmed != customServerAddress.trimmed {
+                clearSignInForm()
+            }
+            customServerAddress = newValue
+        }
+    }
+
     public var userName = ""
     public var password = ""
 
@@ -57,7 +65,10 @@ public final class SyncModel {
             status = .failed(SyncFailure(storageError: error))
         }
         if let account {
-            serverAddress = account.server.absoluteString
+            if let server = account.server {
+                destination = .selfHosted
+                customServerAddress = server.absoluteString
+            }
             userName = account.userName
         }
     }
@@ -72,7 +83,20 @@ public final class SyncModel {
 
     public var canSignIn: Bool {
         !isBusy && account == nil
-            && !serverAddress.trimmed.isEmpty && !userName.trimmed.isEmpty && !password.isEmpty
+            && (destination == .ankiWeb || !serverAddress.trimmed.isEmpty)
+            && !userName.trimmed.isEmpty && !password.isEmpty
+    }
+
+    public func selectDestination(_ destination: Destination) {
+        guard !isBusy, account == nil, destination != self.destination else { return }
+        self.destination = destination
+        clearSignInForm()
+    }
+
+    private func clearSignInForm() {
+        userName = ""
+        password = ""
+        status = .idle
     }
 
     // MARK: Signing in and out
@@ -82,7 +106,8 @@ public final class SyncModel {
     /// and is cleared once the server has issued its key.
     public func signIn() async {
         guard canSignIn else { return }
-        guard let server = Self.serverURL(from: serverAddress) else {
+        let server = destination == .selfHosted ? Self.serverURL(from: serverAddress) : nil
+        if destination == .selfHosted, server?.isAnkiWebHost != false {
             status = .failed(SyncFailure(reason: .invalidAddress))
             return
         }
@@ -91,7 +116,9 @@ public final class SyncModel {
         let request = Anki_Sync_SyncLoginRequest.with {
             $0.username = userName.trimmed
             $0.password = password
-            $0.endpoint = server.absoluteString
+            if let server {
+                $0.endpoint = server.absoluteString
+            }
         }
         let auth: Anki_Sync_SyncAuth
         do {
@@ -100,7 +127,8 @@ public final class SyncModel {
             status = .failed(SyncFailure(error, server: server, signingIn: true))
             return
         }
-        let account = SyncAccount(server: server, userName: userName.trimmed, hostKey: auth.hkey)
+        password = ""
+        let account = SyncAccount(server: server, userName: request.username, hostKey: auth.hkey)
         do {
             try storage.save(account)
         } catch {
@@ -108,7 +136,7 @@ public final class SyncModel {
             return
         }
         self.account = account
-        password = ""
+        userName = account.userName
         status = .idle
     }
 
@@ -122,8 +150,7 @@ public final class SyncModel {
             return
         }
         account = nil
-        password = ""
-        status = .idle
+        clearSignInForm()
     }
 
     // MARK: Syncing
@@ -147,7 +174,11 @@ public final class SyncModel {
             status = .failed(SyncFailure(error, server: account.server, signingIn: false))
             return
         }
-        follow(newEndpoint: response.hasNewEndpoint ? response.newEndpoint : nil)
+        if response.hasNewEndpoint, let failure = follow(newEndpoint: response.newEndpoint, for: account) {
+            store.signal(.everything)
+            status = .failed(failure)
+            return
+        }
         switch response.required {
         case .fullSync:
             status = .choosingDirection(.either)
@@ -238,13 +269,22 @@ public final class SyncModel {
         }
     }
 
-    /// A server may move the learner to another address; later syncs use it.
-    private func follow(newEndpoint: String?) {
-        guard let newEndpoint, var account, let url = Self.serverURL(from: newEndpoint), url != account.server
-        else { return }
-        account.server = url
-        try? storage.save(account)
-        self.account = account
+    /// Remember the core's redirect for this sign-in, including across launches.
+    private func follow(newEndpoint: String, for account: SyncAccount) -> SyncFailure? {
+        guard let url = Self.serverURL(from: newEndpoint), account.acceptsRedirect(to: url) else {
+            return SyncFailure(reason: .unexpectedRedirect)
+        }
+        guard url != account.endpoint else { return nil }
+
+        var redirected = account
+        redirected.redirectedEndpoint = url == account.server ? nil : url
+        do {
+            try storage.save(redirected)
+        } catch {
+            return SyncFailure(storageError: error)
+        }
+        self.account = redirected
+        return nil
     }
 
     /// The address as the core expects it: a web address with a host, whose
@@ -252,7 +292,8 @@ public final class SyncModel {
     static func serverURL(from text: String) -> URL? {
         guard var components = URLComponents(string: text.trimmed),
               let scheme = components.scheme?.lowercased(), scheme == "http" || scheme == "https",
-              let host = components.host, !host.isEmpty
+              let host = components.host, !host.isEmpty,
+              components.user == nil, components.password == nil
         else { return nil }
         if !components.path.hasSuffix("/") {
             components.path += "/"
@@ -303,11 +344,40 @@ public struct SyncOutcome: Equatable, Sendable {
 }
 
 extension SyncAccount {
+    var endpoint: URL? {
+        guard let redirectedEndpoint, acceptsRedirect(to: redirectedEndpoint) else { return server }
+        return redirectedEndpoint
+    }
+
+    func acceptsRedirect(to url: URL) -> Bool {
+        let scheme = url.scheme?.lowercased()
+        guard scheme == "http" || scheme == "https",
+              let host = url.host(), !host.isEmpty,
+              url.user() == nil, url.password() == nil
+        else { return false }
+
+        if server == nil {
+            return scheme == "https" && (url.port ?? 443) == 443 && url.isAnkiWebHost
+        }
+        return !url.isAnkiWebHost
+    }
+
     var auth: Anki_Sync_SyncAuth {
         .with {
             $0.hkey = hostKey
-            $0.endpoint = server.absoluteString
+            if let endpoint {
+                $0.endpoint = endpoint.absoluteString
+            }
         }
+    }
+}
+
+private extension URL {
+    var isAnkiWebHost: Bool {
+        guard let host = host()?.lowercased().trimmingCharacters(in: CharacterSet(charactersIn: ".")) else {
+            return false
+        }
+        return host == "ankiweb.net" || host.hasSuffix(".ankiweb.net")
     }
 }
 

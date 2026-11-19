@@ -183,6 +183,65 @@ struct SyncTests {
         }
     }
 
+    @Test("Switching servers discards the old key, redirect and pending upload")
+    func switchingServers() async throws {
+        let first = try await SyncServer(users: [("alice", "correct horse")])
+        let second = try await SyncServer(users: [("alice", "second password")])
+
+        try await withTemporaryCollection { phone in
+            try await phone.addBasicNotes(count: 1, toDeck: phone.addDeck(named: "Private"))
+            let previous = try await signedIn(phone, to: first)
+            let previousAccount = try #require(previous.account)
+            let configuredAddress = try unreachableAddress()
+            let storage = MemoryAccountStorage(storedText: """
+                {
+                    "server": "\(configuredAddress)",
+                    "userName": "alice",
+                    "hostKey": "\(previousAccount.hostKey)",
+                    "redirectedEndpoint": "\(first.address)"
+                }
+                """)
+            let model = SyncModel(store: phone, storage: storage)
+
+            #expect(model.serverAddress == configuredAddress)
+            await model.sync()
+            #expect(model.status == .choosingDirection(.uploadOnly))
+            #expect(model.account?.server?.absoluteString == configuredAddress)
+
+            model.selectDestination(.ankiWeb)
+            #expect(model.destination == .selfHosted, "Sign out before changing destinations")
+
+            model.signOut()
+            model.selectDestination(.ankiWeb)
+            #expect(model.account == nil)
+            #expect(storage.storedText == nil)
+            #expect(model.status == .idle)
+            model.selectDestination(.selfHosted)
+
+            model.serverAddress = second.address
+            model.userName = "alice"
+            model.password = "second password"
+            await model.signIn()
+            let nextAccount = try #require(model.account)
+            #expect(nextAccount.server?.absoluteString == second.address)
+            #expect(nextAccount.hostKey != previousAccount.hostKey)
+
+            // The previous server requested a full upload. On the new server,
+            // the learner has not started a sync or been asked to upload.
+            await model.upload()
+            #expect(model.status == .idle)
+
+            let observerStorage = MemoryAccountStorage(nextAccount)
+            try await withTemporaryCollection { tablet in
+                let observer = SyncModel(store: tablet, storage: observerStorage)
+                await observer.sync()
+                #expect(observer.status == .synced(SyncOutcome(kind: .merged, serverMessage: nil)))
+                let count = try await tablet.cardCount(matching: "deck:Private")
+                #expect(count == 0)
+            }
+        }
+    }
+
     @Test("A key the server no longer accepts is reported, with a way out")
     func keyNoLongerAccepted() async throws {
         let server = try await SyncServer(users: [("alice", "correct horse")])
@@ -240,6 +299,7 @@ struct SyncTests {
     /// A sync model for `store`, signed in to `server` as alice.
     private func signedIn(_ store: CollectionStore, to server: SyncServer) async throws -> SyncModel {
         let model = SyncModel(store: store, storage: MemoryAccountStorage())
+        model.selectDestination(.selfHosted)
         model.serverAddress = server.address
         model.userName = "alice"
         model.password = "correct horse"
