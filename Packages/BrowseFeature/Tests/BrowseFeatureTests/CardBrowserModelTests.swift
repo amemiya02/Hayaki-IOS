@@ -7,6 +7,34 @@ import Testing
 @MainActor
 @Suite("Card browser", .timeLimit(.minutes(1)))
 struct CardBrowserModelTests {
+    @Test("Open browsers page their own modes and columns while retaining the last selected preference")
+    func pagedRowsUseTheirBrowsersConfiguration() async throws {
+        try await withTemporaryCollection { store in
+            let deck = try await store.addDeck(named: "Spanish")
+            try await store.addBasicCard(front: "gato", back: "cat", inDeck: deck)
+            let cards = CardBrowserModel(store: store)
+            await cards.search()
+            await cards.setColumns(["deck", "noteFld"])
+
+            let notes = CardBrowserModel(store: store)
+            await notes.setMode(.notes)
+            await notes.setColumns(["noteFld", "noteTags"])
+
+            let cardID = try #require(cards.rowIDs.first)
+            let noteID = try #require(notes.rowIDs.first)
+            await cards.loadRow(cardID)
+            #expect(cards.row(for: cardID)?.cells["deck"] == "Spanish")
+            #expect(cards.row(for: cardID)?.cells["noteFld"] == "gato")
+            await notes.loadRow(noteID)
+            #expect(notes.row(for: noteID)?.cells["noteFld"] == "gato")
+
+            let reopened = CardBrowserModel(store: store)
+            await reopened.search()
+            #expect(reopened.mode == .notes)
+            #expect(reopened.visibleColumnIDs == ["noteFld", "noteTags"])
+        }
+    }
+
     @Test("With no search, the browser lists every card of the collection")
     func listsEveryCard() async throws {
         try await withTemporaryCollection { store in

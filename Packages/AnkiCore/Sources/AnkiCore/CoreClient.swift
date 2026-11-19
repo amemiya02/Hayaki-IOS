@@ -89,6 +89,43 @@ public final class CoreClient: Sendable {
         }.get()
     }
 
+    /// Reads a page with one browser's columns and row mode. The core shares
+    /// both settings among all browser windows, so no other call may run
+    /// between configuring the page and retrieving its rows.
+    public func browserRows(ids: [Int64], columns: [String], notesMode: Bool) async throws(CoreError)
+        -> [Int64: Anki_Search_BrowserRow]
+    {
+        try await worker.run { () -> Result<[Int64: Anki_Search_BrowserRow], CoreError> in
+            do throws(CoreError) {
+                let key = Anki_Config_ConfigKey.BoolEnum.browserTableShowNotesMode
+                let preferredMode = try self.execute(.getConfigBool(.with { $0.key = key })).get().val
+                _ = try self.execute(.setActiveBrowserColumns(.with { $0.vals = columns })).get()
+                if preferredMode != notesMode {
+                    _ = try self.execute(.setConfigBool(.with {
+                        $0.key = key
+                        $0.value = notesMode
+                    })).get()
+                }
+                var rows: [Int64: Anki_Search_BrowserRow] = [:]
+                for id in ids {
+                    // The search's IDs may include a row that was since deleted.
+                    if let row = try? self.execute(.browserRowForId(.with { $0.val = id })).get() {
+                        rows[id] = row
+                    }
+                }
+                if preferredMode != notesMode {
+                    _ = try self.execute(.setConfigBool(.with {
+                        $0.key = key
+                        $0.value = preferredMode
+                    })).get()
+                }
+                return .success(rows)
+            } catch {
+                return .failure(error)
+            }
+        }.get()
+    }
+
     /// Atomically applies an undo offer if the core is still at the expected step.
     public func undo(ifLastStep step: UInt32) async throws(CoreError) -> Anki_Collection_OpChangesAfterUndo? {
         try await worker.run {
