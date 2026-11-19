@@ -4,7 +4,9 @@ import SwiftUI
 struct ReviewerActionsMenu: View {
     let model: StudySessionModel
     let showsEditNote: Bool
-    let onEditNote: (Int64) -> Void
+    @Binding var requestedAction: ReviewerCommand?
+    let onSettings: () -> Void
+    let dispatch: (ReviewerCommand) -> Void
     @State private var editingDueDate = false
     @State private var confirmingReset = false
     @State private var confirmingDelete = false
@@ -33,7 +35,7 @@ struct ReviewerActionsMenu: View {
             if let card = model.state.card {
                 Section {
                     if showsEditNote {
-                        Button { onEditNote(card.id) } label: {
+                        Button { dispatch(.edit) } label: {
                             Label {
                                 Text("Edit Note", bundle: .module)
                             } icon: {
@@ -93,12 +95,32 @@ struct ReviewerActionsMenu: View {
                     }
                 }
             }
+            Section {
+                Button("Replay Media", systemImage: "play.circle") { dispatch(.replayMedia) }
+                #if os(iOS)
+                Button("Whiteboard", systemImage: "pencil.tip") { dispatch(.toggleWhiteboard) }
+                Button("Record Voice", systemImage: "mic") { dispatch(.recordVoice) }
+                #endif
+                Button("Reviewer Settings", systemImage: "gear", action: onSettings)
+            }
         } label: {
             Image(systemName: (model.state.card?.flag ?? 0) > 0 ? "flag.fill" : "ellipsis.circle")
                 .foregroundStyle(StudyFlag(rawValue: model.state.card?.flag ?? 0)?.color ?? .primary)
                 .font(.title3)
                 .frame(width: 44, height: 44)
                 .contentShape(.rect)
+        }
+        .onChange(of: requestedAction) { _, action in
+            guard let action else { return }
+            requestedAction = nil
+            switch action {
+            case .setDueDate:
+                dueDays = ""
+                editingDueDate = true
+            case .resetProgress: confirmingReset = true
+            case .deleteNote: confirmingDelete = true
+            default: break
+            }
         }
         .disabled(model.isBusy)
         .accessibilityLabel(Text("Study Actions", bundle: .module))

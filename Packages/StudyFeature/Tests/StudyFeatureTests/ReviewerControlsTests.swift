@@ -38,3 +38,27 @@ struct ReviewerControlsTests {
         }
     }
 }
+
+@MainActor
+@Suite("Reviewer tools")
+struct ReviewerToolTests {
+    @Test("Drawing and recorder preferences stay isolated by profile and studied deck")
+    func isolatedDeckTools() throws {
+        let suite = "ReviewerToolTests.\(UUID())"
+        let defaults = try #require(UserDefaults(suiteName: suite))
+        defer { defaults.removePersistentDomain(forName: suite) }
+        let profile = URL(fileURLWithPath: "/example/first")
+        let other = URL(fileURLWithPath: "/example/second")
+        var tools = ReviewerDeckTools.load(profile: profile, deckID: 17, defaults: defaults)
+        tools.whiteboardEnabled = true
+        tools.drawingShown = false
+        tools.stylusOnly = true
+        tools.recorderShown = true
+        tools.penColor = "red"
+        tools.save(profile: profile, deckID: 17, defaults: defaults)
+
+        #expect(ReviewerDeckTools.load(profile: profile, deckID: 17, defaults: defaults) == tools)
+        #expect(ReviewerDeckTools.load(profile: profile, deckID: 18, defaults: defaults) == ReviewerDeckTools())
+        #expect(ReviewerDeckTools.load(profile: other, deckID: 17, defaults: defaults) == ReviewerDeckTools())
+    }
+}

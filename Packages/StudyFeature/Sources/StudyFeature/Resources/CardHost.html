@@ -65,6 +65,15 @@
         max-height: 95vh;
         object-fit: contain;
     }
+    .reviewer-centered {
+        min-height: calc(100vh - 40px);
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+    }
+    img {
+        zoom: var(--reviewer-image-zoom, 1);
+    }
     video {
         max-width: 100%;
         height: auto;
@@ -151,7 +160,9 @@
     function applyColorScheme() {
         const night = dark.matches;
         document.documentElement.classList.toggle("night-mode", night);
-        document.body.className = shownBodyClass + (night ? " nightMode night_mode" : "");
+        const centered = document.body.classList.contains("reviewer-centered");
+        document.body.className = shownBodyClass + (night ? " nightMode night_mode ankidroid_dark_mode" : "");
+        document.body.classList.toggle("reviewer-centered", centered);
     }
 
     // Scripts inserted with innerHTML do not run; replace each with a fresh

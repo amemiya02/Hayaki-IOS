@@ -43,11 +43,22 @@ public struct StudyScreen: View {
     /// What the learner typed on a card that asks for typing.
     @State private var typedAnswer = ""
     @State private var editedCard: EditedCard?
+    @State private var preferences = ReviewerPreferences.load()
+    @State private var webCommand: ReviewerWebCommand?
+    @State private var pendingTap: Task<Void, Never>?
+    @FocusState private var reviewerFocused: Bool
+    @State private var showingSettings = false
+    @State private var requestedAction: ReviewerCommand?
     @Environment(\.studyNoteEditor) private var noteEditor
     #if os(iOS)
     @State private var audio = CardAudioPlayer()
+    @State private var recorder = AudioRecorder()
+    @State private var drawing = ReviewerDrawing()
+    @State private var isErasing = false
+    @State private var deckTools: ReviewerDeckTools
     #endif
     private let deckName: String
+    private let profileFolder: URL
     @Environment(\.dismiss) private var dismiss
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
@@ -55,6 +66,10 @@ public struct StudyScreen: View {
     public init(store: CollectionStore, deck: StudyDeck) {
         _model = State(initialValue: StudySessionModel(store: store, deckID: deck.id))
         deckName = deck.name
+        profileFolder = store.location.folder
+        #if os(iOS)
+        _deckTools = State(initialValue: ReviewerDeckTools.load(profile: store.location.folder, deckID: deck.id))
+        #endif
     }
 
     public var body: some View {
@@ -64,6 +79,52 @@ public struct StudyScreen: View {
         }
         .background(Color.studyBackground.ignoresSafeArea())
         .task { await model.run() }
+        .focusable()
+        .focused($reviewerFocused)
+        .onAppear { reviewerFocused = true }
+        .onKeyPress { press in
+            dispatchInput(.keyboard(ReviewerKey(press))) ? .handled : .ignored
+        }
+        #if os(iOS)
+        .modifier(ReviewerController { _ = dispatchInput($0) })
+        .modifier(ReviewerShake(
+            enabled: side.flatMap { preferences.command(for: .gesture(.shake), on: $0) } != nil
+        ) { _ = dispatchInput(.gesture(.shake)) })
+        .onChange(of: deckTools) { _, value in
+            value.save(profile: profileFolder, deckID: model.deckID)
+        }
+        .onDisappear {
+            recorder.discard()
+            audio.stop()
+        }
+        .alert("Recording", isPresented: Binding(
+            get: { recorder.errorMessage != nil },
+            set: { if !$0 { recorder.clearError() } }
+        )) {
+            if recorder.permissionDenied {
+                Button("Open Settings") {
+                    if let url = URL(string: UIApplication.openSettingsURLString) { UIApplication.shared.open(url) }
+                }
+            }
+            Button("OK", role: .cancel) { recorder.clearError() }
+        } message: {
+            Text(verbatim: recorder.errorMessage ?? "")
+        }
+        #endif
+        .onDisappear {
+            pendingTap?.cancel()
+            pendingTap = nil
+        }
+        .sheet(isPresented: $showingSettings, onDismiss: { preferences = ReviewerPreferences.load() }) {
+            NavigationStack {
+                ReviewerSettingsScreen()
+                    .toolbar {
+                        ToolbarItem(placement: .confirmationAction) {
+                            Button("Done") { showingSettings = false }
+                        }
+                    }
+            }
+        }
         .sheet(item: $editedCard) { card in
             noteEditor?(card.id)
         }
@@ -77,6 +138,105 @@ public struct StudyScreen: View {
             Button { model.clearActionError() } label: { Text("OK", bundle: .module) }
         } message: {
             Text(verbatim: model.actionError ?? "")
+        }
+    }
+
+    private var side: ReviewerSide? {
+        if model.state.answer != nil { return .answer }
+        return model.state.question == nil ? nil : .question
+    }
+
+    private var keySignatures: [String] {
+        preferences.bindings.compactMap { binding in
+            guard binding.side == side, case .keyboard(let key) = binding.input else { return nil }
+            return ([key.name] + key.modifiers.map(\.rawValue).sorted()).joined(separator: "+")
+        }
+    }
+
+    private func dispatchInput(_ input: ReviewerInput) -> Bool {
+        guard editedCard == nil, !showingSettings, !model.isBusy, let side,
+              let command = preferences.command(for: input, on: side) else { return false }
+        dispatch(command)
+        return true
+    }
+
+    private func dispatch(_ command: ReviewerCommand) {
+        switch command {
+        case .exit: dismiss()
+        case .edit, .editTags:
+            if let id = model.state.card?.id, noteEditor != nil { editedCard = EditedCard(id: id) }
+        case .deleteNote, .setDueDate, .resetProgress: requestedAction = command
+        case .showHint:
+            webCommand = ReviewerWebCommand(javascript: "document.querySelector('a.hint:not([style*=none])')?.click()")
+        case .showAllHints:
+            webCommand = ReviewerWebCommand(javascript: "document.querySelectorAll('a.hint:not([style*=none])').forEach(a => a.click())")
+        case .pageUp:
+            webCommand = ReviewerWebCommand(javascript: "window.scrollBy({top: -window.innerHeight})")
+        case .pageDown:
+            webCommand = ReviewerWebCommand(javascript: "window.scrollBy({top: window.innerHeight})")
+        case .replayMedia:
+            #if os(iOS)
+            if recorder.state == .recording || recorder.state == .paused { recorder.stopRecording() }
+            recorder.stopPlayback()
+            audio.play(model.soundsToReplay())
+            #endif
+        case .toggleWhiteboard:
+            #if os(iOS)
+            deckTools.whiteboardEnabled.toggle()
+            #endif
+        case .recordVoice:
+            #if os(iOS)
+            deckTools.recorderShown.toggle()
+            if !deckTools.recorderShown { recorder.discard() }
+            #endif
+        case .replayVoice:
+            #if os(iOS)
+            if recorder.file != nil {
+                deckTools.recorderShown = true
+                audio.stop()
+                recorder.play()
+            }
+            #endif
+        default:
+            if let number = command.userActionNumber {
+                webCommand = ReviewerWebCommand(javascript: "window.ankidroid?.userAction?.(\(number))")
+            } else {
+                let typed = typedAnswer
+                Task { await model.perform(command, typed: typed) }
+            }
+        }
+    }
+
+    private func handleWebInput(_ input: ReviewerWebInput) {
+        guard let side, let cardID = model.state.card?.id else { return }
+        switch input {
+        case .input(let input): _ = dispatchInput(input)
+        case .swipe(let dx, let dy, let time):
+            let scale = 100 / Double(max(preferences.swipeSensitivity, 1))
+            guard hypot(dx, dy) >= 44 * scale, hypot(dx, dy) / max(1, time) >= 0.2 * scale else { return }
+            let gesture: ReviewerGesture = abs(dx) > abs(dy)
+                ? (dx < 0 ? .swipeLeft : .swipeRight)
+                : (dy < 0 ? .swipeUp : .swipeDown)
+            _ = dispatchInput(.gesture(gesture))
+        case .tap(let x, let y):
+            let zone = preferences.tapZones.gesture(x: x, y: y)
+            if preferences.doubleTapMilliseconds > 0, preferences.command(for: .gesture(.doubleTap), on: side) != nil {
+                if let pendingTap {
+                    pendingTap.cancel()
+                    self.pendingTap = nil
+                    _ = dispatchInput(.gesture(.doubleTap))
+                } else {
+                    pendingTap = Task {
+                        try? await Task.sleep(for: .milliseconds(preferences.doubleTapMilliseconds))
+                        guard !Task.isCancelled else { return }
+                        pendingTap = nil
+                        guard self.side == side, model.state.card?.id == cardID else { return }
+                        _ = dispatchInput(.gesture(zone))
+                    }
+                }
+            } else {
+                _ = dispatchInput(.gesture(zone))
+            }
         }
     }
 
@@ -163,9 +323,40 @@ public struct StudyScreen: View {
                 // On an iPad, a readable column rather than a stretched line.
                 .frame(maxWidth: horizontalSizeClass == .regular ? 820 : .infinity)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
+                #if os(iOS)
+                .overlay {
+                    if deckTools.whiteboardEnabled && deckTools.drawingShown {
+                        ReviewerWhiteboard(drawing: drawing, tools: deckTools, isErasing: isErasing)
+                    }
+                }
+                .overlay(alignment: deckTools.toolbarTop ? .top : .bottom) {
+                    if deckTools.whiteboardEnabled {
+                        ReviewerWhiteboardTools(drawing: drawing, options: $deckTools, isErasing: $isErasing)
+                            .padding(8)
+                    }
+                }
+                #endif
             Divider()
-            AnswerBar(card: card, showingAnswer: showingAnswer, isAnswering: model.isBusy) {
-                showAnswer()
+            #if os(iOS)
+            if deckTools.recorderShown {
+                HStack {
+                    Spacer()
+                    ReviewerVoiceControls(recorder: recorder, stopCardAudio: audio.stop)
+                    Spacer()
+                    Button("Hide Recorder", systemImage: "xmark.circle") {
+                        recorder.discard()
+                        deckTools.recorderShown = false
+                    }
+                    .labelStyle(.iconOnly)
+                    .padding(.trailing, 12)
+                }
+            }
+            #endif
+            AnswerBar(
+                card: card, showingAnswer: showingAnswer, isAnswering: model.isBusy,
+                minimumPress: Double(preferences.minimumPressMilliseconds) / 1000
+            ) {
+                dispatch(.showAnswer)
             } onRate: { rating in
                 Task { await model.answer(rating) }
             }
@@ -179,10 +370,18 @@ public struct StudyScreen: View {
     @ViewBuilder
     private func cardView(_ display: CardDisplay) -> some View {
         #if os(iOS)
-        CardWebView(display: display, mediaFolder: model.mediaFolder, zoom: dynamicTypeSize.cardZoom) { event in
+        CardWebView(
+            display: display, mediaFolder: model.mediaFolder, zoom: dynamicTypeSize.cardZoom,
+            reviewer: ReviewerWebOptions(keySignatures: keySignatures, command: webCommand)
+        ) { event in
             switch event {
-            case .tap, .submitTypedAnswer: showAnswer()
-            case .play(let id): model.sound(forPlayButton: id).map { audio.play([$0]) }
+            case .tap: break
+            case .submitTypedAnswer: dispatch(.showAnswer)
+            case .reviewer(let input): handleWebInput(input)
+            case .play(let id):
+                if recorder.state == .recording || recorder.state == .paused { recorder.stopRecording() }
+                recorder.stopPlayback()
+                if let sound = model.sound(forPlayButton: id) { audio.play([sound]) }
             case .typed(let text): typedAnswer = text
             }
         }
@@ -190,6 +389,11 @@ public struct StudyScreen: View {
         .accessibilityIdentifier("card")
         // Each side's audio plays when it appears.
         .onChange(of: SideShown(display), initial: true) {
+            if !display.isAnswer { drawing.clear() }
+            if recorder.state == .recording || recorder.state == .paused { recorder.stopRecording() }
+            recorder.stopPlayback()
+            pendingTap?.cancel()
+            pendingTap = nil
             typedAnswer = display.isAnswer ? typedAnswer : ""
             audio.play(model.soundsToAutoplay())
         }
@@ -200,21 +404,11 @@ public struct StudyScreen: View {
     }
 
     private var reviewerActions: some View {
-        ReviewerActionsMenu(model: model, showsEditNote: noteEditor != nil) { cardID in
-            editedCard = EditedCard(id: cardID)
-        }
-    }
-
-    /// Turns the card over, with what the learner typed if the card asks
-    /// for typing.
-    private func showAnswer() {
-        guard let card = model.state.question else { return }
-        if card.asksForTypedAnswer {
-            let typed = typedAnswer
-            Task { await model.showAnswer(typed: typed) }
-        } else {
-            model.showAnswer()
-        }
+        ReviewerActionsMenu(
+            model: model, showsEditNote: noteEditor != nil, requestedAction: $requestedAction,
+            onSettings: { showingSettings = true },
+            dispatch: dispatch
+        )
     }
 }
 
@@ -271,6 +465,7 @@ private struct AnswerBar: View {
     let card: StudyCard
     let showingAnswer: Bool
     let isAnswering: Bool
+    let minimumPress: Double
     let onShowAnswer: () -> Void
     let onRate: (Rating) -> Void
 
@@ -279,20 +474,20 @@ private struct AnswerBar: View {
             if showingAnswer {
                 HStack(spacing: 8) {
                     ForEach(Rating.allCases, id: \.self) { rating in
-                        RatingButton(rating: rating, interval: card.intervals[rating]) {
+                        RatingButton(rating: rating, interval: card.intervals[rating], minimumPress: minimumPress) {
                             onRate(rating)
                         }
                     }
                 }
                 .disabled(isAnswering)
             } else {
-                Button(action: onShowAnswer) {
+                ReviewerPressButton(minimumPress: minimumPress, action: onShowAnswer) {
                     Text("Show Answer", bundle: .module)
                         .font(.headline)
                         .frame(maxWidth: .infinity, minHeight: 52)
                 }
                 .buttonStyle(.borderedProminent)
-                .keyboardShortcut(.space, modifiers: [])
+                .disabled(isAnswering)
                 .accessibilityIdentifier("show-answer")
             }
         }
@@ -303,10 +498,11 @@ private struct AnswerBar: View {
 private struct RatingButton: View {
     let rating: Rating
     let interval: String
+    let minimumPress: Double
     let action: () -> Void
 
     var body: some View {
-        Button(action: action) {
+        ReviewerPressButton(minimumPress: minimumPress, action: action) {
             VStack(spacing: 2) {
                 Text(interval)
                     .font(.caption.monospacedDigit().weight(.medium))
@@ -319,10 +515,25 @@ private struct RatingButton: View {
         }
         .buttonStyle(.bordered)
         .tint(rating.color)
-        .keyboardShortcut(rating.key, modifiers: [])
         .accessibilityLabel(rating.title)
         .accessibilityValue(Text(interval))
         .accessibilityIdentifier("rating-\(rating)")
+    }
+}
+
+private struct ReviewerPressButton<Label: View>: View {
+    let minimumPress: Double
+    let action: () -> Void
+    @ViewBuilder let label: () -> Label
+
+    var body: some View {
+        if minimumPress == 0 {
+            Button(action: action, label: label)
+        } else {
+            Button(action: {}, label: label)
+                .simultaneousGesture(LongPressGesture(minimumDuration: minimumPress).onEnded { _ in action() })
+                .accessibilityAction { action() }
+        }
     }
 }
 

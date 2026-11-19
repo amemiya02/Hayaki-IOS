@@ -78,10 +78,7 @@ final class CardAudioPlayer {
 
     private static func utterance(_ speech: CardSound.Speech) -> AVSpeechUtterance {
         let utterance = AVSpeechUtterance(string: speech.text)
-        let language = speech.language.replacingOccurrences(of: "_", with: "-")
-        let voices = AVSpeechSynthesisVoice.speechVoices()
-        utterance.voice = voices.first { speech.voices.contains($0.name) || speech.voices.contains($0.identifier) }
-            ?? AVSpeechSynthesisVoice(language: language)
+        utterance.voice = CardSpeechVoice.preferredVoice(for: speech)
         let speed = speech.speed > 0 ? speech.speed : 1
         utterance.rate = min(max(AVSpeechUtteranceDefaultSpeechRate * speed, AVSpeechUtteranceMinimumSpeechRate),
                              AVSpeechUtteranceMaximumSpeechRate)
@@ -104,7 +101,7 @@ final class CardAudioPlayer {
         try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
     }
 
-    private static let log = Logger(subsystem: "io.github.amemiya02.hayaki", category: "CardAudioPlayer")
+    nonisolated private static let log = Logger(subsystem: "io.github.amemiya02.hayaki", category: "CardAudioPlayer")
 }
 
 /// The end of one sound: signalled once, by whichever comes first of the
