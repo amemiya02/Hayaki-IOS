@@ -1,5 +1,5 @@
-# Generate a Hayaki project without embedded extensions for an Apple Personal
-# Team, which cannot provision the App Groups capability.
+# Generate an app-only Hayaki project for a provisioning profile
+# without the App Groups entitlement.
 include:
   - project.yml
 
