@@ -24,11 +24,42 @@
         }
       }
     },
+    "%lld due today" : {
+      "comment" : "Available cards in all decks for the current study day.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "今日の学習対象 %lld 枚"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "今日待学 %lld 张"
+          }
+        }
+      }
+    },
     "%lld new, %lld learning, %lld due" : {
       "comment" : "VoiceOver label for a deck's counts for today: new cards, learning cards and due review cards."
     },
-    "Bring your cards in from Anki or AnkiDroid by importing a collection package (.colpkg) or a deck package (.apkg)." : {
-      "comment" : "Explains on the first-launch screen how to bring existing cards in."
+    "%lld studied today" : {
+      "comment" : "Number of reviews recorded across all decks in the current study day.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "今日の学習回数 %lld"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "今日已学 %lld 次"
+          }
+        }
+      }
     },
     "Cancel" : {
       "comment" : "Button that closes a sheet or alert without changing anything."
@@ -65,6 +96,23 @@
     },
     "Export…" : {
       "comment" : "Deck context menu: export the deck, with its subdecks, as a deck package."
+    },
+    "Import a deck package (.apkg) or a collection package (.colpkg) from Hayaki, Anki or AnkiDroid." : {
+      "comment" : "Explains how to bring existing cards into an empty collection.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hayaki、Anki、AnkiDroid のデッキパッケージ（.apkg）またはコレクションパッケージ（.colpkg）をインポートできます。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "可以从 Hayaki、Anki 或 AnkiDroid 导入牌组包（.apkg）或集合包（.colpkg）。"
+          }
+        }
+      }
     },
     "Inside" : {
       "comment" : "New Deck sheet: label of the choice of deck the new deck goes inside."
@@ -135,16 +183,61 @@
       "comment" : "Placeholder of the field for a deck's name."
     },
     "New Deck" : {
-      "comment" : "Toolbar button in the deck list, and title of the sheet, for creating a deck."
+      "comment" : "Toolbar button in the deck list, and title of the sheet, for creating a deck.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "新しいデッキ"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "新建牌组"
+          }
+        }
+      }
     },
     "New Deck Inside" : {
       "comment" : "Deck context menu: create a deck inside this deck."
     },
     "No Cards Yet" : {
-      "comment" : "Title of the first-launch screen when the collection has no cards."
+      "comment" : "Title of the first-launch screen when the collection has no cards.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "カードがありません"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "还没有卡片"
+          }
+        }
+      }
     },
     "None (Top Level)" : {
       "comment" : "New Deck sheet: choice that puts the new deck at the top level, inside no other deck."
+    },
+    "Nothing due today" : {
+      "comment" : "Shown when no cards are left to study today.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "今日の学習対象はありません"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "今日没有待学卡片"
+          }
+        }
+      }
     },
     "OK" : {
       "comment" : "Button that closes an error alert."
@@ -160,6 +253,23 @@
     },
     "Studies this deck." : {
       "comment" : "VoiceOver hint on a deck in the deck list: tapping it starts a study session."
+    },
+    "Study Now · %@" : {
+      "comment" : "Starts a study session in the named deck.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@を学習する"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "开始学习 · %@"
+          }
+        }
+      }
     },
     "There is already a deck named “%@” there." : {
       "comment" : "Error shown when another deck in the same place already has the name; the placeholder is the name."

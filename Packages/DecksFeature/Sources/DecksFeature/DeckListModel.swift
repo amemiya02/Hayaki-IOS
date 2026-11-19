@@ -59,6 +59,18 @@ public final class DeckListModel {
 
     public private(set) var state: State = .loading
     public internal(set) var decks: [DeckNode] = []
+    /// Answers recorded since the current study day began.
+    public private(set) var studiedToday = 0
+    private(set) var currentDeckID: DeckNode.ID?
+
+    /// New, learning and due cards left today over all decks. Summing the
+    /// top-level decks avoids double-counting subdecks or using the capped
+    /// aggregate from the core's root node.
+    public var dueToday: Int {
+        decks.reduce(0) { total, deck in
+            total + deck.counts.new + deck.counts.learning + deck.counts.due
+        }
+    }
 
     /// Whether the collection has no cards at all, as on first launch, so
     /// the screen offers to import a package instead of an empty deck list.
@@ -80,7 +92,13 @@ public final class DeckListModel {
         do {
             // Counts are only computed when the request says what "now" is.
             let root = try await store.core.deckTree(.with { $0.now = Int64(Date().timeIntervalSince1970) })
+            let currentDeck = try await store.core.getCurrentDeck()
+            // The core groups reviews by the scheduling day and excludes
+            // manual rescheduling from Today.
+            let graphs = try await store.core.graphs(.with { $0.days = 1 })
             decks = root.children.map { DeckNode($0) }
+            studiedToday = Int(graphs.today.answerCount)
+            currentDeckID = currentDeck.id
             state = .loaded
         } catch {
             state = .failed(message: error.message)

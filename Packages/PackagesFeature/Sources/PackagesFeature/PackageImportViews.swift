@@ -37,6 +37,23 @@ public struct ImportPackageButton: View {
     }
 }
 
+/// Opens Anki's shared-deck catalogue. Downloaded deck packages can be opened
+/// with the existing Files import. Issue #34 tracks in-app discovery and download.
+public struct SharedDecksLink: View {
+    public init() {}
+
+    public var body: some View {
+        Link(destination: URL(string: "https://ankiweb.net/shared/decks/")!) {
+            Label {
+                Text("Get Shared Decks", bundle: .module)
+            } icon: {
+                Image(systemName: "arrow.down.circle")
+            }
+        }
+        .accessibilityIdentifier("shared-decks")
+    }
+}
+
 extension View {
     /// Handles importing packages for everything inside: the file picker
     /// that `ImportPackageButton` opens, the confirmation, merge choices,

@@ -433,8 +433,22 @@
         }
       }
     },
-    "Settings" : {
-      "comment" : "Title of the Settings section and its tab."
+    "More" : {
+      "comment" : "Title of the More section and its tab.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "その他"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "更多"
+          }
+        }
+      }
     },
     "Source Code and License" : {
       "localizations" : {

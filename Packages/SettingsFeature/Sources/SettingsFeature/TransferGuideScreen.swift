@@ -5,6 +5,7 @@ import SyncFeature
 
 struct TransferGuideScreen: View {
     let store: CollectionStore
+    let sync: SyncModel
 
     var body: some View {
         List {
@@ -38,7 +39,7 @@ struct TransferGuideScreen: View {
                 Text("In Sync Destination, choose AnkiWeb and sign in with your AnkiWeb email address and password.", bundle: .module)
                 Text("For your own server, choose Self-Hosted. Enter its address and sign in with the user name and password for that server.", bundle: .module)
                 Text("Use the same sync destination on your other devices. To switch destinations, sign out first.", bundle: .module)
-                SyncSettingsRow(store: store)
+                SyncSettingsRow(model: sync)
             } header: {
                 Text("Sync Between Devices", bundle: .module)
             }
