@@ -334,6 +334,17 @@ public final class StudySessionModel {
         }
     }
 
+    func updateTemplateTags(noteID: Int64, update: (inout [String]) -> Void) async {
+        await runAction { () async throws(CoreError) in
+            var note = try await store.core.getNote(.with { $0.nid = noteID })
+            update(&note.tags)
+            let revised = note
+            try await store.modify(.updateNotes(.with { $0.notes = [revised] }))
+            await redrawShownCard()
+            await refreshUndoStatus()
+        }
+    }
+
     public func setDueDate(_ days: String) async {
         guard let card = state.card else { return }
         await runAction { () async throws(CoreError) in

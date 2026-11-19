@@ -6,6 +6,7 @@ import PackagesFeature
 import ReminderFeature
 import SettingsFeature
 import StatisticsFeature
+import StudyFeature
 import SwiftUI
 import SyncFeature
 
@@ -54,6 +55,7 @@ struct SectionsView: View {
                         }
                     }
                     .accessibilityIdentifier("profiles-settings")
+                    CardTemplateSettingsRow()
                 }
             } label: {
                 Label { SettingsSection.title } icon: { Image(systemName: SettingsSection.systemImage) }

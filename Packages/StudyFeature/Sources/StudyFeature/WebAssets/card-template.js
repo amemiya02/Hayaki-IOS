@@ -107,6 +107,10 @@
 
         async handleRequest(command, data) {
             const result = await send(this.#generation, command, this.version, this.developer, data);
+            if (typeof result.searchResults === "string") {
+                emit(this.#generation, "ankiSearchCard", JSON.parse(result.searchResults));
+                delete result.searchResults;
+            }
             // The Android helper returns the raw response for interval and deck-name calls.
             if (command.startsWith("nextTime") || command === "deckName") return JSON.stringify(result);
             return result;
@@ -149,6 +153,9 @@
     };
     function emit(token, name, result) {
         if (token !== generation) return;
+        if (name === "ankiSttResult" && result.success) {
+            result = { success: true, value: JSON.parse(result.value) };
+        }
         for (const callback of hooks.get(name) ?? []) callback(result);
     }
     window.hayakiTemplate = { begin, emit };

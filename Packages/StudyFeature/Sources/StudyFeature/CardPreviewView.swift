@@ -31,13 +31,13 @@ public struct CardPreviewView: View {
                 isAnswer: showsAnswer, cardID: Int64(content.ordinal)
             ),
             mediaFolder: mediaFolder, zoom: dynamicTypeSize.cardZoom,
-            onTemplateRequest: { request, _, isAnswer in
+            onTemplateRequest: { request, context in
                 if let response = templateSpeech.handle(request, prepareAudio: { audio.stop() }) {
                     return response
                 }
                 switch request.command {
                 case "init": return .accepted
-                case "isDisplayingAnswer": return .value(.boolean(isAnswer))
+                case "isDisplayingAnswer": return .value(.boolean(context.isAnswer))
                 case "isInNightMode": return .value(.boolean(colorScheme == .dark))
                 case "showAnswer":
                     guard let onReveal else { return .unavailable }

@@ -1,6 +1,118 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "Allow Collection Access" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "コレクションへのアクセスを許可"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "允许访问集合"
+          }
+        }
+      }
+    },
+    "Allow Opening Other Apps" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "別のアプリを開くことを許可"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "允许打开其他 App"
+          }
+        }
+      }
+    },
+    "Allow Speech Recognition" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "音声認識を許可"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "允许语音识别"
+          }
+        }
+      }
+    },
+    "Card Template Permissions" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "カードテンプレートの権限"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "卡片模板权限"
+          }
+        }
+      }
+    },
+    "Card scripts can request the microphone for speech recognition." : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "カードスクリプトは音声認識にマイクを使用できます。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "卡片脚本可请求使用麦克风进行语音识别。"
+          }
+        }
+      }
+    },
+    "Card scripts can search your collection and add tags to other notes." : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "カードスクリプトはコレクション内を検索し、ほかのノートにタグを追加できます。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "卡片脚本可搜索集合并给其他笔记添加标签。"
+          }
+        }
+      }
+    },
+    "Tapping a card link can open the app registered for that link." : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "カードのリンクをタップすると、そのリンクに対応するアプリが開きます。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "点按卡片链接后，可打开处理该链接的 App。"
+          }
+        }
+      }
+    },
     "Rebuild Filtered Deck" : {
       "localizations" : {
         "ja" : {

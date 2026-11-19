@@ -35,6 +35,14 @@ struct CardDisplay: Equatable, Encodable {
 import OSLog
 import WebKit
 
+@MainActor
+struct CardTemplateContext {
+    let cardID: Int64
+    let isAnswer: Bool
+    let isCurrent: () -> Bool
+    let emit: (String, TemplateReply) -> Void
+}
+
 /// Draws a card in a web view, on Hayaki's own card host page
 /// (`CardHost.html`); everything around the card is native (ADR 0004).
 ///
@@ -50,8 +58,21 @@ struct CardWebView: UIViewRepresentable {
     /// The page zoom that follows the learner's text size.
     let zoom: CGFloat
     /// Called for what the learner does on the card.
-    var onTemplateRequest: ((TemplateRequest, Int64, Bool) async -> TemplateReply)? = nil
+    var onTemplateRequest: ((TemplateRequest, CardTemplateContext) async -> TemplateReply)? = nil
     let onEvent: (CardPageEvent) -> Void
+    @AppStorage(CardTemplatePreference.externalApps) private var allowsExternalApps = false
+
+    init(
+        display: CardDisplay, mediaFolder: URL, zoom: CGFloat,
+        onTemplateRequest: ((TemplateRequest, CardTemplateContext) async -> TemplateReply)? = nil,
+        onEvent: @escaping (CardPageEvent) -> Void
+    ) {
+        self.display = display
+        self.mediaFolder = mediaFolder
+        self.zoom = zoom
+        self.onTemplateRequest = onTemplateRequest
+        self.onEvent = onEvent
+    }
 
     func makeCoordinator() -> Coordinator {
         Coordinator()
@@ -89,6 +110,7 @@ struct CardWebView: UIViewRepresentable {
     func updateUIView(_ webView: WKWebView, context: Context) {
         context.coordinator.onEvent = onEvent
         context.coordinator.onTemplateRequest = onTemplateRequest
+        context.coordinator.allowsExternalApps = allowsExternalApps
         if webView.pageZoom != zoom {
             webView.pageZoom = zoom
         }
@@ -108,7 +130,8 @@ struct CardWebView: UIViewRepresentable {
 
         weak var webView: WKWebView?
         var onEvent: (CardPageEvent) -> Void = { _ in }
-        var onTemplateRequest: ((TemplateRequest, Int64, Bool) async -> TemplateReply)?
+        var onTemplateRequest: ((TemplateRequest, CardTemplateContext) async -> TemplateReply)?
+        var allowsExternalApps = false
         private var templateToken: String?
         private var reloaded: CardDisplay?
         private var awaitingTemplateRequests = 0
@@ -178,8 +201,12 @@ struct CardWebView: UIViewRepresentable {
             }
             // A card can link to a site, but the site opens in the user's browser.
             if navigationAction.navigationType == .linkActivated,
-               url.scheme == "http" || url.scheme == "https" {
-                UIApplication.shared.open(url)
+               navigationAction.sourceFrame.isMainFrame, let scheme = url.scheme?.lowercased() {
+                let isWeb = scheme == "http" || scheme == "https"
+                let isLocal = ["file", "data", "blob", "about", "javascript", CardResources.scheme].contains(scheme)
+                if isWeb || (allowsExternalApps && !isLocal) {
+                    UIApplication.shared.open(url)
+                }
             }
             decisionHandler(.cancel)
         }
@@ -233,7 +260,19 @@ struct CardWebView: UIViewRepresentable {
                     replyHandler(TemplateReply.unavailable.message, nil)
                     return
                 }
-                let result = await onTemplateRequest(request, display.cardID, display.isAnswer)
+                let context = CardTemplateContext(
+                    cardID: display.cardID, isAnswer: display.isAnswer,
+                    isCurrent: { [weak self] in self?.templateToken == pageToken },
+                    emit: { [weak self] name, result in
+                        guard let self, templateToken == pageToken else { return }
+                        webView?.callAsyncJavaScript(
+                            "hayakiTemplate.emit(token, name, result)",
+                            arguments: ["token": pageToken, "name": name, "result": result.message],
+                            in: nil, in: .page, completionHandler: nil
+                        )
+                    }
+                )
+                let result = await onTemplateRequest(request, context)
                 if pageToken == templateToken { awaitingTemplateRequests -= 1 }
                 replyHandler(result.message, nil)
             }

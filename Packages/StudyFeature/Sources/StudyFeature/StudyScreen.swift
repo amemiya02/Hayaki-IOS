@@ -47,6 +47,9 @@ public struct StudyScreen: View {
     #if os(iOS)
     @State private var audio = CardAudioPlayer()
     @State private var templateSpeech = TemplateSpeech()
+    @State private var templateRecognition = TemplateRecognition()
+    @AppStorage(CardTemplatePreference.microphone) private var allowsTemplateMicrophone = false
+    @AppStorage(CardTemplatePreference.collectionAccess) private var allowsTemplateCollectionAccess = false
     #endif
     private let deckName: String
     @Environment(\.dismiss) private var dismiss
@@ -183,12 +186,24 @@ public struct StudyScreen: View {
         #if os(iOS)
         CardWebView(
             display: display, mediaFolder: model.mediaFolder, zoom: dynamicTypeSize.cardZoom,
-            onTemplateRequest: { request, cardID, isAnswer in
+            onTemplateRequest: { request, context in
                 if request.command == "isInNightMode" { return .value(.boolean(colorScheme == .dark)) }
                 if let response = templateSpeech.handle(request, prepareAudio: { audio.stop() }) {
                     return response
                 }
-                return await model.handleTemplate(request, cardID: cardID, isAnswer: isAnswer, typedAnswer: typedAnswer)
+                if let result = await templateRecognition.handle(
+                    request, context: context, allowed: allowsTemplateMicrophone,
+                    prepareAudio: {
+                        audio.stop()
+                        templateSpeech.stop()
+                    }
+                ) {
+                    return result
+                }
+                return await model.handleTemplate(
+                    request, cardID: context.cardID, isAnswer: context.isAnswer, typedAnswer: typedAnswer,
+                    allowsCollectionAccess: allowsTemplateCollectionAccess
+                )
             }
         ) { event in
             switch event {
@@ -202,11 +217,13 @@ public struct StudyScreen: View {
         // Each side's audio plays when it appears.
         .onChange(of: SideShown(display), initial: true) {
             typedAnswer = display.isAnswer ? typedAnswer : ""
+            templateRecognition.stop()
             audio.play(model.soundsToAutoplay())
         }
         .onDisappear {
             audio.stop()
             templateSpeech.stop()
+            templateRecognition.stop()
         }
         #else
         Text(verbatim: display.html)

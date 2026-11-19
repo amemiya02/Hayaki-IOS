@@ -7,6 +7,11 @@ struct TemplateRequest: Equatable, Sendable {
     let developer: String
     var data: String?
 
+    func decoded<T: Decodable>(_ type: T.Type) -> T? {
+        guard let data else { return nil }
+        return try? JSONDecoder().decode(type, from: Data(data.utf8))
+    }
+
     var isValid: Bool { version == "0.0.3" && !developer.isEmpty }
 
     init(command: String, version: String, developer: String, data: String? = nil) {
@@ -38,6 +43,7 @@ struct TemplateReply: Equatable, Sendable {
 
     let success: Bool
     let value: Value
+    var searchResults: String? = nil
 
     static let invalid = Self(success: false, value: .integer(-1))
     static let accepted = Self(success: true, value: .boolean(true))
@@ -51,13 +57,16 @@ struct TemplateReply: Equatable, Sendable {
         case .boolean(let value): value
         case .text(let value): value
         }
-        return ["success": success, "value": value]
+        var reply = ["success": success, "value": value]
+        if let searchResults { reply["searchResults"] = searchResults }
+        return reply
     }
 }
 
 extension StudySessionModel {
     func handleTemplate(
-        _ request: TemplateRequest, cardID: Int64, isAnswer: Bool, typedAnswer: String = ""
+        _ request: TemplateRequest, cardID: Int64, isAnswer: Bool, typedAnswer: String = "",
+        allowsCollectionAccess: Bool = false
     ) async -> TemplateReply {
         guard request.isValid else { return .invalid }
         guard store.allowsNewProfileWork, let card = state.card,
@@ -79,7 +88,14 @@ extension StudySessionModel {
             else { return .unavailable }
             return .value(.text(String(decoding: data, as: UTF8.self)))
         }
+        if request.command == "searchCardWithCallback" {
+            guard allowsCollectionAccess, let query = request.data else { return .unavailable }
+            return await templateSearch(query, cardID: cardID, isAnswer: isAnswer)
+        }
         guard !isBusy else { return .unavailable }
+        if request.command == "setNoteTags" || request.command == "addTagToNote" {
+            return await templateTagUpdate(request, on: card, allowsCollectionAccess: allowsCollectionAccess)
+        }
         return await runTemplateAction(request, card: card, isAnswer: isAnswer, typedAnswer: typedAnswer)
     }
 
@@ -122,6 +138,72 @@ extension StudySessionModel {
         default: return nil
         }
         return .value(.integer(value))
+    }
+
+    private func templateTagUpdate(
+        _ request: TemplateRequest, on card: StudyCard, allowsCollectionAccess: Bool
+    ) async -> TemplateReply {
+        switch request.command {
+        case "setNoteTags":
+            guard let input = request.decoded(TagUpdate.self), input.tags.allSatisfy(Self.isTemplateTag) else {
+                return .unavailable
+            }
+            await updateTemplateTags(noteID: card.noteID) { $0 = input.tags }
+        case "addTagToNote":
+            guard let input = request.decoded(TagAddition.self), Self.isTemplateTag(input.tag),
+                  input.noteId == card.noteID || allowsCollectionAccess else { return .unavailable }
+            await updateTemplateTags(noteID: input.noteId) { tags in
+                if !tags.contains(input.tag) { tags.append(input.tag) }
+            }
+        default:
+            return .unavailable
+        }
+        return actionError == nil ? .accepted : .unavailable
+    }
+
+    private nonisolated static func isTemplateTag(_ tag: String) -> Bool {
+        !tag.isEmpty && !tag.contains(where: \.isWhitespace)
+    }
+
+    private func templateSearch(_ query: String, cardID: Int64, isAnswer: Bool) async -> TemplateReply {
+        do {
+            let result = try await store.core.searchCards(.with { $0.search = query })
+            var notes: [Int64: [String: String]] = [:]
+            var fields: [Int64: [String]] = [:]
+            var cards: [SearchMatch] = []
+            cards.reserveCapacity(result.ids.count)
+            for id in result.ids {
+                guard !Task.isCancelled, store.allowsNewProfileWork,
+                      state.card?.id == cardID, (state.answer != nil) == isAnswer else { return .unavailable }
+                let card = try await store.core.getCard(.with { $0.cid = id })
+                if notes[card.noteID] == nil {
+                    let note = try await store.core.getNote(.with { $0.nid = card.noteID })
+                    if fields[note.notetypeID] == nil {
+                        let type = try await store.core.getNotetype(.with { $0.ntid = note.notetypeID })
+                        fields[note.notetypeID] = type.fields.map(\.name)
+                    }
+                    notes[card.noteID] = Dictionary(zip(fields[note.notetypeID] ?? [], note.fields), uniquingKeysWith: { first, _ in first })
+                }
+                cards.append(SearchMatch(cardId: id, noteId: card.noteID, fieldsData: notes[card.noteID] ?? [:]))
+            }
+            let encoded = try JSONEncoder().encode(cards)
+            return TemplateReply(success: true, value: .boolean(true), searchResults: String(decoding: encoded, as: UTF8.self))
+        } catch {
+            return .unavailable
+        }
+    }
+
+    private struct SearchMatch: Encodable {
+        let cardId: Int64
+        let noteId: Int64
+        let fieldsData: [String: String]
+    }
+
+    private struct TagUpdate: Decodable { let tags: [String] }
+
+    private struct TagAddition: Decodable {
+        let noteId: Int64
+        let tag: String
     }
 
     private func runTemplateAction(
