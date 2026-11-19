@@ -1,4 +1,4 @@
-> Superseded by [ADR 0005](0005-android-parity.md). The written-permission condition still applies.
+> Superseded by [ADR 0005](0005-android-parity.md). The original scope and access condition below are historical.
 
 # No AnkiWeb: sync with a self-chosen server, or not at all
 

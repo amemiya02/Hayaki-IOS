@@ -147,14 +147,14 @@ Sheets 20–22. Extend package support from #5 and #14. Inventory every Android 
 Sheets 18–19 and 23–24 plus the later Android sync change. Implement Android's profile operations, isolate collections, media, backups, credentials and pending work.
 
 - Switch profiles during queued work, restart and verify isolation. Preserve existing self-hosted settings when upgrading and after a failed login or endpoint change.
-- Exercise login, logout, incremental and forced sync, upload/download confirmations, wrong credentials and interruption against a local server. Once approved, test equivalent AnkiWeb flows and the new-profile default. Keep hosted credentials in the platform credential store.
+- Exercise login, logout, incremental and forced sync, upload/download confirmations, wrong credentials and interruption against a local server. Test equivalent AnkiWeb flows and the new-profile default. Keep hosted credentials in the platform credential store.
 
-### [#36](https://github.com/amemiya02/Hayaki-IOS/issues/36) · Obtain and verify AnkiWeb access for Hayaki iOS
+### [#36](https://github.com/amemiya02/Hayaki-IOS/issues/36) · Offer and verify AnkiWeb sync through the upstream core
 
-The iOS client needs written permission covering its use of AnkiWeb. Android code and Kioku availability do not establish that permission.
+Use the unmodified upstream sync implementation and the core’s default AnkiWeb endpoint for new profiles. Existing self-hosted profiles retain their server.
 
-- Record the owner's confirmation and a reference to the scope of the authorization. Keep private correspondence and credentials out of the issue.
-- After authorization, verify actual iOS sign-in, collection and media sync, profile isolation and switching destinations. Until then keep the public endpoint disabled and report this parity gap separately.
+- Offer AnkiWeb and self-hosted destinations, store the host key in Keychain, and keep work and credentials scoped to the chosen destination.
+- Verify sign-in, incremental sync, one-way conflicts and media through the core. Cover switching and isolation with the local server and use a dedicated account for live AnkiWeb evidence. Record outcomes without publishing credentials.
 
 ### [#37](https://github.com/amemiya02/Hayaki-IOS/issues/37) · Add share-to-note, widgets and deck reminders
 
