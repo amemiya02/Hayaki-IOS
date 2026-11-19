@@ -15,6 +15,7 @@ let package = Package(
         .package(path: "../CollectionStore"),
         .package(path: "../NoteEditorFeature"),
         .package(path: "../StudyFeature"),
+        .package(path: "../PackagesFeature"),
     ],
     targets: [
         .target(
@@ -24,6 +25,7 @@ let package = Package(
                 .product(name: "CollectionStore", package: "CollectionStore"),
                 .product(name: "NoteEditorFeature", package: "NoteEditorFeature"),
                 .product(name: "StudyFeature", package: "StudyFeature"),
+                .product(name: "PackagesFeature", package: "PackagesFeature"),
             ],
             resources: [.process("Resources")]
         ),

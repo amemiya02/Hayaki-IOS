@@ -11,6 +11,7 @@ struct BulkActionMenu: View {
     let onEdit: () -> Void
     let onInfo: () -> Void
     let onPreview: () -> Void
+    let onExport: (Bool) -> Void
     let onChangeNoteType: () -> Void
 
     var body: some View {
@@ -78,6 +79,12 @@ struct BulkActionMenu: View {
             }
             Button { prompt = .replace } label: {
                 Label { Text("Find and Replace", bundle: .module) } icon: { Image(systemName: "text.magnifyingglass") }
+            }
+            Menu {
+                Button { onExport(true) } label: { Text("Deck Package", bundle: .module) }
+                Button { onExport(false) } label: { Text("Text File", bundle: .module) }
+            } label: {
+                Label { Text("Export Selection", bundle: .module) } icon: { Image(systemName: "square.and.arrow.up") }
             }
             Divider()
             Button { prompt = .dueDate } label: { BrowserActionPrompt.dueDate.title }

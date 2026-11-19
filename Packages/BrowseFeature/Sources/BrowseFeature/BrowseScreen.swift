@@ -1,5 +1,6 @@
 import CollectionStore
 import NoteEditorFeature
+import PackagesFeature
 import SwiftUI
 
 /// How the Browse section appears in the tab bar and sidebar.
@@ -167,6 +168,7 @@ public struct BrowseScreen: View {
                     onEdit: { openFirstSelection(asInfo: false) },
                     onInfo: { openFirstSelection(asInfo: true) },
                     onPreview: { preview(selectedOnly: true) },
+                    onExport: export,
                     onChangeNoteType: changeNoteType
                 )
                 .disabled(model.selection.isEmpty || model.isPerformingAction)
@@ -267,6 +269,8 @@ public struct BrowseScreen: View {
         case .savedSearches: BrowserSavedSearchesSheet(model: model)
         case .editing(let cardID): NoteEditorScreen(store: store, editingCardID: cardID)
         case .preview(let cardIDs): BrowserPreviewScreen(store: store, cardIDs: cardIDs)
+        case .textExport(let selection): TextExportScreen(store: store, selection: selection)
+        case .packageExport(let selection): PackageExportScreen(store: store, selection: selection)
         }
     }
 
@@ -299,6 +303,13 @@ public struct BrowseScreen: View {
             let ids = await model.previewCardIDs(selectedOnly: selectedOnly)
             if !ids.isEmpty { sheet = .preview(ids) }
         }
+    }
+
+    private func export(asPackage: Bool) {
+        let ids = model.rowIDs.filter { model.selection.contains($0) }
+        guard !ids.isEmpty else { return }
+        let selection = model.mode == .cards ? ExportSelection.cards(ids) : .notes(ids)
+        sheet = asPackage ? .packageExport(selection) : .textExport(selection)
     }
 
     private var isConfirmingDeletion: Binding<Bool> {
@@ -414,6 +425,7 @@ public struct BrowseScreen: View {
 
 private enum BrowseSheet: Identifiable {
     case filters, columns, savedSearches, editing(Int64), preview([Int64])
+    case textExport(ExportSelection), packageExport(ExportSelection)
 
     var id: Int {
         switch self {
@@ -422,6 +434,8 @@ private enum BrowseSheet: Identifiable {
         case .savedSearches: 2
         case .editing: 3
         case .preview: 4
+        case .textExport: 5
+        case .packageExport: 6
         }
     }
 }
