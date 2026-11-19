@@ -98,6 +98,33 @@ struct AddNoteTests {
         }
     }
 
+    @Test("Sticky fields carry their markup into the next note and stay pinned when the editor reopens")
+    func repeatsStickyFields() async throws {
+        try await withTemporaryCollection { store in
+            let editor = NoteEditorModel(store: store)
+            await editor.load()
+            try await editor.setSticky(true, ofField: 1)
+            editor.setText("primero", ofField: 0)
+            editor.setMarkup("<i>Spanish</i>", ofField: 1)
+            editor.addTags("language")
+
+            #expect(await editor.add().cardCount == 1)
+            #expect(editor.fields.map(\.content) == ["", "<i>Spanish</i>"])
+            #expect(!editor.hasChanges)
+
+            editor.setText("segundo", ofField: 0)
+            let second = await editor.add()
+            let note = try await store.core.getNote(.with { $0.nid = second.noteID })
+            #expect(note.fields == ["segundo", "<i>Spanish</i>"])
+            #expect(note.tags == ["language"])
+
+            let reopened = NoteEditorModel(store: store)
+            await reopened.load()
+            #expect(reopened.isSticky(1))
+            #expect(reopened.fields.map(\.content) == ["", ""])
+        }
+    }
+
     @Test("Opening the editor again starts with the note type and deck last used")
     func remembersLastNotetypeAndDeck() async throws {
         try await withTemporaryCollection { store in

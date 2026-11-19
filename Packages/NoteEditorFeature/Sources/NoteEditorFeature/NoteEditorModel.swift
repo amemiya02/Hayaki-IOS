@@ -210,7 +210,7 @@ public final class NoteEditorModel {
             state = .failed(message: error.message)
             return
         }
-        for (index, old) in previous.enumerated() where index < fields.count && old.isEdited {
+        for (index, old) in previous.enumerated() where index < fields.count && !old.content.isEmpty {
             fields[index].setMarkup(old.content)
         }
     }
@@ -218,6 +218,22 @@ public final class NoteEditorModel {
     public func selectDeck(_ id: Int64) {
         guard !isEditing else { return }
         deckID = id
+    }
+
+    /// Whether the note type pins this field when adding several notes.
+    public func isSticky(_ index: Int) -> Bool {
+        notetype.fields.indices.contains(index) && notetype.fields[index].config.sticky
+    }
+
+    /// Sets the note type's sticky flag, shared across Anki clients.
+    public func setSticky(_ sticky: Bool, ofField index: Int) async throws(CoreError) {
+        guard !isEditing, notetype.fields.indices.contains(index), isSticky(index) != sticky else { return }
+        let id = notetypeID
+        var latest = try await store.core.getNotetype(.with { $0.ntid = id })
+        guard latest.fields.indices.contains(index) else { return }
+        latest.fields[index].config.sticky = sticky
+        try await store.modify(.updateNotetype(latest))
+        if notetypeID == id { notetype = latest }
     }
 
     // MARK: Editing
@@ -368,8 +384,8 @@ public final class NoteEditorModel {
 
     /// Adds the note if the core's check allows it. A warning the learner
     /// has seen and accepted is passed as `confirming`, and then does not
-    /// stop the note again. After adding, the fields are emptied for the next
-    /// note; note type, deck and tags stay.
+    /// stop the note again. Sticky field values, note type, deck and tags
+    /// carry over to the next note.
     public func add(confirming accepted: AddWarning? = nil) async -> AddOutcome {
         guard !isEditing, state == .ready else {
             return .failed(message: String(localized: "Could Not Add the Note", bundle: .module))
@@ -381,13 +397,17 @@ public final class NoteEditorModel {
             case .refused(let problem): return .refused(problem)
             case .warning(let warning): return .needsConfirmation(warning)
             }
+            var next = try await store.core.newNote(.with { $0.ntid = candidate.notetypeID })
             let response = try await store.modify(.addNote(.with {
                 $0.note = candidate
                 $0.deckID = deckID
             }))
-            let cards = try await store.core.cardsOfNote(.with { $0.nid = response.noteID }).cids
-            try await startNote(notetypeID: notetypeID)
-            return .added(AddedNote(noteID: response.noteID, cardCount: cards.count))
+            next.tags = candidate.tags
+            note = next
+            fields = fields.enumerated().map { index, field in
+                EditableField(name: field.name, storedContent: isSticky(index) ? candidate.fields[index] : "")
+            }
+            return .added(AddedNote(noteID: response.noteID, cardCount: Int(response.changes.count)))
         } catch {
             return .failed(message: error.message)
         }
