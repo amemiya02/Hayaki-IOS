@@ -180,6 +180,48 @@ struct ProfilesTests {
         try await restarted.store?.close()
     }
 
+    @Test("Downloading a collection during setup opens Decks and completes Welcome for that profile",
+          .enabled(if: SyncServer.isBuilt, SyncServer.skipMessage))
+    func downloadDuringWelcomeOpensDecks() async throws {
+        let server = try await SyncServer(users: [("alice", "test password")])
+        try await withTemporaryCollection { source in
+            let deck = try await source.addDeck(named: "Spanish")
+            try await source.addBasicNotes(count: 1, toDeck: deck)
+            let sync = SyncModel(store: source, storage: ProfileTestAccount(), network: { .unmetered })
+            sync.policy.media = .never
+            await signIn(sync, server: server, user: "alice", password: "test password")
+            await sync.sync()
+            await sync.upload()
+            #expect(sync.status == .synced(SyncOutcome(kind: .uploaded, serverMessage: nil)))
+        }
+
+        let folder = try TemporaryFolder()
+        let location = CollectionLocation(folder: folder.url.appendingPathComponent("Collection"))
+        let backups = folder.url.appendingPathComponent("Backups")
+        let suite = "HayakiProfilesTests.\(UUID())"
+        let preferences = try #require(UserDefaults(suiteName: suite))
+        defer { preferences.removePersistentDomain(forName: suite) }
+        let account = ProfileTestAccount()
+        let app = AppModel(location: { location }, backupFolder: { backups }, language: "en",
+                           preferences: preferences, accountStorage: { _ in account })
+        await app.open()
+        let store = try #require(app.store)
+        let sync = try #require(app.sync)
+        sync.policy.media = .never
+        await signIn(sync, server: server, user: "alice", password: "test password")
+        await sync.sync()
+        #expect(sync.status == .choosingDirection(.downloadOnly))
+        #expect(app.showsWelcome)
+
+        await sync.download()
+
+        #expect(sync.status == .synced(SyncOutcome(kind: .downloaded, serverMessage: nil)))
+        #expect(!app.showsWelcome)
+        #expect(preferences.bool(forKey: "hayakiWelcomeCompleted"))
+        #expect(try await store.cardCount(matching: "deck:Spanish") == 1)
+        try await store.close()
+    }
+
     @Test("Sync sign-ins, pending uploads, staged imports, and backups stay with the profile that owns them",
           .enabled(if: SyncServer.isBuilt, SyncServer.skipMessage))
     func workStaysInItsProfile() async throws {

@@ -120,6 +120,7 @@ public final class SyncModel {
 
     @ObservationIgnored private let store: CollectionStore
     @ObservationIgnored private let storage: any SyncAccountStorage
+    @ObservationIgnored private let onCollectionDownloaded: (() -> Void)?
     @ObservationIgnored private let preferences: UserDefaults?
     @ObservationIgnored private let preferenceKeys: (policy: String, lastAttempt: String)
     @ObservationIgnored private let networkOverride: (() -> SyncNetwork)?
@@ -129,16 +130,20 @@ public final class SyncModel {
 
     /// - Parameter storage: Where the sign-in is kept; the Keychain unless a
     ///   test passes another.
+    /// - Parameter onCollectionDownloaded: Runs after the downloaded collection
+    ///   is open and before media sync starts.
     public init(
         store: CollectionStore,
         storage: any SyncAccountStorage = KeychainSyncAccountStorage(),
         preferences: UserDefaults? = nil,
         profileID: UUID? = nil,
+        onCollectionDownloaded: (() -> Void)? = nil,
         network: (() -> SyncNetwork)? = nil,
         now: @escaping () -> Date = Date.init
     ) {
         self.store = store
         self.storage = storage
+        self.onCollectionDownloaded = onCollectionDownloaded
         self.preferences = preferences
         let keys = Self.keys(for: profileID)
         preferenceKeys = keys
@@ -650,6 +655,7 @@ public final class SyncModel {
         requiresFreshCollectionSync = false
         lastKnownBadge = nil
         status = .synced(outcome)
+        if outcome.kind == .downloaded { onCollectionDownloaded?() }
         if syncMedia { await self.syncMedia(after: outcome) }
     }
 

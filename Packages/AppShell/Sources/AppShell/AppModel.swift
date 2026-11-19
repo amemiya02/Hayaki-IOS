@@ -327,7 +327,11 @@ public final class AppModel {
             store: store,
             storage: accountStorage(profileID),
             preferences: preferences,
-            profileID: profileID
+            profileID: profileID,
+            onCollectionDownloaded: { [weak self] in
+                guard let self, self.store === store, self.showsWelcome else { return }
+                self.completeWelcome()
+            }
         )
         backups = BackupModel(store: store, folder: backupFolder, importer: importer)
         packageImport = importer
