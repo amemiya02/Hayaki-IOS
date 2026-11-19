@@ -1,5 +1,6 @@
 import CollectionStore
 import DeckOptionsFeature
+import HayakiAppearance
 import PackagesFeature
 import StudyFeature
 import SwiftUI
@@ -24,6 +25,9 @@ public struct DeckListScreen: View {
     @State private var optionsDeck: DeckNode?
     @Binding private var presentation: DeckPresentation?
     @State private var selectedDeckID: DeckNode.ID?
+    @Environment(\.hayakiTheme) private var theme
+    @AppStorage(DeckBackground.revisionKey) private var backgroundRevision = ""
+    @State private var backgroundImage: CGImage?
     @Environment(\.scenePhase) private var scenePhase
     private let store: CollectionStore
     private let profileID: UUID?
@@ -42,6 +46,8 @@ public struct DeckListScreen: View {
     public var body: some View {
         NavigationStack {
             content
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background { deckBackground }
                 .navigationTitle(Text("Decks", bundle: .module))
                 .toolbar {
                     ToolbarItem(placement: .primaryAction) {
@@ -66,6 +72,10 @@ public struct DeckListScreen: View {
                 }
         }
         .task { await model.run() }
+        .task(id: backgroundRevision) {
+            let image = await DeckBackground(collectionFolder: store.location.folder).image()
+            if !Task.isCancelled { backgroundImage = image }
+        }
         .onChange(of: scenePhase) { _, phase in
             if phase == .active {
                 Task { await model.refresh() }
@@ -134,9 +144,27 @@ public struct DeckListScreen: View {
                     DeckRows(deck: deck, selectedDeckID: selection, study: study)
                 }
             }
+            .scrollContentBackground(.hidden)
             .refreshable { await model.refresh() }
             .environment(model)
         }
+    }
+
+    private var deckBackground: some View {
+        GeometryReader { geometry in
+            if let backgroundImage {
+                Image(decorative: backgroundImage, scale: 1)
+                    .resizable()
+                    .scaledToFill()
+                    .frame(width: geometry.size.width, height: geometry.size.height)
+                    .clipped()
+                    .overlay(theme.background.opacity(0.65))
+            } else {
+                theme.background
+            }
+        }
+        .ignoresSafeArea()
+        .accessibilityHidden(true)
     }
 
     private var selectedDeck: DeckNode? {
@@ -274,12 +302,13 @@ private struct DeckRow: View {
 /// Today's new, learning and due counts in Anki's colours: blue, red and green.
 private struct CountsView: View {
     let counts: DeckCounts
+    @Environment(\.hayakiTheme) private var theme
 
     var body: some View {
         HStack(spacing: 12) {
-            count(counts.new, color: .blue)
-            count(counts.learning, color: .red)
-            count(counts.due, color: .green)
+            count(counts.new, color: theme.color(for: .new))
+            count(counts.learning, color: theme.color(for: .learning))
+            count(counts.due, color: theme.color(for: .due))
         }
         .font(.callout.monospacedDigit())
         .accessibilityElement(children: .ignore)

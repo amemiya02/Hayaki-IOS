@@ -1,5 +1,6 @@
 import CollectionStore
 import ExtensionBridge
+import HayakiAppearance
 import NoteEditorFeature
 import PackagesFeature
 import ReminderFeature
@@ -78,6 +79,7 @@ public struct RootView: View {
                 }
             }
         }
+        .hayakiAppearance()
         .task {
             await model.open()
             await model.routeWaitingDeckLink()

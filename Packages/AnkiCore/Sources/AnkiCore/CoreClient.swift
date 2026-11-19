@@ -74,6 +74,19 @@ public final class CoreClient: Sendable {
         try await worker.run { self.execute(call) }.get()
     }
 
+    /// Updates just the scheduler preferences on the core's serialized worker.
+    public func updateSchedulingPreferences(
+        _ update: @Sendable @escaping (inout Anki_Config_Preferences.Scheduling) -> Void
+    ) async throws(CoreError) -> Anki_Collection_OpChanges {
+        try await worker.run {
+            self.execute(.getPreferences()).flatMap { latest in
+                var scheduling = latest.scheduling
+                update(&scheduling)
+                return self.execute(.setPreferences(.with { $0.scheduling = scheduling }))
+            }
+        }.get()
+    }
+
     /// Atomically applies an undo offer if the core is still at the expected step.
     public func undo(ifLastStep step: UInt32) async throws(CoreError) -> Anki_Collection_OpChangesAfterUndo? {
         try await worker.run {

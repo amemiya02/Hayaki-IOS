@@ -1,4 +1,5 @@
 import AnkiCore
+import HayakiAppearance
 import SwiftUI
 
 struct AboutScreen: View {
@@ -57,7 +58,14 @@ struct AboutScreen: View {
             } header: {
                 Text("Credits", bundle: .module)
             }
+            Section {
+                Text("Hayaki sends no usage analytics or automatic crash reports.", bundle: .module)
+                    .foregroundStyle(.secondary)
+            } header: {
+                Text("Privacy", bundle: .module)
+            }
         }
+        .hayakiScrollBackground()
         .navigationTitle(Text("About", bundle: .module))
     }
 

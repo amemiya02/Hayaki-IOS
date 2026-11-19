@@ -2,6 +2,7 @@ import BrowseFeature
 import CollectionStore
 import CollectionTesting
 import DecksFeature
+import Foundation
 import Testing
 
 @MainActor
@@ -281,6 +282,21 @@ extension BrowserParityTests {
             #expect(try await store.cardIDs(matching: "is:review").isEmpty)
             #expect(await browser.undoLastAction())
             #expect(try await store.cardIDs(matching: "is:review") == [selected])
+        }
+    }
+}
+
+extension BrowserParityTests {
+    @Test func mediaFilenamesCanBeShownWithoutChangingTheUnderlyingCard() async throws {
+        try await withTemporaryCollection { store in
+            let cardID = try await store.addBasicCard(front: "Word[sound:voice.mp3]", back: "Meaning", inDeck: 1)
+            let browser = CardBrowserModel(store: store)
+            await browser.search()
+            await browser.setColumns(["question"])
+            await browser.loadRow(cardID)
+            let row = try #require(browser.row(for: cardID))
+            #expect(row.displayText(for: "question", showsMediaFilenames: false).trimmingCharacters(in: .whitespacesAndNewlines) == "Word")
+            #expect(row.displayText(for: "question", showsMediaFilenames: true).contains("voice.mp3"))
         }
     }
 }

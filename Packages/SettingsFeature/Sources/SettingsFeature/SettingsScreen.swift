@@ -1,4 +1,5 @@
 import CollectionStore
+import HayakiAppearance
 import NoteEditorFeature
 import PackagesFeature
 import ReminderFeature
@@ -19,6 +20,7 @@ public struct SettingsScreen<ProfileEntry: View>: View {
     private let profileID: UUID?
     private let profileEntry: ProfileEntry
     @State private var sync: SyncModel
+    @State private var query = ""
 
     public init(
         store: CollectionStore,
@@ -37,51 +39,85 @@ public struct SettingsScreen<ProfileEntry: View>: View {
     public var body: some View {
         NavigationStack {
             List {
-                profileEntry
-                SyncSettingsRow(model: sync)
-                ReminderSettingsRow(store: store, profileID: profileID)
-                if let profileID { DeckReminderSettingsRow(store: store, profileID: profileID) }
-                NavigationLink {
-                    ReviewerSettingsScreen(store: store)
-                } label: {
-                    Label {
-                        Text("Reviewer", bundle: .module)
-                    } icon: {
-                        Image(systemName: "rectangle.on.rectangle")
+                if matches(.profiles) { profileEntry }
+                if matches(.general) {
+                    settingsLink("General", symbol: "gearshape") {
+                        GeneralSettingsScreen(store: store)
                     }
                 }
-                if let backups {
-                    NavigationLink {
+                if matches(.appearance) {
+                    settingsLink("Appearance", symbol: "circle.lefthalf.filled") {
+                        AppearanceSettingsScreen(background: DeckBackground(collectionFolder: store.location.folder))
+                    }
+                }
+                if matches(.reviewer) {
+                    settingsLink("Reviewer", symbol: "rectangle.on.rectangle") {
+                        ReviewerSettingsScreen(store: store)
+                    }
+                }
+                if matches(.accessibility) {
+                    settingsLink("Accessibility", symbol: "accessibility") {
+                        AccessibilitySettingsScreen(store: store)
+                    }
+                }
+                if matches(.sync) { SyncSettingsRow(model: sync) }
+                if matches(.reminders) {
+                    ReminderSettingsRow(store: store, profileID: profileID)
+                    if let profileID { DeckReminderSettingsRow(store: store, profileID: profileID) }
+                }
+                if matches(.backups), let backups {
+                    settingsLink("Backups", symbol: "externaldrive.badge.clock") {
                         BackupsScreen(model: backups, sync: sync)
-                    } label: {
-                        Label {
-                            Text("Backups", bundle: .module)
-                        } icon: {
-                            Image(systemName: "externaldrive.badge.clock")
-                        }
                     }
                 }
-                NavigationLink {
-                    CollectionMaintenanceScreen(store: store, sync: sync)
-                } label: {
-                    Label {
-                        Text("Manage Space", bundle: .module)
-                    } icon: {
-                        Image(systemName: "externaldrive")
+                if matches(.storage) {
+                    settingsLink("Manage Space", symbol: "externaldrive") {
+                        CollectionMaintenanceScreen(store: store, sync: sync)
                     }
                 }
-                NavigationLink {
-                    NoteTypesScreen(store: store)
-                } label: {
-                    Label {
-                        Text("Note Types", bundle: .module)
-                    } icon: {
-                        Image(systemName: "rectangle.on.rectangle")
+                if matches(.noteTypes) {
+                    settingsLink("Note Types", symbol: "rectangle.on.rectangle") {
+                        NoteTypesScreen(store: store)
                     }
                 }
-                HelpAndAboutSection(store: store, sync: sync)
+                if matches(.advanced) {
+                    settingsLink("Advanced", symbol: "gearshape.2") {
+                        AdvancedSettingsScreen()
+                    }
+                }
+                #if DEBUG
+                if matches(.developer) {
+                    settingsLink("Developer Options", symbol: "hammer") {
+                        DeveloperSettingsScreen()
+                    }
+                }
+                #endif
+                HelpAndAboutSection(store: store, sync: sync, shows: matches)
+            }
+            .hayakiScrollBackground()
+            .overlay {
+                if !SettingsTopic.allCases.contains(where: matches) {
+                    ContentUnavailableView.search(text: query)
+                }
             }
             .navigationTitle(SettingsSection.title)
+            .searchable(text: $query, prompt: Text("Search Settings", bundle: .module))
+        }
+    }
+
+    private func matches(_ topic: SettingsTopic) -> Bool {
+        if topic == .backups, backups == nil { return false }
+        let locale = Locale(identifier: Bundle.main.preferredLocalizations.first ?? "en")
+        return topic.matches(query, locale: locale)
+    }
+
+    private func settingsLink<Content: View>(
+        _ title: LocalizedStringKey, symbol: String, @ViewBuilder destination: () -> Content
+    ) -> some View {
+        NavigationLink(destination: destination) {
+            Label {
+                Text(title, bundle: .module)
+            } icon: { Image(systemName: symbol) }
         }
     }
 }

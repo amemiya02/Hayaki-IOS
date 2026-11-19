@@ -1,4 +1,5 @@
 import CollectionStore
+import CoreTransferable
 import UniformTypeIdentifiers
 #if os(iOS)
 import AVFoundation
@@ -6,6 +7,10 @@ import UIKit
 #endif
 import PhotosUI
 import SwiftUI
+
+public enum NoteEditorPreferences {
+    public static let replaceNewlinesKey = "hayaki.editor.replaceNewlines"
+}
 
 /// Adds or edits notes in a sheet. When adding, the editor stays open for
 /// the next note.
@@ -35,8 +40,8 @@ public struct NoteEditorScreen: View {
     @State private var added: AddedNote?
     @FocusState private var focusedField: Int?
 
-    public init(store: CollectionStore) {
-        _model = State(initialValue: NoteEditorModel(store: store))
+    public init(store: CollectionStore, homeDeckID: Int64? = nil) {
+        _model = State(initialValue: NoteEditorModel(store: store, homeDeckID: homeDeckID))
         onDelete = {}
         finishesAfterAdding = false
     }
@@ -580,6 +585,14 @@ private struct PreviewRequest {
 
 /// One field: its text, the images attached to it, and a button to attach
 /// another from the photo library.
+private struct ClipboardFieldImage: Transferable {
+    let data: Data
+
+    static var transferRepresentation: some TransferRepresentation {
+        DataRepresentation(importedContentType: .image) { Self(data: $0) }
+    }
+}
+
 private struct FieldSection: View {
     let model: NoteEditorModel
     let index: Int
@@ -592,6 +605,7 @@ private struct FieldSection: View {
     @State private var photo: PhotosPickerItem?
     @State private var isLoadingPhoto = false
     @State private var attachError: AttachImageError?
+    @AppStorage(NoteEditorPreferences.replaceNewlinesKey) private var replaceNewlines = true
     #if os(iOS)
     @Environment(\.openURL) private var openURL
     @State private var media: EditorMediaRequest?
@@ -661,6 +675,15 @@ private struct FieldSection: View {
             .disabled(isLoadingPhoto)
             .accessibilityLabel(Text("Add Image to \(field.name)", bundle: .module))
             #if os(iOS)
+            PasteButton(payloadType: ClipboardFieldImage.self) { images in
+                guard let image = images.first else { return }
+                Task {
+                    do { try await model.pasteImage(image.data, intoField: index) }
+                    catch let error as AttachImageError { attachError = error }
+                    catch { attachError = .notStored(message: error.localizedDescription) }
+                }
+            }
+            .accessibilityLabel(Text("Paste Image", bundle: .module))
             mediaMenu
             #endif
         } header: {
@@ -807,7 +830,7 @@ private struct FieldSection: View {
     private var text: Binding<String> {
         Binding(get: { showsMarkup ? field.content : field.text }, set: {
             if showsMarkup { model.setMarkup($0, ofField: index) }
-            else { model.setText($0, ofField: index) }
+            else { model.setText($0, ofField: index, replaceNewlines: replaceNewlines) }
         })
     }
 

@@ -32,7 +32,7 @@
         -webkit-text-size-adjust: 100%;
     }
     :root.night-mode {
-        --canvas: #000000;
+        --canvas: var(--hayaki-night-canvas, #000000);
         --fg: #ffffff;
         --border: #38383a;
         --replay-fill: #2c2c2e;
@@ -179,6 +179,7 @@
 
     const dark = window.matchMedia("(prefers-color-scheme: dark)");
     let shownBodyClass = "card";
+    let legacyDark = dark.matches;
 
     function post(message) {
         window.webkit?.messageHandlers?.hayaki?.postMessage(message);
@@ -188,8 +189,15 @@
         const night = dark.matches;
         document.documentElement.classList.toggle("night-mode", night);
         const settings = Array.from(document.body.classList).filter(name => name.startsWith("reviewer-"));
-        document.body.className = shownBodyClass + (night ? " nightMode night_mode ankidroid_dark_mode" : "");
+        document.body.className = shownBodyClass + (night ? " nightMode night_mode" : "");
+        document.body.classList.toggle("ankidroid_dark_mode", night && legacyDark);
         document.body.classList.add(...settings);
+    }
+
+    function appearance(canvas, isLegacyDark) {
+        legacyDark = isLegacyDark;
+        document.documentElement.style.setProperty("--hayaki-night-canvas", canvas);
+        applyColorScheme();
     }
 
     // Scripts inserted with innerHTML do not run; replace each with a fresh
@@ -244,7 +252,7 @@
         await window.MathJax.typesetPromise([container]);
     }
 
-    async function render(side, token) {
+    async function render(side, token, focusTypedAnswer) {
         document.getElementById("card-style").textContent = side.css;
         shownBodyClass = side.bodyClass;
         applyColorScheme();
@@ -281,7 +289,7 @@
                     post({ submit: true });
                 }
             });
-            typeans.focus();
+            if (focusTypedAnswer) typeans.focus();
         }
     }
 
@@ -289,8 +297,8 @@
     // lets an older side finish drawing over a newer one.
     let drawing = Promise.resolve();
 
-    function show(side, token) {
-        drawing = drawing.then(function () { return render(side, token); }).catch(console.error);
+    function show(side, token, focusTypedAnswer = true) {
+        drawing = drawing.then(function () { return render(side, token, focusTypedAnswer); }).catch(console.error);
     }
 
     dark.addEventListener("change", applyColorScheme);
@@ -313,7 +321,7 @@
         post("tap");
     });
 
-    window.hayaki = { show: show };
+    window.hayaki = { show, appearance };
 })();
 </script>
 </body>

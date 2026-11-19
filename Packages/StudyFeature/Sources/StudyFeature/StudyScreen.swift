@@ -1,5 +1,6 @@
 import AnkiCore
 import CollectionStore
+import HayakiAppearance
 import SwiftUI
 
 /// A deck the learner chose to study.
@@ -78,7 +79,7 @@ public struct StudyScreen: View {
     @State private var deckName: String
     private let profileFolder: URL
     @Environment(\.dismiss) private var dismiss
-    @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.hayakiTheme) private var theme
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 
@@ -102,7 +103,7 @@ public struct StudyScreen: View {
                 reviewerActions
             }
         }
-        .background(Color.studyBackground.ignoresSafeArea())
+        .background(theme.background.ignoresSafeArea())
         .task(id: ObjectIdentifier(model)) { await model.run() }
         .task(id: autoAdvanceTask) { await runAutoAdvance() }
         .task(id: feedback) {
@@ -302,7 +303,7 @@ public struct StudyScreen: View {
             if let id = model.state.card?.id { route = .cardInfo(cardID: id) }
         case .previousCardInfo:
             if let id = model.previousCardID { route = .cardInfo(cardID: id) }
-        case .addNote: route = .addNote
+        case .addNote: route = .addNote(homeDeckID: model.state.card?.homeDeckID)
         case .showHint:
             webCommand = ReviewerWebCommand(javascript: """
             if (window.ankidroid?.showHint) {
@@ -528,6 +529,7 @@ public struct StudyScreen: View {
                 .frame(maxWidth: horizontalSizeClass == .regular ? 820 : .infinity)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .padding(preferences.cardFrame ? 8 : 0)
+                .background(preferences.cardFrame ? theme.surface : Color.clear)
                 .clipShape(.rect(cornerRadius: preferences.cardFrame ? 18 : 0))
                 .overlay {
                     if preferences.cardFrame {
@@ -651,7 +653,7 @@ public struct StudyScreen: View {
         guard context.isCurrent(), store.allowsNewProfileWork, timebox == nil,
               model.state.card?.id == context.cardID else { return .unavailable }
         switch request.command {
-        case "isInNightMode": return .value(.boolean(colorScheme == .dark))
+        case "isInNightMode": return .value(.boolean(theme != .light))
         case "isInFullscreen": return .value(.boolean(!templateFullscreen.showsTopBar))
         case "isTopbarShown": return .value(.boolean(templateFullscreen.showsTopBar))
         case "setFullscreenButtonsAndMenu": templateFullscreen = .buttonsAndMenu
@@ -740,12 +742,13 @@ private struct SideShown: Equatable {
 /// The new, learning and due counts left today, in Anki's blue, red and green.
 private struct StudyCountsView: View {
     let counts: StudyCounts
+    @Environment(\.hayakiTheme) private var theme
 
     var body: some View {
         HStack(spacing: 14) {
-            Text(counts.new, format: .number).foregroundStyle(.blue)
-            Text(counts.learning, format: .number).foregroundStyle(.red)
-            Text(counts.due, format: .number).foregroundStyle(.green)
+            Text(counts.new, format: .number).foregroundStyle(theme.color(for: .new))
+            Text(counts.learning, format: .number).foregroundStyle(theme.color(for: .learning))
+            Text(counts.due, format: .number).foregroundStyle(theme.color(for: .due))
         }
         .font(.subheadline.monospacedDigit().weight(.medium))
         .accessibilityElement(children: .ignore)
@@ -773,18 +776,18 @@ private struct AnswerBar: View {
     let onShortPress: () -> Void
     let onRate: (Rating) -> Void
     @State private var lastPress: ContinuousClock.Instant?
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     var body: some View {
         Group {
             if showingAnswer {
-                HStack(spacing: 8) {
-                    ForEach(hideHardAndEasy ? [.again, .good] : Rating.allCases, id: \.self) { rating in
-                        RatingButton(
-                            rating: rating, interval: showsIntervals ? card.intervals[rating] : nil,
-                            buttonHeight: buttonHeight
-                        ) {
-                            guarded { onRate(rating) }
+                Group {
+                    if dynamicTypeSize.isAccessibilitySize {
+                        LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 8) {
+                            ratingButtons
                         }
+                    } else {
+                        HStack(spacing: 8) { ratingButtons }
                     }
                 }
                 .disabled(isAnswering)
@@ -806,6 +809,16 @@ private struct AnswerBar: View {
         .frame(minHeight: 60)
     }
 
+    private var ratingButtons: some View {
+        ForEach(hideHardAndEasy ? [.again, .good] : Rating.allCases, id: \.self) { rating in
+            RatingButton(
+                rating: rating, interval: showsIntervals ? card.intervals[rating] : nil, buttonHeight: buttonHeight
+            ) {
+                guarded { onRate(rating) }
+            }
+        }
+    }
+
     private func guarded(_ action: () -> Void) {
         let now = ContinuousClock.now
         guard lastPress.map({ now - $0 >= cooldown }) != false else { return }
@@ -819,6 +832,7 @@ private struct RatingButton: View {
     let interval: String?
     let buttonHeight: Double
     let action: () -> Void
+    @Environment(\.hayakiTheme) private var theme
 
     var body: some View {
         Button(action: action) {
@@ -834,7 +848,7 @@ private struct RatingButton: View {
             .frame(maxWidth: .infinity, minHeight: buttonHeight)
         }
         .buttonStyle(.bordered)
-        .tint(rating.color)
+        .tint(theme.color(for: rating.semanticColor))
         .accessibilityLabel(rating.title)
         .accessibilityValue(Text(interval ?? ""))
         .accessibilityIdentifier("rating-\(rating)")
@@ -957,12 +971,12 @@ extension Rating {
     }
 
     /// Anki's colours for the ratings.
-    var color: Color {
+    var semanticColor: SemanticColor {
         switch self {
-        case .again: .red
-        case .hard: .orange
-        case .good: .green
-        case .easy: .blue
+        case .again: .again
+        case .hard: .hard
+        case .good: .good
+        case .easy: .easy
         }
     }
 
@@ -974,16 +988,6 @@ extension Rating {
         case .good: "3"
         case .easy: "4"
         }
-    }
-}
-
-private extension Color {
-    static var studyBackground: Color {
-        #if os(iOS)
-        Color(uiColor: .systemBackground)
-        #else
-        Color(nsColor: .windowBackgroundColor)
-        #endif
     }
 }
 
