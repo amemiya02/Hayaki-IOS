@@ -16,9 +16,9 @@ struct ReviewerDestinationView: View {
 
     var body: some View {
         switch route {
-        case .browse(let search):
+        case .browse(let search, let cardID):
             closable {
-                BrowseScreen(store: store, initialSearch: search)
+                BrowseScreen(store: store, initialSearch: search, initialCardID: cardID)
             }
         case .statistics:
             closable {

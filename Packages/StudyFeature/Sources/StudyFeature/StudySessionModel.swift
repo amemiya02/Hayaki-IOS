@@ -78,6 +78,24 @@ public final class StudySessionModel {
     public private(set) var state: State = .loading
     /// The new, learning and due cards left in the deck today.
     public private(set) var counts = StudyCounts(new: 0, learning: 0, due: 0)
+    private var largestQueueSize = 0
+    public var hasStudyProgress: Bool { largestQueueSize > 0 }
+    public var progress: Double {
+        guard largestQueueSize > 0 else { return 0 }
+        return Double(largestQueueSize - (counts.new + counts.learning + counts.due)) / Double(largestQueueSize)
+    }
+
+    public private(set) var minutesRemaining: Int?
+    @ObservationIgnored private var reviewTiming: RecentReviewTiming?
+    @ObservationIgnored private var attemptedReviewTiming = false
+
+    public enum LeechFeedback: Equatable, Sendable {
+        case tagged
+        case suspended
+    }
+
+    public private(set) var leechFeedback: LeechFeedback?
+
     /// Reviews made in this session so far.
     public private(set) var reviewedCount = 0
     public private(set) var previousCardID: Int64?
@@ -203,6 +221,14 @@ public final class StudySessionModel {
         do {
             let queued = try await store.core.getQueuedCards(.with { $0.fetchLimit = 1 })
             counts = StudyCounts(queued)
+            largestQueueSize = max(largestQueueSize, counts.new + counts.learning + counts.due)
+            if showsRemainingCounts && !attemptedReviewTiming && !queued.cards.isEmpty {
+                attemptedReviewTiming = true
+                if let cutoff = try? await store.core.schedTimingToday().nextDayAt {
+                    reviewTiming = await store.recentReviewTiming(since: (cutoff - 10 * 86_400) * 1000)
+                }
+            }
+            minutesRemaining = reviewTiming.map { Self.estimateMinutes(counts, using: $0) }
             if let next = queued.cards.first {
                 let card = try await StudyCard.render(next, core: store.core)
                 let settings = try await options(for: card)
@@ -231,6 +257,34 @@ public final class StudySessionModel {
         } catch {
             state = .failed(message: error.message)
         }
+    }
+
+    // Matches Android's rates and rounding, including its assignment of
+    // historical review and learning timings to the two remaining queues.
+    private static func estimateMinutes(_ counts: StudyCounts, using timing: RecentReviewTiming) -> Int {
+        let new = timing.new.answerTimeMilliseconds * Double(counts.new)
+        let learning = timing.review.answerTimeMilliseconds * Double(counts.learning)
+        let review = timing.learning.answerTimeMilliseconds * Double(counts.due)
+        var remaining = counts.new
+            + Int(ceil((1 - timing.review.successRate) * Double(counts.learning)))
+            + Int(ceil((1 - timing.learning.successRate) * Double(counts.due)))
+        let failureRate = 1 - max(timing.review.successRate, 0.05)
+        var future = 0
+        repeat {
+            remaining = Int(failureRate * Double(remaining))
+            future += remaining
+        } while remaining > 1
+        return Int(((new + learning + review + timing.review.answerTimeMilliseconds * Double(future)) / 60_000).rounded())
+    }
+
+    public func browseDestination() async throws(CoreError) -> ReviewerDestination? {
+        guard let card = state.card else { return nil }
+        let deck = try await store.core.getDeck(.with { $0.did = card.deckID })
+        let search = try await store.core.buildSearchString(.with {
+            $0.deck = deck.name.replacingOccurrences(of: "\u{1F}", with: "::")
+        }).val
+        guard state.card?.id == card.id else { return nil }
+        return .browse(search: search, cardID: card.id)
     }
 
     func applyCustomSchedule(requestID: UUID, json: String?) async {
@@ -291,6 +345,7 @@ public final class StudySessionModel {
     public func answer(_ rating: Rating) async {
         guard case .answer(let card) = state, !isBusy else { return }
         isAnswering = true
+        leechFeedback = nil
         defer { isAnswering = false }
         do {
             let taken = min(ContinuousClock.now - questionShownAt, try await answerTimeCap(for: card))
@@ -311,6 +366,10 @@ public final class StudySessionModel {
             }))
             reviewedCount += 1
             previousCardID = card.id
+            if (try? await store.core.stateIsLeech(newState).val) == true {
+                let updated = try? await store.core.getCard(.with { $0.cid = card.id })
+                leechFeedback = updated?.queue == -1 ? .suspended : .tagged
+            }
             if let status = try? await store.core.getUndoStatus(), !status.undo.isEmpty {
                 appliedReviews.insert(status.lastStep)
             }

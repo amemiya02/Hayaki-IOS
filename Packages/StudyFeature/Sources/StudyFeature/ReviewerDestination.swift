@@ -3,7 +3,7 @@ import SwiftUI
 /// Destinations opened by the reviewer. The app composes these features,
 /// avoiding dependencies between the reviewer and the screens it presents.
 public enum ReviewerDestination: Hashable, Identifiable, Sendable {
-    case browse(search: String)
+    case browse(search: String, cardID: Int64? = nil)
     case statistics(deckID: Int64)
     case deckOptions(deckID: Int64)
     case customStudy(deckID: Int64)

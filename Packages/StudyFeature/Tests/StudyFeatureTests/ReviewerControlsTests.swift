@@ -6,6 +6,20 @@ import Testing
 @MainActor
 @Suite("Reviewer controls")
 struct ReviewerControlsTests {
+    @Test("New reviewer preferences frame cards and preserve an explicit edge-to-edge choice")
+    func defaultCardFrame() throws {
+        let missingFrame = try JSONDecoder().decode(ReviewerPreferences.self, from: Data("{}".utf8))
+        let explicitEdgeToEdge = try JSONDecoder().decode(
+            ReviewerPreferences.self, from: Data(#"{"cardFrame":false}"#.utf8)
+        )
+        func savedFrame(_ preferences: ReviewerPreferences) throws -> Bool? {
+            (try JSONSerialization.jsonObject(with: JSONEncoder().encode(preferences)) as? [String: Any])?["cardFrame"] as? Bool
+        }
+        #expect(try savedFrame(ReviewerPreferences()) == true)
+        #expect(try savedFrame(missingFrame) == true)
+        #expect(try savedFrame(explicitEdgeToEdge) == false)
+    }
+
     @Test("Saved physical bindings reveal and rate on their configured sides")
     func savedPhysicalBindings() async throws {
         let suite = "ReviewerControlsTests.\(UUID())"

@@ -16,6 +16,8 @@ public enum ProfileError: LocalizedError, Equatable {
     case nameTooLong
     case duplicateName
     case unavailable
+    case lastProfile
+    case activeProfile
     case busy
 
     public var errorDescription: String? {
@@ -28,8 +30,12 @@ public enum ProfileError: LocalizedError, Equatable {
             String(localized: "A profile already uses this name.", bundle: .module)
         case .unavailable:
             String(localized: "This profile is unavailable.", bundle: .module)
+        case .lastProfile:
+            String(localized: "Keep at least one profile.", bundle: .module)
+        case .activeProfile:
+            String(localized: "Switch to another profile before deleting the current one.", bundle: .module)
         case .busy:
-            String(localized: "Wait for the current sync, import, or backup to finish before switching profiles.", bundle: .module)
+            String(localized: "Wait for the current collection operation to finish, then try again.", bundle: .module)
         }
     }
 }

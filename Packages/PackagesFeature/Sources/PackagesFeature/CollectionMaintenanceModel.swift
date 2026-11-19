@@ -46,7 +46,7 @@ public final class CollectionMaintenanceModel {
         guard let reviewed = media?.unused, !reviewed.isEmpty else { return }
         await run {
             // A learner may have added a reference since the first check.
-            let current = try await store.core.checkMedia()
+            let current = try await store.checkMedia()
             let names = current.unused.filter(Set(reviewed).contains)
             if !names.isEmpty {
                 try await store.core.trashMediaFiles(.with { $0.fnames = names })
@@ -98,12 +98,12 @@ public final class CollectionMaintenanceModel {
     }
 
     private func reloadMedia() async throws {
-        media = try await MediaReport(store.core.checkMedia())
+        media = try await MediaReport(store.checkMedia())
         await loadStorageUsage()
     }
 
     private func run(_ work: () async throws -> Void) async {
-        guard !isRunning else { return }
+        guard store.allowsNewProfileWork, !isRunning else { return }
         isRunning = true
         error = nil
         defer { isRunning = false }

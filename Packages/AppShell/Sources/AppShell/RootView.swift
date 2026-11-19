@@ -146,6 +146,9 @@ public struct RootView: View {
         .onChange(of: model.canHandleExtensionWork) { _, ready in
             if ready { Task { await model.routeWaitingDeckLink() } }
         }
+        .onChange(of: model.canRouteWaitingImport, initial: true) { _, ready in
+            if ready { Task { await model.routeWaitingImport() } }
+        }
         .fileImporter(isPresented: $choosingRecoveryPackage, allowedContentTypes: [.ankiCollectionPackage]) { result in
             switch result {
             case .success(let url): recoveryPackage = url
@@ -184,6 +187,14 @@ public struct RootView: View {
             } else if url.isFileURL {
                 Task { await model.openPackage(url) }
             }
+        }
+        .alert(
+            Text("Could Not Open Package", bundle: .module),
+            isPresented: Binding(get: { model.packageLinkError != nil }, set: { if !$0 { model.packageLinkError = nil } })
+        ) {
+            Button { model.packageLinkError = nil } label: { Text("OK", bundle: .module) }
+        } message: {
+            Text(verbatim: model.packageLinkError ?? "")
         }
         .alert(
             Text("Could Not Open Deck", bundle: .module),

@@ -1,3 +1,4 @@
+import CollectionStore
 import CollectionTesting
 import Foundation
 import PackagesFeature
@@ -6,6 +7,33 @@ import Testing
 @MainActor
 @Suite("Collection maintenance")
 struct CollectionMaintenanceTests {
+    @Test("Media check publishes its repairs to note references")
+    func checkPublishesRepairedReferences() async throws {
+        try await withTemporaryCollection { store in
+            let deck = try await store.addDeck(named: "Photos")
+            let original = #"<img src="photo?.png">"#
+            let repaired = #"<img src="photo.png">"#
+            try await store.addNotes(ofType: "Basic", fields: [["Photo", original]], toDeck: deck)
+            try Data([1]).write(to: store.location.mediaFolder.appendingPathComponent("photo.png"))
+            let changes = store.changes()
+            var noteChanged = false
+            let listener = Task {
+                for await change in changes where change.contains(.noteText) {
+                    noteChanged = true
+                    return
+                }
+            }
+            defer { listener.cancel() }
+
+            let maintenance = CollectionMaintenanceModel(store: store)
+            await maintenance.checkMedia()
+
+            #expect(maintenance.error == nil)
+            #expect(try await store.snapshot().notes.first?.fields == ["Photo", repaired])
+            try await eventually(timeout: .seconds(1), "media check to publish the changed note reference") { noteChanged }
+        }
+    }
+
     @Test("Media check keeps referenced files and can recover an unused file from trash")
     func recoverUnusedMedia() async throws {
         try await withTemporaryCollection { store in

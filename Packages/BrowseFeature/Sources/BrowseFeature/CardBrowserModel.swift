@@ -181,8 +181,6 @@ public final class CardBrowserModel {
                 columns = valid.isEmpty ? mode.defaultColumns : valid
             }
             guard thisSearch == searchCount else { return }
-            // Active columns are transient core state and need to be restored after a reopen.
-            try await store.core.setActiveBrowserColumns(.with { $0.vals = columns })
             let request = Anki_Search_SearchRequest.with {
                 $0.search = text
                 $0.order = order.order
@@ -318,6 +316,19 @@ public final class CardBrowserModel {
         await setSort(CardSort(column: column.id, reverse: column.startsDescending))
     }
 
+    func rowID(forCard cardID: Int64) async -> Int64? {
+        let generation = generation
+        let id: Int64
+        switch mode {
+        case .cards: id = cardID
+        case .notes:
+            guard let card = try? await store.core.getCard(.with { $0.cid = cardID }) else { return nil }
+            id = card.noteID
+        }
+        guard generation == self.generation, rowIndices[id] != nil else { return nil }
+        return id
+    }
+
     /// The row of a card, if it has been fetched.
     public func row(for cardID: Int64) -> CardRow? {
         rows[cardID]?.row
@@ -347,21 +358,13 @@ public final class CardBrowserModel {
         let generation = generation
         let search = searchCount
         let columns = visibleColumnIDs
-        var fetched: [(Int64, CachedRow?)] = []
+        guard !ids.isEmpty,
+              let fetched = try? await store.core.browserRows(ids: ids, columns: columns, notesMode: mode == .notes),
+              generation == self.generation, search == searchCount else { return }
         for id in ids {
-            guard generation == self.generation, search == searchCount else { return }
-            do {
-                let row = try await store.core.browserRowForId(.with { $0.val = id })
-                fetched.append((id, CachedRow(row: CardRow(id: id, row, columnIDs: columns), generation: generation)))
-            } catch {
-                // A card deleted since the search: the next search drops it.
-                fetched.append((id, nil))
+            rows[id] = fetched[id].map {
+                CachedRow(row: CardRow(id: id, $0, columnIDs: columns), generation: generation)
             }
-        }
-        guard generation == self.generation, search == searchCount else { return }
-        // No suspension point in between, so the list redraws once.
-        for (id, row) in fetched {
-            rows[id] = row
         }
     }
 

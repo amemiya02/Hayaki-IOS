@@ -16,6 +16,7 @@ public enum BrowseSection {
 public struct BrowseScreen: View {
     private let store: CollectionStore
     @State private var model: CardBrowserModel
+    @State private var initialCardID: Int64?
     /// Whether the learner is selecting cards to act on them together.
     @State private var isSelecting = false
     @State private var isMoving = false
@@ -29,11 +30,12 @@ public struct BrowseScreen: View {
     @State private var deletion: DeletionSummary?
     @Environment(\.accessibilityVoiceOverEnabled) private var voiceOverEnabled
 
-    public init(store: CollectionStore, initialSearch: String = "") {
+    public init(store: CollectionStore, initialSearch: String = "", initialCardID: Int64? = nil) {
         self.store = store
         let model = CardBrowserModel(store: store)
         model.searchText = initialSearch
         _model = State(initialValue: model)
+        _initialCardID = State(initialValue: initialCardID)
     }
 
     public var body: some View {
@@ -422,12 +424,21 @@ public struct BrowseScreen: View {
                 ContentUnavailableView.search(text: model.searchedText)
             }
         case .loaded:
-            List(model.rowIDs, id: \.self, selection: isSelecting ? $model.selection : nil) { rowID in
-                row(rowID)
+            ScrollViewReader { scrolling in
+                List(model.rowIDs, id: \.self, selection: isSelecting ? $model.selection : nil) { rowID in
+                    row(rowID)
+                }
+                .hayakiScrollBackground()
+                .listStyle(.plain)
+                .refreshable { await model.refreshResults() }
+                .task(id: model.generation) {
+                    guard let cardID = initialCardID else { return }
+                    let rowID = await model.rowID(forCard: cardID)
+                    guard !Task.isCancelled else { return }
+                    initialCardID = nil
+                    if let rowID { scrolling.scrollTo(rowID, anchor: .center) }
+                }
             }
-            .hayakiScrollBackground()
-            .listStyle(.plain)
-            .refreshable { await model.refreshResults() }
         }
     }
     @ViewBuilder

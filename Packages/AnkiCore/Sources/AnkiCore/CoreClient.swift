@@ -100,6 +100,52 @@ public final class CoreClient: Sendable {
         }.get()
     }
 
+    /// Reads a page with one browser's columns and row mode. The core shares
+    /// both settings among all browser windows, so no other call may run
+    /// between configuring the page and retrieving its rows.
+    public func browserRows(ids: [Int64], columns: [String], notesMode: Bool) async throws(CoreError)
+        -> [Int64: Anki_Search_BrowserRow]
+    {
+        try await worker.run { () -> Result<[Int64: Anki_Search_BrowserRow], CoreError> in
+            do throws(CoreError) {
+                let key = Anki_Config_ConfigKey.BoolEnum.browserTableShowNotesMode
+                let preferredMode = try self.execute(.getConfigBool(.with { $0.key = key })).get().val
+                _ = try self.execute(.setActiveBrowserColumns(.with { $0.vals = columns })).get()
+                let temporarilyChangesMode = preferredMode != notesMode
+                if temporarilyChangesMode {
+                    _ = try self.execute(.runDbCommand(.with {
+                        $0.json = Data(#"{"kind":"begin"}"#.utf8)
+                    })).get()
+                }
+                let result = Result<[Int64: Anki_Search_BrowserRow], CoreError> { () throws(CoreError) in
+                    if temporarilyChangesMode {
+                        _ = try self.execute(.setConfigBool(.with {
+                            $0.key = key
+                            $0.value = notesMode
+                        })).get()
+                    }
+                    var rows: [Int64: Anki_Search_BrowserRow] = [:]
+                    for id in ids {
+                        // The search's IDs may include a row that was since deleted.
+                        if let row = try? self.execute(.browserRowForId(.with { $0.val = id })).get() {
+                            rows[id] = row
+                        }
+                    }
+                    return rows
+                }
+                if temporarilyChangesMode {
+                    // A read should leave both the saved preference and sync timestamps intact.
+                    _ = try self.execute(.runDbCommand(.with {
+                        $0.json = Data(#"{"kind":"rollback"}"#.utf8)
+                    })).get()
+                }
+                return result
+            } catch {
+                return .failure(error)
+            }
+        }.get()
+    }
+
     /// Updates only the exact mark tag using the latest note on the serialized worker.
     public func toggleNoteMark(_ noteID: Int64) async throws(CoreError) -> (marked: Bool, changes: Anki_Collection_OpChanges) {
         try await worker.run {
