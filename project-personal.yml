@@ -1,0 +1,12 @@
+# Generate a Hayaki project without embedded extensions for an Apple Personal
+# Team, which cannot provision the App Groups capability.
+include:
+  - project.yml
+
+targets:
+  Hayaki:
+    dependencies:REPLACE:
+      - package: AppShell
+    settings:
+      base:
+        CODE_SIGN_ENTITLEMENTS: ""

@@ -1,4 +1,6 @@
 import CollectionStore
+import ExtensionBridge
+import NoteEditorFeature
 import PackagesFeature
 import ReminderFeature
 import SwiftUI
@@ -18,7 +20,7 @@ public struct RootView: View {
         #if DEBUG
         if let testModel = UITestLaunch.model { return testModel }
         #endif
-        return AppModel()
+        return AppModel(extensionBridge: .appGroup)
     }()
 
     public init() {
@@ -76,7 +78,23 @@ public struct RootView: View {
                 }
             }
         }
-        .task { await model.open() }
+        .task {
+            await model.open()
+            await model.routeWaitingDeckLink()
+        }
+        .onChange(of: ReminderOpener.shared.deckListRequested, initial: true) { _, requested in
+            guard requested else { return }
+            ReminderOpener.shared.deckListRequested = false
+            askToOpen(.decks(profileID: nil))
+        }
+        .onChange(of: ReminderOpener.shared.deckRequested, initial: true) { _, requested in
+            guard let requested else { return }
+            ReminderOpener.shared.deckRequested = nil
+            askToOpen(.deck(profileID: requested.profileID, deckID: requested.deckID, action: .study))
+        }
+        .onChange(of: model.canHandleExtensionWork) { _, ready in
+            if ready { Task { await model.routeWaitingDeckLink() } }
+        }
         .fileImporter(isPresented: $choosingRecoveryPackage, allowedContentTypes: [.ankiCollectionPackage]) { result in
             switch result {
             case .success(let url): recoveryPackage = url
@@ -110,8 +128,25 @@ public struct RootView: View {
         // A collection package or deck package opened from Files, AirDrop or
         // another app's share sheet.
         .onOpenURL { url in
-            Task { await model.openPackage(url) }
+            if let link = DeckLink(url: url) {
+                askToOpen(link)
+            } else if url.isFileURL {
+                Task { await model.openPackage(url) }
+            }
         }
+        .alert(
+            Text("Could Not Open Deck", bundle: .module),
+            isPresented: Binding(get: { model.deckLinkError != nil }, set: { if !$0 { model.deckLinkError = nil } })
+        ) {
+            Button { model.deckLinkError = nil } label: { Text("OK", bundle: .module) }
+        } message: {
+            Text(verbatim: model.deckLinkError ?? "")
+        }
+    }
+
+    private func askToOpen(_ link: DeckLink) {
+        model.waitingDeckLink = AppModel.LinkRequest(link: link)
+        Task { await model.routeWaitingDeckLink() }
     }
 }
 
@@ -132,6 +167,8 @@ private struct ReadyView: View {
                 SectionsView(store: store, sync: sync, backups: backups, model: model)
             }
         }
+        .keepingDailyReminderCurrent(store: store, profileID: model.activeProfile.id)
+        .modifier(ExtensionIntegration(store: store, profile: model.activeProfile, model: model))
         .packageImport(packageImport)
         .textImport(textImport)
         .onChange(of: textImport.summary) { _, summary in

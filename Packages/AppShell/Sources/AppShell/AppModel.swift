@@ -1,5 +1,7 @@
 import AnkiCore
 import CollectionStore
+import DecksFeature
+import ExtensionBridge
 import Foundation
 import Observation
 import PackagesFeature
@@ -26,6 +28,27 @@ public final class AppModel {
     public private(set) var textImport: TextImportModel?
     /// Whether the learner should choose how to start the empty collection.
     public private(set) var showsWelcome = false
+
+    struct LinkRequest: Identifiable, Equatable {
+        let id = UUID()
+        let link: DeckLink
+    }
+
+    let appExtensions: AppExtensions?
+    var waitingDeckLink: LinkRequest?
+    var decksRequested: UUID?
+    var deckPresentation: DeckPresentation?
+    var deckLinkError: String?
+    @ObservationIgnored private var isRouting = false
+
+    var collectionIsIdle: Bool {
+        store != nil && !isSwitchingProfile && sync?.isBusy == false
+            && packageImport?.isBusy == false && textImport?.isWorking == false && backups?.isBusy == false
+    }
+
+    var canHandleExtensionWork: Bool {
+        collectionIsIdle && appExtensions?.isConsuming != true && appExtensions?.editorDraft == nil
+    }
 
     @ObservationIgnored private let location: @Sendable () throws -> CollectionLocation
     @ObservationIgnored private let backupFolder: @Sendable () throws -> URL
@@ -63,13 +86,15 @@ public final class AppModel {
         backupFolder: @escaping @Sendable () throws -> URL = { try PackageImportModel.standardBackupFolder() },
         language: String = AppModel.screenLanguage,
         preferences: UserDefaults = .standard,
-        accountStorage: @escaping @Sendable (UUID?) -> any SyncAccountStorage = { KeychainSyncAccountStorage(profileID: $0) }
+        accountStorage: @escaping @Sendable (UUID?) -> any SyncAccountStorage = { KeychainSyncAccountStorage(profileID: $0) },
+        extensionBridge: ExtensionBridge? = nil
     ) {
         self.location = location
         self.backupFolder = backupFolder
         self.language = language
         self.preferences = preferences
         self.accountStorage = accountStorage
+        appExtensions = extensionBridge.map(AppExtensions.init)
         let saved = preferences.data(forKey: Self.profilesKey)
             .flatMap { try? PropertyListDecoder().decode(SavedProfiles.self, from: $0) }
         if let saved, let active = saved.profiles.first(where: { $0.id == saved.activeID }) {
@@ -127,10 +152,7 @@ public final class AppModel {
     public func switchProfile(to id: UUID) async throws {
         guard let target = profiles.first(where: { $0.id == id }) else { throw ProfileError.unavailable }
         guard target != activeProfile else { return }
-        guard let previous = store, !isOpening, !isSwitchingProfile,
-              sync?.isBusy == false, packageImport?.isBusy == false, backups?.isBusy == false,
-              textImport?.isWorking == false
-        else { throw ProfileError.busy }
+        guard let previous = store, !isOpening, canHandleExtensionWork else { throw ProfileError.busy }
         let saved = try PropertyListEncoder().encode(SavedProfiles(profiles: profiles, activeID: id))
 
         isSwitchingProfile = true
@@ -154,6 +176,7 @@ public final class AppModel {
         packageImport?.cancel()
         textImport?.dismiss()
         preferences.set(saved, forKey: Self.profilesKey)
+        appExtensions?.clearSnapshot()
         activeProfile = target
         showCollection(next, backupFolder: folder, welcome: welcome)
     }
@@ -207,6 +230,32 @@ public final class AppModel {
         textImport = TextImportModel(store: store)
         showsWelcome = welcome
         state = .ready(store)
+    }
+
+    func routeWaitingDeckLink() async {
+        guard canHandleExtensionWork, !isOpening, !isRouting, let request = waitingDeckLink else { return }
+        isRouting = true
+        defer { isRouting = false }
+        do {
+            if let profileID = request.link.profileID, profileID != activeProfile.id {
+                try await switchProfile(to: profileID)
+            }
+            guard request == waitingDeckLink else {
+                isRouting = false
+                await routeWaitingDeckLink()
+                return
+            }
+            completeWelcome()
+            if case .deck(_, let id, let action) = request.link {
+                deckPresentation = DeckPresentation(deckID: id, showsOptions: action == .options)
+            } else {
+                deckPresentation = nil
+            }
+            decksRequested = request.id
+        } catch {
+            deckLinkError = error.localizedDescription
+        }
+        if waitingDeckLink == request { waitingDeckLink = nil }
     }
 
     private func validatedName(_ name: String, ignoring id: UUID? = nil) throws -> String {

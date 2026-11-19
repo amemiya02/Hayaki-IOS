@@ -15,6 +15,7 @@ public enum SettingsSection {
 public struct SettingsScreen<ProfileEntry: View>: View {
     private let store: CollectionStore
     private let backups: BackupModel?
+    private let profileID: UUID?
     private let profileEntry: ProfileEntry
     @State private var sync: SyncModel
 
@@ -22,10 +23,12 @@ public struct SettingsScreen<ProfileEntry: View>: View {
         store: CollectionStore,
         sync: SyncModel? = nil,
         backups: BackupModel? = nil,
+        profileID: UUID? = nil,
         @ViewBuilder profileEntry: () -> ProfileEntry
     ) {
         self.store = store
         self.backups = backups
+        self.profileID = profileID
         self.profileEntry = profileEntry()
         _sync = State(initialValue: sync ?? SyncModel(store: store))
     }
@@ -35,7 +38,8 @@ public struct SettingsScreen<ProfileEntry: View>: View {
             List {
                 profileEntry
                 SyncSettingsRow(model: sync)
-                ReminderSettingsRow(store: store)
+                ReminderSettingsRow(store: store, profileID: profileID)
+                if let profileID { DeckReminderSettingsRow(store: store, profileID: profileID) }
                 if let backups {
                     NavigationLink {
                         BackupsScreen(model: backups, sync: sync)
