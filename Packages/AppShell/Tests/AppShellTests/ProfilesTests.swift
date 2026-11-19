@@ -243,6 +243,36 @@ struct ProfilesTests {
         try await app.store?.close()
     }
 
+    @Test("A new profile's backup does not postpone the original profile's automatic backup")
+    func automaticBackupIsIndependent() async throws {
+        let folder = try TemporaryFolder()
+        let location = CollectionLocation(folder: folder.url.appendingPathComponent("Collection"))
+        let backups = folder.url.appendingPathComponent("Backups")
+        let suite = "HayakiProfilesTests.\(UUID())"
+        let preferences = try #require(UserDefaults(suiteName: suite))
+        defer { preferences.removePersistentDomain(forName: suite) }
+
+        let app = AppModel(location: { location }, backupFolder: { backups }, language: "en", preferences: preferences)
+        await app.open()
+        let original = app.activeProfile
+        let firstStore = try #require(app.store)
+        try await firstStore.addBasicNotes(count: 1, toDeck: firstStore.addDeck(named: "First"))
+
+        let second = try app.addProfile(named: "Second")
+        try await app.switchProfile(to: second.id)
+        let secondStore = try #require(app.store)
+        try await secondStore.addBasicNotes(count: 1, toDeck: secondStore.addDeck(named: "Second"))
+        let secondBackups = try #require(app.backups)
+        await secondBackups.createBackup()
+        #expect(secondBackups.entries.count == 1)
+
+        try await app.switchProfile(to: original.id)
+        let firstBackups = try #require(app.backups)
+        await firstBackups.createAutomaticBackup()
+        #expect(firstBackups.entries.count == 1)
+        try await app.store?.close()
+    }
+
     private func signIn(_ model: SyncModel, server: SyncServer, user: String, password: String) async {
         model.selectDestination(.selfHosted)
         model.serverAddress = server.address

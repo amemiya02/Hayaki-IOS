@@ -164,7 +164,11 @@ public final class AppModel {
                 .appendingPathComponent("Profiles", isDirectory: true)
                 .appendingPathComponent(directory, isDirectory: true)
                 .appendingPathComponent("Collection", isDirectory: true))
-            backups.appendPathComponent(directory, isDirectory: true)
+            // Anki's automatic backup interval looks at the age of every
+            // directory entry. Keep the profile directories outside Backups.
+            backups = backups.deletingLastPathComponent()
+                .appendingPathComponent("Profile Backups", isDirectory: true)
+                .appendingPathComponent(directory, isDirectory: true)
         }
         let core = try await CoreClient(language: language)
         #if DEBUG
