@@ -245,6 +245,45 @@ public final class StudySessionModel {
         await showNextCard()
     }
 
+    /// Runs a command that acts on the study session or changes the collection.
+    /// Presentation commands are handled by the reviewer after this returns false.
+    @discardableResult
+    public func perform(_ command: ReviewerCommand, typed: String = "") async -> Bool {
+        guard !isBusy else { return false }
+        if let rating = command.rating {
+            guard state.answer != nil else { return false }
+            await answer(rating)
+            return true
+        }
+        if let flag = command.flag {
+            guard let card = state.card else { return false }
+            await setFlag(command.togglesFlag && card.flag == flag ? 0 : flag)
+            return true
+        }
+        switch command {
+        case .undo:
+            guard canUndo else { return false }
+            await undo()
+        case .redo:
+            guard canRedo else { return false }
+            await redo()
+        case .showAnswer:
+            guard state.question != nil else { return false }
+            await showAnswer(typed: typed)
+        case .mark, .buryCard, .buryNote, .suspendCard, .suspendNote:
+            guard state.card != nil else { return false }
+            switch command {
+            case .mark: await toggleMark()
+            case .buryCard, .buryNote: await bury(note: command == .buryNote)
+            case .suspendCard, .suspendNote: await suspend(note: command == .suspendNote)
+            default: break
+            }
+        default:
+            return false
+        }
+        return true
+    }
+
     public func undo() async {
         guard canUndo else { return }
         await runAction { () async throws(CoreError) in
