@@ -330,6 +330,31 @@ public final class NoteEditorModel {
         try await store.modify(.removeNotes(.with { $0.noteIds = [editingNoteID] }))
     }
 
+    func noteTypeConversion() -> NoteTypeConversionModel? {
+        editingNoteID.map { NoteTypeConversionModel(store: store, noteIDs: [$0]) }
+    }
+
+    func discardDraft() {
+        fields = zip(notetype.fields.map(\.name), note.fields).map { EditableField(name: $0, storedContent: $1) }
+        tags = note.tags
+    }
+
+    func reloadAfterNoteTypeChange() async throws(CoreError) {
+        guard let editingNoteID else { return }
+        let ids = try await store.core.cardsOfNote(.with { $0.nid = editingNoteID }).cids
+        let active = editingCardID.flatMap { ids.contains($0) ? $0 : nil } ?? ids.first
+        if let active {
+            let card = try await store.core.getCard(.with { $0.cid = active })
+            preferredPreviewOrdinal = card.templateIdx
+            deckID = card.originalDeckID == 0 ? card.deckID : card.originalDeckID
+        } else {
+            preferredPreviewOrdinal = 0
+            deckID = 0
+        }
+        decks = []
+        try await loadExistingNote(editingNoteID)
+    }
+
     private var draft: Anki_Notes_Note {
         var draft = note
         draft.fields = fields.map(\.content)

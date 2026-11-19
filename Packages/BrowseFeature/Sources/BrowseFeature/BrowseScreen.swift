@@ -1,4 +1,5 @@
 import CollectionStore
+import NoteEditorFeature
 import SwiftUI
 
 /// How the Browse section appears in the tab bar and sidebar.
@@ -15,6 +16,7 @@ public struct BrowseScreen: View {
     /// Whether the learner is selecting cards to act on them together.
     @State private var isSelecting = false
     @State private var isMoving = false
+    @State private var conversion: ConversionSelection?
     /// What a deletion the learner asked for would delete, while it waits
     /// for confirmation.
     @State private var deletion: DeletionSummary?
@@ -50,6 +52,13 @@ public struct BrowseScreen: View {
                 }
                 .sheet(isPresented: $isMoving) {
                     MoveCardsSheet(model: model)
+                }
+                .sheet(item: $conversion) { selection in
+                    ChangeNoteTypeScreen(store: store, noteIDs: selection.noteIDs) {
+                        model.clearSelection()
+                        isSelecting = false
+                        await model.search()
+                    }
                 }
                 // An alert, as in Decks: a dialog would point at the list's
                 // edge, next to the sidebar on iPad.
@@ -132,8 +141,14 @@ public struct BrowseScreen: View {
                 }
             }
             ToolbarItem(placement: .primaryAction) {
-                BulkActionMenu(model: model, isMoving: $isMoving, deletion: $deletion)
-                    .disabled(model.selection.isEmpty)
+                BulkActionMenu(model: model, isMoving: $isMoving, deletion: $deletion) {
+                    Task {
+                        if let noteIDs = await model.selectedNoteIDs(), !noteIDs.isEmpty {
+                            conversion = ConversionSelection(noteIDs: noteIDs)
+                        }
+                    }
+                }
+                .disabled(model.selection.isEmpty)
             }
         } else {
             ToolbarItemGroup(placement: .primaryAction) {
@@ -149,6 +164,11 @@ public struct BrowseScreen: View {
                 .disabled(model.cardIDs.isEmpty)
             }
         }
+    }
+
+    private struct ConversionSelection: Identifiable {
+        let noteIDs: [Int64]
+        var id: [Int64] { noteIDs }
     }
 
     private var isConfirmingDeletion: Binding<Bool> {

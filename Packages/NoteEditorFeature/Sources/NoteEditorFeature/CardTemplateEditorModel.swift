@@ -141,7 +141,9 @@ public final class CardTemplateEditorModel {
         }
         try await checkCurrentType()
         try await store.modify(.updateNotetype(draft))
-        self.original = draft
+        let saved = (try? await store.core.getNotetype(.with { $0.ntid = noteTypeID })) ?? draft
+        self.original = saved
+        self.draft = saved
         return .saved
     }
 
