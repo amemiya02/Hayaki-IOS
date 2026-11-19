@@ -23,8 +23,16 @@ final class HelpAndAboutUITests: XCTestCase {
         app.buttons["About"].tap()
         XCTAssertTrue(app.staticTexts["0.1.0"].exists)
         XCTAssertTrue(app.staticTexts["26.09.4"].exists)
-        XCTAssertTrue(element("github.com/amemiya02/Hayaki-IOS").exists)
-        XCTAssertTrue(element("AGPL-3.0-or-later").exists)
+        XCTAssertTrue(app.staticTexts["6.6.2"].exists)
+        XCTAssertTrue(app.staticTexts["Build Date"].exists)
+        let copy = app.buttons["Copy Debug Information"]
+        reveal(copy)
+        copy.tap()
+        let copied = app.alerts["Debug Information Copied"]
+        XCTAssertTrue(copied.waitForExistence(timeout: 5))
+        copied.buttons["OK"].tap()
+        reveal(element("github.com/amemiya02/Hayaki-IOS"))
+        reveal(element("AGPL-3.0-or-later"))
         reveal(element("Amgi"))
         XCTAssertTrue(element("Anki").exists)
         XCTAssertTrue(element("AnkiDroid").exists)
