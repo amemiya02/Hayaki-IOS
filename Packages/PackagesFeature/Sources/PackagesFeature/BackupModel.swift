@@ -113,12 +113,12 @@ public final class BackupModel {
     public func saveRetention(_ retention: BackupRetention) async -> Bool {
         guard store.allowsNewProfileWork, retention.isValid, !importer.isImporting else { return false }
         do {
-            var preferences = try await store.core.getPreferences()
-            preferences.backups.minimumIntervalMins = retention.intervalMinutes
-            preferences.backups.daily = retention.daily
-            preferences.backups.weekly = retention.weekly
-            preferences.backups.monthly = retention.monthly
-            try await store.modify(.setPreferences(preferences))
+            try await store.modify(.setPreferences(.with {
+                $0.backups.minimumIntervalMins = retention.intervalMinutes
+                $0.backups.daily = retention.daily
+                $0.backups.weekly = retention.weekly
+                $0.backups.monthly = retention.monthly
+            }))
             return true
         } catch {
             status = .failed(error.localizedDescription)
