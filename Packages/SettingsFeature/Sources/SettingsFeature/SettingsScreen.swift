@@ -22,6 +22,7 @@ public struct SettingsScreen: View {
             List {
                 SyncSettingsRow(store: store)
                 ReminderSettingsRow(store: store)
+                HelpAndAboutSection(store: store)
             }
             .navigationTitle(SettingsSection.title)
         }

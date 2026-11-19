@@ -22,6 +22,9 @@ import Synchronization
 /// collection lock poisoned; any collection that was open is then closed and
 /// must be opened again.
 public final class CoreClient: Sendable {
+    /// The Anki release bundled with the app, generated during the core build.
+    public static let embeddedVersion = embeddedAnkiVersion
+
     private let worker: WorkerThread
     private let monitor: WorkerThread
     private let backend: Mutex<Backend?>

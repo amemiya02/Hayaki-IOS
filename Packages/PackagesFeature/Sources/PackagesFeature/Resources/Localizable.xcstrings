@@ -56,7 +56,21 @@
       "comment": "Shown while the core writes the package."
     },
     "Export…": {
-      "comment": "Toolbar button on the deck list that opens the export screen."
+      "comment": "Toolbar button on the deck list that opens the export screen.",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "エクスポート…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "导出…"
+          }
+        }
+      }
     },
     "Hayaki can import Anki collection packages (.colpkg) and deck packages (.apkg).": {
       "comment": "Shown when the learner opens a file that is not an Anki package."
@@ -83,7 +97,21 @@
       "comment": "Toggle: bring the scheduling and review history of a deck package's cards (Anki's 'Import any learning progress')."
     },
     "Import a Package…": {
-      "comment": "Button that opens the file picker to choose an Anki collection package or deck package to import."
+      "comment": "Button that opens the file picker to choose an Anki collection package or deck package to import.",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "パッケージをインポート…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "导入包…"
+          }
+        }
+      }
     },
     "Importing “%@”…": {
       "comment": "Shown while a package imports; the placeholder is the file name."
