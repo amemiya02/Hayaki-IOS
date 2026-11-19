@@ -91,7 +91,10 @@ targets:
     type: bundle.ui-testing
     platform: iOS
     sources:
-      - UITests
+      - path: UITests
+        excludes: [Fixtures]
+      - path: UITests/Fixtures/template-scripts.colpkg
+        buildPhase: resources
       # The app starts the tests from a copy of this real collection package.
       - path: Packages/CollectionStore/Sources/CollectionTesting/Fixtures/collection.colpkg
         buildPhase: resources
