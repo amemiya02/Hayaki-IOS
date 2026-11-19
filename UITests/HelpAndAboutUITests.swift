@@ -20,7 +20,7 @@ final class HelpAndAboutUITests: XCTestCase {
     }
 
     func testAboutIdentifiesThisBuildAndOpensItsChangelog() {
-        app.buttons["About"].tap()
+        openMoreLink("About")
         XCTAssertTrue(app.staticTexts["0.1.0"].exists)
         XCTAssertTrue(app.staticTexts["26.09.4"].exists)
         XCTAssertTrue(app.staticTexts["6.6.2"].exists)
@@ -47,7 +47,7 @@ final class HelpAndAboutUITests: XCTestCase {
     }
 
     func testGuideOpensTheRealExportChoices() {
-        app.buttons["Transfer Guide"].tap()
+        openMoreLink("Transfer Guide")
         XCTAssertTrue(app.staticTexts["A deck package (.apkg) merges into the receiving collection."].exists)
         XCTAssertTrue(app.staticTexts["A collection package (.colpkg) replaces the receiving collection."].exists)
         screenshot("Transfer Guide")
@@ -61,7 +61,7 @@ final class HelpAndAboutUITests: XCTestCase {
     }
 
     func testGuideOpensTheSystemFilePicker() {
-        app.buttons["Transfer Guide"].tap()
+        openMoreLink("Transfer Guide")
         let importPackage = app.buttons["TransferGuideImport"]
         reveal(importPackage)
         importPackage.tap()
@@ -74,7 +74,7 @@ final class HelpAndAboutUITests: XCTestCase {
     }
 
     func testGuideExplainsBothSyncDestinationsAndOpensSyncSettings() {
-        app.buttons["Transfer Guide"].tap()
+        openMoreLink("Transfer Guide")
         let sync = app.buttons["sync-settings"]
         reveal(sync)
         XCTAssertTrue(element("In Sync Destination, choose AnkiWeb and sign in with your AnkiWeb email address and password.").exists)
@@ -85,12 +85,19 @@ final class HelpAndAboutUITests: XCTestCase {
     }
 
     func testHelpPointsToManualsAndHayakiIssues() {
-        app.buttons["Help"].tap()
+        openMoreLink("Help")
         XCTAssertTrue(element("Desktop Anki Manual").exists)
         XCTAssertTrue(element("AnkiDroid Manual").exists)
         XCTAssertTrue(element("Anki Forums").exists)
         XCTAssertTrue(element("Report a Hayaki Issue").exists)
         screenshot("Help")
+    }
+
+    private func openMoreLink(_ label: String) {
+        let link = app.buttons[label]
+        reveal(link)
+        link.tap()
+        XCTAssertTrue(app.navigationBars[label].waitForExistence(timeout: 15))
     }
 
     private func element(_ label: String) -> XCUIElement {
