@@ -28,7 +28,7 @@ struct PreviewCardActionsTests {
 
             #expect(try await PreviewCardActions.toggleFlag(7, cardID: target, in: store) == 7)
             #expect(try await PreviewCardActions.toggleFlag(7, cardID: target, in: store) == 0)
-            _ = try await store.modify(.undo(.init()))
+            _ = try await store.undo()
             #expect(try await store.core.getCard(.with { $0.cid = target }).flags == 7)
             #expect(try await store.core.getCard(.with { $0.cid = other }).flags == 0)
             #expect(try await store.reviewCount() == 0)
