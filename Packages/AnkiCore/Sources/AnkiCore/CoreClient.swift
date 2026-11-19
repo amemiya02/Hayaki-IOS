@@ -38,7 +38,9 @@ public final class CoreClient: Sendable {
         do {
             initRequest = try Anki_Backend_BackendInit.with { $0.preferredLangs = [language] }.serializedData()
         } catch {
-            throw CoreError(kind: .protoError, message: "Could not encode the core's settings: \(error)")
+            throw CoreError(kind: .protoError, message: String(
+                localized: "Could not encode the core's settings: \(error.localizedDescription)", bundle: .module
+            ))
         }
         let worker = WorkerThread(name: "Hayaki Core")
         let opened = await worker.run { () -> Result<Backend, CoreError> in
@@ -162,7 +164,7 @@ public final class CoreClient: Sendable {
         let result: Result<Void, CoreError> = await worker.run {
             self.execute(.mediaSyncStatus()).flatMap { status in
                 guard !status.active else {
-                    return .failure(CoreError(kind: .invalidInput, message: "Media sync is still running."))
+                    return .failure(CoreError(kind: .invalidInput, message: String(localized: "Media sync is still running.", bundle: .module)))
                 }
                 do {
                     for suffix in ["-wal", "-shm", ""] {
@@ -252,7 +254,7 @@ public final class CoreClient: Sendable {
     /// Runs a call on the current thread.
     private func call<Response>(_ call: CoreCall<Response>) -> Result<Response, CoreError> {
         guard let backend = backend.withLock({ $0 }) else {
-            return .failure(CoreError(kind: .invalidInput, message: "The core has been closed."))
+            return .failure(CoreError(kind: .invalidInput, message: String(localized: "The core has been closed.", bundle: .module)))
         }
         return call.encodedRequest()
             .flatMap { backend.run(call.method, input: $0) }

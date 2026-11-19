@@ -15,6 +15,9 @@ struct GeneralSettingsScreen: View {
 
     var body: some View {
         Form {
+            #if os(iOS)
+            Section { LanguageSettingsRow() }
+            #endif
             if let editing {
                 Section {
                     Picker(selection: Binding(

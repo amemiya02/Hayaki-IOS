@@ -13,7 +13,7 @@ struct ReviewerTagsSheet: View {
         NavigationStack {
             Form {
                 if draft != nil {
-                    TextField("Tags", text: Binding(get: { draft ?? "" }, set: { draft = $0 }))
+                    TextField(reviewerLocalized("Tags"), text: Binding(get: { draft ?? "" }, set: { draft = $0 }))
                         .autocorrectionDisabled()
                     Text("Separate tags with spaces.", bundle: .module)
                         .foregroundStyle(.secondary)
@@ -24,10 +24,10 @@ struct ReviewerTagsSheet: View {
             .navigationTitle(reviewerLocalized("Edit Tags"))
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel", role: .cancel) { dismiss() }.disabled(isSaving)
+                    Button(reviewerLocalized("Cancel"), role: .cancel) { dismiss() }.disabled(isSaving)
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Save", action: save).disabled(draft == nil || isSaving)
+                    Button(reviewerLocalized("Save"), action: save).disabled(draft == nil || isSaving)
                 }
             }
         }
@@ -39,11 +39,11 @@ struct ReviewerTagsSheet: View {
                 self.error = (error as? CoreError)?.message ?? error.localizedDescription
             }
         }
-        .alert("Could Not Edit Tags", isPresented: Binding(
+        .alert(reviewerLocalized("Could Not Edit Tags"), isPresented: Binding(
             get: { error != nil },
             set: { if !$0 { error = nil } }
         )) {
-            Button("OK", role: .cancel) { if draft == nil { dismiss() } }
+            Button(reviewerLocalized("OK"), role: .cancel) { if draft == nil { dismiss() } }
         } message: {
             Text(verbatim: error ?? "")
         }

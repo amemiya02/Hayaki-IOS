@@ -1914,6 +1914,38 @@
         "ja" : { "stringUnit" : { "state" : "translated", "value" : "ブラウザーにメディアのファイル名を表示" } },
         "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "在浏览器中显示媒体文件名" } }
       }
+    },
+    "Choose the language for Hayaki in the Settings app." : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "「設定」アプリでHayakiの言語を選択します。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "在“设置”应用中选择 Hayaki 的语言。"
+          }
+        }
+      }
+    },
+    "Language" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "言語"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "语言"
+          }
+        }
+      }
     }
   },
   "version" : "1.0"

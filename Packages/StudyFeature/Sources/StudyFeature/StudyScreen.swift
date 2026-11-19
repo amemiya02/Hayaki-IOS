@@ -122,7 +122,7 @@ public struct StudyScreen: View {
         }
         .overlay(alignment: .top) {
             if let feedback {
-                Text(feedback.text)
+                feedback.label
                     .padding(8)
                     .background(.regularMaterial, in: Capsule())
                     .padding(.top, 60)
@@ -159,7 +159,7 @@ public struct StudyScreen: View {
             Button(reviewerLocalized("Finish")) { dismiss() }
         } message: {
             if let timebox {
-                Text("You reviewed \(timebox.reviewed) cards in \(timebox.limit.components.seconds / 60) minutes.")
+                Text("You reviewed \(timebox.reviewed) cards in \(timebox.limit.components.seconds / 60) minutes.", bundle: .module)
             }
         }
         .focusable()
@@ -187,16 +187,16 @@ public struct StudyScreen: View {
             recorder.discard()
             audio.stop()
         }
-        .alert("Recording", isPresented: Binding(
+        .alert(reviewerLocalized("Recording"), isPresented: Binding(
             get: { recorder.errorMessage != nil },
             set: { if !$0 { recorder.clearError() } }
         )) {
             if recorder.permissionDenied {
-                Button("Open Settings") {
+                Button(reviewerLocalized("Open Settings")) {
                     if let url = URL(string: UIApplication.openSettingsURLString) { UIApplication.shared.open(url) }
                 }
             }
-            Button("OK", role: .cancel) { recorder.clearError() }
+            Button(reviewerLocalized("OK"), role: .cancel) { recorder.clearError() }
         } message: {
             Text(verbatim: recorder.errorMessage ?? "")
         }
@@ -213,7 +213,7 @@ public struct StudyScreen: View {
                 ReviewerSettingsScreen(store: store)
                     .toolbar {
                         ToolbarItem(placement: .confirmationAction) {
-                            Button("Done") { showingSettings = false }
+                            Button(reviewerLocalized("Done")) { showingSettings = false }
                         }
                     }
             }
@@ -290,7 +290,9 @@ public struct StudyScreen: View {
         case .deleteNote, .setDueDate, .resetProgress: requestedAction = command
         case .toggleAutoAdvance:
             autoAdvance.toggle()
-            feedback = ReviewFeedback(text: autoAdvance ? "Auto Advance Enabled" : "Auto Advance Disabled")
+            feedback = ReviewFeedback(label: autoAdvance
+                ? Text("Auto Advance Enabled", bundle: .module)
+                : Text("Auto Advance Disabled", bundle: .module))
         case .browse:
             guard destinations != nil else { return }
             Task {
@@ -354,7 +356,7 @@ public struct StudyScreen: View {
                 let typed = typedAnswer
                 Task {
                     if await model.perform(command, typed: typed), preferences.showFeedback, let rating = command.rating {
-                        feedback = ReviewFeedback(text: rating.titleKey)
+                        feedback = ReviewFeedback(label: rating.title)
                     }
                 }
             }
@@ -419,7 +421,9 @@ public struct StudyScreen: View {
         if let command = task.plan.command {
             dispatch(command)
         } else {
-            feedback = ReviewFeedback(text: task.side == .question ? "Question Time Elapsed" : "Answer Time Elapsed")
+            feedback = ReviewFeedback(label: task.side == .question
+                ? Text("Question Time Elapsed", bundle: .module)
+                : Text("Answer Time Elapsed", bundle: .module))
         }
     }
 
@@ -576,7 +580,7 @@ public struct StudyScreen: View {
                 ) {
                     dispatch(.showAnswer)
                 } onShortPress: {
-                    feedback = ReviewFeedback(text: String(localized: "Hold Show Answer to reveal the card.", bundle: .module))
+                    feedback = ReviewFeedback(label: Text("Hold Show Answer to reveal the card.", bundle: .module))
                 } onRate: { rating in
                     dispatch(rating.reviewerCommand)
                 }
@@ -667,7 +671,10 @@ public struct StudyScreen: View {
             route = .browse(search: query)
         case "showToast":
             guard let toast = request.decoded(TemplateToast.self) else { return .unavailable }
-            feedback = ReviewFeedback(text: toast.decodedText, duration: .seconds(toast.shortLength ? 2 : 4))
+            feedback = ReviewFeedback(
+                label: Text(verbatim: toast.decodedText),
+                duration: .seconds(toast.shortLength ? 2 : 4)
+            )
         case "isActiveNetworkMetered":
             return .value(.boolean(await templateNetwork.isMetered()))
         default:
@@ -1022,20 +1029,15 @@ private struct AutoAdvanceTask: Equatable {
 
 private struct ReviewFeedback: Equatable {
     let id = UUID()
-    let text: String
+    let label: Text
     var duration: Duration = .seconds(2)
+
+    static func == (lhs: Self, rhs: Self) -> Bool {
+        lhs.id == rhs.id
+    }
 }
 
 private extension Rating {
-    var titleKey: String {
-        switch self {
-        case .again: "Again"
-        case .hard: "Hard"
-        case .good: "Good"
-        case .easy: "Easy"
-        }
-    }
-
     var reviewerCommand: ReviewerCommand {
         switch self {
         case .again: .rateAgain

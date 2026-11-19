@@ -354,7 +354,21 @@
       }
     },
     "Could Not Open Your Collection" : {
-      "comment" : "Title shown when the collection could not be opened at launch."
+      "comment" : "Title shown when the collection could not be opened at launch.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "コレクションを開けませんでした"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "无法打开你的集合"
+          }
+        }
+      }
     },
     "Done" : {
       "comment" : "Completes setup after visiting Sync from Welcome.",
@@ -374,7 +388,21 @@
       }
     },
     "Opening Your Collection…" : {
-      "comment" : "Shown while the collection opens at launch."
+      "comment" : "Shown while the collection opens at launch.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "コレクションを開いています…"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正在打开你的集合…"
+          }
+        }
+      }
     },
     "Set Up Sync" : {
       "comment" : "Opens the available sync destinations from Welcome.",

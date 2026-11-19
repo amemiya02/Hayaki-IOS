@@ -4,6 +4,7 @@ import SwiftUI
 
 /// Voice discovery for writing compatible card templates.
 struct SpeechVoicesScreen: View {
+    @Environment(\.locale) private var locale
     @State private var voices: [AVSpeechSynthesisVoice] = []
     @State private var search = ""
     @State private var sample = ""
@@ -15,7 +16,7 @@ struct SpeechVoicesScreen: View {
                 TextField(reviewerLocalized("Text to Speak"), text: $sample)
             }
             ForEach(languages, id: \.self) { language in
-                Section(Locale.current.localizedString(forIdentifier: language) ?? language) {
+                Section(locale.localizedString(forIdentifier: language) ?? language) {
                     ForEach(filtered.filter { $0.language == language }, id: \.identifier) { voice in
                         HStack {
                             VStack(alignment: .leading) {
@@ -53,8 +54,7 @@ struct SpeechVoicesScreen: View {
 
     private var languages: [String] {
         Set(filtered.map(\.language)).sorted {
-            let locale = Locale.current
-            return (locale.localizedString(forIdentifier: $0) ?? $0)
+            (locale.localizedString(forIdentifier: $0) ?? $0)
                 .localizedStandardCompare(locale.localizedString(forIdentifier: $1) ?? $1) == .orderedAscending
         }
     }
@@ -64,7 +64,7 @@ struct SpeechVoicesScreen: View {
         return voices.filter { voice in
             voice.name.localizedCaseInsensitiveContains(search)
                 || voice.language.localizedCaseInsensitiveContains(search)
-                || Locale.current.localizedString(forIdentifier: voice.language)?.localizedCaseInsensitiveContains(search) == true
+                || locale.localizedString(forIdentifier: voice.language)?.localizedCaseInsensitiveContains(search) == true
         }
     }
 }

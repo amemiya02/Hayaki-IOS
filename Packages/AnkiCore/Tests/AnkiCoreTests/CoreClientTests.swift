@@ -167,6 +167,8 @@ struct CoreClientTests {
         arguments: [
             ("ja", "\u{2068}3\u{2069} 日"),
             ("zh-CN", "\u{2068}3\u{2069} 天"),
+            ("zh-Hans", "\u{2068}3\u{2069} 天"),
+            ("und", "\u{2068}3\u{2069} days"),
             ("de", "\u{2068}3\u{2069}\u{00A0}Tage"),
             ("en", "\u{2068}3\u{2069} days"),
         ]
@@ -178,5 +180,40 @@ struct CoreClientTests {
             $0.context = .precise
         })
         #expect(text.val == expected)
+    }
+
+    @Test(
+        "The reviewer uses localized short units for rating intervals",
+        arguments: [("en", "m"), ("ja", "分"), ("zh-Hans", "分"), ("und", "m")]
+    )
+    func answerButtonLanguage(language: String, minuteSuffix: String) async throws {
+        let core = try await CoreClient(language: language)
+        let text = try await core.formatTimespan(.with {
+            $0.seconds = 3 * 60
+            $0.context = .answerButtons
+        })
+        #expect(text.val.hasSuffix(minuteSuffix))
+    }
+
+    @Test("Right-to-left core translations retain number isolation", arguments: ["ar", "ar-SA"])
+    func rightToLeftLanguage(language: String) async throws {
+        let collection = try TemporaryCollection()
+        let core = try await CoreClient(language: language)
+        try await core.openCollection(collection.openRequest)
+
+        let interval = try await core.formatTimespan(.with {
+            $0.seconds = 3 * 86_400
+            $0.context = .precise
+        })
+        #expect(interval.val.range(of: "\\p{Arabic}", options: .regularExpression) != nil)
+        #expect(interval.val.contains("\u{2068}"))
+        #expect(interval.val.contains("\u{2069}"))
+
+        let error = await #expect(throws: CoreError.self) {
+            try await core.searchCards(.with { $0.search = "(" })
+        }
+        #expect(error?.kind == .searchError)
+        #expect(error?.message.range(of: "\\p{Arabic}", options: .regularExpression) != nil)
+        try await core.closeCollection(.init())
     }
 }

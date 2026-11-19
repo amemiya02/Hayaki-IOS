@@ -789,6 +789,18 @@
               }
             }
           }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "一緒に%lld枚のカードも削除されます。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "同时会删除其中的 %lld 张卡片。"
+          }
         }
       }
     },
@@ -810,7 +822,21 @@
       }
     },
     "%lld new, %lld learning, %lld due" : {
-      "comment" : "VoiceOver label for a deck's counts for today: new cards, learning cards and due review cards."
+      "comment" : "VoiceOver label for a deck's counts for today: new cards, learning cards and due review cards.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "新規%lld枚、学習中%lld枚、復習待ち%lld枚"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "新卡片 %lld 张，学习中 %lld 张，待复习 %lld 张"
+          }
+        }
+      }
     },
     "%lld studied today" : {
       "comment" : "Number of reviews recorded across all decks in the current study day.",
@@ -830,40 +856,208 @@
       }
     },
     "Cancel" : {
-      "comment" : "Button that closes a sheet or alert without changing anything."
+      "comment" : "Button that closes a sheet or alert without changing anything.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "キャンセル"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "取消"
+          }
+        }
+      }
     },
     "Could Not Create Deck" : {
-      "comment" : "Title of the alert shown when a deck could not be created."
+      "comment" : "Title of the alert shown when a deck could not be created.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "デッキを作成できませんでした"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "无法创建牌组"
+          }
+        }
+      }
     },
     "Could Not Delete Deck" : {
-      "comment" : "Title of the alert shown when a deck could not be deleted."
+      "comment" : "Title of the alert shown when a deck could not be deleted.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "デッキを削除できませんでした"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "无法删除牌组"
+          }
+        }
+      }
     },
     "Could Not Move Deck" : {
-      "comment" : "Title of the alert shown when a deck could not be moved."
+      "comment" : "Title of the alert shown when a deck could not be moved.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "デッキを移動できませんでした"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "无法移动牌组"
+          }
+        }
+      }
     },
     "Could Not Rename Deck" : {
-      "comment" : "Title of the alert shown when a deck could not be renamed."
+      "comment" : "Title of the alert shown when a deck could not be renamed.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "デッキの名前を変更できませんでした"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "无法重命名牌组"
+          }
+        }
+      }
     },
     "Could Not Show Decks" : {
-      "comment" : "Title shown when the deck list could not be read from the collection."
+      "comment" : "Title shown when the deck list could not be read from the collection.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "デッキを表示できませんでした"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "无法显示牌组"
+          }
+        }
+      }
     },
     "Create" : {
-      "comment" : "Button that creates the deck described in the New Deck sheet."
+      "comment" : "Button that creates the deck described in the New Deck sheet.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "作成"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "创建"
+          }
+        }
+      }
     },
     "Decks" : {
-      "comment" : "Title of the Decks section and its tab."
+      "comment" : "Title of the Decks section and its tab.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "デッキ"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "牌组"
+          }
+        }
+      }
     },
     "Delete" : {
-      "comment" : "Deck context menu, swipe action and confirmation button: delete the deck."
+      "comment" : "Deck context menu, swipe action and confirmation button: delete the deck.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "削除"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "删除"
+          }
+        }
+      }
     },
     "Delete “%@”?" : {
-      "comment" : "Title of the alert confirming a deck's deletion; the placeholder is the deck's name."
+      "comment" : "Title of the alert confirming a deck's deletion; the placeholder is the deck's name.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "「%@」を削除しますか？"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "要删除“%@”吗？"
+          }
+        }
+      }
     },
     "Enter a name for the deck." : {
-      "comment" : "Error shown when the learner gives a deck an empty name."
+      "comment" : "Error shown when the learner gives a deck an empty name.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "デッキの名前を入力してください。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "请输入牌组名称。"
+          }
+        }
+      }
     },
     "Export…" : {
-      "comment" : "Deck context menu: export the deck, with its subdecks, as a deck package."
+      "comment" : "Deck context menu: export the deck, with its subdecks, as a deck package.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "エクスポート…"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "导出…"
+          }
+        }
+      }
     },
     "Import a deck package (.apkg) or a collection package (.colpkg) from Hayaki, Anki or AnkiDroid." : {
       "comment" : "Explains how to bring existing cards into an empty collection.",
@@ -883,7 +1077,21 @@
       }
     },
     "Inside" : {
-      "comment" : "New Deck sheet: label of the choice of deck the new deck goes inside."
+      "comment" : "New Deck sheet: label of the choice of deck the new deck goes inside.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "親デッキ"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "父牌组"
+          }
+        }
+      }
     },
     "Its %lld subdecks and %lld cards will be deleted with it." : {
       "comment" : "Message of the alert confirming a deck's deletion: how many child decks (at every level) and cards are deleted with it.",
@@ -935,20 +1143,88 @@
               }
             }
           }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "一緒に%lld個の子デッキと%lld枚のカードも削除されます。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "同时会删除其中的 %lld 个子牌组和 %lld 张卡片。"
+          }
         }
       }
     },
     "Its cards go back to their original decks." : {
-      "comment" : "Message of the alert confirming the deletion of a filtered deck: no cards are deleted."
+      "comment" : "Message of the alert confirming the deletion of a filtered deck: no cards are deleted.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "カードは元のデッキに戻ります。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "卡片会返回原来的牌组。"
+          }
+        }
+      }
     },
     "Move" : {
-      "comment" : "Deck context menu: put the deck inside another deck or at the top level."
+      "comment" : "Deck context menu: put the deck inside another deck or at the top level.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "移動"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "移动"
+          }
+        }
+      }
     },
     "Move “%@”" : {
-      "comment" : "Title of the sheet for moving a deck; the placeholder is the deck's name."
+      "comment" : "Title of the sheet for moving a deck; the placeholder is the deck's name.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "「%@」を移動"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "移动“%@”"
+          }
+        }
+      }
     },
     "Name" : {
-      "comment" : "Placeholder of the field for a deck's name."
+      "comment" : "Placeholder of the field for a deck's name.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "名前"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "名称"
+          }
+        }
+      }
     },
     "New Deck" : {
       "comment" : "Toolbar button in the deck list, and title of the sheet, for creating a deck.",
@@ -968,7 +1244,21 @@
       }
     },
     "New Deck Inside" : {
-      "comment" : "Deck context menu: create a deck inside this deck."
+      "comment" : "Deck context menu: create a deck inside this deck.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "子デッキを作成"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "创建子牌组"
+          }
+        }
+      }
     },
     "No Cards Yet" : {
       "comment" : "Title of the first-launch screen when the collection has no cards.",
@@ -988,7 +1278,21 @@
       }
     },
     "None (Top Level)" : {
-      "comment" : "New Deck sheet: choice that puts the new deck at the top level, inside no other deck."
+      "comment" : "New Deck sheet: choice that puts the new deck at the top level, inside no other deck.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "なし（最上位）"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "无（顶层）"
+          }
+        }
+      }
     },
     "Nothing due today" : {
       "comment" : "Shown when no cards are left to study today.",
@@ -1008,19 +1312,89 @@
       }
     },
     "OK" : {
-      "comment" : "Button that closes an error alert."
+      "comment" : "Button that closes an error alert.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "OK"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "好"
+          }
+        }
+      }
     },
     "Options" : {
-      "comment" : "Deck context menu: open the deck's options (preset, daily limits, steps, display order, burying)."
+      "comment" : "Deck context menu: open the deck's options (preset, daily limits, steps, display order, burying).",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "オプション"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "选项"
+          }
+        }
+      }
     },
     "Rename" : {
-      "comment" : "Deck context menu, swipe action and alert button: give the deck a new name."
+      "comment" : "Deck context menu, swipe action and alert button: give the deck a new name.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "名前を変更"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "重命名"
+          }
+        }
+      }
     },
     "Rename Deck" : {
-      "comment" : "Title of the alert asking for a deck's new name."
+      "comment" : "Title of the alert asking for a deck's new name.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "デッキの名前を変更"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "重命名牌组"
+          }
+        }
+      }
     },
     "Studies this deck." : {
-      "comment" : "VoiceOver hint on a deck in the deck list: tapping it starts a study session."
+      "comment" : "VoiceOver hint on a deck in the deck list: tapping it starts a study session.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "このデッキを学習します。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "学习此牌组。"
+          }
+        }
+      }
     },
     "Study Now · %@" : {
       "comment" : "Starts a study session in the named deck.",
@@ -1040,13 +1414,55 @@
       }
     },
     "There is already a deck named “%@” there." : {
-      "comment" : "Error shown when another deck in the same place already has the name; the placeholder is the name."
+      "comment" : "Error shown when another deck in the same place already has the name; the placeholder is the name.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "この場所には「%@」というデッキがすでにあります。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "此处已有名为“%@”的牌组。"
+          }
+        }
+      }
     },
     "Top Level" : {
-      "comment" : "Move sheet: destination that puts the deck at the top level, inside no other deck."
+      "comment" : "Move sheet: destination that puts the deck at the top level, inside no other deck.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "最上位"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "顶层"
+          }
+        }
+      }
     },
     "Try Again" : {
-      "comment" : "Button that reads the deck list again after it failed."
+      "comment" : "Button that reads the deck list again after it failed.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "再試行"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "重试"
+          }
+        }
+      }
     },
     "Review Reminders" : {
       "localizations" : {
@@ -1060,6 +1476,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "复习提醒"
+          }
+        }
+      }
+    },
+    "Study" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "学習開始"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "开始学习"
           }
         }
       }

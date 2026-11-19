@@ -62,18 +62,18 @@ struct CardRetentionChart: View {
 
     private func plot(_ points: [CardDetail.RetentionPoint]) -> some View {
         Chart {
-            RuleMark(y: .value("Desired Retention", detail.desiredRetention ?? 0.9))
+            RuleMark(y: .value(String(localized: "Desired Retention", bundle: .module), detail.desiredRetention ?? 0.9))
                 .lineStyle(StrokeStyle(lineWidth: 1, dash: [4, 4]))
                 .foregroundStyle(.secondary)
             ForEach(Array(points.enumerated()), id: \.offset) { _, point in
                 LineMark(
-                    x: .value("Review Date", point.date),
-                    y: .value("Retrievability", point.probability),
-                    series: .value("Review", point.reviewIndex)
+                    x: .value(String(localized: "Review Date", bundle: .module), point.date),
+                    y: .value(String(localized: "Retrievability", bundle: .module), point.probability),
+                    series: .value(String(localized: "Review", bundle: .module), point.reviewIndex)
                 )
             }
             if let selectedDate {
-                RuleMark(x: .value("Selected Date", selectedDate))
+                RuleMark(x: .value(String(localized: "Selected Date", bundle: .module), selectedDate))
                     .foregroundStyle(.secondary)
             }
         }

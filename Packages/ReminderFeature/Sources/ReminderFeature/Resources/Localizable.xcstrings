@@ -25,13 +25,13 @@
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "期限が来たカードは %lld 枚です。"
+            "value" : "復習待ちのカードが%lld枚あります。"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "有 %lld 张卡片到期。"
+            "value" : "有 %lld 张卡片待复习。"
           }
         }
       }
@@ -60,13 +60,13 @@
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "学習できる新規カードは %lld 枚です。"
+            "value" : "新しく学習できるカードが%lld枚あります。"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "有 %lld 张新卡片可供学习。"
+            "value" : "有 %lld 张新卡片可以学习。"
           }
         }
       }
@@ -296,6 +296,7 @@
       }
     },
     "Off" : {
+      "comment" : "Shown next to Daily Reminder in Settings when the reminder is off.",
       "localizations" : {
         "ja" : {
           "stringUnit" : {
@@ -328,6 +329,7 @@
       }
     },
     "Open Settings" : {
+      "comment" : "Button that opens Hayaki's notification settings in the Settings app.",
       "localizations" : {
         "ja" : {
           "stringUnit" : {
@@ -424,6 +426,7 @@
       }
     },
     "Time" : {
+      "comment" : "Label of the reminder's time of day.",
       "localizations" : {
         "ja" : {
           "stringUnit" : {
@@ -440,7 +443,123 @@
       }
     },
     "Time to Study" : {
-      "comment" : "Title of the daily study reminder notification."
+      "comment" : "Title of the daily study reminder notification.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "学習の時間です"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "该学习了"
+          }
+        }
+      }
+    },
+    "Daily Reminder" : {
+      "comment" : "Name of the daily study reminder, as a Settings row and the reminder screen's title.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "毎日のリマインダー"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "每日提醒"
+          }
+        }
+      }
+    },
+    "Hayaki is not allowed to send notifications, so the reminder cannot appear. To get it, allow notifications for Hayaki in the Settings app, then turn the reminder on." : {
+      "comment" : "Shown when the learner refused notifications, explaining how to allow them later.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hayakiの通知が許可されていません。「設定」アプリでHayakiの通知を許可してから、リマインダーをオンにしてください。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hayaki 没有通知权限。请在“设置”应用中允许 Hayaki 发送通知，然后开启提醒。"
+          }
+        }
+      }
+    },
+    "Next Reminder" : {
+      "comment" : "Header of the section showing when the next reminder comes and what it says.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "次のリマインダー"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "下次提醒"
+          }
+        }
+      }
+    },
+    "Once a day, Hayaki reminds you how many cards are due. On a day with nothing to study, there is no reminder." : {
+      "comment" : "Explanation below the daily reminder switch.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hayakiは1日1回、復習待ちのカードの枚数をお知らせします。学習するカードがない日は通知しません。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hayaki 每天提醒你有多少张卡片待复习。当天没有卡片需要学习时，不会发出提醒。"
+          }
+        }
+      }
+    },
+    "The count is updated whenever your collection changes. Reviews done on another device are counted after you sync." : {
+      "comment" : "Explanation below the next reminder of how its due count stays current.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "コレクションが更新されるたびに枚数も更新されます。他の端末での復習は、同期後に反映されます。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "集合发生变化时会更新卡片数量。在其他设备上完成的复习会在同步后计入。"
+          }
+        }
+      }
+    },
+    "When" : {
+      "comment" : "Label of the date and time of the next reminder.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "日時"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "提醒时间"
+          }
+        }
+      }
     }
   },
   "version" : "1.0"

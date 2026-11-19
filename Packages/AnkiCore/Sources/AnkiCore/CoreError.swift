@@ -29,7 +29,9 @@ public struct CoreError: Error, Sendable, Equatable, LocalizedError {
             let error = try Anki_Backend_BackendError(serializedBytes: encoded)
             self.init(kind: error.kind, message: error.message)
         } catch {
-            self.init(kind: .protoError, message: "Unreadable error from the core: \(error)")
+            self.init(kind: .protoError, message: String(
+                localized: "Unreadable error from the core: \(error.localizedDescription)", bundle: .module
+            ))
         }
     }
 

@@ -97,7 +97,7 @@ struct ReviewerWhiteboardTools: View {
         let layout = vertical ? AnyLayout(VStackLayout(spacing: 12)) : AnyLayout(HStackLayout(spacing: 16))
         layout {
             if options.hidesToolbar == true {
-                Button("Show Whiteboard Tools", systemImage: "ellipsis.circle") { options.hidesToolbar = false }
+                Button(reviewerLocalized("Show Whiteboard Tools"), systemImage: "ellipsis.circle") { options.hidesToolbar = false }
             } else {
                 controls
             }
@@ -107,15 +107,15 @@ struct ReviewerWhiteboardTools: View {
         .padding(8)
         .background(.regularMaterial, in: Capsule())
         .alert(reviewerLocalized("Drawing Saved"), isPresented: $showSavedFile) {
-            Button("OK", role: .cancel) {}
+            Button(reviewerLocalized("OK"), role: .cancel) {}
         } message: {
-            if let saved { Text("Files → On My iPhone or iPad → Hayaki → Whiteboard → \(saved.lastPathComponent)") }
+            if let saved { Text("Files → On My iPhone or iPad → Hayaki → Whiteboard → \(saved.lastPathComponent)", bundle: .module) }
         }
         .alert(reviewerLocalized("Could Not Save Drawing"), isPresented: Binding(
             get: { saveError != nil },
             set: { if !$0 { saveError = nil } }
         )) {
-            Button("OK", role: .cancel) {}
+            Button(reviewerLocalized("OK"), role: .cancel) {}
         } message: {
             Text(verbatim: saveError ?? "")
         }
@@ -124,7 +124,7 @@ struct ReviewerWhiteboardTools: View {
     @ViewBuilder
     private var controls: some View {
         Button(
-            options.drawingShown ? "Hide Drawing" : "Show Drawing",
+            reviewerLocalized(options.drawingShown ? "Hide Drawing" : "Show Drawing"),
             systemImage: options.drawingShown ? "eye.slash" : "eye"
         ) { options.drawingShown.toggle() }
         if options.drawingShown {
@@ -139,54 +139,54 @@ struct ReviewerWhiteboardTools: View {
                     .disabled(!drawing.canRedo)
                 Button(reviewerLocalized("Clear Drawing"), systemImage: "trash", role: .destructive) { drawing.clear() }
                     .disabled(!drawing.hasInk)
-                ColorPicker("Pen Color", selection: penColor, supportsOpacity: false)
-                Button("Automatic Pen Color") { options.penColor = "automatic" }
-                Picker("Pen Width", selection: $options.penWidth) {
+                ColorPicker(reviewerLocalized("Pen Color"), selection: penColor, supportsOpacity: false)
+                Button(reviewerLocalized("Automatic Pen Color")) { options.penColor = "automatic" }
+                Picker(reviewerLocalized("Pen Width"), selection: $options.penWidth) {
                     ForEach([2.0, 4.0, 8.0, 12.0], id: \.self) { Text($0, format: .number).tag($0) }
                 }
-                Picker("Eraser Width", selection: $options.eraserWidth) {
+                Picker(reviewerLocalized("Eraser Width"), selection: $options.eraserWidth) {
                     ForEach([12.0, 24.0, 36.0, 48.0], id: \.self) { Text($0, format: .number).tag($0) }
                 }
-                Toggle("Erase Whole Strokes", isOn: $options.strokeEraser)
+                Toggle(reviewerLocalized("Erase Whole Strokes"), isOn: $options.strokeEraser)
                 Toggle(reviewerLocalized("Apple Pencil Only"), isOn: $options.stylusOnly)
                 Picker(reviewerLocalized("Whiteboard Toolbar Position"), selection: Binding(
                     get: { options.toolbarAlignment ?? .bottom },
                     set: { options.toolbarAlignment = $0 }
                 )) {
                     ForEach(WhiteboardToolbarAlignment.allCases, id: \.self) {
-                        Text($0.rawValue.capitalized).tag($0)
+                        Text(reviewerLocalized($0.rawValue.capitalized)).tag($0)
                     }
                 }
-                Menu("Brushes", systemImage: "paintpalette") {
+                Menu(reviewerLocalized("Brushes"), systemImage: "paintpalette") {
                     ForEach(options.brushes ?? [], id: \.self) { brush in
                         Menu {
-                            Button("Use Brush") {
+                            Button(reviewerLocalized("Use Brush")) {
                                 options.penColor = brush.color
                                 options.penWidth = brush.width
                                 isErasing = false
                             }
-                            Button("Remove Brush", role: .destructive) {
+                            Button(reviewerLocalized("Remove Brush"), role: .destructive) {
                                 options.brushes?.removeAll { $0 == brush }
                             }
                         } label: {
                             Label {
-                                Text("\(brush.width, format: .number) pt")
+                                Text("\(brush.width, format: .number) pt", bundle: .module)
                             } icon: {
                                 Image(systemName: "circle.fill")
                                     .foregroundStyle(Color(uiColor: UIColor(hexRGB: brush.color) ?? .label))
                             }
                         }
                     }
-                    Button("Save Current Brush", systemImage: "plus") {
+                    Button(reviewerLocalized("Save Current Brush"), systemImage: "plus") {
                         let brush = ReviewerBrush(color: options.penColor, width: options.penWidth)
                         var existing = options.brushes ?? []
                         if !existing.contains(brush) { existing.append(brush) }
                         options.brushes = existing
                     }
                 }
-                Button("Hide Whiteboard Tools") { options.hidesToolbar = true }
+                Button(reviewerLocalized("Hide Whiteboard Tools")) { options.hidesToolbar = true }
             } label: {
-                Label("Whiteboard Tools", systemImage: "ellipsis.circle")
+                Label(reviewerLocalized("Whiteboard Tools"), systemImage: "ellipsis.circle")
             }
         }
         Button(reviewerLocalized("Save Drawing"), systemImage: "square.and.arrow.down") {
