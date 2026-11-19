@@ -3,16 +3,20 @@ import SwiftUI
 
 struct HourlySection: View {
     let graphs: StatisticsGraphs
+    @Environment(\.statisticsReportPeriod) private var reportPeriod
+    private var displayedPeriod: StatisticsPeriod { reportPeriod ?? period }
     @State private var period: StatisticsPeriod = .year
-    private var hours: [HourlyReviews] { graphs.displaying(period).hourlyReviews }
+    private var hours: [HourlyReviews] { graphs.displaying(displayedPeriod).hourlyReviews }
     @State private var position: Double?
 
     var body: some View {
         Section {
-            StatisticsPeriodPicker(
-                selection: $period, label: Text("Hourly Period", bundle: .module),
-                allowsAllTime: graphs.period == .allTime
-            )
+            if reportPeriod == nil {
+                StatisticsPeriodPicker(
+                    selection: $period, label: Text("Hourly Period", bundle: .module),
+                    allowsAllTime: graphs.period == .allTime
+                )
+            }
             if hours.contains(where: { $0.count > 0 }) {
                 chart
                 if let selected = position.map({ Int($0.rounded()) }), let hour = hours.first(where: { $0.hour == selected }) {
