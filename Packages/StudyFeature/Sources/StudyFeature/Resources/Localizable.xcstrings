@@ -1,6 +1,102 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "Cards Buried for Today" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "カードを翌学習日まで保留"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "卡片已暂缓至下一学习日"
+          }
+        }
+      }
+    },
+    "Daily Limit Reached" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1日の上限に達しました"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已达到每日上限"
+          }
+        }
+      }
+    },
+    "More Cards Later Today" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "今日の後ほど学習できるカードがあります"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "今天稍后还有卡片"
+          }
+        }
+      }
+    },
+    "Next learning card at %@." : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "次の学習カードは %@ に表示されます。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "下一张学习卡片在 %@ 到期。"
+          }
+        }
+      }
+    },
+    "The next study day starts at %@." : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "次の学習日は %@ に始まります。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "下一个学习日从 %@ 开始。"
+          }
+        }
+      }
+    },
+    "This filtered deck is finished. Rebuild it to look for more cards." : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "このフィルター単語帳の学習は終了しました。再構築すると他のカードを探せます。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "此筛选牌组已学完。重新构建可查找更多卡片。"
+          }
+        }
+      }
+    },
     "%lld learning cards come due later today." : {
       "comment" : "Shown when a study session ends while learning cards of the deck are due later today, beyond Anki's learn-ahead limit.",
       "localizations" : {

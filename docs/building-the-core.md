@@ -31,6 +31,7 @@ The first run takes a long time (the core is compiled once per target); later ru
 2. builds the bridge crate `core/bridge`, which links the unpatched core, for iOS devices, the iOS simulator on Apple silicon and macOS on Apple silicon;
 3. packages the three slices as `Packages/AnkiCore/Frameworks/HayakiBridge.xcframework`;
 4. generates the typed Swift calls from the core's own descriptor set (`Packages/AnkiCore/Sources/AnkiCore/Generated/`: `CoreMethods.swift` with the service and method numbers, `CoreCalls.swift` with a typed `CoreCall` and a typed async `CoreClient` method for every method of the core), and the Swift message types (`Packages/AnkiCore/Sources/AnkiProto/Generated/`) from the core's `.proto` files.
+5. records the embedded Anki version from `vendor/anki/.version` in `Generated/EmbeddedAnkiVersion.swift`, which About reads through `CoreClient.embeddedVersion`.
 
 To regenerate only the Swift calls, for example after changing `core/codegen`, without rebuilding the core:
 
