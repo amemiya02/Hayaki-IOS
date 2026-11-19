@@ -28,6 +28,12 @@ public final class AppModel {
     private static let welcomeCompletedKey = "hayakiWelcomeCompleted"
     /// A package opened from another app before the collection was ready.
     @ObservationIgnored private var waitingPackage: URL?
+    @ObservationIgnored private var failedCollection: (location: CollectionLocation, backupFolder: URL)?
+
+    public var canRecover: Bool {
+        if case .failed = state { return failedCollection != nil }
+        return false
+    }
 
     /// - Parameters:
     ///   - location: Where the collection lives; the app's standard place
@@ -62,13 +68,18 @@ public final class AppModel {
         do {
             let core = try await CoreClient(language: language)
             var location = try location()
+            var backupLocation = try backupFolder()
             #if DEBUG
             if let package = UITestLaunch.collectionPackage {
                 location = try await UITestLaunch.collection(from: package, core: core)
+                backupLocation = location.folder.deletingLastPathComponent()
+                    .appendingPathComponent("Backups", isDirectory: true)
             }
             #endif
+            failedCollection = (location: location, backupFolder: backupLocation)
             let store = try await CollectionStore.open(at: location, core: core)
-            let packageImport = PackageImportModel(store: store, backupFolder: try backupFolder())
+            failedCollection = nil
+            let packageImport = PackageImportModel(store: store, backupFolder: backupLocation)
             if !preferences.bool(forKey: Self.welcomeCompletedKey) {
                 // Existing collections with cards or user-created decks go
                 // straight to Decks when upgrading.
@@ -90,6 +101,22 @@ public final class AppModel {
                 waitingPackage = nil
                 await packageImport.open(waiting)
             }
+        } catch {
+            state = .failed(message: error.localizedDescription)
+        }
+    }
+
+    /// Restores a selected backup when the current database could not open.
+    /// The package importer preserves the existing database before replacing it.
+    public func recoverCollection(from package: URL) async {
+        guard canRecover, let failedCollection else { return }
+        state = .opening
+        do {
+            let core = try await CoreClient(language: language)
+            try await PackageImportModel.restoreAfterFailedOpen(
+                from: package, core: core, location: failedCollection.location, backupFolder: failedCollection.backupFolder
+            )
+            await open()
         } catch {
             state = .failed(message: error.localizedDescription)
         }
