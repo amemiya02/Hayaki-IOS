@@ -3,6 +3,7 @@ import AnkiProto
 import CollectionStore
 import Foundation
 import Observation
+import StudyFeature
 
 /// A note type or deck the learner can choose in the editor.
 public struct Choice: Identifiable, Equatable, Sendable {
@@ -73,15 +74,29 @@ public final class NoteEditorModel {
     public private(set) var fields: [EditableField] = []
     public private(set) var tags: [String] = []
 
-    public let editingNoteID: Int64?
+    public private(set) var editingNoteID: Int64?
+    private let editingCardID: Int64?
+    public var isEditing: Bool { editingCardID != nil || editingNoteID != nil }
+    public private(set) var preferredPreviewOrdinal: UInt32 = 0
     @ObservationIgnored private let store: CollectionStore
     /// The note being built, as the core made it for the chosen note type.
     @ObservationIgnored private var note = Anki_Notes_Note()
+    private var notetype = Anki_Notetypes_Notetype()
 
     public init(store: CollectionStore, editingNoteID: Int64? = nil) {
         self.store = store
         self.editingNoteID = editingNoteID
+        editingCardID = nil
     }
+
+    public init(store: CollectionStore, editingCardID: Int64) {
+        self.store = store
+        self.editingCardID = editingCardID
+    }
+
+    public var mediaFolder: URL { store.location.mediaFolder }
+    public var isCloze: Bool { notetype.config.kind == .cloze }
+    public var hasChanges: Bool { fields.contains(where: \.isEdited) || tags != note.tags }
 
     public var notetypeName: String? { notetypes.first { $0.id == notetypeID }?.name }
     public var deckName: String? { decks.first { $0.id == deckID }?.name }
@@ -96,7 +111,14 @@ public final class NoteEditorModel {
     /// Reads the note types and decks and starts an empty note of the note
     /// type last added with, in the deck last added to with it.
     public func load() async {
+        guard state == .loading else { return }
         do {
+            if let editingCardID {
+                let card = try await store.core.getCard(.with { $0.cid = editingCardID })
+                editingNoteID = card.noteID
+                preferredPreviewOrdinal = card.templateIdx
+                deckID = card.originalDeckID == 0 ? card.deckID : card.originalDeckID
+            }
             if let editingNoteID {
                 try await loadExistingNote(editingNoteID)
                 state = .ready
@@ -122,10 +144,16 @@ public final class NoteEditorModel {
 
     private func loadExistingNote(_ id: Int64) async throws(CoreError) {
         note = try await store.core.getNote(.with { $0.nid = id })
-        let type = try await store.core.getNotetype(.with { $0.ntid = note.notetypeID })
-        notetypeID = type.id
-        notetypes = [Choice(id: type.id, name: type.name)]
-        fields = zip(type.fields.map(\.name), note.fields).map { EditableField(name: $0, storedContent: $1) }
+        notetype = try await store.core.getNotetype(.with { $0.ntid = note.notetypeID })
+        notetypeID = notetype.id
+        notetypes = [Choice(id: notetype.id, name: notetype.name)]
+        if deckID != 0 {
+            let id = deckID
+            if let deck = try? await store.core.getDeck(.with { $0.did = id }) {
+                decks = [Choice(id: id, name: deck.name)]
+            }
+        }
+        fields = zip(notetype.fields.map(\.name), note.fields).map { EditableField(name: $0, storedContent: $1) }
         tags = note.tags
     }
 
@@ -161,10 +189,12 @@ public final class NoteEditorModel {
 
     private func startNote(notetypeID: Int64) async throws(CoreError) {
         let id = Anki_Notetypes_NotetypeId.with { $0.ntid = notetypeID }
-        let names = try await store.core.getFieldNames(id).vals
-        note = try await store.core.newNote(id)
+        let type = try await store.core.getNotetype(id)
+        let newNote = try await store.core.newNote(id)
+        notetype = type
+        note = newNote
         self.notetypeID = notetypeID
-        fields = zip(names, note.fields).map { EditableField(name: $0, storedContent: $1) }
+        fields = zip(type.fields.map(\.name), note.fields).map { EditableField(name: $0, storedContent: $1) }
     }
 
     // MARK: Choosing
@@ -172,7 +202,7 @@ public final class NoteEditorModel {
     /// Switches to another note type. What was typed and attached is carried
     /// over field by field, in order; fields beyond the new type's are dropped.
     public func selectNotetype(_ id: Int64) async {
-        guard editingNoteID == nil, id != notetypeID else { return }
+        guard !isEditing, id != notetypeID else { return }
         let previous = fields
         do {
             try await startNote(notetypeID: id)
@@ -186,7 +216,7 @@ public final class NoteEditorModel {
     }
 
     public func selectDeck(_ id: Int64) {
-        guard editingNoteID == nil else { return }
+        guard !isEditing else { return }
         deckID = id
     }
 
@@ -291,6 +321,49 @@ public final class NoteEditorModel {
         return draft
     }
 
+    // MARK: Preview
+
+    /// The core renders the current draft, including unsaved changes.
+    public func preview() async throws(CoreError) -> [DraftCard] {
+        let draft = self.draft
+        let type = notetype
+        let selections: [(UInt32, String, Anki_Notetypes_Notetype.Template)]
+        if type.config.kind == .cloze, let template = type.templates.first {
+            var ordinals = try await store.core.clozeNumbersInNote(draft).numbers.filter { $0 > 0 }.map { $0 - 1 }
+            if draft.id != 0 {
+                for id in try await store.core.cardsOfNote(.with { $0.nid = draft.id }).cids {
+                    let card = try await store.core.getCard(.with { $0.cid = id })
+                    ordinals.append(card.templateIdx)
+                }
+            }
+            if ordinals.isEmpty { ordinals = [0] }
+            selections = Set(ordinals).sorted().map { ordinal in
+                // The core uses the template ordinal to find an existing card.
+                // Cloze cards all use one template but each has its own ordinal.
+                var clozeTemplate = template
+                clozeTemplate.ord.val = ordinal
+                let name = String(localized: "Card \(ordinal + 1)", bundle: .module)
+                return (ordinal, name, clozeTemplate)
+            }
+        } else {
+            selections = type.templates.enumerated().map { (UInt32($0.offset), $0.element.name, $0.element) }
+        }
+        var cards: [DraftCard] = []
+        for (ordinal, name, template) in selections {
+            let response = try await store.core.renderUncommittedCard(.with {
+                $0.note = draft
+                $0.cardOrd = ordinal
+                $0.template = template
+                $0.partialRender = true
+            })
+            let content = try await CardPreviewContent(
+                rendered: response, ordinal: ordinal, note: draft, notetype: type, core: store.core
+            )
+            cards.append(DraftCard(name: name, content: content))
+        }
+        return cards
+    }
+
     // MARK: Adding
 
     /// Adds the note if the core's check allows it. A warning the learner
@@ -298,7 +371,7 @@ public final class NoteEditorModel {
     /// stop the note again. After adding, the fields are emptied for the next
     /// note; note type, deck and tags stay.
     public func add(confirming accepted: AddWarning? = nil) async -> AddOutcome {
-        guard editingNoteID == nil, state == .ready else {
+        guard !isEditing, state == .ready else {
             return .failed(message: String(localized: "Could Not Add the Note", bundle: .module))
         }
         let candidate = draft
@@ -336,4 +409,10 @@ public final class NoteEditorModel {
         case .normal, .duplicate, .missingCloze, .UNRECOGNIZED: .valid
         }
     }
+}
+
+public struct DraftCard: Identifiable, Equatable, Sendable {
+    public var id: UInt32 { content.ordinal }
+    public let name: String
+    public let content: CardPreviewContent
 }

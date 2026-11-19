@@ -33,12 +33,26 @@ struct TypedAnswerPrompt: Equatable, Sendable {
         card: Anki_Cards_Card,
         core: CoreClient
     ) async throws(CoreError) -> (html: String, prompt: TypedAnswerPrompt?) {
+        guard containsMarker(html) else { return (html, nil) }
+        let note = try await core.getNote(.with { $0.nid = card.noteID })
+        let notetype = try await core.getNotetype(.with { $0.ntid = note.notetypeID })
+        return try await questionSide(html, note: note, notetype: notetype, ordinal: card.templateIdx, core: core)
+    }
+
+    static func questionSide(
+        _ html: String,
+        note: Anki_Notes_Note,
+        notetype: Anki_Notetypes_Notetype,
+        ordinal: UInt32,
+        preview: Bool = false,
+        core: CoreClient
+    ) async throws(CoreError) -> (html: String, prompt: TypedAnswerPrompt?) {
         guard let match = html.firstMatch(of: marker) else { return (html, nil) }
         var name = String(match.output.1)
         var clozeOrdinal: UInt32?
         var combining = true
         if name.hasPrefix("cloze:") {
-            clozeOrdinal = card.templateIdx + 1
+            clozeOrdinal = ordinal + 1
             name.removeFirst("cloze:".count)
         }
         if name.hasPrefix("nc:") {
@@ -46,8 +60,6 @@ struct TypedAnswerPrompt: Equatable, Sendable {
             name.removeFirst("nc:".count)
         }
 
-        let note = try await core.getNote(.with { $0.nid = card.noteID })
-        let notetype = try await core.getNotetype(.with { $0.ntid = note.notetypeID })
         guard let index = notetype.fields.firstIndex(where: { $0.name == name }), index < note.fields.count else {
             let warning = String(
                 localized: "The card asks to type the field “\(name)”, which its note type does not have.",
@@ -73,7 +85,7 @@ struct TypedAnswerPrompt: Equatable, Sendable {
             fontName: field.fontName,
             fontSize: field.fontSize
         )
-        return (html.replacing(marker, with: prompt.textField), prompt)
+        return (html.replacing(marker, with: prompt.textField(preview: preview)), prompt)
     }
 
     /// The answer side with the core's comparison of what was typed with
@@ -112,15 +124,16 @@ struct TypedAnswerPrompt: Equatable, Sendable {
 
     /// The text field the learner types into. The card host page sends
     /// what is typed to native code, and Return shows the answer.
-    private var textField: String {
+    private func textField(preview: Bool) -> String {
         let label = String(
             localized: "Type the answer",
             bundle: .module,
             comment: "VoiceOver label and placeholder of the text field on a card that asks the learner to type the answer."
         )
+        let readOnly = preview ? " readonly" : ""
         return """
         <center><input type="text" id=typeans autocomplete="off" autocorrect="off" \
-        autocapitalize="off" spellcheck="false" enterkeyhint="done" \
+        autocapitalize="off" spellcheck="false" enterkeyhint="done"\(readOnly) \
         placeholder="\(HTML.escape(label))" aria-label="\(HTML.escape(label))" \
         style="\(fontStyle)"></center>
         """
