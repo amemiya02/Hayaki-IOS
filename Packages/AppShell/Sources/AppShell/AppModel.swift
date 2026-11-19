@@ -38,7 +38,7 @@ public final class AppModel {
     @ObservationIgnored private var waitingPackage: URL?
     @ObservationIgnored private var failedCollection: (location: CollectionLocation, backupFolder: URL)?
     #if DEBUG
-    @ObservationIgnored private var fixtureLocation: (CollectionLocation, URL)?
+    @ObservationIgnored private var loadedFixture = false
     #endif
 
     public var canRecover: Bool {
@@ -112,6 +112,16 @@ public final class AppModel {
         return profile
     }
 
+    /// Changes the display name while keeping the profile's data and sign-in in place.
+    public func renameProfile(_ id: UUID, to name: String) throws {
+        guard !isSwitchingProfile else { throw ProfileError.busy }
+        guard let index = profiles.firstIndex(where: { $0.id == id }) else { throw ProfileError.unavailable }
+        let renamed = CollectionProfile(id: id, name: try validatedName(name, ignoring: id))
+        var updated = profiles
+        updated[index] = renamed
+        try saveProfiles(updated, active: activeProfile.id == id ? renamed : activeProfile)
+    }
+
     /// Opens the destination in its own core before releasing the current collection.
     public func switchProfile(to id: UUID) async throws {
         guard let target = profiles.first(where: { $0.id == id }) else { throw ProfileError.unavailable }
@@ -156,14 +166,9 @@ public final class AppModel {
         }
         let core = try await CoreClient(language: language)
         #if DEBUG
-        if profile.usesLegacyStorage, let package = UITestLaunch.collectionPackage {
-            if let fixtureLocation {
-                (location, backups) = fixtureLocation
-            } else {
-                location = try await UITestLaunch.collection(from: package, core: core)
-                backups = location.folder.deletingLastPathComponent().appendingPathComponent("Backups", isDirectory: true)
-                fixtureLocation = (location, backups)
-            }
+        if profile.usesLegacyStorage, !loadedFixture, let package = UITestLaunch.collectionPackage {
+            try await UITestLaunch.seedCollection(at: location, from: package, core: core)
+            loadedFixture = true
         }
         #endif
         if recordRecovery { failedCollection = (location, backups) }
@@ -194,11 +199,11 @@ public final class AppModel {
         state = .ready(store)
     }
 
-    private func validatedName(_ name: String) throws -> String {
+    private func validatedName(_ name: String, ignoring id: UUID? = nil) throws -> String {
         let cleaned = name.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !cleaned.isEmpty else { throw ProfileError.emptyName }
         guard cleaned.utf16.count <= 50 else { throw ProfileError.nameTooLong }
-        guard !profiles.contains(where: { $0.name.caseInsensitiveCompare(cleaned) == .orderedSame }) else {
+        guard !profiles.contains(where: { $0.id != id && $0.name.caseInsensitiveCompare(cleaned) == .orderedSame }) else {
             throw ProfileError.duplicateName
         }
         return cleaned

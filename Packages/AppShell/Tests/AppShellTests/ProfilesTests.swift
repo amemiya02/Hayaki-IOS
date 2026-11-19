@@ -163,6 +163,47 @@ struct ProfilesTests {
         try await reopened.close()
     }
 
+    @Test("Renaming a profile preserves its identity and rejects duplicate names")
+    func renameProfile() async throws {
+        let folder = try TemporaryFolder()
+        let location = CollectionLocation(folder: folder.url.appendingPathComponent("Collection"))
+        let backups = folder.url.appendingPathComponent("Backups")
+        let suite = "HayakiProfilesTests.\(UUID())"
+        let preferences = try #require(UserDefaults(suiteName: suite))
+        defer { preferences.removePersistentDomain(forName: suite) }
+
+        func launch() -> AppModel {
+            AppModel(location: { location }, backupFolder: { backups }, language: "en", preferences: preferences)
+        }
+
+        let app = launch()
+        await app.open()
+        let profile = try app.addProfile(named: "German")
+        try await app.switchProfile(to: profile.id)
+        let store = try #require(app.store)
+        let profilePath = store.location
+        try await store.addDeck(named: "Grammar")
+
+        #expect(throws: ProfileError.duplicateName) { try app.renameProfile(profile.id, to: " default ") }
+        #expect(throws: ProfileError.emptyName) { try app.renameProfile(profile.id, to: " ") }
+        #expect(throws: ProfileError.nameTooLong) {
+            try app.renameProfile(profile.id, to: String(repeating: "a", count: 51))
+        }
+        try app.renameProfile(profile.id, to: "german")
+        try app.renameProfile(profile.id, to: "  Deutsch   B2 ")
+        #expect(app.activeProfile.id == profile.id)
+        #expect(app.activeProfile.name == "Deutsch   B2")
+        try await store.close()
+
+        let restarted = launch()
+        await restarted.open()
+        #expect(restarted.activeProfile.name == "Deutsch   B2")
+        let reopened = try #require(restarted.store)
+        #expect(reopened.location == profilePath)
+        #expect(try await reopened.deckNames() == ["Default", "Grammar"])
+        try await reopened.close()
+    }
+
     private func signIn(_ model: SyncModel, server: SyncServer, user: String, password: String) async {
         model.selectDestination(.selfHosted)
         model.serverAddress = server.address

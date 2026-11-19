@@ -18,6 +18,7 @@ struct SectionsView: View {
     let store: CollectionStore
     let sync: SyncModel
     let backups: BackupModel
+    let model: AppModel
     @State private var selection: AppSection = .decks
 
     var body: some View {
@@ -38,7 +39,22 @@ struct SectionsView: View {
                 Label { Text("Stats", bundle: .module) } icon: { Image(systemName: StatisticsSection.systemImage) }
             }
             Tab(value: AppSection.more) {
-                SettingsScreen(store: store, sync: sync, backups: backups)
+                SettingsScreen(store: store, sync: sync, backups: backups) {
+                    NavigationLink {
+                        ProfilesScreen(model: model)
+                    } label: {
+                        LabeledContent {
+                            Text(verbatim: model.activeProfile.name)
+                        } label: {
+                            Label {
+                                Text("Profiles", bundle: .module)
+                            } icon: {
+                                Image(systemName: "person.crop.circle")
+                            }
+                        }
+                    }
+                    .accessibilityIdentifier("profiles-settings")
+                }
             } label: {
                 Label { SettingsSection.title } icon: { Image(systemName: SettingsSection.systemImage) }
             }
