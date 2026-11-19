@@ -108,4 +108,46 @@ struct SyncPolicyTests {
             }
         }
     }
+
+    @Test("A self-hosted TLS certificate stays with its signed-in destination across relaunch")
+    func customCertificate() async throws {
+        let server = try await SyncServer(users: [("alice", "correct horse")])
+        let tls = try await LocalSyncTLS(for: server)
+        try await withTemporaryCollection { local in
+            let storage = MemoryAccountStorage()
+            let model = SyncModel(store: local, storage: storage, network: { .unmetered })
+            model.selectDestination(.selfHosted)
+            model.serverAddress = tls.address
+            model.userName = "alice"
+            model.password = "correct horse"
+            await model.signIn()
+            #expect(model.status.failure?.reason == .unreachable)
+
+            let invalid = await model.updateCustomCertificate("This is not PEM")
+            #expect(invalid?.reason == .invalidCertificate)
+            let result = await model.updateCustomCertificate(tls.certificate)
+            #expect(result == nil)
+            await model.signIn()
+            let account = try #require(model.account)
+
+            let relaunched = SyncModel(store: local, storage: storage, network: { .unmetered })
+            #expect(relaunched.customCertificate == tls.certificate.trimmingCharacters(in: .whitespacesAndNewlines))
+            let deck = try await local.addDeck(named: "TLS")
+            try await local.addBasicNotes(count: 1, toDeck: deck)
+            _ = try await local.addMediaFile(named: "tls.png", data: Data("TLS media".utf8))
+            await relaunched.sync()
+            await relaunched.upload()
+            #expect(relaunched.mediaStatus == .synced)
+
+            relaunched.beginDestinationChange()
+            relaunched.serverAddress = tls.address.replacingOccurrences(of: "127.0.0.1", with: "localhost")
+            relaunched.userName = "alice"
+            relaunched.password = "correct horse"
+            await relaunched.signIn()
+            #expect(relaunched.status.failure?.reason == .unreachable)
+            #expect(relaunched.account?.server == account.server)
+            relaunched.cancelDestinationChange()
+            #expect(!relaunched.customCertificate.isEmpty)
+        }
+    }
 }

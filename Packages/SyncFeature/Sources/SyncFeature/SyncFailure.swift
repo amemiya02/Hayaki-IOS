@@ -7,6 +7,7 @@ public struct SyncFailure: Equatable, Sendable {
     public enum Reason: Equatable, Sendable {
         /// The address is not a web address starting with http:// or https://.
         case invalidAddress
+        case invalidCertificate
         /// The server refused the user name and password, or the stored key.
         case wrongCredentials
         /// The server could not be reached.
@@ -77,6 +78,8 @@ public struct SyncFailure: Equatable, Sendable {
         switch reason {
         case .invalidAddress:
             String(localized: "Enter the server's full address, starting with http:// or https://.", bundle: .module)
+        case .invalidCertificate:
+            String(localized: "Enter one valid PEM certificate for an HTTPS sync server.", bundle: .module)
         case .unexpectedRedirect:
             String(localized: "The sync server redirected to an address outside the selected destination.", bundle: .module)
         case .secureStorage:

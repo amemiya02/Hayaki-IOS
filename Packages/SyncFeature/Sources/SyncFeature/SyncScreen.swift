@@ -92,6 +92,9 @@ public struct SyncScreen: View {
                 }
                 SignOutSection(model: model)
             }
+            if model.destination == .selfHosted {
+                Section { SyncCertificateRow(model: model) }
+            }
             SyncPolicySection(model: model)
         }
         .navigationTitle(Text("Sync", bundle: .module))

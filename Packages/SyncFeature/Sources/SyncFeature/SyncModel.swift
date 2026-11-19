@@ -57,6 +57,14 @@ public final class SyncModel {
 
     public var userName = ""
     public var password = ""
+    private var draftCertificate = ""
+    private var editingCertificate = false
+
+    /// The active destination's certificate, or the draft for a new sign-in.
+    public var customCertificate: String {
+        if account == nil || isChangingDestination { return draftCertificate }
+        return account?.customCertificate ?? ""
+    }
 
     /// The learner's sign-in, or nil when sync is not set up.
     public private(set) var account: SyncAccount?
@@ -165,7 +173,7 @@ public final class SyncModel {
 
     /// Whether signing in or a collection or media sync is under way.
     public var isBusy: Bool {
-        if markingFullSync || checkingStatus { return true }
+        if markingFullSync || checkingStatus || editingCertificate { return true }
         return switch status {
         case .signingIn, .syncing: true
         default:
@@ -202,6 +210,7 @@ public final class SyncModel {
     private func clearSignInForm() {
         userName = ""
         password = ""
+        draftCertificate = ""
         status = .idle
     }
 
@@ -220,7 +229,43 @@ public final class SyncModel {
         customServerAddress = account.server?.absoluteString ?? ""
         userName = account.userName
         password = ""
+        draftCertificate = ""
         status = previousStatus
+    }
+
+    /// Validates a PEM using the upstream TLS client. A draft becomes active only
+    /// after sign-in succeeds. An edit to an existing sign-in is saved with it.
+    public func updateCustomCertificate(_ text: String) async -> SyncFailure? {
+        guard store.allowsNewProfileWork, !isBusy, destination == .selfHosted else { return nil }
+        let certificate = text.trimmed.nilIfEmpty
+        let server = Self.serverURL(from: serverAddress)
+        if certificate != nil, server?.scheme?.lowercased() != "https" {
+            return SyncFailure(reason: .invalidCertificate)
+        }
+        editingCertificate = true
+        defer { editingCertificate = false }
+        if let certificate {
+            do {
+                try await withCustomCertificate(certificate) {}
+            } catch {
+                return SyncFailure(reason: .invalidCertificate)
+            }
+        }
+        if account == nil || isChangingDestination {
+            draftCertificate = certificate ?? ""
+        } else if var account {
+            account.customCertificate = certificate
+            if let endpoint = account.redirectedEndpoint, !account.acceptsRedirect(to: endpoint) {
+                account.redirectedEndpoint = nil
+            }
+            do {
+                try storage.save(account)
+                self.account = account
+            } catch {
+                return SyncFailure(storageError: error)
+            }
+        }
+        return nil
     }
 
     // MARK: Signing in and out
@@ -244,9 +289,12 @@ public final class SyncModel {
                 $0.endpoint = server.absoluteString
             }
         }
+        let certificate = server?.scheme?.lowercased() == "https" ? draftCertificate.nilIfEmpty : nil
         let auth: Anki_Sync_SyncAuth
         do {
-            auth = try await run(store.core.start(.syncLogin(request), abortingWith: .abortSync()))
+            auth = try await run(certificate: certificate) {
+                store.core.start(.syncLogin(request), abortingWith: .abortSync())
+            }
         } catch {
             status = .failed(SyncFailure(error, server: server, signingIn: true))
             return
@@ -260,7 +308,8 @@ public final class SyncModel {
             status = .failed(SyncFailure(error, server: server, signingIn: true))
             return
         }
-        let account = SyncAccount(server: server, userName: request.username, hostKey: auth.hkey)
+        var account = SyncAccount(server: server, userName: request.username, hostKey: auth.hkey)
+        account.customCertificate = certificate
         do {
             try storage.save(account)
         } catch {
@@ -268,6 +317,7 @@ public final class SyncModel {
             return
         }
         self.account = account
+        draftCertificate = ""
         lastAttempt = nil
         lastKnownBadge = nil
         mediaStatus = .idle
@@ -379,7 +429,9 @@ public final class SyncModel {
             checkingStatus = false
         }
         SyncClientIdentity.install()
-        let result = try await store.core.syncStatus(account.auth(timeoutSeconds: policy.timeoutSeconds))
+        let result = try await withCustomCertificate(account.certificateForRequests) { () async throws(CoreError) in
+            try await store.core.syncStatus(account.auth(timeoutSeconds: policy.timeoutSeconds))
+        }
         if result.hasNewEndpoint, let failure = follow(newEndpoint: result.newEndpoint, for: account) {
             throw CoreError(kind: .invalidInput, message: failure.message)
         }
@@ -452,7 +504,9 @@ public final class SyncModel {
         }
         let response: Anki_Sync_SyncCollectionResponse
         do {
-            response = try await run(store.core.start(.syncCollection(request), abortingWith: .abortSync()))
+            response = try await run(certificate: account.certificateForRequests) {
+                store.core.start(.syncCollection(request), abortingWith: .abortSync())
+            }
         } catch {
             status = .failed(SyncFailure(error, server: account.server, signingIn: false))
             return
@@ -552,7 +606,9 @@ public final class SyncModel {
             // Leaving serverUsn unset lets us start media as a separate phase.
         }
         do {
-            _ = try await run(store.core.start(.fullUploadOrDownload(request), abortingWith: .abortSync()))
+            _ = try await run(certificate: account.certificateForRequests) {
+                store.core.start(.fullUploadOrDownload(request), abortingWith: .abortSync())
+            }
         } catch {
             status = .failed(SyncFailure(error, server: account.server, signingIn: false))
             return
@@ -591,7 +647,9 @@ public final class SyncModel {
         let phase: SavedMediaSync.Phase
         let result: MediaSyncStatus
         do {
-            _ = try await run(store.core.startMediaSync(account.auth(timeoutSeconds: policy.timeoutSeconds)))
+            _ = try await run(certificate: account.certificateForRequests) {
+                store.core.startMediaSync(account.auth(timeoutSeconds: policy.timeoutSeconds))
+            }
             phase = .synced
             result = .synced
         } catch {
@@ -612,19 +670,51 @@ public final class SyncModel {
         }
     }
 
+    /// The upstream certificate API replaces the backend HTTP client. Restore
+    /// normal trust after the operation, including a background media transfer.
+    private func withCustomCertificate<Response>(
+        _ certificate: String?,
+        operation: () async throws(CoreError) -> Response
+    ) async throws(CoreError) -> Response {
+        guard let certificate else { return try await operation() }
+        let accepted = try await store.core.setCustomCertificate(.with { $0.val = certificate })
+        guard accepted.val else {
+            throw CoreError(
+                kind: .invalidInput,
+                message: String(localized: "Enter one valid PEM certificate for an HTTPS sync server.", bundle: .module)
+            )
+        }
+        let result: Result<Response, CoreError>
+        do {
+            result = .success(try await operation())
+        } catch {
+            result = .failure(error)
+        }
+        _ = try await store.core.setCustomCertificate(.init())
+        return try result.get()
+    }
+
     /// Runs a long operation, showing its progress and making it cancellable.
-    private func run<Response>(_ operation: LongOperation<Response>) async throws(CoreError) -> Response {
-        cancelRunning = { operation.cancel() }
-        let progress = Task {
-            for await report in operation.progress {
-                show(report)
+    private func run<Response>(
+        certificate: String?,
+        start: () -> LongOperation<Response>
+    ) async throws(CoreError) -> Response {
+        try await withCustomCertificate(certificate) { () async throws(CoreError) in
+            let operation = start()
+            cancelRunning = { operation.cancel() }
+            // The network may have changed while the certificate was installed.
+            networkChanged()
+            let progress = Task {
+                for await report in operation.progress {
+                    show(report)
+                }
             }
+            defer {
+                cancelRunning = nil
+                progress.cancel()
+            }
+            return try await operation.result
         }
-        defer {
-            cancelRunning = nil
-            progress.cancel()
-        }
-        return try await operation.result
     }
 
     private func show(_ report: Anki_Collection_Progress) {
@@ -728,6 +818,11 @@ extension SyncAccount {
         return redirectedEndpoint
     }
 
+    var certificateForRequests: String? {
+        guard server?.scheme?.lowercased() == "https" else { return nil }
+        return customCertificate?.trimmed.nilIfEmpty
+    }
+
     func acceptsRedirect(to url: URL) -> Bool {
         let scheme = url.scheme?.lowercased()
         guard scheme == "http" || scheme == "https",
@@ -737,6 +832,10 @@ extension SyncAccount {
 
         if server == nil {
             return scheme == "https" && (url.port ?? 443) == 443 && url.isAnkiWebHost
+        }
+        if certificateForRequests != nil, let server {
+            return scheme == "https" && host.lowercased() == server.host()?.lowercased()
+                && (url.port ?? 443) == (server.port ?? 443)
         }
         return !url.isAnkiWebHost
     }
