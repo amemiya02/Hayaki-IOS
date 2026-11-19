@@ -122,6 +122,13 @@ private struct CardDetailList: View {
                 } label: {
                     Text("Due", bundle: .module)
                 }
+                if case .date = detail.due, let position = detail.originalPosition {
+                    LabeledContent {
+                        Text(position, format: .number)
+                    } label: {
+                        Text("Original Position", bundle: .module)
+                    }
+                }
                 if detail.status != .normal {
                     LabeledContent {
                         statusText
@@ -178,6 +185,7 @@ private struct CardDetailList: View {
             } header: {
                 Text("Review History", bundle: .module)
             }
+            CardRetentionChart(detail: detail)
         }
     }
 
@@ -212,7 +220,8 @@ private struct SchedulingDetails: View {
             item(Text("Latest Review", bundle: .module), Text(latest, format: .dateTime.year().month().day()))
         }
         if let memory = detail.memoryState {
-            item(Text("Stability", bundle: .module), Text(memory.stabilityDays, format: .number.precision(.fractionLength(0...1))) + Text(" days", bundle: .module))
+            let days = memory.stabilityDays.formatted(.number.precision(.fractionLength(0...1)))
+            item(Text("Stability", bundle: .module), Text("\(days) days", bundle: .module))
             item(Text("Difficulty", bundle: .module), Text(memory.difficulty, format: .percent.precision(.fractionLength(0))))
             if let retrievability = detail.retrievability {
                 item(Text("Retrievability", bundle: .module), Text(retrievability, format: .percent.precision(.fractionLength(0))))
