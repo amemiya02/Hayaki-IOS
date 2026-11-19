@@ -96,7 +96,9 @@ public final class StudySessionModel {
     /// Whether an answer is being sent to the core, so another one is not.
     public private(set) var isAnswering = false
     public private(set) var isPerformingAction = false
-    public var isBusy: Bool { isAnswering || isPerformingAction }
+    public var isBusy: Bool { isAnswering || isPerformingAction || customSchedulingRequest != nil }
+    private(set) var customSchedulingRequest: CustomSchedulingRequest?
+    @ObservationIgnored private var customSchedulingSource = ""
 
     public private(set) var canUndo = false
     public private(set) var canRedo = false
@@ -190,11 +192,13 @@ public final class StudySessionModel {
                 try await store.modify(.setCurrentDeck(.with { $0.did = deckID }))
             }
             cardOptions.removeAll()
+            await refreshReviewerPreferences()
             await loadQueue(keepingVisibleSide: true)
         }
     }
 
     private func loadQueue(keepingVisibleSide: Bool) async {
+        customSchedulingRequest = nil
         await refreshUndoStatus()
         do {
             let queued = try await store.core.getQueuedCards(.with { $0.fetchLimit = 1 })
@@ -206,6 +210,9 @@ public final class StudySessionModel {
                 audioOptions = settings.audio
                 showsAnswerTimer = settings.showsAnswerTimer
                 currentDeckName = settings.deckName
+                if !customSchedulingSource.isEmpty {
+                    customSchedulingRequest = try? CustomSchedulingRequest(program: customSchedulingSource, queued: next)
+                }
                 if keepingVisibleSide, state.card?.id == card.id {
                     if state.answer != nil {
                         state = .answer(try await card.answering(typed: typedAnswer, core: store.core))
@@ -224,6 +231,26 @@ public final class StudySessionModel {
         } catch {
             state = .failed(message: error.message)
         }
+    }
+
+    func applyCustomSchedule(requestID: UUID, json: String?) async {
+        guard let request = customSchedulingRequest, request.id == requestID,
+              let card = state.card, card.id == request.cardID else { return }
+        do {
+            guard let json else { throw CocoaError(.coderInvalidValue) }
+            var updated = try Anki_Scheduler_SchedulingStates(jsonString: json)
+            guard [updated.again, updated.hard, updated.good, updated.easy].allSatisfy({ $0.kind != nil }) else {
+                throw CocoaError(.coderInvalidValue)
+            }
+            updated.current = card.states.current
+            let revised = try await card.applyingSchedule(updated, core: store.core)
+            guard customSchedulingRequest?.id == requestID, state.card?.id == card.id else { return }
+            state = state.answer == nil ? .question(revised) : .answer(revised)
+        } catch {
+            guard customSchedulingRequest?.id == requestID else { return }
+            actionError = String(localized: "Custom scheduling could not run. Standard intervals were kept.", bundle: .module)
+        }
+        if customSchedulingRequest?.id == requestID { customSchedulingRequest = nil }
     }
 
     /// Turns the card over to its answer side. On a card that asks the
@@ -530,6 +557,9 @@ public final class StudySessionModel {
     }
 
     public func refreshReviewerPreferences() async {
+        customSchedulingSource = (try? await store.core.getConfigString(.with {
+            $0.key = .cardStateCustomizer
+        }).val.trimmingCharacters(in: .whitespacesAndNewlines)) ?? ""
         guard let config = try? await store.core.getPreferences().reviewing else { return }
         showsRemainingCounts = config.showRemainingDueCounts
         showsRatingIntervals = config.showIntervalsOnButtons

@@ -169,6 +169,11 @@ public struct StudyScreen: View {
             return dispatchInput(.keyboard(ReviewerKey(press))) ? .handled : .ignored
         }
         #if os(iOS)
+        .task(id: model.customSchedulingRequest?.id) {
+            guard let work = model.customSchedulingRequest else { return }
+            try? await Task.sleep(for: .seconds(5))
+            if !Task.isCancelled { await model.applyCustomSchedule(requestID: work.id, json: nil) }
+        }
         .statusBarHidden(preferences.hideStatusBar || !templateFullscreen.showsTopBar)
         .persistentSystemOverlays(preferences.hideHomeIndicator ? .hidden : .automatic)
         .modifier(ReviewerIdleTimer(enabled: preferences.keepScreenOn || autoAdvance))
@@ -607,7 +612,11 @@ public struct StudyScreen: View {
                 centerVertically: preferences.centerVertically, hidesAudioButtons: model.hidesAudioButtons,
                 reducedMotion: preferences.reducedMotion, command: webCommand
             ),
-            onTemplateRequest: handleTemplateRequest
+            onTemplateRequest: handleTemplateRequest,
+            customScheduling: model.customSchedulingRequest,
+            onCustomSchedule: { id, json in
+                Task { await model.applyCustomSchedule(requestID: id, json: json) }
+            }
         ) { event in
             switch event {
             case .tap: break
