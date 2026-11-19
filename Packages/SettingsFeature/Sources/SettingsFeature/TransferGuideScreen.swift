@@ -17,11 +17,11 @@ struct TransferGuideScreen: View {
             }
 
             Section {
+                ImportPackageButton()
+                    .accessibilityIdentifier("TransferGuideImport")
                 Text("In Hayaki on Android or in AnkiDroid, choose Export from the Decks menu for the whole collection. For one deck, touch and hold the deck, then choose Export.", bundle: .module)
                 Text("In desktop Anki, choose File > Export and select a deck or collection package.", bundle: .module)
                 Text("Save or share the package to Files on your iPhone or iPad, then choose it below. Hayaki asks you to confirm and makes a backup before replacing your collection.", bundle: .module)
-                ImportPackageButton()
-                    .accessibilityIdentifier("TransferGuideImport")
             } header: {
                 Text("Bring a Package into Hayaki", bundle: .module)
             }

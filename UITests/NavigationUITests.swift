@@ -44,8 +44,9 @@ final class NavigationUITests: XCTestCase {
         XCTAssertEqual(study.label, "Study Now · Vocabulary")
 
         app.navigationBars["Decks"].buttons["Import a Package…"].tap()
-        let cancel = app.buttons["Cancel"]
-        XCTAssertTrue(cancel.waitForExistence(timeout: 10))
+        let cancel = app.buttons.matching(NSPredicate(format: "label == %@ OR label == %@", "Cancel", "Close")).firstMatch
+        XCTAssertTrue(cancel.waitForExistence(timeout: 30), "Files shows its dismissal control")
+        XCTAssertTrue(cancel.isHittable)
         cancel.tap()
         XCTAssertTrue(study.waitForExistence(timeout: 10))
         XCTAssertEqual(study.label, "Study Now · Vocabulary")

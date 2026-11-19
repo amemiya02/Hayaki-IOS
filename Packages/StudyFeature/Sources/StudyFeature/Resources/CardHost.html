@@ -11,6 +11,7 @@
     {play: "q:0"}       a tap on a replay button
     {typed: "…"}        the text typed into a typed-answer field, as it changes
     {submit: true}      Return pressed in that field
+    {rendered: token}   the requested side's HTML is installed
   The classes on <html> and <body> follow desktop Anki's reviewer, so card
   styling written for Anki applies here too: <body class="card card1"> and,
   in dark mode, "nightMode night_mode" on <body> and "night-mode" on <html>.
@@ -261,6 +262,7 @@
         // Hidden until the maths is drawn, so raw TeX never flashes up.
         qa.style.opacity = hasMaths ? "0" : "1";
         qa.innerHTML = side.html;
+        post({ rendered: token });
         window.hayakiTemplate?.begin(token);
         runScripts(qa);
         if (hasMaths) {

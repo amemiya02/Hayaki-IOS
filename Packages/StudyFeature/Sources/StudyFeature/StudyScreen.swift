@@ -54,6 +54,10 @@ public struct StudyScreen: View {
     @State private var requestedAction: ReviewerCommand?
     @State private var route: ReviewerDestination?
     @State private var nextStudy: StudyDeck?
+    #if os(iOS)
+    @State private var cardHostUnavailable = false
+    @State private var cardHostRevision = 0
+    #endif
     @State private var autoAdvance = false
     @State private var timebox: StudyTimebox?
     @State private var feedback: ReviewFeedback?
@@ -634,6 +638,8 @@ public struct StudyScreen: View {
         ) { event in
             switch event {
             case .tap: break
+            case .rendered: cardHostUnavailable = false
+            case .unavailable: cardHostUnavailable = true
             case .submitTypedAnswer: dispatch(.showAnswer)
             case .reviewer(let input): handleWebInput(input)
             case .play(let id):
@@ -641,6 +647,15 @@ public struct StudyScreen: View {
                 recorder.stopPlayback()
                 if let sound = model.sound(forPlayButton: id) { audio.play([sound]) }
             case .typed(let text): typedAnswer = text
+            }
+        }
+        .id(cardHostRevision)
+        .overlay {
+            if cardHostUnavailable {
+                CardHostFailure {
+                    cardHostUnavailable = false
+                    cardHostRevision += 1
+                }
             }
         }
         // VoiceOver reads the card's own content inside the web view.

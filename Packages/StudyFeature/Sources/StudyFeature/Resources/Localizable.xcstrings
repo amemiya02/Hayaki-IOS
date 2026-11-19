@@ -49,6 +49,38 @@
         }
       }
     },
+    "Could Not Display Card": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "カードを表示できませんでした"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无法显示卡片"
+          }
+        }
+      }
+    },
+    "Retry": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "再試行"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "重试"
+          }
+        }
+      }
+    },
     "Answer Side Only": {
       "localizations": {
         "ja": {
