@@ -64,8 +64,8 @@ struct SectionsView: View {
         .tabViewStyle(.sidebarAdaptable)
         .sidebarOnWideScreens()
         .addNoteAction(store: store)
-        .reviewerDestination { route in
-            ReviewerDestinationView(route: route, store: store)
+        .reviewerDestination { route, study in
+            ReviewerDestinationView(route: route, store: store, study: study)
         }
         .keepingDailyReminderCurrent(store: store) { selection = .decks }
     }

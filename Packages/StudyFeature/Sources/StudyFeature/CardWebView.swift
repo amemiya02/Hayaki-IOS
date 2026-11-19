@@ -15,20 +15,22 @@ struct CardDisplay: Equatable, Encodable {
     /// Which card this is, so showing the same side of another card with
     /// identical HTML still counts as a change.
     let cardID: Int64
+    let presentation: Int
 
-    init(_ card: StudyCard, isAnswer: Bool) {
+    init(_ card: StudyCard, isAnswer: Bool, presentation: Int = 0) {
         self.init(
             html: isAnswer ? card.answer.html : card.question.html,
-            css: card.css, bodyClass: card.bodyClass, isAnswer: isAnswer, cardID: card.id
+            css: card.css, bodyClass: card.bodyClass, isAnswer: isAnswer, cardID: card.id, presentation: presentation
         )
     }
 
-    init(html: String, css: String, bodyClass: String, isAnswer: Bool, cardID: Int64) {
+    init(html: String, css: String, bodyClass: String, isAnswer: Bool, cardID: Int64, presentation: Int = 0) {
         self.html = html
         self.css = css
         self.bodyClass = bodyClass
         self.isAnswer = isAnswer
         self.cardID = cardID
+        self.presentation = presentation
     }
 
     /// The page reads only these.
@@ -40,6 +42,14 @@ struct CardDisplay: Equatable, Encodable {
 #if os(iOS)
 import OSLog
 import WebKit
+
+@MainActor
+struct CardTemplateContext {
+    let cardID: Int64
+    let isAnswer: Bool
+    let isCurrent: () -> Bool
+    let emit: (String, TemplateReply) -> Void
+}
 
 /// Draws a card in a web view, on Hayaki's own card host page
 /// (`CardHost.html`); everything around the card is native (ADR 0004).
@@ -62,7 +72,22 @@ struct CardWebView: UIViewRepresentable {
     let zoom: CGFloat
     var reviewer: ReviewerWebOptions? = nil
     /// Called for what the learner does on the card.
+    var onTemplateRequest: ((TemplateRequest, CardTemplateContext) async -> TemplateReply)? = nil
     let onEvent: (CardPageEvent) -> Void
+    @AppStorage(CardTemplatePreference.externalApps) private var allowsExternalApps = false
+
+    init(
+        display: CardDisplay, mediaFolder: URL, zoom: CGFloat, reviewer: ReviewerWebOptions? = nil,
+        onTemplateRequest: ((TemplateRequest, CardTemplateContext) async -> TemplateReply)? = nil,
+        onEvent: @escaping (CardPageEvent) -> Void
+    ) {
+        self.display = display
+        self.mediaFolder = mediaFolder
+        self.zoom = zoom
+        self.reviewer = reviewer
+        self.onTemplateRequest = onTemplateRequest
+        self.onEvent = onEvent
+    }
 
     func makeCoordinator() -> Coordinator {
         Coordinator()
@@ -71,6 +96,9 @@ struct CardWebView: UIViewRepresentable {
     func makeUIView(context: Context) -> WKWebView {
         let configuration = WKWebViewConfiguration()
         configuration.userContentController.add(context.coordinator, name: Coordinator.messageHandler)
+        configuration.userContentController.addScriptMessageHandler(
+            context.coordinator, contentWorld: .page, name: Coordinator.templateHandler
+        )
         if reviewer != nil,
            let url = Bundle.module.url(forResource: "ReviewerInput", withExtension: "js"),
            let source = try? String(contentsOf: url, encoding: .utf8) {
@@ -108,6 +136,8 @@ struct CardWebView: UIViewRepresentable {
     func updateUIView(_ webView: WKWebView, context: Context) {
         context.coordinator.onEvent = onEvent
         context.coordinator.updateAppearance(theme)
+        context.coordinator.onTemplateRequest = onTemplateRequest
+        context.coordinator.allowsExternalApps = allowsExternalApps
         if webView.pageZoom != zoom {
             webView.pageZoom = zoom
         }
@@ -121,14 +151,17 @@ struct CardWebView: UIViewRepresentable {
 
     static func dismantleUIView(_ webView: WKWebView, coordinator: Coordinator) {
         webView.configuration.userContentController.removeScriptMessageHandler(forName: Coordinator.messageHandler)
+        webView.configuration.userContentController.removeScriptMessageHandler(forName: Coordinator.templateHandler)
+        coordinator.invalidateTemplate()
         webView.configuration.userContentController.removeScriptMessageHandler(
             forName: Coordinator.inputHandler, contentWorld: .defaultClient
         )
     }
 
     @MainActor
-    final class Coordinator: NSObject, WKNavigationDelegate, WKScriptMessageHandler {
+    final class Coordinator: NSObject, WKNavigationDelegate, WKScriptMessageHandler, WKScriptMessageHandlerWithReply {
         static let messageHandler = "hayaki"
+        static let templateHandler = "hayakiTemplate"
         static let inputHandler = "hayakiReviewerInput"
         private var reviewer: ReviewerWebOptions?
         private var command: ReviewerWebCommand?
@@ -136,6 +169,11 @@ struct CardWebView: UIViewRepresentable {
         weak var webView: WKWebView?
         var focusTypedAnswer = true
         var onEvent: (CardPageEvent) -> Void = { _ in }
+        var onTemplateRequest: ((TemplateRequest, CardTemplateContext) async -> TemplateReply)?
+        var allowsExternalApps = false
+        private var templateToken: String?
+        private var reloaded: CardDisplay?
+        private var awaitingTemplateRequests = 0
         /// The side the page should show.
         private var wanted: CardDisplay?
         /// The side last handed to the page.
@@ -145,6 +183,7 @@ struct CardWebView: UIViewRepresentable {
 
         func loadHostPage() {
             pageLoaded = false
+            invalidateTemplate()
             shown = nil
             webView?.load(URLRequest(url: CardResources.hostPageURL))
         }
@@ -189,6 +228,7 @@ struct CardWebView: UIViewRepresentable {
         }
 
         func show(_ display: CardDisplay) {
+            if wanted != display { reloaded = nil }
             wanted = display
             sendIfReady()
         }
@@ -198,8 +238,11 @@ struct CardWebView: UIViewRepresentable {
             guard let json = try? JSONEncoder().encode(wanted), let argument = String(data: json, encoding: .utf8) else {
                 return
             }
+            let token = UUID().uuidString
+            templateToken = token
+            awaitingTemplateRequests = 0
             shown = wanted
-            webView.evaluateJavaScript("hayaki.show(\(argument), \(focusTypedAnswer)); true") { _, error in
+            webView.evaluateJavaScript("hayaki.show(\(argument), '\(token)', \(focusTypedAnswer)); true") { _, error in
                 if let error {
                     Self.log.error("The card host page could not show a card: \(error, privacy: .public)")
                 }
@@ -229,22 +272,105 @@ struct CardWebView: UIViewRepresentable {
             decidePolicyFor navigationAction: WKNavigationAction,
             decisionHandler: @escaping @MainActor (WKNavigationActionPolicy) -> Void
         ) {
-            // The host page is the only page; a link on a card opens in the
-            // learner's browser instead of replacing it.
-            if navigationAction.navigationType == .linkActivated, let url = navigationAction.request.url {
-                // A link to a place on the card itself (#…) just scrolls.
-                if url.scheme == CardResources.scheme, url.fragment != nil,
-                   url.path(percentEncoded: false).isEmpty || url.path(percentEncoded: false) == "/" {
-                    decisionHandler(.allow)
-                    return
-                }
-                if url.scheme == "http" || url.scheme == "https" {
-                    UIApplication.shared.open(url)
-                }
+            guard let url = navigationAction.request.url else {
                 decisionHandler(.cancel)
                 return
             }
-            decisionHandler(.allow)
+            if Self.isHost(url) {
+                decisionHandler(.allow)
+                return
+            }
+            // A card can link to a site, but the site opens in the user's browser.
+            if navigationAction.navigationType == .linkActivated,
+               navigationAction.sourceFrame.isMainFrame, let scheme = url.scheme?.lowercased() {
+                let isWeb = scheme == "http" || scheme == "https"
+                let isLocal = ["file", "data", "blob", "about", "javascript", CardResources.scheme].contains(scheme)
+                if isWeb || (allowsExternalApps && !isLocal) {
+                    UIApplication.shared.open(url)
+                }
+            }
+            decisionHandler(.cancel)
+        }
+
+        private static func isHost(_ url: URL) -> Bool {
+            url.scheme == CardResources.scheme && url.host == CardResources.hostPageURL.host &&
+                (url.path.isEmpty || url.path == "/") && url.query == nil
+        }
+
+        func invalidateTemplate() {
+            templateToken = nil
+            awaitingTemplateRequests = 0
+        }
+
+        func userContentController(
+            _ userContentController: WKUserContentController,
+            didReceive message: WKScriptMessage,
+            replyHandler: @escaping @MainActor (Any?, String?) -> Void
+        ) {
+            guard message.name == Self.templateHandler, message.frameInfo.isMainFrame,
+                  let url = message.frameInfo.request.url, Self.isHost(url),
+                  let pageToken = templateToken,
+                  let body = message.body as? [String: Any], body["token"] as? String == pageToken,
+                  let display = shown, let request = TemplateRequest(message: body)
+            else {
+                replyHandler(TemplateReply.unavailable.message, nil)
+                return
+            }
+            guard request.isValid else {
+                replyHandler(TemplateReply.invalid.message, nil)
+                return
+            }
+            if request.command == "reloadPage" {
+                guard reloaded != display else {
+                    replyHandler(TemplateReply.unavailable.message, nil)
+                    return
+                }
+                reloaded = display
+                replyHandler(TemplateReply.accepted.message, nil)
+                shown = nil
+                sendIfReady()
+                return
+            }
+            if request.command == "enableHorizontalScrollbar" || request.command == "enableVerticalScrollbar" {
+                guard let scrollView = webView?.scrollView else {
+                    replyHandler(TemplateReply.unavailable.message, nil)
+                    return
+                }
+                let visible = request.data?.caseInsensitiveCompare("true") == .orderedSame
+                if request.command == "enableHorizontalScrollbar" {
+                    scrollView.showsHorizontalScrollIndicator = visible
+                } else {
+                    scrollView.showsVerticalScrollIndicator = visible
+                }
+                replyHandler(TemplateReply.accepted.message, nil)
+                return
+            }
+            guard awaitingTemplateRequests < 16, let onTemplateRequest else {
+                replyHandler(TemplateReply.unavailable.message, nil)
+                return
+            }
+            awaitingTemplateRequests += 1
+            Task {
+                guard pageToken == templateToken else {
+                    replyHandler(TemplateReply.unavailable.message, nil)
+                    return
+                }
+                let context = CardTemplateContext(
+                    cardID: display.cardID, isAnswer: display.isAnswer,
+                    isCurrent: { [weak self] in self?.templateToken == pageToken },
+                    emit: { [weak self] name, result in
+                        guard let self, templateToken == pageToken else { return }
+                        webView?.callAsyncJavaScript(
+                            "hayakiTemplate.emit(token, name, result)",
+                            arguments: ["token": pageToken, "name": name, "result": result.message],
+                            in: nil, in: .page, completionHandler: nil
+                        )
+                    }
+                )
+                let result = await onTemplateRequest(request, context)
+                if pageToken == templateToken { awaitingTemplateRequests -= 1 }
+                replyHandler(result.message, nil)
+            }
         }
 
         func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {

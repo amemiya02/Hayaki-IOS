@@ -1,6 +1,7 @@
 import BrowseFeature
 import CollectionStore
 import DeckOptionsFeature
+import DecksFeature
 import NoteEditorFeature
 import StatisticsFeature
 import StudyFeature
@@ -10,6 +11,7 @@ import SwiftUI
 struct ReviewerDestinationView: View {
     let route: ReviewerDestination
     let store: CollectionStore
+    let study: @MainActor (StudyDeck) -> Void
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
@@ -25,6 +27,8 @@ struct ReviewerDestinationView: View {
             }
         case .deckOptions(let deckID):
             DeckOptionsScreen(store: store, deckID: deckID)
+        case .customStudy(let deckID):
+            CustomStudyScreen(store: store, deckID: deckID, onStart: study)
         case .cardInfo(let cardID):
             NavigationStack {
                 CardInfoScreen(store: store, cardID: cardID)

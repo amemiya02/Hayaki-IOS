@@ -124,6 +124,7 @@ struct AdvancedSettingsScreen: View {
             Toggle(isOn: $focusTypedAnswer) {
                 Text("Focus Typed Answer", bundle: .module)
             }
+            CardTemplateSettingsRow()
         }
         .hayakiScrollBackground()
         .navigationTitle(Text("Advanced", bundle: .module))

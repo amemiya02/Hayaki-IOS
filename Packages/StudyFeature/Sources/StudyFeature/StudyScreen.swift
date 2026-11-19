@@ -53,22 +53,30 @@ public struct StudyScreen: View {
     @State private var showingSettings = false
     @State private var requestedAction: ReviewerCommand?
     @State private var route: ReviewerDestination?
+    @State private var nextStudy: StudyDeck?
     @State private var autoAdvance = false
     @State private var timebox: StudyTimebox?
     @State private var feedback: ReviewFeedback?
+    @State private var templateFullscreen: TemplateFullscreen = .standard
+    @State private var templateMenu: TemplateMenu?
     @State private var initialCount = 0
     @Environment(\.reviewerDestination) private var destinations
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.studyNoteEditor) private var noteEditor
     #if os(iOS)
     @State private var audio = CardAudioPlayer()
+    @State private var templateSpeech = TemplateSpeech()
+    @State private var templateRecognition = TemplateRecognition()
+    @State private var templateNetwork = TemplateNetworkStatus()
+    @AppStorage(CardTemplatePreference.microphone) private var allowsTemplateMicrophone = false
+    @AppStorage(CardTemplatePreference.collectionAccess) private var allowsTemplateCollectionAccess = false
     @State private var recorder = AudioRecorder()
     @State private var drawing = ReviewerDrawing()
     @State private var isErasing = false
     @State private var deckTools: ReviewerDeckTools
     #endif
     private let store: CollectionStore
-    private let deckName: String
+    @State private var deckName: String
     private let profileFolder: URL
     @Environment(\.dismiss) private var dismiss
     @Environment(\.hayakiTheme) private var theme
@@ -78,7 +86,7 @@ public struct StudyScreen: View {
     public init(store: CollectionStore, deck: StudyDeck) {
         self.store = store
         _model = State(initialValue: StudySessionModel(store: store, deckID: deck.id))
-        deckName = deck.name
+        _deckName = State(initialValue: deck.name)
         profileFolder = store.location.folder
         #if os(iOS)
         _deckTools = State(initialValue: ReviewerDeckTools.load(profile: store.location.folder, deckID: deck.id))
@@ -87,18 +95,21 @@ public struct StudyScreen: View {
 
     public var body: some View {
         VStack(spacing: 0) {
-            topBar
+            if templateFullscreen.showsTopBar || model.state.card == nil {
+                topBar
+            }
             content
-            if preferences.toolbarPosition == .bottom {
+            if templateFullscreen.showsActions, preferences.toolbarPosition == .bottom || !templateFullscreen.showsTopBar {
                 reviewerActions
             }
         }
         .background(theme.background.ignoresSafeArea())
-        .task { await model.run() }
+        .task(id: ObjectIdentifier(model)) { await model.run() }
         .task(id: autoAdvanceTask) { await runAutoAdvance() }
         .task(id: feedback) {
             guard feedback != nil else { return }
-            try? await Task.sleep(for: .seconds(2))
+            let duration = feedback?.duration ?? .seconds(2)
+            try? await Task.sleep(for: duration)
             if !Task.isCancelled { feedback = nil }
         }
         .onChange(of: model.presentationNumber) {
@@ -119,11 +130,23 @@ public struct StudyScreen: View {
                     .accessibilityAddTraits(.updatesFrequently)
             }
         }
+        .modifier(TemplateMenuPresentation(selection: $templateMenu, dispatch: dispatch, onSettings: { showingSettings = true }))
+        .overlay(alignment: .topLeading) {
+            if !templateFullscreen.showsTopBar, model.state.card != nil {
+                Button {
+                    templateFullscreen = .standard
+                } label: {
+                    Image(systemName: "arrow.down.right.and.arrow.up.left")
+                        .frame(width: 44, height: 44)
+                        .background(.regularMaterial, in: Circle())
+                }
+                .accessibilityLabel(Text("Leave Full Screen", bundle: .module))
+                .padding(8)
+            }
+        }
         .modifier(ReviewerActionDialogs(model: model, requestedAction: $requestedAction))
-        .sheet(item: $route, onDismiss: {
-            Task { await model.refreshReviewerDeckOptions() }
-        }) { route in
-            destinations?(route)
+        .sheet(item: $route, onDismiss: returnFromDestination) { route in
+            destinations?(route) { nextStudy = $0 }
         }
         .alert(reviewerLocalized("Timebox Reached"), isPresented: Binding(
             get: { timebox != nil },
@@ -147,7 +170,7 @@ public struct StudyScreen: View {
             return dispatchInput(.keyboard(ReviewerKey(press))) ? .handled : .ignored
         }
         #if os(iOS)
-        .statusBarHidden(preferences.hideStatusBar)
+        .statusBarHidden(preferences.hideStatusBar || !templateFullscreen.showsTopBar)
         .persistentSystemOverlays(preferences.hideHomeIndicator ? .hidden : .automatic)
         .modifier(ReviewerIdleTimer(enabled: preferences.keepScreenOn || autoAdvance))
         .modifier(ReviewerController { _ = dispatchInput($0) })
@@ -156,6 +179,9 @@ public struct StudyScreen: View {
         ) { _ = dispatchInput(.gesture(.shake)) })
         .onChange(of: deckTools) { _, value in
             value.save(profile: profileFolder, deckID: model.deckID)
+        }
+        .onChange(of: scenePhase) { _, phase in
+            if phase == .background { templateRecognition.stop() }
         }
         .onDisappear {
             recorder.discard()
@@ -209,6 +235,28 @@ public struct StudyScreen: View {
         } message: {
             Text(verbatim: model.actionError ?? "")
         }
+    }
+
+    private func returnFromDestination() {
+        let requested = nextStudy
+        nextStudy = nil
+        guard let requested, requested.id != model.deckID else {
+            Task { await model.refreshAfterExternalChanges() }
+            return
+        }
+        deckName = requested.name
+        typedAnswer = ""
+        initialCount = 0
+        autoAdvance = false
+        templateFullscreen = .standard
+        templateMenu = nil
+        timebox = nil
+        #if os(iOS)
+        recorder.discard()
+        deckTools = ReviewerDeckTools.load(profile: profileFolder, deckID: requested.id)
+        drawing.clear()
+        #endif
+        model = StudySessionModel(store: store, deckID: requested.id)
     }
 
     private var side: ReviewerSide? {
@@ -447,13 +495,14 @@ public struct StudyScreen: View {
             ProgressView()
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         case .finished(let summary):
-            FinishedView(summary: summary) {
-                Task { await model.unburyDeck() }
-            } onRebuild: {
-                Task { await model.rebuildFinishedFilteredDeck() }
-            } onDone: {
-                dismiss()
-            }
+            FinishedView(
+                summary: summary,
+                onUnbury: { Task { await model.unburyDeck() } },
+                onRebuild: { Task { await model.rebuildFinishedFilteredDeck() } },
+                onOptions: destinations == nil || summary.isFiltered ? nil : { route = .deckOptions(deckID: model.deckID) },
+                onCustomStudy: destinations == nil || summary.isFiltered ? nil : { route = .customStudy(deckID: model.deckID) },
+                onDone: { dismiss() }
+            )
         case .failed(let message):
             ContentUnavailableView {
                 Label {
@@ -475,7 +524,7 @@ public struct StudyScreen: View {
 
     private func studying(_ card: StudyCard, showingAnswer: Bool) -> some View {
         VStack(spacing: 0) {
-            cardView(CardDisplay(card, isAnswer: showingAnswer))
+            cardView(CardDisplay(card, isAnswer: showingAnswer, presentation: model.presentationNumber))
                 // On an iPad, a readable column rather than a stretched line.
                 .frame(maxWidth: horizontalSizeClass == .regular ? 820 : .infinity)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -517,7 +566,7 @@ public struct StudyScreen: View {
                 }
             }
             #endif
-            if preferences.showAnswerButtons {
+            if preferences.showAnswerButtons, templateFullscreen.showsAnswer {
                 AnswerBar(
                     card: card, showingAnswer: showingAnswer, isAnswering: model.isBusy,
                     minimumPress: Double(preferences.minimumPressMilliseconds) / 1000,
@@ -559,7 +608,8 @@ public struct StudyScreen: View {
                 keySignatures: keySignatures, imageZoom: Double(preferences.imageZoom) / 100,
                 centerVertically: preferences.centerVertically, hidesAudioButtons: model.hidesAudioButtons,
                 reducedMotion: preferences.reducedMotion, command: webCommand
-            )
+            ),
+            onTemplateRequest: handleTemplateRequest
         ) { event in
             switch event {
             case .tap: break
@@ -582,16 +632,72 @@ public struct StudyScreen: View {
             pendingTap?.cancel()
             pendingTap = nil
             typedAnswer = display.isAnswer ? typedAnswer : ""
+            templateRecognition.stop()
             audio.play(
                 model.soundsToAutoplay(),
                 afterCurrent: display.isAnswer && !model.interruptsAudioWhenAnswering
             )
         }
-        .onDisappear { audio.stop() }
+        .onDisappear {
+            audio.stop()
+            templateSpeech.stop()
+            templateRecognition.stop()
+        }
         #else
         Text(verbatim: display.html)
         #endif
     }
+
+    #if os(iOS)
+    private func handleTemplateRequest(_ request: TemplateRequest, context: CardTemplateContext) async -> TemplateReply {
+        guard context.isCurrent(), store.allowsNewProfileWork, timebox == nil,
+              model.state.card?.id == context.cardID else { return .unavailable }
+        switch request.command {
+        case "isInNightMode": return .value(.boolean(theme != .light))
+        case "isInFullscreen": return .value(.boolean(!templateFullscreen.showsTopBar))
+        case "isTopbarShown": return .value(.boolean(templateFullscreen.showsTopBar))
+        case "setFullscreenButtonsAndMenu": templateFullscreen = .buttonsAndMenu
+        case "setFullscreenButtonsOnly": templateFullscreen = .buttonsOnly
+        case "setFullscreenAllGone": templateFullscreen = .hidden
+        case "showNavigationDrawer": templateMenu = .navigation
+        case "showOptionsMenu": templateMenu = .options
+        case "addTagToCard": dispatch(.editTags)
+        case "searchCard":
+            guard destinations != nil, let query = request.data else { return .unavailable }
+            route = .browse(search: query)
+        case "showToast":
+            guard let toast = request.decoded(TemplateToast.self) else { return .unavailable }
+            feedback = ReviewFeedback(text: toast.decodedText, duration: .seconds(toast.shortLength ? 2 : 4))
+        case "isActiveNetworkMetered":
+            return .value(.boolean(await templateNetwork.isMetered()))
+        default:
+            if let response = templateSpeech.handle(request, prepareAudio: {
+                audio.stop()
+                templateRecognition.stop()
+                if recorder.state == .recording || recorder.state == .paused { recorder.stopRecording() }
+                recorder.stopPlayback()
+            }) {
+                return response
+            }
+            if let response = await templateRecognition.handle(
+                request, context: context, allowed: allowsTemplateMicrophone,
+                prepareAudio: {
+                    audio.stop()
+                    templateSpeech.stop()
+                    if recorder.state == .recording || recorder.state == .paused { recorder.stopRecording() }
+                    recorder.stopPlayback()
+                }
+            ) {
+                return response
+            }
+            return await model.handleTemplate(
+                request, cardID: context.cardID, isAnswer: context.isAnswer, typedAnswer: typedAnswer,
+                allowsCollectionAccess: allowsTemplateCollectionAccess
+            )
+        }
+        return .accepted
+    }
+    #endif
 
     private var reviewerActions: some View {
         ReviewerToolbar(
@@ -779,6 +885,8 @@ private struct FinishedView: View {
     let summary: SessionSummary
     let onUnbury: () -> Void
     let onRebuild: () -> Void
+    let onOptions: (() -> Void)?
+    let onCustomStudy: (() -> Void)?
     let onDone: () -> Void
 
     var body: some View {
@@ -832,6 +940,14 @@ private struct FinishedView: View {
                     Text("Unbury Cards", bundle: .module)
                 }
                 .buttonStyle(.bordered)
+            }
+            if let onOptions {
+                Button(action: onOptions) { Text("Deck Options", bundle: .module) }
+                    .buttonStyle(.bordered)
+            }
+            if let onCustomStudy {
+                Button(action: onCustomStudy) { Text("Custom Study", bundle: .module) }
+                    .buttonStyle(.bordered)
             }
             Button(action: onDone) {
                 Text("Done", bundle: .module)
@@ -907,6 +1023,7 @@ private struct AutoAdvanceTask: Equatable {
 private struct ReviewFeedback: Equatable {
     let id = UUID()
     let text: String
+    var duration: Duration = .seconds(2)
 }
 
 private extension Rating {
