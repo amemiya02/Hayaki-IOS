@@ -17,6 +17,7 @@ public enum AttachImageError: Error, Equatable {
 struct ImageMedia {
     let data: Data
     let fileName: String
+    let mimeType: String
 
     /// Formats card web views on every platform show, kept as they are.
     private static let keptFormats: [UTType] = [.jpeg, .png, .gif, .webP]
@@ -37,6 +38,7 @@ struct ImageMedia {
             return nil
         }
         data = output.data
+        mimeType = output.format.preferredMIMEType ?? "image/jpeg"
         let hash = Insecure.SHA1.hash(data: output.data).map { String(format: "%02x", $0) }.joined()
         let fileExtension = output.format == .jpeg ? "jpg" : output.format.preferredFilenameExtension ?? "jpg"
         fileName = "paste-\(hash).\(fileExtension)"

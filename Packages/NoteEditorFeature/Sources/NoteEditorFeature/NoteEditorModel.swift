@@ -84,6 +84,10 @@ public final class NoteEditorModel {
     private var notetype = Anki_Notetypes_Notetype()
     private var occlusionFields: Anki_ImageOcclusion_ImageOcclusionFieldIndexes?
     private var pendingOcclusionImage: ImageMedia?
+    private var existingOcclusionImage: Data?
+    private var savedOcclusionMasks: [ImageOcclusionMask] = []
+    public var occlusionImageData: Data? { pendingOcclusionImage?.data ?? existingOcclusionImage }
+    public private(set) var occludesInactiveMasks = false
     public private(set) var occlusionMasks: [ImageOcclusionMask] = []
     public var isImageOcclusion: Bool { occlusionFields != nil }
 
@@ -161,6 +165,27 @@ public final class NoteEditorModel {
         }
         fields = zip(notetype.fields.map(\.name), note.fields).map { EditableField(name: $0, storedContent: $1) }
         tags = note.tags
+        occlusionFields = nil
+        pendingOcclusionImage = nil
+        existingOcclusionImage = nil
+        occlusionMasks = []
+        savedOcclusionMasks = []
+        occludesInactiveMasks = false
+        if notetype.config.originalStockKind == .imageOcclusion {
+            let typeID = notetype.id
+            let indexes = try await store.core.getImageOcclusionFields(.with { $0.notetypeID = typeID }).fields
+            let response = try await store.core.getImageOcclusionNote(.with { $0.noteID = id })
+            guard case .note(let imageNote) = response.value else {
+                throw CoreError(kind: .invalidInput, message: response.error)
+            }
+            occlusionFields = indexes
+            existingOcclusionImage = imageNote.imageData.isEmpty ? nil : imageNote.imageData
+            occlusionMasks = imageNote.occlusions.sorted { $0.ordinal < $1.ordinal }.flatMap { group in
+                group.shapes.map { ImageOcclusionMask(ordinal: group.ordinal, shape: $0) }
+            }
+            savedOcclusionMasks = occlusionMasks
+            occludesInactiveMasks = imageNote.occludeInactive
+        }
     }
 
     /// Every note type except Image Occlusion, whose notes are made with an
@@ -209,13 +234,20 @@ public final class NoteEditorModel {
     /// over field by field, in order; fields beyond the new type's are dropped.
     public func selectNotetype(_ id: Int64) async {
         guard !isEditing, id != notetypeID else { return }
-        let previous = fields
+        let previous = fields.filter { field in
+            guard let indexes = occlusionFields else { return true }
+            return field.name != fields[Int(indexes.occlusions)].name && field.name != fields[Int(indexes.image)].name
+        }
         do {
             try await startNote(notetypeID: id)
         } catch {
             state = .failed(message: error.message)
             return
         }
+        occlusionFields = nil
+        pendingOcclusionImage = nil
+        occlusionMasks = []
+        occludesInactiveMasks = false
         for (index, old) in previous.enumerated() where index < fields.count && !old.content.isEmpty {
             fields[index].setMarkup(old.content)
         }
@@ -245,7 +277,7 @@ public final class NoteEditorModel {
 
     /// Begins a new image occlusion draft. The image is written when the note is added.
     public func startImageOcclusion(with data: Data, notetypeID requestedType: Int64? = nil) async throws(CoreError) {
-        guard !isEditing, let image = ImageMedia(data: data) else {
+        guard !isEditing, state == .ready, let image = ImageMedia(data: data) else {
             throw CoreError(kind: .invalidInput, message: String(localized: "Choose a readable image.", bundle: .module))
         }
         try await store.modify(.addImageOcclusionNotetype())
@@ -264,10 +296,14 @@ public final class NoteEditorModel {
         let type = try await store.core.getNotetype(.with { $0.ntid = selected })
         guard type.config.originalStockKind == .imageOcclusion else { throw missingOcclusionType }
         let indexes = try await store.core.getImageOcclusionFields(.with { $0.notetypeID = selected }).fields
-        try await startNote(notetypeID: selected)
+        let existingTypeID = notetypeID
+        if selected != existingTypeID {
+            try await startNote(notetypeID: selected)
+            occlusionMasks = []
+            occludesInactiveMasks = false
+        }
         occlusionFields = indexes
         pendingOcclusionImage = image
-        occlusionMasks = []
     }
 
     public func addOcclusionMask(in rect: CGRect) {
@@ -280,9 +316,34 @@ public final class NoteEditorModel {
         updateOcclusionMarkup()
     }
 
+    public func replaceOcclusionMask(_ id: UUID, with rect: CGRect) {
+        let rect = rect.intersection(CGRect(x: 0, y: 0, width: 1, height: 1))
+        guard !rect.isNull, rect.width > 0.0001, rect.height > 0.0001,
+              let index = occlusionMasks.firstIndex(where: { $0.id == id }) else { return }
+        occlusionMasks[index].setRect(rect)
+        updateOcclusionMarkup()
+    }
+
+    public func removeOcclusionMask(_ id: UUID) {
+        guard let index = occlusionMasks.firstIndex(where: { $0.id == id }) else { return }
+        occlusionMasks.remove(at: index)
+        updateOcclusionMarkup()
+    }
+
+    public func setOccludesInactiveMasks(_ occludesInactive: Bool) {
+        guard occludesInactiveMasks != occludesInactive else { return }
+        occludesInactiveMasks = occludesInactive
+        updateOcclusionMarkup()
+    }
+
+    func showsEditor(forField index: Int) -> Bool {
+        guard let indexes = occlusionFields else { return true }
+        return index != Int(indexes.occlusions) && index != Int(indexes.image)
+    }
+
     private func updateOcclusionMarkup() {
         guard let indexes = occlusionFields else { return }
-        setMarkup(occlusionMasks.map { $0.cloze(occludeInactive: false) }.joined(), ofField: Int(indexes.occlusions))
+        setMarkup(occlusionMasks.map { $0.cloze(occludeInactive: occludesInactiveMasks) }.joined(), ofField: Int(indexes.occlusions))
     }
 
     private var missingOcclusionType: CoreError {
@@ -387,12 +448,18 @@ public final class NoteEditorModel {
             }
 
             let changedFirstField = !candidate.fields[0].utf8.elementsEqual(currentFields[0].utf8)
-            switch try await validate(candidate, confirming: accepted) {
-            case .refused(.firstFieldEmpty) where !changedFirstField: break
-            case .warning(.duplicate) where !changedFirstField: break
-            case .valid: break
-            case .refused(let problem): return .refused(problem)
-            case .warning(let warning): return .needsConfirmation(warning)
+            if let indexes = occlusionFields {
+                if fields[Int(indexes.occlusions)].isEdited && !occlusionMasks.contains(where: { $0.ordinal > 0 }) {
+                    return .failed(message: needsOcclusionMask.message)
+                }
+            } else {
+                switch try await validate(candidate, confirming: accepted) {
+                case .refused(.firstFieldEmpty) where !changedFirstField: break
+                case .warning(.duplicate) where !changedFirstField: break
+                case .valid: break
+                case .refused(let problem): return .refused(problem)
+                case .warning(let warning): return .needsConfirmation(warning)
+                }
             }
             _ = try await currentTypeWithSameFields()
             let updated = candidate
@@ -415,7 +482,10 @@ public final class NoteEditorModel {
 
     func discardDraft() {
         pendingOcclusionImage = nil
-        occlusionMasks = []
+        if isImageOcclusion {
+            occlusionMasks = savedOcclusionMasks
+            occludesInactiveMasks = savedOcclusionMasks.contains { $0.value("oi") == "1" }
+        }
         fields = zip(notetype.fields.map(\.name), note.fields).map { EditableField(name: $0, storedContent: $1) }
         tags = note.tags
     }
@@ -450,6 +520,9 @@ public final class NoteEditorModel {
     private var draft: Anki_Notes_Note {
         var draft = note
         draft.fields = fields.map(\.content)
+        if let indexes = occlusionFields, let image = pendingOcclusionImage {
+            draft.fields[Int(indexes.image)] = "<img src=\"data:\(image.mimeType);base64,\(image.data.base64EncodedString())\">"
+        }
         draft.tags = tags
         return draft
     }
@@ -463,13 +536,16 @@ public final class NoteEditorModel {
         let selections: [(UInt32, String, Anki_Notetypes_Notetype.Template)]
         if type.config.kind == .cloze, let template = type.templates.first {
             var ordinals = try await store.core.clozeNumbersInNote(draft).numbers.filter { $0 > 0 }.map { $0 - 1 }
-            if draft.id != 0 {
+            if draft.id != 0, !isImageOcclusion {
                 for id in try await store.core.cardsOfNote(.with { $0.nid = draft.id }).cids {
                     let card = try await store.core.getCard(.with { $0.cid = id })
                     ordinals.append(card.templateIdx)
                 }
             }
-            if ordinals.isEmpty { ordinals = [0] }
+            if ordinals.isEmpty {
+                guard !isImageOcclusion else { throw needsOcclusionMask }
+                ordinals = [0]
+            }
             selections = Set(ordinals).sorted().map { ordinal in
                 // The core uses the template ordinal to find an existing card.
                 // Cloze cards all use one template but each has its own ordinal.
