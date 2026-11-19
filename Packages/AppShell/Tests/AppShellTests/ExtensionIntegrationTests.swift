@@ -6,8 +6,8 @@ import Foundation
 import Testing
 
 @MainActor
-@Test("A previously queued widget or reminder destination survives opening another profile from a cold start")
-func coldDeckLink() async throws {
+@Test("A queued deck list or study destination opens another profile from a cold start", arguments: [1, nil] as [Int64?])
+func coldDeckLink(deckID: Int64?) async throws {
     let folder = try TemporaryFolder()
     let location = CollectionLocation(folder: folder.url.appending(path: "Collection"))
     let backupFolder = folder.url.appending(path: "Backups")
@@ -16,7 +16,9 @@ func coldDeckLink() async throws {
     defer { preferences.removePersistentDomain(forName: suite) }
     let app = AppModel(location: { location }, backupFolder: { backupFolder }, language: "en", preferences: preferences)
     let profile = try app.addProfile(named: "French")
-    app.waitingDeckLink = .init(link: .deck(profileID: profile.id, deckID: 1, action: .study))
+    let link = deckID.map { DeckLink.deck(profileID: profile.id, deckID: $0, action: .study) }
+        ?? .decks(profileID: profile.id)
+    app.waitingDeckLink = .init(link: link)
 
     await app.routeWaitingDeckLink()
     #expect(app.waitingDeckLink != nil)
@@ -25,8 +27,9 @@ func coldDeckLink() async throws {
 
     #expect(app.activeProfile == profile)
     #expect(app.waitingDeckLink == nil)
-    #expect(app.deckPresentation?.deckID == 1)
-    #expect(app.deckPresentation?.showsOptions == false)
+    #expect(app.decksRequested != nil)
+    #expect(app.deckPresentation?.deckID == deckID)
+    if deckID != nil { #expect(app.deckPresentation?.showsOptions == false) }
     #expect(!app.showsWelcome)
     try await app.store?.close()
 }

@@ -51,14 +51,19 @@ public struct DeckReminderScreen: View {
                     editing = rule
                 } label: {
                     LabeledContent {
-                        if rule.enabled, name != nil {
+                        if rule.enabled, rule.deckID == nil || name != nil {
                             Text(rule.time, format: .dateTime.hour().minute())
                         } else {
                             Text("Off", bundle: .module)
                         }
                     } label: {
-                        if let name { Text(verbatim: name) }
-                        else { Text("Deck Unavailable", bundle: .module).foregroundStyle(.secondary) }
+                        if rule.deckID == nil {
+                            Text("All Decks", bundle: .module)
+                        } else if let name {
+                            Text(verbatim: name)
+                        } else {
+                            Text("Deck Unavailable", bundle: .module).foregroundStyle(.secondary)
+                        }
                     }
                 }
                 .swipeActions {
@@ -79,9 +84,7 @@ public struct DeckReminderScreen: View {
             ToolbarItem(placement: .primaryAction) {
                 Button {
                     let time = Calendar.current.dateComponents([.hour, .minute], from: .now)
-                    if let id = deckID ?? model.decks.first?.id {
-                        editing = DeckReminder(deckID: id, hour: time.hour ?? 9, minute: time.minute ?? 0)
-                    }
+                    editing = DeckReminder(deckID: deckID, hour: time.hour ?? 9, minute: time.minute ?? 0)
                 } label: {
                     Label {
                         Text("New Reminder", bundle: .module)
@@ -89,7 +92,6 @@ public struct DeckReminderScreen: View {
                         Image(systemName: "plus")
                     }
                 }
-                .disabled(model.decks.isEmpty)
                 .accessibilityIdentifier("add-deck-reminder")
             }
         }
@@ -130,11 +132,12 @@ private struct DeckReminderEditor: View {
                 Section {
                     if allowsDeckSelection {
                         Picker(selection: $rule.deckID) {
-                            if !model.decks.contains(where: { $0.id == rule.deckID }) {
-                                Text("Deck Unavailable", bundle: .module).tag(rule.deckID)
+                            Text("All Decks", bundle: .module).tag(nil as Int64?)
+                            if let deckID = rule.deckID, !model.decks.contains(where: { $0.id == deckID }) {
+                                Text("Deck Unavailable", bundle: .module).tag(Optional(deckID))
                             }
                             ForEach(model.decks) { deck in
-                                Text(verbatim: deck.name).tag(deck.id)
+                                Text(verbatim: deck.name).tag(Optional(deck.id))
                             }
                         } label: { Text("Deck", bundle: .module) }
                     }

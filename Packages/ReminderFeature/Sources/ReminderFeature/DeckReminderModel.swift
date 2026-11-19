@@ -5,7 +5,8 @@ import Observation
 
 public struct DeckReminder: Codable, Equatable, Identifiable, Sendable {
     public let id: UUID
-    public var deckID: Int64
+    /// Nil means all decks in the profile. Existing saved deck IDs keep their format.
+    public var deckID: Int64?
     public var hour: Int
     public var minute: Int
     public var enabled = true
@@ -15,7 +16,7 @@ public struct DeckReminder: Codable, Equatable, Identifiable, Sendable {
     public var countReview = true
     public var onlyWithoutReviews = false
 
-    public init(deckID: Int64, hour: Int, minute: Int) {
+    public init(deckID: Int64? = nil, hour: Int, minute: Int) {
         id = UUID()
         self.deckID = deckID
         self.hour = hour
@@ -41,27 +42,36 @@ public struct DeckReminder: Codable, Equatable, Identifiable, Sendable {
 
 public struct DeckReminderDestination: Equatable, Sendable {
     public let profileID: UUID
-    public let deckID: Int64
+    /// Nil opens the profile's deck list.
+    public let deckID: Int64?
     let ruleID: UUID
     let isSnoozed: Bool
 
     static let prefix = ScheduledReminder.identifierPrefix + "deck."
 
-    static func profilePrefix(_ profileID: UUID) -> String { prefix + profileID.uuidString + "." }
+    static func identifierStem(profileID: UUID, deckID: Int64?, ruleID: UUID) -> String {
+        let scope = deckID.map(String.init) ?? "all"
+        return prefix + "\(profileID.uuidString).\(scope).\(ruleID.uuidString)."
+    }
 
     init?(identifier: String) {
         guard identifier.hasPrefix(Self.prefix) else { return nil }
         let parts = identifier.dropFirst(Self.prefix.count).split(separator: ".")
         guard parts.count == 4, let profileID = UUID(uuidString: String(parts[0])),
-              let deckID = Int64(parts[1]), deckID > 0, let ruleID = UUID(uuidString: String(parts[2]))
+              let ruleID = UUID(uuidString: String(parts[2]))
         else { return nil }
+        if parts[1] == "all" {
+            deckID = nil
+        } else {
+            guard let id = Int64(parts[1]), id > 0 else { return nil }
+            deckID = id
+        }
         self.profileID = profileID
-        self.deckID = deckID
         self.ruleID = ruleID
         isSnoozed = parts[3].hasPrefix("snoozed-")
     }
 
-    var identifierStem: String { Self.profilePrefix(profileID) + "\(deckID).\(ruleID.uuidString)." }
+    var identifierStem: String { Self.identifierStem(profileID: profileID, deckID: deckID, ruleID: ruleID) }
 }
 
 @MainActor

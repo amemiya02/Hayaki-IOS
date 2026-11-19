@@ -1,9 +1,21 @@
 import AnkiCore
 import HayakiAppearance
 import SwiftUI
+#if os(iOS)
+import UIKit
+#elseif os(macOS)
+import AppKit
+#endif
 
 struct AboutScreen: View {
     static let repository = URL(string: "https://github.com/amemiya02/Hayaki-IOS")!
+
+    private static let buildInfo: BuildInfo? = {
+        guard let url = Bundle.main.url(forResource: "HayakiBuildInfo", withExtension: "plist"),
+              let data = try? Data(contentsOf: url) else { return nil }
+        return try? PropertyListDecoder().decode(BuildInfo.self, from: data)
+    }()
+    @State private var didCopy = false
 
     var body: some View {
         List {
@@ -22,6 +34,27 @@ struct AboutScreen: View {
                     Text(verbatim: CoreClient.embeddedVersion)
                 } label: {
                     Text("Anki Core", bundle: .module)
+                }
+                if let info = Self.buildInfo {
+                    LabeledContent {
+                        Text(info.date, format: .dateTime.year().month().day())
+                    } label: {
+                        Text("Build Date", bundle: .module)
+                    }
+                    LabeledContent {
+                        Text(verbatim: info.fsrsVersion)
+                    } label: {
+                        Text(verbatim: "FSRS")
+                    }
+                }
+                Button {
+                    copyDiagnostics()
+                } label: {
+                    Label {
+                        Text("Copy Debug Information", bundle: .module)
+                    } icon: {
+                        Image(systemName: "document.on.document")
+                    }
                 }
                 NavigationLink {
                     ChangelogScreen()
@@ -67,6 +100,43 @@ struct AboutScreen: View {
         }
         .hayakiScrollBackground()
         .navigationTitle(Text("About", bundle: .module))
+        .alert(Text("Debug Information Copied", bundle: .module), isPresented: $didCopy) {
+            Button(role: .cancel) {} label: { Text("OK", bundle: .module) }
+        }
+    }
+
+    private func copyDiagnostics() {
+        let app = "\(bundleValue("CFBundleShortVersionString")) (\(bundleValue("CFBundleVersion")))"
+        var details = ["Hayaki \(app)", "Anki Core \(CoreClient.embeddedVersion)"]
+        if let info = Self.buildInfo {
+            details.append("FSRS \(info.fsrsVersion)")
+            details.append("Build \(info.date.formatted(.iso8601))")
+        }
+        let version = ProcessInfo.processInfo.operatingSystemVersion
+        #if os(iOS)
+        let platform = ProcessInfo.processInfo.isiOSAppOnMac ? "macOS (iOS app)" : UIDevice.current.systemName
+        #else
+        let platform = "macOS"
+        #endif
+        details.append("\(platform) \(version.majorVersion).\(version.minorVersion).\(version.patchVersion)")
+        let text = details.joined(separator: "\n")
+        #if os(iOS)
+        UIPasteboard.general.setItems([["public.utf8-plain-text": text]], options: [.localOnly: true])
+        #elseif os(macOS)
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(text, forType: .string)
+        #endif
+        didCopy = true
+    }
+
+    private struct BuildInfo: Decodable {
+        let date: Date
+        let fsrsVersion: String
+
+        enum CodingKeys: String, CodingKey {
+            case date = "BuildDate"
+            case fsrsVersion = "FSRSVersion"
+        }
     }
 
     private func bundleValue(_ key: String) -> String {
