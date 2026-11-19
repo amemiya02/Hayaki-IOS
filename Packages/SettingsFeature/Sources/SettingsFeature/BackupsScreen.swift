@@ -19,7 +19,7 @@ struct BackupsScreen: View {
                 } label: {
                     Text("Create Backup", bundle: .module)
                 }
-                .disabled(model.status == .creating || sync.isBusy)
+                .disabled(model.isBusy || sync.isBusy)
                 switch model.status {
                 case .idle:
                     EmptyView()
@@ -51,7 +51,7 @@ struct BackupsScreen: View {
                                 .foregroundStyle(.secondary)
                         }
                     }
-                    .disabled(model.status == .creating || sync.isBusy)
+                    .disabled(model.isBusy || sync.isBusy)
                 }
             } header: {
                 Text("Restore a Backup", bundle: .module)

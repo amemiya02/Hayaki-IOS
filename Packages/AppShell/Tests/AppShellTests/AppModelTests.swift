@@ -65,4 +65,32 @@ struct AppModelTests {
         }
         #expect(!message.isEmpty)
     }
+
+    @Test("A startup failure can recover with a collection package and retain the damaged database")
+    func recoverAfterOpeningFails() async throws {
+        let folder = try TemporaryFolder()
+        let location = CollectionLocation(folder: folder.url.appendingPathComponent("Collection", isDirectory: true))
+        let backups = folder.url.appendingPathComponent("Backups", isDirectory: true)
+        try FileManager.default.createDirectory(at: location.folder, withIntermediateDirectories: true)
+        let damaged = Data("not valid sqlite".utf8)
+        try damaged.write(to: location.collectionFile)
+        let model = AppModel(location: { location }, backupFolder: { backups }, language: "en")
+
+        await model.open()
+
+        #expect(model.canRecover)
+        #expect(model.store == nil)
+
+        await model.recoverCollection(from: FixturePackage.collection.url)
+
+        let store = try #require(model.store)
+        #expect(try await store.contents() == FixturePackage.collection.contents)
+        let preserved = try FileManager.default.contentsOfDirectory(
+            at: backups.appendingPathComponent("Recovery"), includingPropertiesForKeys: nil
+        )
+        let preservedFolder = try #require(preserved.first)
+        #expect(try Data(contentsOf: preservedFolder.appendingPathComponent("collection.anki2")) == damaged)
+        try await store.close()
+    }
+
 }

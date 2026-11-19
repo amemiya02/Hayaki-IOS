@@ -48,7 +48,9 @@ public final class BackupModel {
     @ObservationIgnored private let store: CollectionStore
     @ObservationIgnored private let folder: URL
     @ObservationIgnored private let importer: PackageImportModel
-    @ObservationIgnored private var creatingAutomaticBackup = false
+    private var creatingAutomaticBackup = false
+
+    public var isBusy: Bool { status == .creating || creatingAutomaticBackup }
 
     public init(store: CollectionStore, folder: URL, importer: PackageImportModel) {
         self.store = store
@@ -65,7 +67,7 @@ public final class BackupModel {
     }
 
     public func createBackup() async {
-        guard status != .creating, !creatingAutomaticBackup, !importer.isImporting else { return }
+        guard !isBusy, !importer.isImporting else { return }
         status = .creating
         do {
             let created = try await store.backUp(to: folder, force: true)
@@ -77,7 +79,7 @@ public final class BackupModel {
     }
 
     public func createAutomaticBackup() async {
-        guard status != .creating, !creatingAutomaticBackup, !importer.isImporting else { return }
+        guard !isBusy, !importer.isImporting else { return }
         creatingAutomaticBackup = true
         defer { creatingAutomaticBackup = false }
         do {
@@ -90,7 +92,7 @@ public final class BackupModel {
     }
 
     public func prepareRestore(_ entry: CollectionBackup) async {
-        guard status != .creating, entries.contains(entry) else { return }
+        guard !isBusy, entries.contains(entry) else { return }
         // The common package importer stages the file before asking for
         // replacement, so the pre-restore backup can thin older backups.
         await importer.open(entry.url)
