@@ -112,9 +112,23 @@ extension CardBrowserModel {
         completedAction = nil
     }
 
-    private func summarizeDeletion(of cardIDs: [Int64]) async throws(CoreError) -> DeletionSummary {
+    func selectedNoteIDs() async -> [Int64]? {
+        guard !selection.isEmpty else { return [] }
+        do {
+            return try await notes(of: Array(selection))
+        } catch {
+            failure = error.message
+            return nil
+        }
+    }
+
+    private func notes(of cardIDs: [Int64]) async throws(CoreError) -> [Int64] {
         let cards = cardIDs.map(String.init).joined(separator: ",")
-        let notes = try await store.core.searchNotes(.with { $0.search = "cid:\(cards)" }).ids
+        return try await store.core.searchNotes(.with { $0.search = "cid:\(cards)" }).ids
+    }
+
+    private func summarizeDeletion(of cardIDs: [Int64]) async throws(CoreError) -> DeletionSummary {
+        let notes = try await notes(of: cardIDs)
         let allCards = try await store.core.searchCards(.with {
             $0.search = "nid:\(notes.map(String.init).joined(separator: ","))"
         }).ids

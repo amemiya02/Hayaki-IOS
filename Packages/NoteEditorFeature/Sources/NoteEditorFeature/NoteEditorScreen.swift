@@ -10,6 +10,8 @@ public struct NoteEditorScreen: View {
     @State private var isBusy = false
     @State private var confirmDeletion = false
     @State private var confirmDiscard = false
+    @State private var confirmDiscardForConversion = false
+    @State private var showingConversion = false
     @State private var preview: PreviewRequest?
     @State private var newTag = ""
     @State private var markupFields: Set<Int> = []
@@ -89,6 +91,23 @@ public struct NoteEditorScreen: View {
             Button(role: .destructive) { dismiss() } label: { Text("Discard", bundle: .module) }
             Button(role: .cancel) {}
         }
+        .sheet(isPresented: $showingConversion) {
+            if let conversion = model.noteTypeConversion() {
+                ChangeNoteTypeScreen(model: conversion, onSave: reloadAfterConversion)
+            }
+        }
+        .alert(Text("Discard Changes?", bundle: .module), isPresented: $confirmDiscardForConversion) {
+            Button(role: .destructive) {
+                model.discardDraft()
+                resetFieldInput()
+                showingConversion = true
+            } label: {
+                Text("Discard", bundle: .module)
+            }
+            Button(role: .cancel) {}
+        } message: {
+            Text("Changing the note type uses the saved note.", bundle: .module)
+        }
         .alert(Text("Delete Note?", bundle: .module), isPresented: $confirmDeletion) {
             Button(role: .destructive) {
                 Task { await deleteNote() }
@@ -148,7 +167,20 @@ public struct NoteEditorScreen: View {
             Section {
                 if model.isEditing {
                     if let name = model.notetypeName {
-                        LabeledContent { Text(name) } label: { Text("Note Type", bundle: .module) }
+                        Button(action: changeNoteType) {
+                            LabeledContent {
+                                HStack {
+                                    Text(name)
+                                    Image(systemName: "chevron.right")
+                                        .font(.caption.weight(.semibold))
+                                        .accessibilityHidden(true)
+                                }
+                            } label: {
+                                Text("Note Type", bundle: .module)
+                            }
+                        }
+                        .foregroundStyle(.primary)
+                        .accessibilityIdentifier("change-editor-note-type")
                     }
                     if let name = model.deckName {
                         LabeledContent { Text(name) } label: { Text("Deck", bundle: .module) }
@@ -214,6 +246,27 @@ public struct NoteEditorScreen: View {
     private func close() {
         if model.hasChanges || !newTag.isEmpty { confirmDiscard = true }
         else { dismiss() }
+    }
+
+    private func changeNoteType() {
+        if model.hasChanges || !newTag.isEmpty { confirmDiscardForConversion = true }
+        else { showingConversion = true }
+    }
+
+    private func reloadAfterConversion() async {
+        do {
+            try await model.reloadAfterNoteTypeChange()
+            resetFieldInput()
+        } catch {
+            failure = error.message
+        }
+    }
+
+    private func resetFieldInput() {
+        selections = [:]
+        markupFields = []
+        focusedField = nil
+        newTag = ""
     }
 
     private func commitTags() {
