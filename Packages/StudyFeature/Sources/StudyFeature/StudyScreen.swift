@@ -55,6 +55,17 @@ public struct StudyScreen: View {
         }
         .background(Color.studyBackground.ignoresSafeArea())
         .task { await model.run() }
+        .alert(
+            Text("Study Action Failed", bundle: .module),
+            isPresented: Binding(
+                get: { model.actionError != nil },
+                set: { if !$0 { model.clearActionError() } }
+            )
+        ) {
+            Button { model.clearActionError() } label: { Text("OK", bundle: .module) }
+        } message: {
+            Text(verbatim: model.actionError ?? "")
+        }
     }
 
     private var topBar: some View {
@@ -81,6 +92,9 @@ public struct StudyScreen: View {
                 .accessibilityLabel(Text("Close", bundle: .module))
                 .keyboardShortcut(.cancelAction)
                 Spacer()
+                if model.state.card != nil || model.canUndo || model.canRedo {
+                    ReviewerActionsMenu(model: model)
+                }
             }
         }
         .padding(.horizontal, 8)
@@ -105,7 +119,11 @@ public struct StudyScreen: View {
             ProgressView()
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         case .finished(let summary):
-            FinishedView(summary: summary) { dismiss() }
+            FinishedView(summary: summary) {
+                Task { await model.unburyDeck() }
+            } onDone: {
+                dismiss()
+            }
         case .failed(let message):
             ContentUnavailableView {
                 Label {
@@ -132,7 +150,7 @@ public struct StudyScreen: View {
                 .frame(maxWidth: horizontalSizeClass == .regular ? 820 : .infinity)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             Divider()
-            AnswerBar(card: card, showingAnswer: showingAnswer, isAnswering: model.isAnswering) {
+            AnswerBar(card: card, showingAnswer: showingAnswer, isAnswering: model.isBusy) {
                 showAnswer()
             } onRate: { rating in
                 Task { await model.answer(rating) }
@@ -276,6 +294,7 @@ private struct RatingButton: View {
 /// The end of the session, or a deck with nothing left today.
 private struct FinishedView: View {
     let summary: SessionSummary
+    let onUnbury: () -> Void
     let onDone: () -> Void
 
     var body: some View {
@@ -318,6 +337,12 @@ private struct FinishedView: View {
                 }
             }
         } actions: {
+            if summary.hasBuried {
+                Button(action: onUnbury) {
+                    Text("Unbury Cards", bundle: .module)
+                }
+                .buttonStyle(.bordered)
+            }
             Button(action: onDone) {
                 Text("Done", bundle: .module)
                     .frame(minWidth: 120)
