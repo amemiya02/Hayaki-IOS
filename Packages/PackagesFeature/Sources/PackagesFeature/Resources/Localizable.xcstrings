@@ -18,7 +18,21 @@
       }
     },
     "A backup of your previous collection was saved in the Backups folder.": {
-      "comment": "Shown after a collection package replaced the collection, when a backup was made first."
+      "comment": "Shown after a collection package replaced the collection, when a backup was made first.",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "以前のコレクションのバックアップを「Backups」フォルダに保存しました。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已将原集合的备份保存到 Backups 文件夹。"
+          }
+        }
+      }
     },
     "Add Duplicates": {
       "localizations": {
@@ -86,7 +100,21 @@
       }
     },
     "Always": {
-      "comment": "Update choice: always replace with the package's copy."
+      "comment": "Update choice: always replace with the package's copy.",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "常に同期"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "始终"
+          }
+        }
+      }
     },
     "Browse AnkiWeb": {
       "localizations": {
@@ -105,16 +133,72 @@
       }
     },
     "Cancel": {
-      "comment": "Button that stops before importing or exporting a package."
+      "comment": "Button that stops before importing or exporting a package.",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "キャンセル"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "取消"
+          }
+        }
+      }
     },
     "Cancel Export": {
-      "comment": "Button that stops an export while it runs."
+      "comment": "Button that stops an export while it runs.",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "エクスポートをキャンセル"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "取消导出"
+          }
+        }
+      }
     },
     "Cancel Import": {
-      "comment": "Button that stops an import while it runs."
+      "comment": "Button that stops an import while it runs.",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "インポートをキャンセル"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "取消导入"
+          }
+        }
+      }
     },
     "Cards": {
-      "comment": "Row label in the import summary: number of cards in the collection."
+      "comment": "Row label in the import summary: number of cards in the collection.",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "カード"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "卡片"
+          }
+        }
+      }
     },
     "Cards in Plain Text": {
       "localizations": {
@@ -149,7 +233,21 @@
       }
     },
     "Collection Package": {
-      "comment": "Export choice: the whole collection as a collection package (.colpkg), as desktop Anki's 'Anki Collection Package'."
+      "comment": "Export choice: the whole collection as a collection package (.colpkg), as desktop Anki's 'Anki Collection Package'.",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "コレクションパッケージ"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "集合包"
+          }
+        }
+      }
     },
     "Colon": {
       "localizations": {
@@ -200,10 +298,38 @@
       }
     },
     "Could Not Export": {
-      "comment": "Title shown when an export failed."
+      "comment": "Title shown when an export failed.",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "エクスポートできませんでした"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无法导出"
+          }
+        }
+      }
     },
     "Could Not Import": {
-      "comment": "Title shown when an import failed."
+      "comment": "Title shown when an import failed.",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "インポートできませんでした"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无法导入"
+          }
+        }
+      }
     },
     "Deck": {
       "localizations": {
@@ -222,10 +348,38 @@
       }
     },
     "Deck Package": {
-      "comment": "Export choice: chosen decks as a deck package (.apkg), as desktop Anki's 'Anki Deck Package'."
+      "comment": "Export choice: chosen decks as a deck package (.apkg), as desktop Anki's 'Anki Deck Package'.",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "デッキパッケージ"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "牌组包"
+          }
+        }
+      }
     },
     "Decks": {
-      "comment": "Row label in the import summary: number of decks in the collection; also the header of the deck list on the export screen."
+      "comment": "Row label in the import summary: number of decks in the collection; also the header of the deck list on the export screen.",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "デッキ"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "牌组"
+          }
+        }
+      }
     },
     "Delimiter": {
       "localizations": {
@@ -244,10 +398,38 @@
       }
     },
     "Done": {
-      "comment": "Button that closes the import summary or the finished export."
+      "comment": "Button that closes the import summary or the finished export.",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "完了"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "完成"
+          }
+        }
+      }
     },
     "Everything in Hayaki will be replaced by the collection in “%@”. A backup of your current collection is made first.": {
-      "comment": "Warning before a collection package replaces the collection; the placeholder is the package's file name."
+      "comment": "Warning before a collection package replaces the collection; the placeholder is the package's file name.",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hayakiのデータを「%@」に含まれるコレクションで置き換えます。その前に現在のコレクションをバックアップします。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hayaki 中的所有内容将被“%@”中的集合替换。系统会先备份当前集合。"
+          }
+        }
+      }
     },
     "Existing Notes": {
       "localizations": {
@@ -266,13 +448,55 @@
       }
     },
     "Export": {
-      "comment": "Title of the export screen, the accessibility label of its kind picker, and the button that starts the export."
+      "comment": "Title of the export screen, the accessibility label of its kind picker, and the button that starts the export.",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "エクスポート"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "导出"
+          }
+        }
+      }
     },
     "Export Cancelled": {
-      "comment": "Title shown after the learner cancelled an export."
+      "comment": "Title shown after the learner cancelled an export.",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "エクスポートをキャンセルしました"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已取消导出"
+          }
+        }
+      }
     },
     "Export Complete": {
-      "comment": "Title shown when the package has been written."
+      "comment": "Title shown when the package has been written.",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "エクスポートが完了しました"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "导出完成"
+          }
+        }
+      }
     },
     "Export Text File": {
       "localizations": {
@@ -291,7 +515,21 @@
       }
     },
     "Exporting…": {
-      "comment": "Shown while the core writes the package."
+      "comment": "Shown while the core writes the package.",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "エクスポート中…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正在导出…"
+          }
+        }
+      }
     },
     "Export…": {
       "comment": "Toolbar button on the deck list that opens the export screen.",
@@ -392,25 +630,123 @@
       }
     },
     "Hayaki can import Anki collection packages (.colpkg) and deck packages (.apkg).": {
-      "comment": "Shown when the learner opens a file that is not an Anki package."
+      "comment": "Shown when the learner opens a file that is not an Anki package.",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "HayakiはAnkiのコレクションパッケージ（.colpkg）とデッキパッケージ（.apkg）をインポートできます。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hayaki 可以导入 Anki 集合包（.colpkg）和牌组包（.apkg）。"
+          }
+        }
+      }
     },
     "Hayaki cannot reach its Documents folder.": {
-      "comment": "Shown if the folder exports are saved in cannot be found."
+      "comment": "Shown if the folder exports are saved in cannot be found.",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hayakiの書類フォルダにアクセスできません。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hayaki 无法访问其文稿文件夹。"
+          }
+        }
+      }
     },
     "If Newer": {
-      "comment": "Update choice: replace only if the package's copy is newer."
+      "comment": "Update choice: replace only if the package's copy is newer.",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "新しい場合"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "较新时"
+          }
+        }
+      }
     },
     "Import": {
-      "comment": "Button that starts importing a deck package with the chosen options."
+      "comment": "Button that starts importing a deck package with the chosen options.",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "インポート"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "导入"
+          }
+        }
+      }
     },
     "Import Cancelled": {
-      "comment": "Title shown after the learner cancelled an import."
+      "comment": "Title shown after the learner cancelled an import.",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "インポートをキャンセルしました"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已取消导入"
+          }
+        }
+      }
     },
     "Import Complete": {
-      "comment": "Title of the summary shown after an import finished."
+      "comment": "Title of the summary shown after an import finished.",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "インポートが完了しました"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "导入完成"
+          }
+        }
+      }
     },
     "Import Deck Presets": {
-      "comment": "Toggle: bring the deck presets (deck options) of a deck package's decks (Anki's 'Import any deck presets')."
+      "comment": "Toggle: bring the deck presets (deck options) of a deck package's decks (Anki's 'Import any deck presets').",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "デッキのプリセットをインポート"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "导入牌组预设"
+          }
+        }
+      }
     },
     "Import Downloaded Deck": {
       "localizations": {
@@ -429,7 +765,21 @@
       }
     },
     "Import Learning Progress": {
-      "comment": "Toggle: bring the scheduling and review history of a deck package's cards (Anki's 'Import any learning progress')."
+      "comment": "Toggle: bring the scheduling and review history of a deck package's cards (Anki's 'Import any learning progress').",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "学習の進捗をインポート"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "导入学习进度"
+          }
+        }
+      }
     },
     "Import Text File": {
       "localizations": {
@@ -465,7 +815,21 @@
       }
     },
     "Importing “%@”…": {
-      "comment": "Shown while a package imports; the placeholder is the file name."
+      "comment": "Shown while a package imports; the placeholder is the file name.",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "「%@」をインポート中…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正在导入“%@”…"
+          }
+        }
+      }
     },
     "Include Deck Name": {
       "localizations": {
@@ -484,7 +848,21 @@
       }
     },
     "Include Deck Presets": {
-      "comment": "Toggle: put the presets (deck options) of the chosen decks in the deck package (desktop Anki's 'Include deck presets')."
+      "comment": "Toggle: put the presets (deck options) of the chosen decks in the deck package (desktop Anki's 'Include deck presets').",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "デッキのプリセットを含める"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "包含牌组预设"
+          }
+        }
+      }
     },
     "Include GUID": {
       "localizations": {
@@ -519,7 +897,21 @@
       }
     },
     "Include Media": {
-      "comment": "Toggle: put the sounds and images in the package (desktop Anki's 'Include media')."
+      "comment": "Toggle: put the sounds and images in the package (desktop Anki's 'Include media').",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "メディアを含める"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "包含媒体"
+          }
+        }
+      }
     },
     "Include Note Type": {
       "localizations": {
@@ -538,7 +930,21 @@
       }
     },
     "Include Scheduling Information": {
-      "comment": "Toggle: put the cards' scheduling and review history in the deck package (desktop Anki's 'Include scheduling information')."
+      "comment": "Toggle: put the cards' scheduling and review history in the deck package (desktop Anki's 'Include scheduling information').",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "スケジュール情報を含める"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "包含排程信息"
+          }
+        }
+      }
     },
     "Include Tags": {
       "localizations": {
@@ -573,7 +979,21 @@
       }
     },
     "Learning progress is the scheduling and review history of cards new to your collection. Cards you already have keep their own progress.": {
-      "comment": "Explains the learning progress toggle when importing a deck package."
+      "comment": "Explains the learning progress toggle when importing a deck package.",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "学習の進捗には、新しく取り込むカードのスケジュールと復習履歴が含まれます。既存のカードは現在の進捗を維持します。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "学习进度包括新加入集合的卡片的排程和复习记录。集合中已有的卡片会保留各自的进度。"
+          }
+        }
+      }
     },
     "Match Scope": {
       "localizations": {
@@ -592,13 +1012,55 @@
       }
     },
     "Merge Note Types": {
-      "comment": "Toggle: merge a changed note type into the collection's one instead of keeping both (Anki's 'Merge note types')."
+      "comment": "Toggle: merge a changed note type into the collection's one instead of keeping both (Anki's 'Merge note types').",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ノートタイプを統合"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "合并笔记类型"
+          }
+        }
+      }
     },
     "Never": {
-      "comment": "Update choice: never replace; keep the collection's copy."
+      "comment": "Update choice: never replace; keep the collection's copy.",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "同期しない"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "从不"
+          }
+        }
+      }
     },
     "No file was saved.": {
-      "comment": "Shown after an export was cancelled."
+      "comment": "Shown after an export was cancelled.",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ファイルは保存されませんでした。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "未保存文件。"
+          }
+        }
+      }
     },
     "None": {
       "localizations": {
@@ -649,10 +1111,38 @@
       }
     },
     "Notes": {
-      "comment": "Row label in the import summary: number of notes in the collection."
+      "comment": "Row label in the import summary: number of notes in the collection.",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ノート"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "笔记"
+          }
+        }
+      }
     },
     "Notes Already in Your Collection": {
-      "comment": "Section header of the deck package import choices about notes the collection already has."
+      "comment": "Section header of the deck package import choices about notes the collection already has.",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "コレクションにある既存のノート"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "集合中已有的笔记"
+          }
+        }
+      }
     },
     "Notes in Plain Text": {
       "localizations": {
@@ -671,25 +1161,123 @@
       }
     },
     "Notes new to your collection.": {
-      "comment": "Explains the Added row of the import summary."
+      "comment": "Explains the Added row of the import summary.",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "コレクションに新しく追加されたノートです。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "新加入集合的笔记。"
+          }
+        }
+      }
     },
     "Notes you already had with another note type. Turn on Merge Note Types to update them.": {
-      "comment": "Explains the note-type conflict row of the import summary."
+      "comment": "Explains the note-type conflict row of the import summary.",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "既存のノートとノートタイプが異なります。「ノートタイプを統合」をオンにすると更新できます。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "这些已有笔记使用了其他笔记类型。开启“合并笔记类型”即可更新。"
+          }
+        }
+      }
     },
     "Notes you already had, left as they were. Their cards keep your scheduling.": {
-      "comment": "Explains the Skipped row of the import summary."
+      "comment": "Explains the Skipped row of the import summary.",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "既存のノートはそのまま維持され、カードのスケジュールも変わりません。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "这些已有笔记保持原样，其卡片保留原有排程。"
+          }
+        }
+      }
     },
     "Notes you already had, replaced by the package’s copy.": {
-      "comment": "Explains the Updated row of the import summary."
+      "comment": "Explains the Updated row of the import summary.",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "既存のノートはパッケージ内のもので置き換えられました。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "这些已有笔记已被包中的副本替换。"
+          }
+        }
+      }
     },
     "OK": {
-      "comment": "Button that closes the message about a cancelled or failed import or export."
+      "comment": "Button that closes the message about a cancelled or failed import or export.",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "OK"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "好"
+          }
+        }
+      }
     },
     "Opening “%@”…": {
-      "comment": "Shown while the chosen package is copied before importing; the placeholder is the file name."
+      "comment": "Shown while the chosen package is copied before importing; the placeholder is the file name.",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "「%@」を開いています…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正在打开“%@”…"
+          }
+        }
+      }
     },
     "Options": {
-      "comment": "Section header of the export choices."
+      "comment": "Section header of the export choices.",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "オプション"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "选项"
+          }
+        }
+      }
     },
     "Pipe": {
       "localizations": {
@@ -756,13 +1344,55 @@
       }
     },
     "Replace": {
-      "comment": "Destructive button that confirms replacing the collection with a collection package."
+      "comment": "Destructive button that confirms replacing the collection with a collection package.",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "置換"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "替换"
+          }
+        }
+      }
     },
     "Replace Your Collection?": {
-      "comment": "Title of the warning shown before a collection package replaces the learner's collection."
+      "comment": "Title of the warning shown before a collection package replaces the learner's collection.",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "コレクションを置き換えますか？"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "要替换你的集合吗？"
+          }
+        }
+      }
     },
     "Saved in the Exports folder, which you can find under Hayaki in the Files app. Share it to AirDrop it, save it elsewhere or open it in another app.": {
-      "comment": "Shown under the file name when an export has finished."
+      "comment": "Shown under the file name when an export has finished.",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "「ファイル」アプリの「Hayaki」内にある「Exports」フォルダに保存しました。共有するとAirDropで送信したり、別の場所に保存したり、他のアプリで開いたりできます。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已保存到“文件”应用中 Hayaki 下的 Exports 文件夹。你可以使用共享功能通过隔空投送发送、存放到其他位置或在其他应用中打开。"
+          }
+        }
+      }
     },
     "Semicolon": {
       "localizations": {
@@ -797,7 +1427,21 @@
       }
     },
     "Share…": {
-      "comment": "Button that opens the share sheet for the exported package."
+      "comment": "Button that opens the share sheet for the exported package.",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "共有…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "共享…"
+          }
+        }
+      }
     },
     "Skipped": {
       "comment": "Import summary row: notes already in the collection that were left unchanged.",
@@ -817,7 +1461,21 @@
       }
     },
     "Skipped: Different Note Type": {
-      "comment": "Import summary row: notes skipped because the collection's copy has a different note type."
+      "comment": "Import summary row: notes skipped because the collection's copy has a different note type.",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "スキップ：ノートタイプが異なります"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已跳过：笔记类型不同"
+          }
+        }
+      }
     },
     "Space": {
       "localizations": {
@@ -836,7 +1494,21 @@
       }
     },
     "Support Older Anki Versions": {
-      "comment": "Toggle: write the older package format (desktop Anki's 'Support older Anki versions (slower/larger files)')."
+      "comment": "Toggle: write the older package format (desktop Anki's 'Support older Anki versions (slower/larger files)').",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "古いバージョンのAnkiに対応"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "支持旧版 Anki"
+          }
+        }
+      }
     },
     "Tab": {
       "localizations": {
@@ -887,16 +1559,72 @@
       }
     },
     "The chosen decks no longer exist.": {
-      "comment": "Shown when the decks chosen for export were deleted meanwhile."
+      "comment": "Shown when the decks chosen for export were deleted meanwhile.",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "選択したデッキは見つかりません。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "所选牌组已不存在。"
+          }
+        }
+      }
     },
     "The decks you choose, each with its subdecks. Importing it into Anki or AnkiDroid adds them to the collection there.": {
-      "comment": "Explains what a deck package export holds."
+      "comment": "Explains what a deck package export holds.",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "選択したデッキとその子デッキが含まれます。AnkiやAnkiDroidにインポートすると、そちらのコレクションに追加されます。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "包含所选牌组及其子牌组。导入 Anki 或 AnkiDroid 时，这些牌组会添加到那里的集合中。"
+          }
+        }
+      }
     },
     "There are no decks to export.": {
-      "comment": "Shown in the deck list of the export screen when the collection has no decks."
+      "comment": "Shown in the deck list of the export screen when the collection has no decks.",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "エクスポートできるデッキがありません。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "没有可以导出的牌组。"
+          }
+        }
+      }
     },
     "Turn on support for older versions only for Anki before 2.1.50 or an old AnkiDroid; the file is larger and slower to make.": {
-      "comment": "Explains the 'Support Older Anki Versions' toggle."
+      "comment": "Explains the 'Support Older Anki Versions' toggle.",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Anki 2.1.50より前のバージョンや古いAnkiDroidで使う場合にのみオンにしてください。ファイルサイズが大きくなり、作成に時間がかかります。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "仅在使用低于 2.1.50 的 Anki 或旧版 AnkiDroid 时开启。导出的文件更大，生成耗时更长。"
+          }
+        }
+      }
     },
     "Unknown Delimiter": {
       "localizations": {
@@ -931,10 +1659,38 @@
       }
     },
     "Update Note Types": {
-      "comment": "Picker: when a note type already in the collection is replaced by the deck package's copy."
+      "comment": "Picker: when a note type already in the collection is replaced by the deck package's copy.",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ノートタイプを更新"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "更新笔记类型"
+          }
+        }
+      }
     },
     "Update Notes": {
-      "comment": "Picker: when a note already in the collection is replaced by the deck package's copy."
+      "comment": "Picker: when a note already in the collection is replaced by the deck package's copy.",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ノートを更新"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "更新笔记"
+          }
+        }
+      }
     },
     "Updated": {
       "comment": "Import summary row: notes in the collection that a deck package replaced.",
@@ -954,25 +1710,123 @@
       }
     },
     "Without scheduling information the cards arrive as new cards, with no review history. Leave it off to share decks; turn it on to move your progress.": {
-      "comment": "Explains the 'Include Scheduling Information' toggle when exporting a deck package."
+      "comment": "Explains the 'Include Scheduling Information' toggle when exporting a deck package.",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "スケジュール情報を含めない場合、カードは復習履歴のない新規カードになります。デッキを共有するときはオフ、進捗を移すときはオンにします。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "不包含排程信息时，卡片会作为没有复习记录的新卡片导入。共享牌组时可关闭，迁移进度时请开启。"
+          }
+        }
+      }
     },
     "Your Collection Now Has": {
-      "comment": "Header of the summary after a collection package replaced the collection."
+      "comment": "Header of the summary after a collection package replaced the collection.",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "更新後のコレクション"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "更新后的集合"
+          }
+        }
+      }
     },
     "Your collection was not changed.": {
-      "comment": "Shown after an import was cancelled."
+      "comment": "Shown after an import was cancelled.",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "コレクションは変更されていません。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "你的集合未发生更改。"
+          }
+        }
+      }
     },
     "Your whole collection, with its scheduling and review history. Importing it into Anki or AnkiDroid replaces the collection there.": {
-      "comment": "Explains what a collection package export holds."
+      "comment": "Explains what a collection package export holds.",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "スケジュールと復習履歴を含むコレクション全体です。AnkiやAnkiDroidにインポートすると、そちらのコレクションを置き換えます。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "包含完整集合以及排程和复习记录。导入 Anki 或 AnkiDroid 时，会替换那里的集合。"
+          }
+        }
+      }
     },
     "collection": {
-      "comment": "Start of the file name of an exported collection package, followed by the date and time. Lowercase, as desktop Anki names it."
+      "comment": "Start of the file name of an exported collection package, followed by the date and time. Lowercase, as desktop Anki names it.",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "コレクション"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "集合"
+          }
+        }
+      }
     },
     "decks": {
-      "comment": "Start of the file name of a deck package holding several decks, followed by the date and time. Lowercase, like desktop Anki's \"collection\" file names."
+      "comment": "Start of the file name of a deck package holding several decks, followed by the date and time. Lowercase, like desktop Anki's \"collection\" file names.",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "デッキ"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "牌组"
+          }
+        }
+      }
     },
     "“If Newer” replaces a note only when the package’s copy was changed more recently. Merging note types combines a changed note type with yours instead of keeping both.": {
-      "comment": "Explains the update and merge choices when importing a deck package."
+      "comment": "Explains the update and merge choices when importing a deck package.",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "「新しい場合」では、パッケージ内のノートの方が新しいときにのみ既存のノートを置き換えます。「ノートタイプを統合」を選ぶと、変更されたノートタイプを既存のものに統合します。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "选择“较新时”后，仅当包中的副本更新时才会替换笔记。合并笔记类型会将有更改的类型合并到你的类型中。"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

@@ -2021,50 +2021,258 @@
               }
             }
           }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "今日このあとに学習中のカードが%lld枚出題されます。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "今天稍后还有 %lld 张学习中的卡片到期。"
+          }
         }
       }
     },
     "%lld new, %lld learning, %lld due left" : {
-      "comment" : "VoiceOver label for the counts at the top of the study screen: new cards, learning cards and due review cards left today."
+      "comment" : "VoiceOver label for the counts at the top of the study screen: new cards, learning cards and due review cards left today.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "残り：新規%lld枚、学習中%lld枚、復習待ち%lld枚"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "剩余：新卡片 %lld 张，学习中 %lld 张，待复习 %lld 张"
+          }
+        }
+      }
     },
     "Again" : {
-      "comment" : "Rating: the learner did not recall the card."
+      "comment" : "Rating: the learner did not recall the card.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "もう一度"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "重来"
+          }
+        }
+      }
     },
     "All Done for Today" : {
-      "comment" : "Title shown when a study session ends, or a deck is opened that has nothing left to study today."
+      "comment" : "Title shown when a study session ends, or a deck is opened that has nothing left to study today.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "今日の学習は完了です"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "今日学习已完成"
+          }
+        }
+      }
     },
     "Close" : {
-      "comment" : "Button that closes the study screen."
+      "comment" : "Button that closes the study screen.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "閉じる"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "关闭"
+          }
+        }
+      }
     },
     "Could Not Continue Studying" : {
-      "comment" : "Title shown when the study session failed, for example because the collection could not be read."
+      "comment" : "Title shown when the study session failed, for example because the collection could not be read.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "学習を続けられませんでした"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "无法继续学习"
+          }
+        }
+      }
     },
     "Done" : {
-      "comment" : "Button that closes the study screen at the end of a session."
+      "comment" : "Button that closes the study screen at the end of a session.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "完了"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "完成"
+          }
+        }
+      }
     },
     "Easy" : {
-      "comment" : "Rating: recalled at once."
+      "comment" : "Rating: recalled at once.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "簡単"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "简单"
+          }
+        }
+      }
     },
     "Good" : {
-      "comment" : "Rating: recalled after some thought."
+      "comment" : "Rating: recalled after some thought.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正解"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "良好"
+          }
+        }
+      }
     },
     "Hard" : {
-      "comment" : "Rating: recalled with serious difficulty."
+      "comment" : "Rating: recalled with serious difficulty.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "難しい"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "困难"
+          }
+        }
+      }
     },
     "Play Audio" : {
-      "comment" : "VoiceOver label of the replay button on a card."
+      "comment" : "VoiceOver label of the replay button on a card.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "音声を再生"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "播放音频"
+          }
+        }
+      }
     },
     "Show Answer" : {
-      "comment" : "Button at the bottom of the study screen that turns the card over to its answer side."
+      "comment" : "Button at the bottom of the study screen that turns the card over to its answer side.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "解答を表示"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "显示答案"
+          }
+        }
+      }
     },
     "The card asks to type the field “%@”, which its note type does not have." : {
-      "comment" : "Shown on a card whose template asks to type the answer into a field that does not exist."
+      "comment" : "Shown on a card whose template asks to type the answer into a field that does not exist.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "このカードは「%@」フィールドの入力を求めていますが、ノートタイプにそのフィールドがありません。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "此卡片要求输入“%@”字段，但其笔记类型中没有该字段。"
+          }
+        }
+      }
     },
     "This deck has nothing left to study today." : {
-      "comment" : "Shown when a deck is opened for studying but has no cards left for today."
+      "comment" : "Shown when a deck is opened for studying but has no cards left for today.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "このデッキで今日学習するカードはもうありません。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "此牌组今天没有剩余的卡片需要学习。"
+          }
+        }
+      }
     },
     "Type the answer" : {
-      "comment" : "VoiceOver label and placeholder of the text field on a card that asks the learner to type the answer."
+      "comment" : "VoiceOver label and placeholder of the text field on a card that asks the learner to type the answer.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "解答を入力"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "输入答案"
+          }
+        }
+      }
     },
     "You reviewed %lld cards in this session." : {
       "comment" : "Summary at the end of a study session: how many reviews the learner made.",
@@ -2085,6 +2293,562 @@
                 }
               }
             }
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "このセッションで%lld枚のカードを復習しました。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "本次学习中，你复习了 %lld 张卡片。"
+          }
+        }
+      }
+    },
+    "%@ pt" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ pt"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ 磅"
+          }
+        }
+      }
+    },
+    "%lld ms" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lldミリ秒"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld 毫秒"
+          }
+        }
+      }
+    },
+    "%lld%%" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld%%"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld%%"
+          }
+        }
+      }
+    },
+    "Allow microphone access in Settings to record your voice." : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "音声を録音するには、「設定」でマイクへのアクセスを許可してください。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "请在“设置”中允许访问麦克风，即可录制语音。"
+          }
+        }
+      }
+    },
+    "Automatic Pen Color" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ペンの色を自動で設定"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "自动选择笔色"
+          }
+        }
+      }
+    },
+    "Capture Key" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "キーを入力"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "录入按键"
+          }
+        }
+      }
+    },
+    "Controller" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "コントローラ"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "游戏控制器"
+          }
+        }
+      }
+    },
+    "Could Not Edit Tags" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "タグを編集できませんでした"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "无法编辑标签"
+          }
+        }
+      }
+    },
+    "Could Not Save Reviewer Setting" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "学習画面の設定を保存できませんでした"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "无法保存复习界面设置"
+          }
+        }
+      }
+    },
+    "Erase Whole Strokes" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "線を一筆ずつ消去"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "擦除整条笔画"
+          }
+        }
+      }
+    },
+    "Eraser Width" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "消しゴムの太さ"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "橡皮擦宽度"
+          }
+        }
+      }
+    },
+    "Files → On My iPhone or iPad → Hayaki → Whiteboard → %@" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ファイル → このiPhone内／このiPad内 → Hayaki → Whiteboard → %@"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "文件 → 我的 iPhone 或 iPad → Hayaki → Whiteboard → %@"
+          }
+        }
+      }
+    },
+    "Gestures" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ジェスチャー"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "手势操作"
+          }
+        }
+      }
+    },
+    "Hide Whiteboard Tools" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ホワイトボードのツールを隠す"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "隐藏白板工具"
+          }
+        }
+      }
+    },
+    "Key Name" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "キーの名前"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "按键名称"
+          }
+        }
+      }
+    },
+    "Keyboard" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "キーボード"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "键盘"
+          }
+        }
+      }
+    },
+    "Leave Full Screen" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "全画面表示を終了"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "退出全屏"
+          }
+        }
+      }
+    },
+    "Open Settings" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "設定を開く"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "打开设置"
+          }
+        }
+      }
+    },
+    "Pen Color" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ペンの色"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "笔色"
+          }
+        }
+      }
+    },
+    "Pen Width" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ペンの太さ"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "笔宽"
+          }
+        }
+      }
+    },
+    "Press a Key" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "いずれかのキーを押してください"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "按下按键"
+          }
+        }
+      }
+    },
+    "Recording" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "録音"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "录音"
+          }
+        }
+      }
+    },
+    "Remove Brush" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ブラシを削除"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "移除画笔"
+          }
+        }
+      }
+    },
+    "Save Current Brush" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "現在のブラシを保存"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "保存当前画笔"
+          }
+        }
+      }
+    },
+    "Show Whiteboard Tools" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ホワイトボードのツールを表示"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "显示白板工具"
+          }
+        }
+      }
+    },
+    "Stop Replay" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "再生を停止"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "停止播放"
+          }
+        }
+      }
+    },
+    "Tags" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "タグ"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "标签"
+          }
+        }
+      }
+    },
+    "The microphone could not start recording." : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "マイクで録音を開始できませんでした。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "麦克风无法开始录音。"
+          }
+        }
+      }
+    },
+    "The recording could not be saved." : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "録音を保存できませんでした。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "无法保存录音。"
+          }
+        }
+      }
+    },
+    "The recording could not play." : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "録音を再生できませんでした。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "无法播放录音。"
+          }
+        }
+      }
+    },
+    "Timebox: %lld min" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "学習時間の区切り：%lld分"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "学习时限：%lld 分钟"
+          }
+        }
+      }
+    },
+    "Unassigned" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "未割り当て"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "未分配"
+          }
+        }
+      }
+    },
+    "Use Brush" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ブラシを使う"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "使用画笔"
+          }
+        }
+      }
+    },
+    "You reviewed %lld cards in %lld minutes." : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%2$lld分間に%1$lld枚のカードを復習しました。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "你在 %2$lld 分钟内复习了 %1$lld 张卡片。"
           }
         }
       }

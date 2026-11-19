@@ -18,7 +18,21 @@
       }
     },
     "%lld Selected" : {
-      "comment" : "Browse: navigation title while selecting cards; the number of selected cards."
+      "comment" : "Browse: navigation title while selecting cards; the number of selected cards.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld件選択中"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已选择 %lld 项"
+          }
+        }
+      }
     },
     "%lld days" : {
       "comment" : "Card detail: the card's current interval in days.",
@@ -40,65 +54,343 @@
               }
             }
           }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld日"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld 天"
+          }
         }
       }
     },
     "Actions" : {
-      "comment" : "Browse: accessibility label of the menu of actions on the selected cards (flag, move, suspend, delete)."
+      "comment" : "Browse: accessibility label of the menu of actions on the selected cards (flag, move, suspend, delete).",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "操作"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "操作"
+          }
+        }
+      }
     },
     "Added" : {
-      "comment" : "Card detail: label of the date the card's note was added."
+      "comment" : "Card detail: label of the date the card's note was added.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "追加"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已添加"
+          }
+        }
+      }
     },
     "Again" : {
-      "comment" : "Card detail, review history: the Again rating."
+      "comment" : "Card detail, review history: the Again rating.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "もう一度"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "重来"
+          }
+        }
+      }
     },
     "Anki search, such as deck:Spanish" : {
-      "comment" : "Prompt in the Browse search field; the search uses Anki's search syntax. Keep 'deck:' untranslated."
+      "comment" : "Prompt in the Browse search field; the search uses Anki's search syntax. Keep 'deck:' untranslated.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ankiの検索式（例：deck:Spanish）"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Anki 搜索语法，例如 deck:Spanish"
+          }
+        }
+      }
     },
     "Ascending" : {
-      "comment" : "Browse sort menu: sort from lowest to highest (A to Z, oldest first)."
+      "comment" : "Browse sort menu: sort from lowest to highest (A to Z, oldest first).",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "昇順"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "升序"
+          }
+        }
+      }
     },
     "Blue" : {
-      "comment" : "Browse: a flag colour, in the Filter and Flag menus."
+      "comment" : "Browse: a flag colour, in the Filter and Flag menus.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "青"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "蓝色"
+          }
+        }
+      }
     },
     "Blue flag" : {
-      "comment" : "Accessibility label of a card's blue flag in the Browse list."
+      "comment" : "Accessibility label of a card's blue flag in the Browse list.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "青のフラグ"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "蓝色旗标"
+          }
+        }
+      }
     },
     "Browse" : {
-      "comment" : "Title of the Browse section and its tab."
+      "comment" : "Title of the Browse section and its tab.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "閲覧"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "浏览"
+          }
+        }
+      }
     },
     "Buried" : {
-      "comment" : "A buried card (Browse list label and card detail status)."
+      "comment" : "A buried card (Browse list label and card detail status).",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "延期中"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已搁置"
+          }
+        }
+      }
     },
     "Cancel" : {
-      "comment" : "Browse: button that closes a sheet or dialog without changing anything."
+      "comment" : "Browse: button that closes a sheet or dialog without changing anything.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "キャンセル"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "取消"
+          }
+        }
+      }
     },
     "Card" : {
-      "comment" : "Card detail: navigation title, and the header of the section about the card's scheduling."
+      "comment" : "Card detail: navigation title, and the header of the section about the card's scheduling.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "カード"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "卡片"
+          }
+        }
+      }
     },
     "Card Deleted" : {
-      "comment" : "Card detail: title shown when the card was deleted meanwhile."
+      "comment" : "Card detail: title shown when the card was deleted meanwhile.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "カードが削除されました"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "卡片已删除"
+          }
+        }
+      }
     },
     "Card Template" : {
-      "comment" : "Card detail: label of the name of the card template that made the card."
+      "comment" : "Card detail: label of the name of the card template that made the card.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "カードテンプレート"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "卡片模板"
+          }
+        }
+      }
     },
     "Cards you add or import appear here." : {
-      "comment" : "Browse: description shown when the collection has no cards."
+      "comment" : "Browse: description shown when the collection has no cards.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "追加またはインポートしたカードがここに表示されます。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "添加或导入的卡片会显示在这里。"
+          }
+        }
+      }
     },
     "Could Not Change Cards" : {
-      "comment" : "Browse: title of the alert shown when a bulk action or undo fails; the core's explanation follows."
+      "comment" : "Browse: title of the alert shown when a bulk action or undo fails; the core's explanation follows.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "カードを変更できませんでした"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "无法更改卡片"
+          }
+        }
+      }
     },
     "Could Not Show Card" : {
-      "comment" : "Card detail: title shown when the card could not be read."
+      "comment" : "Card detail: title shown when the card could not be read.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "カードを表示できませんでした"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "无法显示卡片"
+          }
+        }
+      }
     },
     "Could Not Show Cards" : {
-      "comment" : "Browse: title shown when the search failed for a reason other than invalid syntax."
+      "comment" : "Browse: title shown when the search failed for a reason other than invalid syntax.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "カードを表示できませんでした"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "无法显示卡片"
+          }
+        }
+      }
     },
     "Deck" : {
-      "comment" : "Card detail: label of the card's deck."
+      "comment" : "Card detail: label of the card's deck.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "デッキ"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "牌组"
+          }
+        }
+      }
     },
     "Delete" : {
-      "comment" : "Browse: action that deletes the notes of the selected cards (bottom bar, and the confirmation button)."
+      "comment" : "Browse: action that deletes the notes of the selected cards (bottom bar, and the confirmation button).",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "削除"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "删除"
+          }
+        }
+      }
     },
     "Delete %lld Notes?" : {
       "comment" : "Browse: title of the confirmation before deleting; the number of notes the selected cards belong to.",
@@ -119,6 +411,18 @@
                 }
               }
             }
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld件のノートを削除しますか？"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "要删除 %lld 条笔记吗？"
           }
         }
       }
@@ -143,11 +447,37 @@
               }
             }
           }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld枚のカードを削除しました"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已删除 %lld 张卡片"
+          }
         }
       }
     },
     "Delete…" : {
-      "comment" : "Browse Actions menu: deletes the notes of the selected cards, after a confirmation."
+      "comment" : "Browse Actions menu: deletes the notes of the selected cards, after a confirmation.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "削除…"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "删除…"
+          }
+        }
+      }
     },
     "Deleting a card deletes its note, with the note's other cards: %lld cards in all." : {
       "comment" : "Browse: message of the confirmation before deleting; the number of cards that will be deleted.",
@@ -169,38 +499,190 @@
               }
             }
           }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "カードを削除すると、そのノートと同じノートの他のカードも削除されます（合計%lld枚）。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "删除卡片也会删除其笔记以及该笔记生成的其他卡片，共 %lld 张。"
+          }
         }
       }
     },
     "Descending" : {
-      "comment" : "Browse sort menu: sort from highest to lowest (Z to A, newest first)."
+      "comment" : "Browse sort menu: sort from highest to lowest (Z to A, newest first).",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "降順"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "降序"
+          }
+        }
+      }
     },
     "Deselect All" : {
-      "comment" : "Browse: toolbar button while selecting, when every listed card is selected."
+      "comment" : "Browse: toolbar button while selecting, when every listed card is selected.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "選択をすべて解除"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "取消全选"
+          }
+        }
+      }
     },
     "Dismiss" : {
-      "comment" : "Browse: accessibility label of the button that hides the Undo message."
+      "comment" : "Browse: accessibility label of the button that hides the Undo message.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "閉じる"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "关闭"
+          }
+        }
+      }
     },
     "Done" : {
-      "comment" : "Browse: toolbar button that ends selecting cards."
+      "comment" : "Browse: toolbar button that ends selecting cards.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "完了"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "完成"
+          }
+        }
+      }
     },
     "Due" : {
-      "comment" : "Card detail: label of when the card is due."
+      "comment" : "Card detail: label of when the card is due.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "復習待ち"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "待复习"
+          }
+        }
+      }
     },
     "Due Today" : {
-      "comment" : "Browse Filter menu: the cards waiting to be reviewed today, overdue ones included."
+      "comment" : "Browse Filter menu: the cards waiting to be reviewed today, overdue ones included.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "今日が期限"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "今日到期"
+          }
+        }
+      }
     },
     "Easy" : {
-      "comment" : "Card detail, review history: the Easy rating."
+      "comment" : "Card detail, review history: the Easy rating.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "簡単"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "简单"
+          }
+        }
+      }
     },
     "Filter" : {
-      "comment" : "Browse: toolbar menu of quick filters (deck, tag, flag, suspended, due today)."
+      "comment" : "Browse: toolbar menu of quick filters (deck, tag, flag, suspended, due today).",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "フィルター"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "筛选条件"
+          }
+        }
+      }
     },
     "Filtered" : {
-      "comment" : "Card detail, review history: a review in a filtered deck."
+      "comment" : "Card detail, review history: a review in a filtered deck.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "フィルター済み"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已筛选"
+          }
+        }
+      }
     },
     "Flag" : {
-      "comment" : "Browse: submenu of flags, in the Filter menu and in the bottom bar while selecting."
+      "comment" : "Browse: submenu of flags, in the Filter menu and in the bottom bar while selecting.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "フラグ"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "旗标"
+          }
+        }
+      }
     },
     "Flagged %lld cards" : {
       "comment" : "Browse: message after flagging, beside the Undo button; the number of cards flagged.",
@@ -222,44 +704,224 @@
               }
             }
           }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld枚のカードにフラグを付けました"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已为 %lld 张卡片添加旗标"
+          }
         }
       }
     },
     "Good" : {
-      "comment" : "Card detail, review history: the Good rating."
+      "comment" : "Card detail, review history: the Good rating.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正解"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "良好"
+          }
+        }
+      }
     },
     "Green" : {
-      "comment" : "Browse: a flag colour, in the Filter and Flag menus."
+      "comment" : "Browse: a flag colour, in the Filter and Flag menus.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "緑"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "绿色"
+          }
+        }
+      }
     },
     "Green flag" : {
-      "comment" : "Accessibility label of a card's green flag in the Browse list."
+      "comment" : "Accessibility label of a card's green flag in the Browse list.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "緑のフラグ"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "绿色旗标"
+          }
+        }
+      }
     },
     "Hard" : {
-      "comment" : "Card detail, review history: the Hard rating."
+      "comment" : "Card detail, review history: the Hard rating.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "難しい"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "困难"
+          }
+        }
+      }
     },
     "Home Deck" : {
-      "comment" : "Card detail: label of the deck a card in a filtered deck came from."
+      "comment" : "Card detail: label of the deck a card in a filtered deck came from.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "元のデッキ"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "原始牌组"
+          }
+        }
+      }
     },
     "Interval" : {
-      "comment" : "Card detail: label of the card's current interval."
+      "comment" : "Card detail: label of the card's current interval.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "間隔"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "间隔"
+          }
+        }
+      }
     },
     "Interval %@" : {
-      "comment" : "Card detail, review history: the interval given after a review, such as 'Interval 3 d'."
+      "comment" : "Card detail, review history: the interval given after a review, such as 'Interval 3 d'.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "間隔 %@"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "间隔 %@"
+          }
+        }
+      }
     },
     "Invalid Search" : {
-      "comment" : "Browse: title shown when the search is not valid Anki search syntax; the core's explanation follows."
+      "comment" : "Browse: title shown when the search is not valid Anki search syntax; the core's explanation follows.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "検索式が正しくありません"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "搜索语法有误"
+          }
+        }
+      }
     },
     "Lapses" : {
-      "comment" : "Card detail: label of how many times the card was forgotten after being learnt."
+      "comment" : "Card detail: label of how many times the card was forgotten after being learnt.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "忘却回数"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "遗忘次数"
+          }
+        }
+      }
     },
     "Learning" : {
-      "comment" : "Card detail, review history: a review while the card was in learning."
+      "comment" : "Card detail, review history: a review while the card was in learning.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "学習中"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "学习中"
+          }
+        }
+      }
     },
     "Manual" : {
-      "comment" : "Card detail, review history: the card was changed by hand (for example reset)."
+      "comment" : "Card detail, review history: the card was changed by hand (for example reset).",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "手動"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "手动"
+          }
+        }
+      }
     },
     "Marked" : {
-      "comment" : "A card whose note is marked (Browse list label)."
+      "comment" : "A card whose note is marked (Browse list label).",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "マーク済み"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已标记"
+          }
+        }
+      }
     },
     "Move %lld Cards" : {
       "comment" : "Browse: title of the sheet for choosing the deck to move the selected cards to.",
@@ -281,11 +943,37 @@
               }
             }
           }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld枚のカードを移動"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "移动 %lld 张卡片"
+          }
         }
       }
     },
     "Move to Deck…" : {
-      "comment" : "Browse Actions menu: opens the list of decks to move the selected cards to."
+      "comment" : "Browse Actions menu: opens the list of decks to move the selected cards to.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "デッキに移動…"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "移至牌组…"
+          }
+        }
+      }
     },
     "Moved %lld cards" : {
       "comment" : "Browse: message after moving cards, beside the Undo button.",
@@ -307,59 +995,309 @@
               }
             }
           }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld枚のカードを移動しました"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已移动 %lld 张卡片"
+          }
         }
       }
     },
     "New card #%lld" : {
-      "comment" : "Card detail: when a new card is due, as its position among new cards."
+      "comment" : "Card detail: when a new card is due, as its position among new cards.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "新規カード #%lld"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "新卡片 #%lld"
+          }
+        }
+      }
     },
     "No Cards" : {
-      "comment" : "Browse: title shown when the collection has no cards."
+      "comment" : "Browse: title shown when the collection has no cards.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "カードがありません"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "没有卡片"
+          }
+        }
+      }
     },
     "No Flag" : {
-      "comment" : "Browse: Flag menu item that takes the flag off the selected cards."
+      "comment" : "Browse: Flag menu item that takes the flag off the selected cards.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "フラグなし"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "无旗标"
+          }
+        }
+      }
     },
     "Not reviewed yet." : {
-      "comment" : "Card detail: shown in the review history of a card never reviewed."
+      "comment" : "Card detail: shown in the review history of a card never reviewed.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "まだ復習していません。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "尚未复习。"
+          }
+        }
+      }
     },
     "Note" : {
-      "comment" : "Card detail: header of the section listing the note's fields."
+      "comment" : "Card detail: header of the section listing the note's fields.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ノート"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "备注"
+          }
+        }
+      }
     },
     "Note Type" : {
-      "comment" : "Card detail: label of the card's note type."
+      "comment" : "Card detail: label of the card's note type.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ノートタイプ"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "笔记类型"
+          }
+        }
+      }
     },
     "OK" : {
-      "comment" : "Browse: button that closes an alert."
+      "comment" : "Browse: button that closes an alert.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "OK"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "好"
+          }
+        }
+      }
     },
     "Orange" : {
-      "comment" : "Browse: a flag colour, in the Filter and Flag menus."
+      "comment" : "Browse: a flag colour, in the Filter and Flag menus.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "オレンジ"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "橙色"
+          }
+        }
+      }
     },
     "Orange flag" : {
-      "comment" : "Accessibility label of a card's orange flag in the Browse list."
+      "comment" : "Accessibility label of a card's orange flag in the Browse list.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "オレンジのフラグ"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "橙色旗标"
+          }
+        }
+      }
     },
     "Order" : {
-      "comment" : "Browse sort menu: title of the ascending/descending choice."
+      "comment" : "Browse sort menu: title of the ascending/descending choice.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "順序"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "顺序"
+          }
+        }
+      }
     },
     "Pink" : {
-      "comment" : "Browse: a flag colour, in the Filter and Flag menus."
+      "comment" : "Browse: a flag colour, in the Filter and Flag menus.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ピンク"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "粉色"
+          }
+        }
+      }
     },
     "Pink flag" : {
-      "comment" : "Accessibility label of a card's pink flag in the Browse list."
+      "comment" : "Accessibility label of a card's pink flag in the Browse list.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ピンクのフラグ"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "粉色旗标"
+          }
+        }
+      }
     },
     "Purple" : {
-      "comment" : "Browse: a flag colour, in the Filter and Flag menus."
+      "comment" : "Browse: a flag colour, in the Filter and Flag menus.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "紫"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "紫色"
+          }
+        }
+      }
     },
     "Purple flag" : {
-      "comment" : "Accessibility label of a card's purple flag in the Browse list."
+      "comment" : "Accessibility label of a card's purple flag in the Browse list.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "紫のフラグ"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "紫色旗标"
+          }
+        }
+      }
     },
     "Red" : {
-      "comment" : "Browse: a flag colour, in the Filter and Flag menus."
+      "comment" : "Browse: a flag colour, in the Filter and Flag menus.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "赤"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "红色"
+          }
+        }
+      }
     },
     "Red flag" : {
-      "comment" : "Accessibility label of a card's red flag in the Browse list."
+      "comment" : "Accessibility label of a card's red flag in the Browse list.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "赤のフラグ"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "红色旗标"
+          }
+        }
+      }
     },
     "Relearning" : {
-      "comment" : "Card detail, review history: a review while relearning a forgotten card."
+      "comment" : "Card detail, review history: a review while relearning a forgotten card.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "再学習中"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "重新学习"
+          }
+        }
+      }
     },
     "Removed the flag from %lld cards" : {
       "comment" : "Browse: message after taking the flag off cards, beside the Undo button.",
@@ -381,41 +1319,207 @@
               }
             }
           }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld枚のカードのフラグを外しました"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已移除 %lld 张卡片的旗标"
+          }
         }
       }
     },
     "Rescheduled" : {
-      "comment" : "Card detail, review history: the card's due date was set by hand."
+      "comment" : "Card detail, review history: the card's due date was set by hand.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "スケジュール変更済み"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已重新排程"
+          }
+        }
+      }
     },
     "Review" : {
-      "comment" : "Card detail, review history: a review of a card in review."
+      "comment" : "Card detail, review history: a review of a card in review.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "復習"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "复习"
+          }
+        }
+      }
     },
     "Review History" : {
-      "comment" : "Card detail: header of the list of the card's reviews."
+      "comment" : "Card detail: header of the list of the card's reviews.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "復習履歴"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "复习记录"
+          }
+        }
+      }
     },
     "Reviews" : {
-      "comment" : "Card detail: label of how many times the card was reviewed."
+      "comment" : "Card detail: label of how many times the card was reviewed.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "学習画面"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "复习"
+          }
+        }
+      }
     },
     "Select" : {
-      "comment" : "Browse: toolbar button that starts selecting cards to act on them together."
+      "comment" : "Browse: toolbar button that starts selecting cards to act on them together.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "選択"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "选择"
+          }
+        }
+      }
     },
     "Select All" : {
-      "comment" : "Browse: toolbar button while selecting; selects every listed card."
+      "comment" : "Browse: toolbar button while selecting; selects every listed card.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "すべて選択"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "全选"
+          }
+        }
+      }
     },
     "Sort" : {
-      "comment" : "Browse toolbar button that opens the sort menu."
+      "comment" : "Browse toolbar button that opens the sort menu.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "並べ替え"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "排序"
+          }
+        }
+      }
     },
     "Sort By" : {
-      "comment" : "Browse sort menu: title of the list of columns to sort by."
+      "comment" : "Browse sort menu: title of the list of columns to sort by.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "並べ替え"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "排序方式"
+          }
+        }
+      }
     },
     "Status" : {
-      "comment" : "Card detail: label of whether the card is suspended or buried."
+      "comment" : "Card detail: label of whether the card is suspended or buried.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "状態"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "状态"
+          }
+        }
+      }
     },
     "Suspend" : {
-      "comment" : "Browse: action that suspends the selected cards, so they are not studied."
+      "comment" : "Browse: action that suspends the selected cards, so they are not studied.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "対象外"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "暂停"
+          }
+        }
+      }
     },
     "Suspended" : {
-      "comment" : "A suspended card (Browse list label and card detail status)."
+      "comment" : "A suspended card (Browse list label and card detail status).",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "保留中"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已暂停"
+          }
+        }
+      }
     },
     "Suspended %lld cards" : {
       "comment" : "Browse: message after suspending, beside the Undo button.",
@@ -437,32 +1541,156 @@
               }
             }
           }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld枚のカードを保留しました"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已暂停 %lld 张卡片"
+          }
         }
       }
     },
     "Tag" : {
-      "comment" : "Browse Filter menu: submenu listing the collection's tags."
+      "comment" : "Browse Filter menu: submenu listing the collection's tags.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "タグ"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "标签"
+          }
+        }
+      }
     },
     "This card is no longer in the collection." : {
-      "comment" : "Card detail: description shown when the card was deleted meanwhile."
+      "comment" : "Card detail: description shown when the card was deleted meanwhile.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "このカードはコレクションにありません。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "此卡片已不在集合中。"
+          }
+        }
+      }
     },
     "Took %@" : {
-      "comment" : "Card detail, review history: how long the review took, such as 'Took 8 s'."
+      "comment" : "Card detail, review history: how long the review took, such as 'Took 8 s'.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "所要時間 %@"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "用时 %@"
+          }
+        }
+      }
     },
     "Try Again" : {
-      "comment" : "Button that retries after an error."
+      "comment" : "Button that retries after an error.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "再試行"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "重试"
+          }
+        }
+      }
     },
     "Turquoise" : {
-      "comment" : "Browse: a flag colour, in the Filter and Flag menus."
+      "comment" : "Browse: a flag colour, in the Filter and Flag menus.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ターコイズ"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "青绿色"
+          }
+        }
+      }
     },
     "Turquoise flag" : {
-      "comment" : "Accessibility label of a card's turquoise flag in the Browse list."
+      "comment" : "Accessibility label of a card's turquoise flag in the Browse list.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "青緑のフラグ"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "青绿色旗标"
+          }
+        }
+      }
     },
     "Undo" : {
-      "comment" : "Browse: button beside the message after a bulk action; undoes it."
+      "comment" : "Browse: button beside the message after a bulk action; undoes it.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "元に戻す"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "撤销"
+          }
+        }
+      }
     },
     "Unsuspend" : {
-      "comment" : "Browse: action that lets the selected suspended cards be studied again."
+      "comment" : "Browse: action that lets the selected suspended cards be studied again.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "保留を解除"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "取消暂停"
+          }
+        }
+      }
     },
     "Unsuspended %lld cards" : {
       "comment" : "Browse: message after unsuspending, beside the Undo button.",
@@ -483,6 +1711,18 @@
                 }
               }
             }
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld枚のカードの保留を解除しました"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已取消暂停 %lld 张卡片"
           }
         }
       }
@@ -2003,6 +3243,38 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%lld 条笔记"
+          }
+        }
+      }
+    },
+    " days" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "日数"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "天数"
+          }
+        }
+      }
+    },
+    "Change Note Type…" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ノートタイプを変更…"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "更改笔记类型…"
           }
         }
       }

@@ -2,22 +2,106 @@
   "sourceLanguage" : "en",
   "strings" : {
     "%@ (%@)" : {
-      "comment" : "A number and its share of the whole: in the card counts list, a state's cards; in the ratings list, a rating's reviews. E.g. \"12 (40%)\"."
+      "comment" : "A number and its share of the whole: in the card counts list, a state's cards; in the ratings list, a rating's reviews. E.g. \"12 (40%)\".",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@（%@）"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@（%@）"
+          }
+        }
+      }
     },
     "%@ Correct" : {
-      "comment" : "Ratings list: label of the share of reviews of one kind of card not rated Again, e.g. \"Young Correct\"."
+      "comment" : "Ratings list: label of the share of reviews of one kind of card not rated Again, e.g. \"Young Correct\".",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@の正解率"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@正确率"
+          }
+        }
+      }
     },
     "%@ learning, %@ review, %@ relearning, %@ filtered" : {
-      "comment" : "Today's summary: reviews of learning, review, relearning and filtered-deck cards."
+      "comment" : "Today's summary: reviews of learning, review, relearning and filtered-deck cards.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "学習 %@、復習 %@、再学習 %@、フィルター %@"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "学习 %@，复习 %@，重新学习 %@，筛选 %@"
+          }
+        }
+      }
     },
     "%@ of %@" : {
-      "comment" : "Ratings list: the share of reviews not rated Again, then the number of reviews, e.g. \"90% of 40\"."
+      "comment" : "Ratings list: the share of reviews not rated Again, then the number of reviews, e.g. \"90% of 40\".",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ / %2$@"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ / %2$@"
+          }
+        }
+      }
     },
     "%@ of %@ (%@)" : {
-      "comment" : "Today's summary: mature reviews not rated Again, all mature reviews, and the share, e.g. \"4 of 5 (80%)\"."
+      "comment" : "Today's summary: mature reviews not rated Again, all mature reviews, and the share, e.g. \"4 of 5 (80%)\".",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%2$@回中%1$@回（%3$@）"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ / %2$@（%3$@）"
+          }
+        }
+      }
     },
     "%@, %@" : {
-      "comment" : "VoiceOver label of a ratings bar segment: the rating, then the kind of card, e.g. \"Good, Young\"."
+      "comment" : "VoiceOver label of a ratings bar segment: the rating, then the kind of card, e.g. \"Good, Young\".",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@、%@"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@，%@"
+          }
+        }
+      }
     },
     "%lld cards, %@" : {
       "comment" : "VoiceOver value of a card counts slice: the number of cards and their share.",
@@ -38,6 +122,18 @@
                 }
               }
             }
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld枚、%@"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld 张卡片，%@"
           }
         }
       }
@@ -62,47 +158,241 @@
               }
             }
           }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld回の復習"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld 次复习"
+          }
         }
       }
     },
     "1 Month" : {
-      "comment" : "Statistics period: the last month."
+      "comment" : "Statistics period: the last month.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1か月"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1 个月"
+          }
+        }
+      }
     },
     "1 Year" : {
-      "comment" : "Statistics period: the last year."
+      "comment" : "Statistics period: the last year.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1年"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1 年"
+          }
+        }
+      }
     },
     "3 Months" : {
-      "comment" : "Statistics period: the last three months."
+      "comment" : "Statistics period: the last three months.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "3か月"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "3 个月"
+          }
+        }
+      }
     },
     "Add cards and study them to see statistics here." : {
-      "comment" : "Shown in Statistics when the whole collection has no cards and no reviews."
+      "comment" : "Shown in Statistics when the whole collection has no cards and no reviews.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "カードを追加して学習すると、ここに統計が表示されます。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "添加并学习卡片后，统计信息会在此显示。"
+          }
+        }
+      }
     },
     "Again" : {
-      "comment" : "Rating: the card was forgotten. Also, in today's summary, the number of reviews rated Again."
+      "comment" : "Rating: the card was forgotten. Also, in today's summary, the number of reviews rated Again.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "もう一度"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "重来"
+          }
+        }
+      }
     },
     "All Time" : {
-      "comment" : "Statistics period: the whole review history."
+      "comment" : "Statistics period: the whole review history.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "全期間"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "全部"
+          }
+        }
+      }
     },
     "Average per Review" : {
-      "comment" : "Today's summary: the average time one review took."
+      "comment" : "Today's summary: the average time one review took.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "復習1回あたりの平均"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "每次复习的平均用时"
+          }
+        }
+      }
     },
     "Buried" : {
-      "comment" : "Card state: buried until tomorrow."
+      "comment" : "Card state: buried until tomorrow.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "延期中"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已搁置"
+          }
+        }
+      }
     },
     "By Kind" : {
-      "comment" : "Today's summary: today's reviews by the kind of card reviewed."
+      "comment" : "Today's summary: today's reviews by the kind of card reviewed.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "種類別"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "按类型"
+          }
+        }
+      }
     },
     "Card" : {
-      "comment" : "Ratings chart: what the bars are stacked by (learning, young or mature cards)."
+      "comment" : "Ratings chart: what the bars are stacked by (learning, young or mature cards).",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "カード"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "卡片"
+          }
+        }
+      }
     },
     "Card Counts" : {
-      "comment" : "Title of the chart of how cards divide between states."
+      "comment" : "Title of the chart of how cards divide between states.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "カード枚数"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "卡片数量"
+          }
+        }
+      }
     },
     "Cards" : {
-      "comment" : "Card counts chart: the quantity each slice stands for."
+      "comment" : "Card counts chart: the quantity each slice stands for.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "カード"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "卡片"
+          }
+        }
+      }
     },
     "Correct" : {
-      "comment" : "Today's summary: the share of today's reviews not rated Again."
+      "comment" : "Today's summary: the share of today's reviews not rated Again.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正解"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正确"
+          }
+        }
+      }
     },
     "Could Not Export Statistics" : {
       "localizations" : {
@@ -121,13 +411,55 @@
       }
     },
     "Could Not Show Statistics" : {
-      "comment" : "Title shown when the statistics could not be read from the collection."
+      "comment" : "Title shown when the statistics could not be read from the collection.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "統計を表示できませんでした"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "无法显示统计"
+          }
+        }
+      }
     },
     "Deck" : {
-      "comment" : "Label of the picker that chooses a deck, or the whole collection, for the statistics."
+      "comment" : "Label of the picker that chooses a deck, or the whole collection, for the statistics.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "デッキ"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "牌组"
+          }
+        }
+      }
     },
     "Easy" : {
-      "comment" : "Rating: recalled easily."
+      "comment" : "Rating: recalled easily.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "簡単"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "简单"
+          }
+        }
+      }
     },
     "Export Statistics PDF" : {
       "localizations" : {
@@ -146,10 +478,38 @@
       }
     },
     "Good" : {
-      "comment" : "Rating: recalled."
+      "comment" : "Rating: recalled.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正解"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "良好"
+          }
+        }
+      }
     },
     "Hard" : {
-      "comment" : "Rating: recalled with difficulty."
+      "comment" : "Rating: recalled with difficulty.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "難しい"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "困难"
+          }
+        }
+      }
     },
     "Hayaki Statistics" : {
       "localizations" : {
@@ -168,70 +528,1722 @@
       }
     },
     "Learning" : {
-      "comment" : "Card state: being learnt or relearnt."
+      "comment" : "Card state: being learnt or relearnt.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "学習中"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "学习中"
+          }
+        }
+      }
     },
     "Mature" : {
-      "comment" : "Card state: in review with an interval of 21 days or more."
+      "comment" : "Card state: in review with an interval of 21 days or more.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "熟成"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "熟练"
+          }
+        }
+      }
     },
     "Mature Cards Correct" : {
-      "comment" : "Today's summary: how many reviews of mature cards were not rated Again."
+      "comment" : "Today's summary: how many reviews of mature cards were not rated Again.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "熟成カードの正解率"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "熟练卡片正确率"
+          }
+        }
+      }
     },
     "New" : {
-      "comment" : "Card state: never studied."
+      "comment" : "Card state: never studied.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "新規"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "新卡片"
+          }
+        }
+      }
     },
     "No Statistics Yet" : {
-      "comment" : "Title shown in Statistics when there are no cards and no reviews."
+      "comment" : "Title shown in Statistics when there are no cards and no reviews.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "統計データがまだありません"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "暂无统计数据"
+          }
+        }
+      }
     },
     "No cards have been studied today." : {
-      "comment" : "Shown in place of today's summary when nothing was studied today."
+      "comment" : "Shown in place of today's summary when nothing was studied today.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "今日はまだカードを学習していません。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "今天尚未学习任何卡片。"
+          }
+        }
+      }
     },
     "No reviews in this period." : {
-      "comment" : "Shown in place of the ratings chart when there were no reviews in the chosen period."
+      "comment" : "Shown in place of the ratings chart when there were no reviews in the chosen period.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "この期間の復習はありません。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "此时段内没有复习记录。"
+          }
+        }
+      }
     },
     "Period" : {
-      "comment" : "Label of the picker that chooses how far back the statistics look."
+      "comment" : "Label of the picker that chooses how far back the statistics look.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "期間"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "时段"
+          }
+        }
+      }
     },
     "Rating" : {
-      "comment" : "Ratings chart: the horizontal axis, one bar per rating."
+      "comment" : "Ratings chart: the horizontal axis, one bar per rating.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "評価"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "评分"
+          }
+        }
+      }
     },
     "Ratings" : {
-      "comment" : "Title of the chart of how often each rating was chosen."
+      "comment" : "Title of the chart of how often each rating was chosen.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "評価"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "评分"
+          }
+        }
+      }
     },
     "Reviews" : {
-      "comment" : "Today's summary: how many reviews were done. Also the vertical axis of the ratings chart."
+      "comment" : "Today's summary: how many reviews were done. Also the vertical axis of the ratings chart.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "学習画面"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "复习"
+          }
+        }
+      }
     },
     "State" : {
-      "comment" : "Card counts chart: what the slices are grouped by."
+      "comment" : "Card counts chart: what the slices are grouped by.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "状態"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "状态"
+          }
+        }
+      }
     },
     "Statistics" : {
-      "comment" : "Title of the Statistics section and its tab."
+      "comment" : "Title of the Statistics section and its tab.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "統計"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "统计"
+          }
+        }
+      }
     },
     "Suspended" : {
-      "comment" : "Card state: suspended by the learner."
+      "comment" : "Card state: suspended by the learner.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "保留中"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已暂停"
+          }
+        }
+      }
     },
     "There are no cards here yet." : {
-      "comment" : "Shown in place of the card counts chart when there are no cards."
+      "comment" : "Shown in place of the card counts chart when there are no cards.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "まだカードがありません。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "此处还没有卡片。"
+          }
+        }
+      }
     },
     "This deck has no cards and no reviews yet." : {
-      "comment" : "Shown in Statistics when the chosen deck has no cards and no reviews."
+      "comment" : "Shown in Statistics when the chosen deck has no cards and no reviews.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "このデッキにはまだカードも復習履歴もありません。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "此牌组尚无卡片和复习记录。"
+          }
+        }
+      }
     },
     "Time" : {
-      "comment" : "Today's summary: how long today's reviews took."
+      "comment" : "Today's summary: how long today's reviews took.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "時間"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "时间"
+          }
+        }
+      }
     },
     "Today" : {
-      "comment" : "Title of the summary of today's studying."
+      "comment" : "Title of the summary of today's studying.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "今日"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "今天"
+          }
+        }
+      }
     },
     "Total" : {
-      "comment" : "Card counts chart: caption under the total number of cards in the middle of the ring."
+      "comment" : "Card counts chart: caption under the total number of cards in the middle of the ring.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "合計"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "合计"
+          }
+        }
+      }
     },
     "Try Again" : {
-      "comment" : "Button that tries again to read the statistics after an error."
+      "comment" : "Button that tries again to read the statistics after an error.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "再試行"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "重试"
+          }
+        }
+      }
     },
     "Whole Collection" : {
-      "comment" : "Choice in the statistics deck picker: every deck together."
+      "comment" : "Choice in the statistics deck picker: every deck together.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "コレクション全体"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "整个集合"
+          }
+        }
+      }
     },
     "Young" : {
-      "comment" : "Card state: in review with an interval under 21 days."
+      "comment" : "Card state: in review with an interval under 21 days.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "未熟"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "未熟练"
+          }
+        }
+      }
+    },
+    "%@ / %@" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ / %@"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ / %@"
+          }
+        }
+      }
+    },
+    "%@ days" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ 日"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ 天"
+          }
+        }
+      }
+    },
+    "%@ days ago" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@日前"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ 天前"
+          }
+        }
+      }
+    },
+    "%@ of %@ correct (%@)" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%2$@回中%1$@回正解（%3$@）"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "答对 %1$@ / %2$@ 次（%3$@）"
+          }
+        }
+      }
+    },
+    "%@–%@ days" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@～%@日"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@–%@ 天"
+          }
+        }
+      }
+    },
+    "%@–%@%%" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@～%@%%"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@–%@%%"
+          }
+        }
+      }
+    },
+    "50th Percentile" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "50パーセンタイル"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "第 50 百分位"
+          }
+        }
+      }
+    },
+    "95th Percentile" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "95パーセンタイル"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "第 95 百分位"
+          }
+        }
+      }
+    },
+    "About True Retention" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "実測記憶保持率について"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "关于实际记忆保留率"
+          }
+        }
+      }
+    },
+    "Added" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "追加"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已添加"
+          }
+        }
+      }
+    },
+    "Added Period" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "追加数の集計期間"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "添加数量统计时段"
+          }
+        }
+      }
+    },
+    "All" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "どちらも隠す"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "全部"
+          }
+        }
+      }
+    },
+    "All Cards" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "すべてのカード"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "所有卡片"
+          }
+        }
+      }
+    },
+    "All History" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "すべての履歴"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "全部记录"
+          }
+        }
+      }
+    },
+    "Anki search expression" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ankiの検索式"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Anki 搜索表达式"
+          }
+        }
+      }
+    },
+    "Apply Search" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "検索条件を適用"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "应用搜索条件"
+          }
+        }
+      }
+    },
+    "Average Added per Day" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1日あたりの平均追加数"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "日均添加数"
+          }
+        }
+      }
+    },
+    "Average Answer Time" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "平均回答時間"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "平均作答时间"
+          }
+        }
+      }
+    },
+    "Average Due per Day" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1日あたりの平均復習予定数"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "日均到期数"
+          }
+        }
+      }
+    },
+    "Average on Days Studied" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "学習した日の平均"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "学习日平均"
+          }
+        }
+      }
+    },
+    "Average over Period" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "期間全体の平均"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "整个时段的平均值"
+          }
+        }
+      }
+    },
+    "Average Retrievability" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "平均想起可能性"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "平均可提取性"
+          }
+        }
+      }
+    },
+    "Calendar" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "カレンダー"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "日历"
+          }
+        }
+      }
+    },
+    "Card Difficulty" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "カードの難易度"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "卡片难度"
+          }
+        }
+      }
+    },
+    "Card Ease" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "カードの容易さ"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "卡片简易度"
+          }
+        }
+      }
+    },
+    "Card Retrievability" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "カードの想起可能性"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "卡片可提取性"
+          }
+        }
+      }
+    },
+    "Card Stability" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "カードの記憶安定性"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "卡片记忆稳定性"
+          }
+        }
+      }
+    },
+    "Card Type" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "カードタイプ"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "卡片类型"
+          }
+        }
+      }
+    },
+    "Cards Added" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "追加したカード"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已添加卡片"
+          }
+        }
+      }
+    },
+    "Cards Due" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "復習予定のカード"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "到期卡片"
+          }
+        }
+      }
+    },
+    "Could Not Save Statistics Preference" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "統計の設定を保存できませんでした"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "无法保存统计偏好"
+          }
+        }
+      }
+    },
+    "Custom Search" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "検索式で絞り込む"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "自定义搜索"
+          }
+        }
+      }
+    },
+    "Daily Load" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1日あたりの学習量"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "每日学习量"
+          }
+        }
+      }
+    },
+    "Day" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "日"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "日期"
+          }
+        }
+      }
+    },
+    "Days" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "日数"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "天数"
+          }
+        }
+      }
+    },
+    "Days Studied" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "学習した日数"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "学习天数"
+          }
+        }
+      }
+    },
+    "Due Tomorrow" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "明日の復習予定"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "明天到期"
+          }
+        }
+      }
+    },
+    "Estimated Cards Remembered" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "覚えていると推定されるカード数"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "估算已记住的卡片数"
+          }
+        }
+      }
+    },
+    "Estimated Notes Remembered" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "覚えていると推定されるノート数"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "估算已记住的笔记数"
+          }
+        }
+      }
+    },
+    "Filtered" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "フィルター済み"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已筛选"
+          }
+        }
+      }
+    },
+    "First Day of the Week" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "週の開始曜日"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "每周的第一天"
+          }
+        }
+      }
+    },
+    "Forecast Period" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "予測期間"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "预测时段"
+          }
+        }
+      }
+    },
+    "Future Due" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "今後の復習予定"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "未来到期"
+          }
+        }
+      }
+    },
+    "Hour" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "時刻"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "小时"
+          }
+        }
+      }
+    },
+    "Hourly Breakdown" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "時間帯別の内訳"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "按小时分布"
+          }
+        }
+      }
+    },
+    "Hourly Period" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "時間帯別の集計期間"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "按小时统计的时段"
+          }
+        }
+      }
+    },
+    "In %@ days" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@日後"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ 天后"
+          }
+        }
+      }
+    },
+    "Last Month" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "過去1か月"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "过去 1 个月"
+          }
+        }
+      }
+    },
+    "Last Week" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "過去1週間"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "过去 1 周"
+          }
+        }
+      }
+    },
+    "Last Year" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "過去1年"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "过去 1 年"
+          }
+        }
+      }
+    },
+    "Median" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "中央値"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "中位数"
+          }
+        }
+      }
+    },
+    "Middle 50%" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "中央50%"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "中间 50%"
+          }
+        }
+      }
+    },
+    "Middle 95%" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "中央95%"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "中间 95%"
+          }
+        }
+      }
+    },
+    "Minutes" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "分"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "分钟"
+          }
+        }
+      }
+    },
+    "Next Year" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "翌年"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "下一年"
+          }
+        }
+      }
+    },
+    "No cards or reviews match this search." : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "検索条件に一致するカードや復習がありません。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "没有符合搜索条件的卡片或复习记录。"
+          }
+        }
+      }
+    },
+    "No cards were added in this period." : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "この期間に追加されたカードはありません。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "此时段内没有添加卡片。"
+          }
+        }
+      }
+    },
+    "No reviews" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "復習なし"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "无复习"
+          }
+        }
+      }
+    },
+    "Observed Range" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "観測範囲"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "观察范围"
+          }
+        }
+      }
+    },
+    "OK" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "OK"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "好"
+          }
+        }
+      }
+    },
+    "Percent" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "パーセント"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "百分比"
+          }
+        }
+      }
+    },
+    "Previous Year" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "前年"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "上一年"
+          }
+        }
+      }
+    },
+    "Range" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "範囲"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "范围"
+          }
+        }
+      }
+    },
+    "Ratings Period" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "評価の集計期間"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "评分统计时段"
+          }
+        }
+      }
+    },
+    "Relearning" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "再学習中"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "重新学习"
+          }
+        }
+      }
+    },
+    "Review History" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "復習履歴"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "复习记录"
+          }
+        }
+      }
+    },
+    "Review Intervals" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "復習間隔"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "复习间隔"
+          }
+        }
+      }
+    },
+    "Review Period" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "復習の集計期間"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "复习统计时段"
+          }
+        }
+      }
+    },
+    "Review Time" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "復習時間"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "复习用时"
+          }
+        }
+      }
+    },
+    "Review Type" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "復習の種類"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "复习类型"
+          }
+        }
+      }
+    },
+    "Running Total" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "累計"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "累计"
+          }
+        }
+      }
+    },
+    "Scope" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "集計対象"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "统计范围"
+          }
+        }
+      }
+    },
+    "Search" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "検索"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "搜索"
+          }
+        }
+      }
+    },
+    "Separate Suspended and Buried Cards" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "保留中と延期中のカードを分ける"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "分别统计已暂停和已搁置的卡片"
+          }
+        }
+      }
+    },
+    "Share" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "共有"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "分享"
+          }
+        }
+      }
+    },
+    "Share of Cards" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "カードの割合"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "卡片占比"
+          }
+        }
+      }
+    },
+    "Show Backlog" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "期限超過を表示"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "显示逾期积压"
+          }
+        }
+      }
+    },
+    "There are no cards due in this period." : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "この期間に復習予定のカードはありません。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "此时段内没有到期卡片。"
+          }
+        }
+      }
+    },
+    "There are no cards in this range." : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "この範囲にカードはありません。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "此范围内没有卡片。"
+          }
+        }
+      }
+    },
+    "There are no reviews in this period." : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "この期間の復習はありません。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "此时段内没有复习记录。"
+          }
+        }
+      }
+    },
+    "Tomorrow" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "明日"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "明天"
+          }
+        }
+      }
+    },
+    "True Retention" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "実測記憶保持率"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "实际记忆保留率"
+          }
+        }
+      }
+    },
+    "True retention measures correct answers on cards with review intervals of at least one day." : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "実測記憶保持率は、復習間隔が1日以上のカードの正解率です。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "实际记忆保留率是复习间隔至少为一天的卡片的答对比例。"
+          }
+        }
+      }
+    },
+    "Yesterday" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "昨日"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "昨天"
+          }
+        }
+      }
     }
   },
   "version" : "1.0"
