@@ -168,6 +168,7 @@
     }
 </style>
 <style id="card-style"></style>
+<script src="/_hayaki/card-template.js"></script>
 <script src="/_hayaki/image-occlusion.js"></script>
 </head>
 <body class="card">
@@ -243,7 +244,7 @@
         await window.MathJax.typesetPromise([container]);
     }
 
-    async function render(side) {
+    async function render(side, token) {
         document.getElementById("card-style").textContent = side.css;
         shownBodyClass = side.bodyClass;
         applyColorScheme();
@@ -252,6 +253,7 @@
         // Hidden until the maths is drawn, so raw TeX never flashes up.
         qa.style.opacity = hasMaths ? "0" : "1";
         qa.innerHTML = side.html;
+        window.hayakiTemplate?.begin(token);
         runScripts(qa);
         if (hasMaths) {
             try {
@@ -287,8 +289,8 @@
     // lets an older side finish drawing over a newer one.
     let drawing = Promise.resolve();
 
-    function show(side) {
-        drawing = drawing.then(function () { return render(side); }).catch(console.error);
+    function show(side, token) {
+        drawing = drawing.then(function () { return render(side, token); }).catch(console.error);
     }
 
     dark.addEventListener("change", applyColorScheme);

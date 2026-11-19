@@ -26,7 +26,9 @@ struct NotePreviewScreen: View {
                     Divider()
                     CardPreviewView(
                         content: card.content, showsAnswer: showsAnswer, mediaFolder: mediaFolder, inlineImage: inlineImage
-                    )
+                    ) {
+                        showsAnswer = true
+                    }
                         .frame(maxWidth: horizontalSizeClass == .regular ? 820 : .infinity)
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                         .accessibilityIdentifier("note-preview-card")
