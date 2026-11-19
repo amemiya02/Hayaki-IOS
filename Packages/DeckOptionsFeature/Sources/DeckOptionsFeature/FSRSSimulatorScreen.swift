@@ -113,8 +113,8 @@ struct FSRSSimulatorScreen: View {
                     Text("Maximum interval (days)", bundle: .module)
                 }
                 Picker(selection: $input.reviewOrder) {
-                    ForEach(ReviewSortOrder.allCases, id: \.self) { order in
-                        order.title.tag(order)
+                    ForEach(ReviewSortOrder.choices(fsrs: true), id: \.self) { order in
+                        order.title(fsrs: true).tag(order)
                     }
                 } label: {
                     Text("Review sort order", bundle: .module)

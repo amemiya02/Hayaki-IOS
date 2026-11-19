@@ -47,13 +47,13 @@ extension DeckOptionsModel {
     func applyFSRSSimulation(_ input: FSRSSimulationSettings, workload: Bool) {
         newCardsPerDay = input.newLimit
         reviewsPerDay = input.reviewLimit
-        selectedConfig.maximumReviewInterval = UInt32(clamping: input.maximumInterval)
+        maximumReviewInterval = input.maximumInterval
         if !workload { desiredRetention = input.desiredRetention }
         settings.newCardsIgnoreReviewLimit = input.newCardsIgnoreReviewLimit
         reviewSortOrder = input.reviewOrder
-        selectedConfig.easyDaysPercentages = input.easyDays
+        easyDaysPercentages = input.easyDays
         selectedConfig.leechAction = input.suspendLeeches ? .suspend : .tagOnly
-        selectedConfig.leechThreshold = UInt32(clamping: input.leechThreshold)
+        leechThreshold = input.leechThreshold
     }
 
     private func simulationRequest(_ input: FSRSSimulationSettings) -> Anki_Scheduler_SimulateFsrsReviewRequest {

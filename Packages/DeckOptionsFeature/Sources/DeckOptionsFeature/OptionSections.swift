@@ -87,6 +87,21 @@ struct StepsSections: View {
             StepsRow(text: $model.learningSteps, isInvalid: model.learningStepsError != nil, identifier: "learning-steps") {
                 Text("Learning steps", bundle: .module)
             }
+            if !model.fsrsEnabled {
+                NumberRow(value: $model.graduatingInterval, identifier: "graduating-interval") {
+                    Text("Graduating interval (days)", bundle: .module)
+                }
+                NumberRow(value: $model.easyGraduatingInterval, identifier: "easy-graduating-interval") {
+                    Text("Easy interval (days)", bundle: .module)
+                }
+            }
+            Picker(selection: $model.newCardInsertionOrder) {
+                ForEach(NewCardInsertionOrder.allCases, id: \.self) { choice in
+                    choice.title.tag(choice)
+                }
+            } label: {
+                Text("Insertion order", bundle: .module)
+            }
         } header: {
             Text("New Cards", bundle: .module)
         } footer: {
@@ -97,6 +112,21 @@ struct StepsSections: View {
         Section {
             StepsRow(text: $model.relearningSteps, isInvalid: model.relearningStepsError != nil, identifier: "relearning-steps") {
                 Text("Relearning steps", bundle: .module)
+            }
+            if !model.fsrsEnabled {
+                NumberRow(value: $model.minimumLapseInterval, identifier: "minimum-lapse-interval") {
+                    Text("Minimum interval (days)", bundle: .module)
+                }
+            }
+            NumberRow(value: $model.leechThreshold, identifier: "leech-threshold") {
+                Text("Leech threshold", bundle: .module)
+            }
+            Picker(selection: $model.leechAction) {
+                ForEach(LeechAction.allCases, id: \.self) { choice in
+                    choice.title.tag(choice)
+                }
+            } label: {
+                Text("Leech action", bundle: .module)
             }
         } header: {
             Text("Lapses", bundle: .module)
@@ -143,8 +173,8 @@ struct DisplayOrderSection: View {
                 Text("Interday learning/review order", bundle: .module)
             }
             Picker(selection: $model.reviewSortOrder) {
-                ForEach(ReviewSortOrder.allCases, id: \.self) { order in
-                    order.title.tag(order)
+                ForEach(model.reviewSortChoices, id: \.self) { order in
+                    order.title(fsrs: model.fsrsEnabled).tag(order)
                 }
             } label: {
                 Text("Review sort order", bundle: .module)
@@ -208,7 +238,7 @@ struct NumberRow<Label: View>: View {
                 // Shows the number as the model holds it: limited to what
                 // Anki accepts, or another preset's after switching.
                 .onChange(of: value) { _, number in
-                    if Int(text) != number { text = String(number) }
+                    if !isFocused, Int(text) != number { text = String(number) }
                 }
                 .onChange(of: isFocused) { _, focused in
                     if !focused { text = String(value) }
@@ -302,20 +332,59 @@ extension ReviewMix {
 
 extension ReviewSortOrder {
     var title: Text {
+        title(fsrs: false)
+    }
+
+    func title(fsrs: Bool) -> Text {
         switch self {
         case .day: Text("Due date, then random", bundle: .module)
         case .dayThenDeck: Text("Due date, then deck", bundle: .module)
         case .deckThenDay: Text("Deck, then due date", bundle: .module)
         case .intervalsAscending: Text("Ascending intervals", bundle: .module)
         case .intervalsDescending: Text("Descending intervals", bundle: .module)
-        case .easeAscending: Text("Ascending ease", bundle: .module)
-        case .easeDescending: Text("Descending ease", bundle: .module)
+        case .easeAscending: fsrs
+            ? Text("Descending difficulty", bundle: .module)
+            : Text("Ascending ease", bundle: .module)
+        case .easeDescending: fsrs
+            ? Text("Ascending difficulty", bundle: .module)
+            : Text("Descending ease", bundle: .module)
         case .retrievabilityAscending: Text("Ascending retrievability", bundle: .module)
         case .retrievabilityDescending: Text("Descending retrievability", bundle: .module)
         case .relativeOverdueness: Text("Relative overdueness", bundle: .module)
         case .random: Text("Random", bundle: .module)
         case .added: Text("Order added", bundle: .module)
         case .reverseAdded: Text("Reverse order added", bundle: .module)
+        case .UNRECOGNIZED: Text("Other", bundle: .module)
+        }
+    }
+}
+
+
+extension ReviewSortOrder {
+    static func choices(fsrs: Bool) -> [Self] {
+        let basic: [Self] = [.day, .dayThenDeck, .deckThenDay, .intervalsAscending, .intervalsDescending]
+        let priorities: [Self] = fsrs
+            ? [.easeDescending, .easeAscending, .retrievabilityAscending, .retrievabilityDescending]
+            : [.easeAscending, .easeDescending]
+        return basic + priorities + [.relativeOverdueness, .random, .added, .reverseAdded]
+    }
+}
+
+private extension NewCardInsertionOrder {
+    var title: Text {
+        switch self {
+        case .due: Text("Sequential", bundle: .module)
+        case .random: Text("Random", bundle: .module)
+        case .UNRECOGNIZED: Text("Other", bundle: .module)
+        }
+    }
+}
+
+private extension LeechAction {
+    var title: Text {
+        switch self {
+        case .suspend: Text("Suspend card", bundle: .module)
+        case .tagOnly: Text("Tag only", bundle: .module)
         case .UNRECOGNIZED: Text("Other", bundle: .module)
         }
     }

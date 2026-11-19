@@ -66,10 +66,18 @@ public struct DeckOptionsScreen: View {
                     DailyLimitsSection(model: model)
                     StepsSections(model: model)
                     DisplayOrderSection(model: model)
-                    BuryingSection(model: model)
                 }
                 .disabled(model.isOptimizingFSRS)
                 FSRSSection(model: model)
+                Group {
+                    BuryingSection(model: model)
+                    AudioSection(model: model)
+                    TimerSection(model: model)
+                    AutoAdvanceSection(model: model)
+                    EasyDaysSection(model: model)
+                    AdvancedSchedulingSection(model: model)
+                }
+                .disabled(model.isOptimizingFSRS)
             }
             .disabled(isSaving)
         }
