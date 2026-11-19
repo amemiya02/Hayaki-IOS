@@ -11,6 +11,64 @@ import Testing
 @MainActor
 @Suite("Switching profiles", .timeLimit(.minutes(2)))
 struct ProfilesTests {
+    @Test("Deleting an inactive profile removes its files and sign-in and preserves the active profile")
+    func deleteInactiveProfile() async throws {
+        let folder = try TemporaryFolder()
+        let location = CollectionLocation(folder: folder.url.appendingPathComponent("Collection"))
+        let backups = folder.url.appendingPathComponent("Backups")
+        let suite = "HayakiProfilesTests.\(UUID())"
+        let preferences = try #require(UserDefaults(suiteName: suite))
+        defer { preferences.removePersistentDomain(forName: suite) }
+        let legacyAccount = ProfileTestAccount()
+        let otherAccount = ProfileTestAccount()
+        func launch() -> AppModel {
+            AppModel(location: { location }, backupFolder: { backups }, language: "en", preferences: preferences,
+                     accountStorage: { profileID in profileID == nil ? legacyAccount : otherAccount })
+        }
+
+        let app = launch()
+        await app.open()
+        let legacy = app.activeProfile
+        await #expect(throws: ProfileError.lastProfile) { try await app.deleteProfile(legacy.id) }
+        let other = try app.addProfile(named: "Second")
+        await #expect(throws: ProfileError.activeProfile) { try await app.deleteProfile(legacy.id) }
+
+        let oldStore = try #require(app.store)
+        let removedDeck = try await oldStore.addDeck(named: "Old")
+        try await oldStore.addBasicNotes(count: 1, toDeck: removedDeck)
+        try await oldStore.addMediaFile(named: "old.png", data: Data([0]))
+        await app.backups?.createBackup()
+        try await app.switchProfile(to: other.id)
+        let current = try #require(app.store)
+        try await current.addDeck(named: "Kept")
+        try await current.addMediaFile(named: "kept.png", data: Data([1]))
+        let activeBackups = try #require(app.backups)
+        try await current.addBasicNotes(count: 1, toDeck: current.addDeck(named: "Backup"))
+        await activeBackups.createBackup()
+        #expect(activeBackups.entries.count == 1)
+        try legacyAccount.save(SyncAccount(server: nil, userName: "old", hostKey: "old-key"))
+        try otherAccount.save(SyncAccount(server: nil, userName: "kept", hostKey: "kept-key"))
+
+        try await app.deleteProfile(legacy.id)
+
+        #expect(app.profiles == [other])
+        #expect(try legacyAccount.load() == nil)
+        #expect(try otherAccount.load()?.hostKey == "kept-key")
+        #expect(!FileManager.default.fileExists(atPath: location.folder.path))
+        #expect(!FileManager.default.fileExists(atPath: backups.path))
+        #expect(try current.mediaFileNames().contains("kept.png"))
+        try await current.close()
+
+        let reopened = launch()
+        await reopened.open()
+        #expect(reopened.profiles == [other])
+        #expect(reopened.activeProfile == other)
+        #expect(try await reopened.store?.deckNames().contains("Kept") == true)
+        reopened.backups?.loadBackups()
+        #expect(reopened.backups?.entries.count == 1)
+        try await reopened.store?.close()
+    }
+
     @Test("The original collection stays in place and a new profile reopens independently after relaunch")
     func independentCollections() async throws {
         let folder = try TemporaryFolder()

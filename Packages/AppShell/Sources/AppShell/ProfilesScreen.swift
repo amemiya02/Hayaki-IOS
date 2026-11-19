@@ -5,6 +5,8 @@ struct ProfilesScreen: View {
     @State private var editor: NameEditor?
     @State private var switchTarget: CollectionProfile?
     @State private var switchError: String?
+    @State private var deleteTarget: CollectionProfile?
+    @State private var deleteError: String?
 
     var body: some View {
         List(model.profiles) { profile in
@@ -34,6 +36,20 @@ struct ProfilesScreen: View {
                 }
                 .buttonStyle(.borderless)
                 .accessibilityLabel(Text("Rename \(profile.name)", bundle: .module))
+            }
+            .swipeActions {
+                if !isActive && model.profiles.count > 1 {
+                    Button {
+                        deleteTarget = profile
+                    } label: {
+                        Label {
+                            Text("Delete Profile", bundle: .module)
+                        } icon: {
+                            Image(systemName: "trash")
+                        }
+                    }
+                    .tint(.red)
+                }
             }
         }
         .navigationTitle(Text("Profiles", bundle: .module))
@@ -84,6 +100,37 @@ struct ProfilesScreen: View {
             Button { switchError = nil } label: { Text("OK", bundle: .module) }
         } message: {
             Text(verbatim: switchError ?? "")
+        }
+        .alert(
+            Text("Delete Profile?", bundle: .module),
+            isPresented: Binding(get: { deleteTarget != nil }, set: { if !$0 { deleteTarget = nil } }),
+            presenting: deleteTarget
+        ) { profile in
+            Button(role: .destructive) {
+                Task {
+                    do {
+                        try await model.deleteProfile(profile.id)
+                    } catch {
+                        deleteError = error.localizedDescription
+                    }
+                }
+            } label: {
+                Text("Delete Profile", bundle: .module)
+            }
+            Button(role: .cancel) { deleteTarget = nil } label: {
+                Text("Cancel", bundle: .module)
+            }
+        } message: { profile in
+            Text("Permanently delete the collection, media, backups and sign-in for “\(profile.name)” from this device?",
+                 bundle: .module)
+        }
+        .alert(
+            Text("Could Not Finish Deleting Profile", bundle: .module),
+            isPresented: Binding(get: { deleteError != nil }, set: { if !$0 { deleteError = nil } })
+        ) {
+            Button { deleteError = nil } label: { Text("OK", bundle: .module) }
+        } message: {
+            Text(verbatim: deleteError ?? "")
         }
     }
 }

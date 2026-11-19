@@ -99,7 +99,11 @@ public final class AppModel {
     private struct SavedProfiles: Codable {
         var profiles: [CollectionProfile]
         var activeID: UUID
+        var pendingDeletions: Set<UUID>?
     }
+
+    @ObservationIgnored private var pendingProfileDeletions: Set<UUID> = []
+    @ObservationIgnored private var deletingProfiles: Set<UUID> = []
 
     /// - Parameters:
     ///   - location: Where the original collection lives; the app's standard place unless overridden.
@@ -126,6 +130,7 @@ public final class AppModel {
         if let saved, let active = saved.profiles.first(where: { $0.id == saved.activeID }) {
             profiles = saved.profiles
             activeProfile = active
+            pendingProfileDeletions = (saved.pendingDeletions ?? []).subtracting(saved.profiles.map(\.id))
         } else {
             profiles = [.legacy]
             activeProfile = .legacy
@@ -147,6 +152,9 @@ public final class AppModel {
             let welcome = await shouldShowWelcome(for: activeProfile, in: store)
             showCollection(store, backupFolder: folder, welcome: welcome)
             await routeWaitingImport()
+            for id in pendingProfileDeletions {
+                try? await finishDeletingProfile(id)
+            }
         } catch {
             state = .failed(message: error.localizedDescription)
         }
@@ -171,12 +179,49 @@ public final class AppModel {
         try saveProfiles(updated, active: activeProfile.id == id ? renamed : activeProfile)
     }
 
+    /// Permanently removes an inactive profile and its collection, media, backups and sign-in.
+    public func deleteProfile(_ id: UUID) async throws {
+        guard !isSwitchingProfile else { throw ProfileError.busy }
+        guard profiles.contains(where: { $0.id == id }) else { throw ProfileError.unavailable }
+        guard profiles.count > 1 else { throw ProfileError.lastProfile }
+        guard id != activeProfile.id else { throw ProfileError.activeProfile }
+        let paths = try profilePaths(for: id)
+        // Commit the removal and its cleanup record together before deleting any files.
+        try saveProfiles(profiles.filter { $0.id != id }, active: activeProfile,
+                         pendingDeletions: pendingProfileDeletions.union([id]))
+        waitingImports.removeAll { $0.profileID == id }
+        try await finishDeletingProfile(id, paths: paths)
+    }
+
+    private func finishDeletingProfile(_ id: UUID, paths: ProfilePaths? = nil) async throws {
+        guard pendingProfileDeletions.contains(id), deletingProfiles.insert(id).inserted else { return }
+        defer { deletingProfiles.remove(id) }
+        let paths = try paths ?? profilePaths(for: id)
+        let storage = accountStorage(id == CollectionProfile.legacyID ? nil : id)
+        try await Task.detached(priority: .utility) {
+            for folder in [paths.profileFolder, paths.backups] {
+                do {
+                    try FileManager.default.removeItem(at: folder)
+                } catch let error as CocoaError where error.code == .fileNoSuchFile {
+                    // The profile may be unopened, or an earlier attempt already cleaned this folder.
+                }
+            }
+            try storage.remove()
+        }.value
+        preferences.removeObject(forKey: welcomeCompletedKey(for: id))
+        try saveProfiles(profiles, active: activeProfile, pendingDeletions: pendingProfileDeletions.subtracting([id]))
+    }
+
     /// Opens the destination in its own core before releasing the current collection.
     public func switchProfile(to id: UUID) async throws {
         guard let target = profiles.first(where: { $0.id == id }) else { throw ProfileError.unavailable }
         guard target != activeProfile else { return }
-        guard let previous = store, !isOpening, canHandleExtensionWork else { throw ProfileError.busy }
-        let saved = try PropertyListEncoder().encode(SavedProfiles(profiles: profiles, activeID: id))
+        guard let previous = store, !isOpening, deletingProfiles.isEmpty, canHandleExtensionWork else {
+            throw ProfileError.busy
+        }
+        let saved = try PropertyListEncoder().encode(SavedProfiles(
+            profiles: profiles, activeID: id, pendingDeletions: pendingProfileDeletions
+        ))
 
         switchDestination = id
         previous.allowsNewProfileWork = false
@@ -218,21 +263,35 @@ public final class AppModel {
         await routeWaitingImport()
     }
 
-    private func openCollection(for profile: CollectionProfile, recordRecovery: Bool = false) async throws -> (CollectionStore, URL) {
-        var location = try location()
-        var backups = try backupFolder()
-        if !profile.usesLegacyStorage {
-            let directory = profile.id.uuidString
-            location = CollectionLocation(folder: location.folder.deletingLastPathComponent()
-                .appendingPathComponent("Profiles", isDirectory: true)
-                .appendingPathComponent(directory, isDirectory: true)
-                .appendingPathComponent("Collection", isDirectory: true))
-            // Anki's automatic backup interval looks at the age of every
-            // directory entry. Keep the profile directories outside Backups.
-            backups = backups.deletingLastPathComponent()
-                .appendingPathComponent("Profile Backups", isDirectory: true)
-                .appendingPathComponent(directory, isDirectory: true)
+    private struct ProfilePaths: Sendable {
+        let profileFolder: URL
+        let location: CollectionLocation
+        let backups: URL
+    }
+
+    private func profilePaths(for id: UUID) throws -> ProfilePaths {
+        let originalLocation = try location()
+        let originalBackups = try backupFolder()
+        if id == CollectionProfile.legacyID {
+            return ProfilePaths(profileFolder: originalLocation.folder, location: originalLocation, backups: originalBackups)
         }
+        let directory = id.uuidString
+        let profileFolder = originalLocation.folder.deletingLastPathComponent()
+            .appendingPathComponent("Profiles", isDirectory: true)
+            .appendingPathComponent(directory, isDirectory: true)
+        let profileLocation = CollectionLocation(folder: profileFolder.appendingPathComponent("Collection", isDirectory: true))
+        // Anki's automatic backup interval looks at the age of every
+        // directory entry. Keep the profile directories outside Backups.
+        let backups = originalBackups.deletingLastPathComponent()
+            .appendingPathComponent("Profile Backups", isDirectory: true)
+            .appendingPathComponent(directory, isDirectory: true)
+        return ProfilePaths(profileFolder: profileFolder, location: profileLocation, backups: backups)
+    }
+
+    private func openCollection(for profile: CollectionProfile, recordRecovery: Bool = false) async throws -> (CollectionStore, URL) {
+        let paths = try profilePaths(for: profile.id)
+        let location = paths.location
+        let backups = paths.backups
         let core = try await CoreClient(language: language)
         #if DEBUG
         if profile.usesLegacyStorage, !loadedFixture, let package = UITestLaunch.collectionPackage {
@@ -247,7 +306,7 @@ public final class AppModel {
     }
 
     private func shouldShowWelcome(for profile: CollectionProfile, in store: CollectionStore) async -> Bool {
-        let key = welcomeCompletedKey(for: profile)
+        let key = welcomeCompletedKey(for: profile.id)
         guard !preferences.bool(forKey: key) else { return false }
         // Existing collections with cards or user-created decks skip Welcome.
         let names = try? await store.core.getDeckNames(.with {
@@ -305,12 +364,18 @@ public final class AppModel {
         return cleaned
     }
 
-    private func saveProfiles(_ profiles: [CollectionProfile], active: CollectionProfile) throws {
+    private func saveProfiles(
+        _ profiles: [CollectionProfile],
+        active: CollectionProfile,
+        pendingDeletions: Set<UUID>? = nil
+    ) throws {
         let sorted = profiles.sorted { $0.name.caseInsensitiveCompare($1.name) == .orderedAscending }
-        let saved = SavedProfiles(profiles: sorted, activeID: active.id)
+        let pending = pendingDeletions ?? pendingProfileDeletions
+        let saved = SavedProfiles(profiles: sorted, activeID: active.id, pendingDeletions: pending.isEmpty ? nil : pending)
         preferences.set(try PropertyListEncoder().encode(saved), forKey: Self.profilesKey)
         self.profiles = sorted
         activeProfile = active
+        pendingProfileDeletions = pending
     }
 
     /// Restores a selected backup when the active profile's database could not open.
@@ -333,12 +398,12 @@ public final class AppModel {
 
     /// Continues to Decks and remembers the choice on the next launch.
     public func completeWelcome() {
-        preferences.set(true, forKey: welcomeCompletedKey(for: activeProfile))
+        preferences.set(true, forKey: welcomeCompletedKey(for: activeProfile.id))
         showsWelcome = false
     }
 
-    private func welcomeCompletedKey(for profile: CollectionProfile) -> String {
-        profile.usesLegacyStorage ? Self.welcomeCompletedKey : "\(Self.welcomeCompletedKey).\(profile.id.uuidString)"
+    private func welcomeCompletedKey(for id: UUID) -> String {
+        id == CollectionProfile.legacyID ? Self.welcomeCompletedKey : "\(Self.welcomeCompletedKey).\(id.uuidString)"
     }
 
     /// Routes an import file into the profile being opened, or the active profile.

@@ -1,6 +1,102 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "Keep at least one profile." : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "プロフィールを1つ以上残してください。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "请至少保留一个用户配置。"
+          }
+        }
+      }
+    },
+    "Switch to another profile before deleting the current one." : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "現在のプロフィールを削除する前に、別のプロフィールに切り替えてください。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "请先切换到其他用户配置，再删除当前配置。"
+          }
+        }
+      }
+    },
+    "Delete Profile" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "プロフィールを削除"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "删除用户配置"
+          }
+        }
+      }
+    },
+    "Delete Profile?" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "プロフィールを削除しますか？"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "要删除用户配置吗？"
+          }
+        }
+      }
+    },
+    "Permanently delete the collection, media, backups and sign-in for “%@” from this device?" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "このデバイスから「%@」のコレクション、メディア、バックアップ、ログイン情報を完全に削除しますか？"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "要从此设备永久删除“%@”的集合、媒体、备份和登录信息吗？"
+          }
+        }
+      }
+    },
+    "Could Not Finish Deleting Profile" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "プロフィールの削除を完了できませんでした"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "无法完成用户配置删除"
+          }
+        }
+      }
+    },
     "The import was cancelled because “%@” could not open." : {
       "localizations" : {
         "ja" : {
@@ -225,18 +321,18 @@
         }
       }
     },
-    "Wait for the current sync, import, or backup to finish before switching profiles." : {
+    "Wait for the current collection operation to finish, then try again." : {
       "localizations" : {
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "同期、インポート、またはバックアップが完了してからプロフィールを切り替えてください。"
+            "value" : "コレクションの処理が完了してから、もう一度お試しください。"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "请等待当前同步、导入或备份完成后再切换用户配置。"
+            "value" : "请等待当前集合操作完成后重试。"
           }
         }
       }
