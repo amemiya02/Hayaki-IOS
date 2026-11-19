@@ -13,6 +13,34 @@ import Testing
     .timeLimit(.minutes(5))
 )
 struct SyncTests {
+    @Test("A single sync action transfers media in both directions after collection sync")
+    func syncsMediaBothWays() async throws {
+        let server = try await SyncServer(users: [("alice", "correct horse")])
+        try await withTemporaryCollection { phone in
+            try await phone.addBasicNotes(count: 1, toDeck: phone.addDeck(named: "Spanish"))
+            let image = Data([0x89, 0x50, 0x4e, 0x47])
+            try image.write(to: phone.location.mediaFolder.appendingPathComponent("example.png"))
+            let phoneSync = try await signedIn(phone, to: server)
+            await phoneSync.sync()
+            await phoneSync.upload()
+
+            try await withTemporaryCollection { tablet in
+                let tabletSync = try await signedIn(tablet, to: server)
+                await tabletSync.sync()
+                await tabletSync.download()
+                let receivedImage = tablet.location.mediaFolder.appendingPathComponent("example.png")
+                #expect(try Data(contentsOf: receivedImage) == image)
+
+                let audio = Data([0x49, 0x44, 0x33])
+                try audio.write(to: tablet.location.mediaFolder.appendingPathComponent("example.mp3"))
+                await tabletSync.sync()
+                await phoneSync.sync()
+                let receivedAudio = phone.location.mediaFolder.appendingPathComponent("example.mp3")
+                #expect(try Data(contentsOf: receivedAudio) == audio)
+            }
+        }
+    }
+
     @Test("The first sync to an empty server asks before uploading, then uploads")
     func firstSyncUploads() async throws {
         let server = try await SyncServer(users: [("alice", "correct horse")])

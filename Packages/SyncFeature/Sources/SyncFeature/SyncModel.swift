@@ -4,7 +4,7 @@ import CollectionStore
 import Foundation
 import Observation
 
-/// Signs in to the selected destination and syncs the collection through Anki's core.
+/// Signs in to the selected destination and syncs the collection and its media through Anki's core.
 @MainActor
 @Observable
 public final class SyncModel {
@@ -48,6 +48,7 @@ public final class SyncModel {
     /// The learner's sign-in, or nil when sync is not set up.
     public private(set) var account: SyncAccount?
     public private(set) var status: Status = .idle
+    public private(set) var mediaStatus: MediaSyncStatus = .idle
 
     @ObservationIgnored private let store: CollectionStore
     @ObservationIgnored private let storage: any SyncAccountStorage
@@ -73,11 +74,12 @@ public final class SyncModel {
         }
     }
 
-    /// Whether signing in or a sync is under way.
+    /// Whether signing in or a collection or media sync is under way.
     public var isBusy: Bool {
         switch status {
         case .signingIn, .syncing: true
-        default: false
+        default:
+            if case .syncing = mediaStatus { true } else { false }
         }
     }
 
@@ -150,6 +152,7 @@ public final class SyncModel {
             return
         }
         account = nil
+        mediaStatus = .idle
         clearSignInForm()
     }
 
@@ -164,7 +167,7 @@ public final class SyncModel {
         status = .syncing(.connecting)
         let request = Anki_Sync_SyncCollectionRequest.with {
             $0.auth = account.auth
-            // Media sync (ticket #17) is not part of this yet.
+            // Start media separately once the collection result is known.
             $0.syncMedia = false
         }
         let response: Anki_Sync_SyncCollectionResponse
@@ -190,6 +193,7 @@ public final class SyncModel {
             // A finished normal sync reports no further changes required.
             store.signal(.everything)
             status = .synced(SyncOutcome(kind: .merged, serverMessage: response.serverMessage.nilIfEmpty))
+            if let account = self.account { await syncMedia(for: account) }
         }
     }
 
@@ -209,8 +213,8 @@ public final class SyncModel {
         status = .idle
     }
 
-    /// Stops signing in or the sync under way. The core abandons the sync
-    /// and rolls back what it had applied.
+    /// Stops signing in or the transfer under way. The core keeps completed
+    /// media batches so the next sync can continue.
     public func cancel() {
         cancelRunning?()
     }
@@ -223,7 +227,7 @@ public final class SyncModel {
         let request = Anki_Sync_FullUploadOrDownloadRequest.with {
             $0.auth = account.auth
             $0.upload = upload
-            // Leaving serverUsn unset skips media sync (ticket #17).
+            // Leaving serverUsn unset lets us start media as a separate phase.
         }
         do {
             _ = try await run(store.core.start(.fullUploadOrDownload(request), abortingWith: .abortSync()))
@@ -235,6 +239,17 @@ public final class SyncModel {
         // downloading.
         store.signal(.everything)
         status = .synced(SyncOutcome(kind: upload ? .uploaded : .downloaded, serverMessage: nil))
+        await syncMedia(for: account)
+    }
+
+    private func syncMedia(for account: SyncAccount) async {
+        mediaStatus = .syncing(nil)
+        do {
+            _ = try await run(store.core.startMediaSync(account.auth))
+            mediaStatus = .synced
+        } catch {
+            mediaStatus = .failed(SyncFailure(error, server: account.server, signingIn: false))
+        }
     }
 
     /// Runs a long operation, showing its progress and making it cancellable.
@@ -253,6 +268,10 @@ public final class SyncModel {
     }
 
     private func show(_ report: Anki_Collection_Progress) {
+        if case .syncing = mediaStatus, case .mediaSync(let media) = report.value {
+            mediaStatus = .syncing(MediaSyncProgress(checked: media.checked, added: media.added, removed: media.removed))
+            return
+        }
         guard case .syncing(let current) = status else { return }
         switch report.value {
         case .normalSync(let sync):
