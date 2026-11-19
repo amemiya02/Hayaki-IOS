@@ -52,6 +52,7 @@ public struct StudyScreen: View {
     @State private var showingSettings = false
     @State private var requestedAction: ReviewerCommand?
     @State private var route: ReviewerDestination?
+    @State private var nextStudy: StudyDeck?
     @State private var autoAdvance = false
     @State private var timebox: StudyTimebox?
     @State private var feedback: ReviewFeedback?
@@ -74,7 +75,7 @@ public struct StudyScreen: View {
     @State private var deckTools: ReviewerDeckTools
     #endif
     private let store: CollectionStore
-    private let deckName: String
+    @State private var deckName: String
     private let profileFolder: URL
     @Environment(\.dismiss) private var dismiss
     @Environment(\.colorScheme) private var colorScheme
@@ -84,7 +85,7 @@ public struct StudyScreen: View {
     public init(store: CollectionStore, deck: StudyDeck) {
         self.store = store
         _model = State(initialValue: StudySessionModel(store: store, deckID: deck.id))
-        deckName = deck.name
+        _deckName = State(initialValue: deck.name)
         profileFolder = store.location.folder
         #if os(iOS)
         _deckTools = State(initialValue: ReviewerDeckTools.load(profile: store.location.folder, deckID: deck.id))
@@ -102,7 +103,7 @@ public struct StudyScreen: View {
             }
         }
         .background(Color.studyBackground.ignoresSafeArea())
-        .task { await model.run() }
+        .task(id: ObjectIdentifier(model)) { await model.run() }
         .task(id: autoAdvanceTask) { await runAutoAdvance() }
         .task(id: feedback) {
             guard feedback != nil else { return }
@@ -143,10 +144,8 @@ public struct StudyScreen: View {
             }
         }
         .modifier(ReviewerActionDialogs(model: model, requestedAction: $requestedAction))
-        .sheet(item: $route, onDismiss: {
-            Task { await model.refreshReviewerDeckOptions() }
-        }) { route in
-            destinations?(route)
+        .sheet(item: $route, onDismiss: returnFromDestination) { route in
+            destinations?(route) { nextStudy = $0 }
         }
         .alert(reviewerLocalized("Timebox Reached"), isPresented: Binding(
             get: { timebox != nil },
@@ -235,6 +234,28 @@ public struct StudyScreen: View {
         } message: {
             Text(verbatim: model.actionError ?? "")
         }
+    }
+
+    private func returnFromDestination() {
+        let requested = nextStudy
+        nextStudy = nil
+        guard let requested, requested.id != model.deckID else {
+            Task { await model.refreshAfterExternalChanges() }
+            return
+        }
+        deckName = requested.name
+        typedAnswer = ""
+        initialCount = 0
+        autoAdvance = false
+        templateFullscreen = .standard
+        templateMenu = nil
+        timebox = nil
+        #if os(iOS)
+        recorder.discard()
+        deckTools = ReviewerDeckTools.load(profile: profileFolder, deckID: requested.id)
+        drawing.clear()
+        #endif
+        model = StudySessionModel(store: store, deckID: requested.id)
     }
 
     private var side: ReviewerSide? {
@@ -473,13 +494,14 @@ public struct StudyScreen: View {
             ProgressView()
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         case .finished(let summary):
-            FinishedView(summary: summary) {
-                Task { await model.unburyDeck() }
-            } onRebuild: {
-                Task { await model.rebuildFinishedFilteredDeck() }
-            } onDone: {
-                dismiss()
-            }
+            FinishedView(
+                summary: summary,
+                onUnbury: { Task { await model.unburyDeck() } },
+                onRebuild: { Task { await model.rebuildFinishedFilteredDeck() } },
+                onOptions: destinations == nil || summary.isFiltered ? nil : { route = .deckOptions(deckID: model.deckID) },
+                onCustomStudy: destinations == nil || summary.isFiltered ? nil : { route = .customStudy(deckID: model.deckID) },
+                onDone: { dismiss() }
+            )
         case .failed(let message):
             ContentUnavailableView {
                 Label {
@@ -849,6 +871,8 @@ private struct FinishedView: View {
     let summary: SessionSummary
     let onUnbury: () -> Void
     let onRebuild: () -> Void
+    let onOptions: (() -> Void)?
+    let onCustomStudy: (() -> Void)?
     let onDone: () -> Void
 
     var body: some View {
@@ -902,6 +926,14 @@ private struct FinishedView: View {
                     Text("Unbury Cards", bundle: .module)
                 }
                 .buttonStyle(.bordered)
+            }
+            if let onOptions {
+                Button(action: onOptions) { Text("Deck Options", bundle: .module) }
+                    .buttonStyle(.bordered)
+            }
+            if let onCustomStudy {
+                Button(action: onCustomStudy) { Text("Custom Study", bundle: .module) }
+                    .buttonStyle(.bordered)
             }
             Button(action: onDone) {
                 Text("Done", bundle: .module)
