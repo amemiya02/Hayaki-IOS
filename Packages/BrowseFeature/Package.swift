@@ -13,8 +13,10 @@ let package = Package(
     dependencies: [
         .package(path: "../AnkiCore"),
         .package(path: "../CollectionStore"),
+        .package(path: "../DecksFeature"),
         .package(path: "../NoteEditorFeature"),
         .package(path: "../StudyFeature"),
+        .package(path: "../PackagesFeature"),
     ],
     targets: [
         .target(
@@ -22,8 +24,10 @@ let package = Package(
             dependencies: [
                 .product(name: "AnkiCore", package: "AnkiCore"),
                 .product(name: "CollectionStore", package: "CollectionStore"),
+                .product(name: "DecksFeature", package: "DecksFeature"),
                 .product(name: "NoteEditorFeature", package: "NoteEditorFeature"),
                 .product(name: "StudyFeature", package: "StudyFeature"),
+                .product(name: "PackagesFeature", package: "PackagesFeature"),
             ],
             resources: [.process("Resources")]
         ),
@@ -31,6 +35,7 @@ let package = Package(
             name: "BrowseFeatureTests",
             dependencies: [
                 "BrowseFeature",
+                .product(name: "DecksFeature", package: "DecksFeature"),
                 .product(name: "CollectionTesting", package: "CollectionStore"),
             ]
         ),

@@ -59,7 +59,7 @@ public final class FilteredDeckModel {
         isLoaded && !isWorking && !name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 
-    public func load() async {
+    public func load(initialSearch: String? = nil) async {
         let did = deckID ?? 0
         await run {
             let saved = try await store.core.getOrCreateFilteredDeck(.with { $0.did = did })
@@ -67,6 +67,9 @@ public final class FilteredDeckModel {
             name = saved.name
             reschedule = saved.config.reschedule
             primary = saved.config.searchTerms.first.map(FilteredDeckFilter.init) ?? FilteredDeckFilter()
+            if deckID == nil, let initialSearch {
+                primary.search = initialSearch
+            }
             secondary = saved.config.searchTerms.dropFirst().first.map(FilteredDeckFilter.init)
             previewAgainSeconds = saved.config.previewAgainSecs
             previewHardSeconds = saved.config.previewHardSecs

@@ -55,6 +55,37 @@ extension CardBrowserModel {
         await search()
     }
 
+    public func loadFlagNames() async {
+        do {
+            let names = try await readConfig([String: String].self, key: "flagLabels") ?? [:]
+            flagNames = Self.knownFlagNames(names)
+        } catch {
+            failure = error.message
+        }
+    }
+
+    public func saveFlagNames(_ updates: [CardRow.Flag: String]) async {
+        do {
+            var names = try await readConfig([String: String].self, key: "flagLabels") ?? [:]
+            for (flag, input) in updates {
+                let name = input.trimmingCharacters(in: .whitespacesAndNewlines)
+                names[String(flag.rawValue)] = name.isEmpty ? nil : name
+            }
+            try await writeConfig(names, key: "flagLabels")
+            flagNames = Self.knownFlagNames(names)
+            await refreshResults()
+        } catch {
+            failure = error.localizedDescription
+        }
+    }
+
+    private static func knownFlagNames(_ names: [String: String]) -> [CardRow.Flag: String] {
+        Dictionary(uniqueKeysWithValues: CardRow.Flag.allCases.compactMap { flag in
+            guard let name = names[String(flag.rawValue)], !name.isEmpty else { return nil }
+            return (flag, name)
+        })
+    }
+
     /// Loads the decks and tags the quick filters and the Move action offer.
     /// `run()` loads them too, and again when decks or tags change.
     public func loadChoices() async {

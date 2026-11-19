@@ -70,6 +70,22 @@ struct LargeCollectionTests {
             #expect(model.failure == nil)
             #expect(try await store.cardCount(matching: "is:suspended") == 40_000)
 
+            #expect(await model.undoLastAction())
+            #expect(try await store.cardCount(matching: "is:suspended") == 0)
+            await model.setMode(.notes)
+            #expect(model.rowIDs.count == 40_000)
+            let firstNote = try #require(model.rowIDs.first)
+            let lastNote = try #require(model.rowIDs.last)
+            await model.loadRow(firstNote)
+            model.selection.insert(firstNote)
+            await model.loadRow(lastNote)
+            model.selection.insert(lastNote)
+            await model.perform(.flag(.red))
+            #expect(try await store.cardCount(matching: "flag:1") == 2)
+            #expect(await model.undoLastAction())
+            #expect(try await store.cardCount(matching: "flag:1") == 0)
+            #expect(model.selection == [firstNote, lastNote])
+
             print("""
                 100,000 cards: search \(searching), first page \(paging), next page \(scrolling), \
                 filter \(filtering), sort \(sorting), deletion summary \(summarizing), suspend 40,000 \(suspending)

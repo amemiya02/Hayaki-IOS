@@ -1,6 +1,22 @@
 {
   "sourceLanguage": "en",
   "strings": {
+    "Export Selection as Deck Package" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "選択項目をデッキパッケージとしてエクスポート"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "将选中内容导出为牌组包"
+          }
+        }
+      }
+    },
     "A backup of your previous collection was saved in the Backups folder.": {
       "comment": "Shown after a collection package replaced the collection, when a backup was made first."
     },

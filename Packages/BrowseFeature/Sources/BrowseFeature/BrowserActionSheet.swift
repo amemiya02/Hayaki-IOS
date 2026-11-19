@@ -36,7 +36,16 @@ struct BrowserActionSheet: View {
     @State private var shiftExisting = false
     @State private var matchCase = false
     @State private var regex = false
-    @State private var onlySelection = true
+    @State private var onlySelection: Bool
+    @State private var startedWithSelection: Bool
+
+    init(prompt: BrowserActionPrompt, model: CardBrowserModel) {
+        self.prompt = prompt
+        self.model = model
+        let startedWithSelection = !model.selection.isEmpty
+        _startedWithSelection = State(initialValue: startedWithSelection)
+        _onlySelection = State(initialValue: startedWithSelection)
+    }
 
     var body: some View {
         NavigationStack {
@@ -96,7 +105,7 @@ struct BrowserActionSheet: View {
                     }
                     Toggle(isOn: $regex) { Text("Regular Expression", bundle: .module) }
                     Toggle(isOn: $matchCase) { Text("Match Case", bundle: .module) }
-                    if !model.selection.isEmpty {
+                    if startedWithSelection {
                         Toggle(isOn: $onlySelection) { Text("Selected Notes Only", bundle: .module) }
                     } else {
                         Text("This action searches the entire collection.", bundle: .module)
@@ -130,14 +139,14 @@ struct BrowserActionSheet: View {
         case .grade: nil
         case .replace:
             .findAndReplace(search: text, replacement: replacement, field: tagField ? "" : field,
-                tags: tagField, regex: regex, matchCase: matchCase, onlySelection: onlySelection && !model.selection.isEmpty)
+                tags: tagField, regex: regex, matchCase: matchCase, onlySelection: onlySelection)
         }
     }
 
     private var isInvalid: Bool {
         switch prompt {
         case .tags, .dueDate: text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-        case .replace: text.isEmpty
+        case .replace: text.isEmpty || (onlySelection && model.selection.isEmpty)
         case .reposition: step == 0
         case .reset, .grade: false
         }

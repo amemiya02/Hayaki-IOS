@@ -1,5 +1,7 @@
 import CollectionStore
+import DecksFeature
 import NoteEditorFeature
+import PackagesFeature
 import SwiftUI
 
 /// How the Browse section appears in the tab bar and sidebar.
@@ -75,7 +77,7 @@ public struct BrowseScreen: View {
                     ChangeNoteTypeScreen(store: store, noteIDs: selection.noteIDs) {
                         model.clearSelection()
                         isSelecting = false
-                        await model.search()
+                        await model.refreshResults()
                     }
                 }
                 // An alert, as in Decks: a dialog would point at the list's
@@ -167,6 +169,7 @@ public struct BrowseScreen: View {
                     onEdit: { openFirstSelection(asInfo: false) },
                     onInfo: { openFirstSelection(asInfo: true) },
                     onPreview: { preview(selectedOnly: true) },
+                    onExport: export,
                     onChangeNoteType: changeNoteType
                 )
                 .disabled(model.selection.isEmpty || model.isPerformingAction)
@@ -199,6 +202,30 @@ public struct BrowseScreen: View {
     }
 
     private var modePicker: some View {
+        HStack {
+            modeToggle
+            if model.state == .loaded {
+                resultCount
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .monospacedDigit()
+            }
+        }
+        .frame(maxWidth: 440)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 8)
+        .frame(maxWidth: .infinity)
+        .background(.bar)
+    }
+
+    private var resultCount: Text {
+        switch model.mode {
+        case .cards: Text("\(model.rowIDs.count) Cards", bundle: .module)
+        case .notes: Text("\(model.rowIDs.count) Notes", bundle: .module)
+        }
+    }
+
+    private var modeToggle: some View {
         Picker(selection: Binding {
             model.mode
         } set: { mode in
@@ -210,15 +237,12 @@ public struct BrowseScreen: View {
             Text("Browse Mode", bundle: .module)
         }
         .pickerStyle(.segmented)
-        .frame(maxWidth: 440)
-        .padding(.horizontal, 16)
-        .padding(.vertical, 8)
-        .frame(maxWidth: .infinity)
-        .background(.bar)
+        .accessibilityIdentifier("browse-mode")
     }
 
     private var configurationMenu: some View {
         Menu {
+            BrowserUndoMenuAction(model: model)
             SortMenu(model: model)
             Button {
                 sheet = .columns
@@ -235,6 +259,13 @@ public struct BrowseScreen: View {
                     Text("Saved Searches", bundle: .module)
                 } icon: { Image(systemName: "bookmark") }
             }
+            Button {
+                sheet = .flags
+            } label: {
+                Label {
+                    Text("Rename Flags", bundle: .module)
+                } icon: { Image(systemName: "flag") }
+            }
             Toggle(isOn: $truncatesRows) { Text("Truncate Rows", bundle: .module) }
             Divider()
             Button {
@@ -245,6 +276,14 @@ public struct BrowseScreen: View {
                 } icon: { Image(systemName: "eye") }
             }
             .disabled(model.rowIDs.isEmpty)
+            Button {
+                sheet = .filteredDeck(model.searchedText)
+            } label: {
+                Label {
+                    Text("New Filtered Deck", bundle: .module)
+                } icon: { Image(systemName: "line.3.horizontal.decrease.circle") }
+            }
+            .disabled(model.state != .loaded)
             Button {
                 actionPrompt = .replace
             } label: {
@@ -265,8 +304,12 @@ public struct BrowseScreen: View {
         case .filters: BrowserFiltersSheet(model: model)
         case .columns: BrowserColumnsSheet(model: model)
         case .savedSearches: BrowserSavedSearchesSheet(model: model)
+        case .flags: BrowserFlagLabelsSheet(model: model)
+        case .filteredDeck(let search): FilteredDeckScreen(store: store, initialSearch: search)
         case .editing(let cardID): NoteEditorScreen(store: store, editingCardID: cardID)
         case .preview(let cardIDs): BrowserPreviewScreen(store: store, cardIDs: cardIDs)
+        case .textExport(let selection): TextExportScreen(store: store, selection: selection)
+        case .packageExport(let selection): PackageExportScreen(store: store, selection: selection)
         }
     }
 
@@ -299,6 +342,13 @@ public struct BrowseScreen: View {
             let ids = await model.previewCardIDs(selectedOnly: selectedOnly)
             if !ids.isEmpty { sheet = .preview(ids) }
         }
+    }
+
+    private func export(asPackage: Bool) {
+        let ids = model.rowIDs.filter { model.selection.contains($0) }
+        guard !ids.isEmpty else { return }
+        let selection = model.mode == .cards ? ExportSelection.cards(ids) : .notes(ids)
+        sheet = asPackage ? .packageExport(selection) : .textExport(selection)
     }
 
     private var isConfirmingDeletion: Binding<Bool> {
@@ -375,7 +425,7 @@ public struct BrowseScreen: View {
                 row(rowID)
             }
             .listStyle(.plain)
-            .refreshable { await model.search() }
+            .refreshable { await model.refreshResults() }
         }
     }
     @ViewBuilder
@@ -413,7 +463,8 @@ public struct BrowseScreen: View {
 }
 
 private enum BrowseSheet: Identifiable {
-    case filters, columns, savedSearches, editing(Int64), preview([Int64])
+    case filters, columns, savedSearches, flags, editing(Int64), preview([Int64])
+    case textExport(ExportSelection), packageExport(ExportSelection), filteredDeck(String)
 
     var id: Int {
         switch self {
@@ -422,6 +473,10 @@ private enum BrowseSheet: Identifiable {
         case .savedSearches: 2
         case .editing: 3
         case .preview: 4
+        case .textExport: 5
+        case .packageExport: 6
+        case .flags: 7
+        case .filteredDeck: 8
         }
     }
 }
@@ -504,11 +559,15 @@ private struct CardRowView: View {
 
     var body: some View {
         let row = model.row(for: cardID)
-        CardRowContent(row: row, columns: model.visibleColumns, truncates: truncates)
+        CardRowContent(row: row, columns: model.visibleColumns, truncates: truncates, flagLabel: flagLabel(row))
             .redacted(reason: row == nil ? .placeholder : [])
             .task(id: RowVersion(cardID: cardID, generation: model.generation)) {
                 await model.loadRow(cardID)
             }
+    }
+
+    private func flagLabel(_ row: CardRow?) -> Text? {
+        if case .flag(let flag)? = row?.mark { model.flagName(flag) } else { nil }
     }
 
     private struct RowVersion: Hashable {
@@ -521,6 +580,7 @@ private struct CardRowContent: View {
     let row: CardRow?
     let columns: [BrowserColumn]
     let truncates: Bool
+    let flagLabel: Text?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
@@ -531,7 +591,7 @@ private struct CardRowContent: View {
                         .accessibilityLabel(Text(verbatim: "\(first.label), \(value(first))"))
                 }
                 Spacer(minLength: 0)
-                if let row, let mark = MarkBadge(mark: row.mark) {
+                if let row, let mark = MarkBadge(mark: row.mark, flagLabel: flagLabel) {
                     mark
                 }
             }
@@ -569,14 +629,14 @@ struct MarkBadge: View {
     let color: Color
     let label: Text
 
-    init?(mark: CardRow.Mark) {
+    init?(mark: CardRow.Mark, flagLabel: Text? = nil) {
         switch mark {
         case .none:
             return nil
         case .flag(let flag):
             symbol = "flag.fill"
             color = flag.color
-            label = flag.label
+            label = flagLabel ?? flag.label
         case .marked:
             symbol = "star.fill"
             color = .purple

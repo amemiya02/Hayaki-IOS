@@ -27,8 +27,11 @@ public struct CardDetail: Equatable, Sendable {
     public let totalSeconds: Double
     public let memoryState: MemoryState?
     public let retrievability: Double?
+    public let desiredRetention: Double?
+    let fsrsDecay: Double
     public let customData: String
     public let due: Due
+    public let originalPosition: Int?
     public let status: Status
     /// The current interval in days; 0 for a card not yet in review.
     public let intervalDays: Int
@@ -83,6 +86,7 @@ public struct CardDetail: Equatable, Sendable {
         public let ease: Double?
         public let memoryState: MemoryState?
         public let secondsTaken: Double
+        let recordedEase: UInt32
 
         public enum Kind: Equatable, Sendable {
             case learning, review, relearning, filtered, manual, rescheduled
@@ -172,7 +176,16 @@ extension CardDetail {
         totalSeconds = Double(stats.totalSecs)
         memoryState = stats.hasMemoryState ? MemoryState(stats.memoryState) : nil
         retrievability = stats.hasFsrsRetrievability ? Double(stats.fsrsRetrievability) : nil
+        desiredRetention = stats.hasDesiredRetention ? Double(stats.desiredRetention) : nil
+        fsrsDecay = if stats.fsrsParams.isEmpty {
+            0.1542
+        } else if stats.fsrsParams.count >= 21, stats.fsrsParams[20] > 0 {
+            Double(stats.fsrsParams[20])
+        } else {
+            0.5
+        }
         customData = stats.customData
+        originalPosition = stats.hasDuePosition ? Int(stats.duePosition) : nil
         due = if stats.hasDueDate {
             .date(Date(timeIntervalSince1970: TimeInterval(stats.dueDate)))
         } else if stats.hasDuePosition {
@@ -212,5 +225,6 @@ extension CardDetail.Review {
         ease = entry.ease > 1_100 ? Double(entry.ease) / 1_000 : nil
         memoryState = entry.hasMemoryState ? CardDetail.MemoryState(entry.memoryState) : nil
         secondsTaken = Double(entry.takenSecs)
+        recordedEase = entry.ease
     }
 }

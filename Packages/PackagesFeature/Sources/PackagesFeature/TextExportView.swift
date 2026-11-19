@@ -20,14 +20,34 @@ public struct TextExportButton: View {
             }
         }
         .sheet(isPresented: $presented) {
-            NavigationStack {
-                if let folder = try? PackageExportModel.standardExportFolder() {
-                    TextExportForm(store: store, folder: folder)
-                } else {
-                    ContentUnavailableView {
-                        Text("Could Not Export", bundle: .module)
-                    } description: {
-                        Text("Hayaki cannot reach its Documents folder.", bundle: .module)
+            TextExportScreen(store: store)
+        }
+    }
+}
+
+public struct TextExportScreen: View {
+    let store: CollectionStore
+    let selection: ExportSelection?
+    @Environment(\.dismiss) private var dismiss
+
+    public init(store: CollectionStore, selection: ExportSelection? = nil) {
+        self.store = store
+        self.selection = selection
+    }
+
+    public var body: some View {
+        NavigationStack {
+            if let folder = try? PackageExportModel.standardExportFolder() {
+                TextExportForm(store: store, folder: folder, selection: selection)
+            } else {
+                ContentUnavailableView {
+                    Text("Could Not Export", bundle: .module)
+                } description: {
+                    Text("Hayaki cannot reach its Documents folder.", bundle: .module)
+                }
+                .toolbar {
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button { dismiss() } label: { Text("Close", bundle: .module) }
                     }
                 }
             }
@@ -39,8 +59,8 @@ private struct TextExportForm: View {
     @State private var model: TextExportModel
     @Environment(\.dismiss) private var dismiss
 
-    init(store: CollectionStore, folder: URL) {
-        _model = State(initialValue: TextExportModel(store: store, folder: folder))
+    init(store: CollectionStore, folder: URL, selection: ExportSelection?) {
+        _model = State(initialValue: TextExportModel(store: store, folder: folder, selection: selection))
     }
 
     var body: some View {
@@ -116,13 +136,15 @@ private struct TextExportForm: View {
             } label: {
                 Text("Format", bundle: .module)
             }
-            Picker(selection: fields.deckID) {
-                Text("All Decks", bundle: .module).tag(nil as Int64?)
-                ForEach(model.decks, id: \.id) { deck in
-                    Text(verbatim: deck.name).tag(Optional(deck.id))
+            if model.selection == nil {
+                Picker(selection: fields.deckID) {
+                    Text("All Decks", bundle: .module).tag(nil as Int64?)
+                    ForEach(model.decks, id: \.id) { deck in
+                        Text(verbatim: deck.name).tag(Optional(deck.id))
+                    }
+                } label: {
+                    Text("Deck", bundle: .module)
                 }
-            } label: {
-                Text("Deck", bundle: .module)
             }
             Toggle(isOn: fields.includeHTML) { Text("Include HTML", bundle: .module) }
             if model.format == .notes {

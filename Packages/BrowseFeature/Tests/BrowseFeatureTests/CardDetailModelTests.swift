@@ -107,3 +107,30 @@ extension CardDetailModelTests {
         }
     }
 }
+
+extension CardDetailModelTests {
+    @Test("An FSRS review anchors the card’s retention curve and preserves its original position")
+    func retentionCurve() async throws {
+        try await withTemporaryCollection { store in
+            let deck = try await store.addDeck(named: "Languages")
+            let id = try await store.addBasicCard(front: "correr", back: "run", inDeck: deck)
+            try await store.modify(.setConfigJson(.with {
+                $0.key = "fsrs"
+                $0.valueJson = Data("true".utf8)
+            }))
+            try await store.review(id, rating: .easy, seconds: 7)
+            let model = CardDetailModel(store: store, cardID: id)
+            await model.refresh()
+            let detail = try #require(model.detail)
+            let review = try #require(detail.history.first)
+            let stability = try #require(review.memoryState?.stabilityDays)
+            let oneStabilityFromReview = review.date.addingTimeInterval(stability * 86_400)
+            let points = detail.retentionPoints(at: oneStabilityFromReview)
+            #expect(detail.originalPosition == 1)
+            #expect(detail.totalSeconds == 7)
+            #expect(points.first?.probability == 1)
+            #expect(points.last?.date == oneStabilityFromReview)
+            #expect(abs((points.last?.probability ?? 0) - 0.9) < 0.000001)
+        }
+    }
+}
