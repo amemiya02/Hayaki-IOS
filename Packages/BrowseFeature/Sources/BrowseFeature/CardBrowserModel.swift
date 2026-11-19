@@ -92,6 +92,9 @@ public final class CardBrowserModel {
     /// Why the last bulk action or undo failed, in the core's words.
     public var failure: String?
 
+    public internal(set) var savedSearches: [SavedBrowserSearch] = []
+    @ObservationIgnored var updatingSavedSearches = false
+
     @ObservationIgnored private var searchCount = 0
 
     /// The rows fetched so far, by card id.

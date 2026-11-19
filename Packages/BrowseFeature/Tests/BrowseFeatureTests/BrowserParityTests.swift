@@ -70,3 +70,31 @@ extension BrowserParityTests {
         }
     }
 }
+
+extension BrowserParityTests {
+    @Test("Saved searches keep the submitted query in shared collection settings")
+    func savedSearches() async throws {
+        try await withTemporaryCollection { store in
+            let deck = try await store.addDeck(named: "Spanish Verbs")
+            let card = try await store.addBasicCard(front: "correr", back: "run", inDeck: deck)
+            let model = CardBrowserModel(store: store)
+            await model.applyFilter(.deck("Spanish Verbs"))
+            let query = model.searchedText
+            model.searchText = "unsubmitted draft"
+            await model.saveSearch(named: "Verbs")
+            await model.saveSearch(named: "Verbs")
+
+            let reopened = CardBrowserModel(store: store)
+            await reopened.loadSavedSearches()
+            #expect(reopened.savedSearches.map(\.name) == ["Verbs"])
+            #expect(reopened.savedSearches.map(\.query) == [query])
+            await reopened.openSavedSearch(try #require(reopened.savedSearches.first))
+            #expect(reopened.rowIDs == [card])
+            #expect(reopened.searchText == query)
+
+            await reopened.removeSavedSearch(named: "Verbs")
+            await model.loadSavedSearches()
+            #expect(model.savedSearches.isEmpty)
+        }
+    }
+}
