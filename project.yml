@@ -67,6 +67,15 @@ targets:
         embed: true
       - target: HayakiWidgets
         embed: true
+    postBuildScripts:
+      - name: Record build diagnostics
+        script: /bin/bash "$SRCROOT/scripts/stamp-app-build.sh"
+        inputFiles:
+          - $(SRCROOT)/core/Cargo.lock
+          - $(TARGET_BUILD_DIR)/$(EXECUTABLE_PATH)
+          - $(SRCROOT)/scripts/stamp-app-build.sh
+        outputFiles:
+          - $(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/HayakiBuildInfo.plist
     settings:
       base:
         PRODUCT_NAME: Hayaki
