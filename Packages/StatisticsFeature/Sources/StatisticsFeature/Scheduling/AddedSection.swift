@@ -2,19 +2,23 @@ import SwiftUI
 
 struct AddedSection: View {
     let graphs: StatisticsGraphs
+    @Environment(\.statisticsReportPeriod) private var reportPeriod
+    private var displayedPeriod: StatisticsPeriod { reportPeriod ?? period }
     @State private var period: StatisticsPeriod = .month
     @State private var showCumulative = false
     @State private var position: Double?
 
     var body: some View {
-        let days = graphs.displaying(period).addedDays
-        let earliest = period == .allTime
+        let days = graphs.displaying(displayedPeriod).addedDays
+        let earliest = displayedPeriod == .allTime
             ? min(days.first?.offset ?? 0, 0)
-            : -period.latestForecastDay
+            : -displayedPeriod.latestForecastDay
         let total = days.reduce(0) { $0 + $1.count }
 
         Section {
-            StatisticsPeriodPicker(selection: $period, label: Text("Added Period", bundle: .module))
+            if reportPeriod == nil {
+                StatisticsPeriodPicker(selection: $period, label: Text("Added Period", bundle: .module))
+            }
             if days.isEmpty {
                 Text("No cards were added in this period.", bundle: .module)
                     .foregroundStyle(.secondary)
@@ -29,7 +33,9 @@ struct AddedSection: View {
 
     @ViewBuilder
     private func results(days: [DailyCardCount], earliest: Int, total: Int) -> some View {
-        Toggle(isOn: $showCumulative) { Text("Running Total", bundle: .module) }
+        if reportPeriod == nil {
+            Toggle(isOn: $showCumulative) { Text("Running Total", bundle: .module) }
+        }
         DailyCardCountChart(
             days: days, range: earliest...1, cumulative: showCumulative,
             title: Text("Cards Added", bundle: .module), position: $position

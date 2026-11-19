@@ -5,16 +5,20 @@ import SwiftUI
 /// the kind of card reviewed, with each kind's share of correct reviews below.
 struct RatingsSection: View {
     let graphs: StatisticsGraphs
+    @Environment(\.statisticsReportPeriod) private var reportPeriod
+    private var displayedPeriod: StatisticsPeriod { reportPeriod ?? period }
     @State private var period: StatisticsPeriod = .year
     @State private var selectedRating: String?
-    private var ratings: RatingCounts { graphs.displaying(period).ratings }
+    private var ratings: RatingCounts { graphs.displaying(displayedPeriod).ratings }
 
     var body: some View {
         Section {
-            StatisticsPeriodPicker(
-                selection: $period, label: Text("Ratings Period", bundle: .module),
-                allowsAllTime: graphs.period == .allTime
-            )
+            if reportPeriod == nil {
+                StatisticsPeriodPicker(
+                    selection: $period, label: Text("Ratings Period", bundle: .module),
+                    allowsAllTime: graphs.period == .allTime
+                )
+            }
             if ratings.isEmpty {
                 Text("No reviews in this period.", bundle: .module)
                     .foregroundStyle(.secondary)
