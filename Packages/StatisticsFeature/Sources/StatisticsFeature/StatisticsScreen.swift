@@ -105,7 +105,13 @@ public struct StatisticsScreen: View {
             CalendarSection(graphs: graphs, firstWeekday: $firstWeekday)
             ReviewHistorySection(days: reviews, earliestDay: graphs.period.earliestReviewDay)
             CardCountsSection(counts: cardCounts)
+            ForEach(graphs.distributions, id: \.kind) { distribution in
+                DistributionSection(data: distribution)
+            }
+            TrueRetentionSection(retention: graphs.trueRetention)
+            HourlySection(hours: graphs.hourlyReviews)
             RatingsSection(ratings: ratings)
+            AddedSection(graphs: graphs)
         }
     }
 }

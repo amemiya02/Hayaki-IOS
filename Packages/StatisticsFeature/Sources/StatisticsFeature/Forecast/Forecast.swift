@@ -1,13 +1,13 @@
 import AnkiProto
 
-public struct DueForecast: Equatable, Sendable {
-    public struct Day: Identifiable, Equatable, Sendable {
-        public let offset: Int
-        public let count: Int
-        public var id: Int { offset }
-    }
+public struct DailyCardCount: Identifiable, Equatable, Sendable {
+    public let offset: Int
+    public let count: Int
+    public var id: Int { offset }
+}
 
-    public let days: [Day]
+public struct DueForecast: Equatable, Sendable {
+    public let days: [DailyCardCount]
     public let hasBacklog: Bool
     public let dailyLoad: Int
     public var total: Int { days.reduce(0) { $0 + $1.count } }
@@ -18,9 +18,9 @@ extension StatisticsGraphs {
     /// Cards due in the selected period. A negative offset is an overdue card.
     public func forecast(includeBacklog: Bool = false) -> DueForecast {
         let future = response.futureDue
-        let days = future.futureDue.compactMap { offset, count -> DueForecast.Day? in
+        let days = future.futureDue.compactMap { offset, count -> DailyCardCount? in
             guard Int(offset) <= period.latestForecastDay, includeBacklog || offset >= 0 else { return nil }
-            return DueForecast.Day(offset: Int(offset), count: Int(count))
+            return DailyCardCount(offset: Int(offset), count: Int(count))
         }
         return DueForecast(
             days: days.sorted { $0.offset < $1.offset },

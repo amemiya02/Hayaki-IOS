@@ -1,4 +1,3 @@
-import Charts
 import SwiftUI
 
 struct ForecastSection: View {
@@ -18,7 +17,10 @@ struct ForecastSection: View {
                     .foregroundStyle(.secondary)
             } else {
                 Toggle(isOn: $showCumulative) { Text("Running Total", bundle: .module) }
-                chart(forecast)
+                DailyCardCountChart(
+                    days: forecast.days, range: chartRange(for: forecast),
+                    cumulative: showCumulative, title: Text("Cards Due", bundle: .module), position: $position
+                )
                 summary(forecast)
             }
         } header: {
@@ -28,51 +30,12 @@ struct ForecastSection: View {
         .onChange(of: includeBacklog) { position = nil }
     }
 
-    private func chart(_ forecast: DueForecast) -> some View {
+    private func chartRange(for forecast: DueForecast) -> ClosedRange<Int> {
         let earliest = min(forecast.days.first?.offset ?? 0, 0)
-        let maximum = graphs.period.latestForecastDay
-        let latest = maximum == .max ? max(forecast.days.last?.offset ?? 0, 0) : maximum
-        let runningTotals = forecast.days.reduce(into: [Int]()) { values, day in
-            values.append((values.last ?? 0) + day.count)
-        }
-        return Chart {
-            ForEach(forecast.days.indices, id: \.self) { index in
-                let day = forecast.days[index]
-                if showCumulative {
-                    LineMark(
-                        x: .value(Text("Day", bundle: .module), Double(day.offset)),
-                        y: .value(Text("Cards", bundle: .module), runningTotals[index])
-                    )
-                    .foregroundStyle(.blue)
-                    PointMark(
-                        x: .value(Text("Day", bundle: .module), Double(day.offset)),
-                        y: .value(Text("Cards", bundle: .module), runningTotals[index])
-                    )
-                    .foregroundStyle(.blue)
-                    .accessibilityLabel(relativeDay(day.offset))
-                    .accessibilityValue(Text(runningTotals[index], format: .number))
-                } else {
-                    RectangleMark(
-                        xStart: .value(Text("Day", bundle: .module), Double(day.offset) - 0.4),
-                        xEnd: .value(Text("Day", bundle: .module), Double(day.offset) + 0.4),
-                        yStart: .value("Cards", 0),
-                        yEnd: .value("Cards", day.count)
-                    )
-                    .foregroundStyle(.green)
-                    .accessibilityLabel(relativeDay(day.offset))
-                    .accessibilityValue(Text(day.count, format: .number))
-                }
-            }
-            if let position {
-                RuleMark(x: .value(Text("Day", bundle: .module), position.rounded()))
-                    .foregroundStyle(.secondary)
-                    .accessibilityHidden(true)
-            }
-        }
-        .chartXScale(domain: (Double(earliest) - 0.5)...(Double(latest) + 0.5))
-        .chartXSelection(value: $position)
-        .chartYAxisLabel { Text("Cards Due", bundle: .module) }
-        .frame(height: 180)
+        let latest = graphs.period.latestForecastDay == .max
+            ? max(forecast.days.last?.offset ?? 0, 0)
+            : graphs.period.latestForecastDay
+        return earliest...latest
     }
 
     @ViewBuilder

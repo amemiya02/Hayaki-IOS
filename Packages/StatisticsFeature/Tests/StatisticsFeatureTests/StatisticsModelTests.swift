@@ -118,6 +118,75 @@ struct StatisticsModelTests {
         }
     }
 
+    @Test("Scheduling charts use interval, hourly, added and true retention data from the collection")
+    func schedulingCharts() async throws {
+        try await withTemporaryCollection { store in
+            let spanish = try await store.addSpanishWithKnownHistory()
+            let cards = try await store.addBasicNotes(count: 2, toDeck: spanish)
+            try await store.makeReviewCardsDueToday([cards[0]], intervalDays: 10)
+            try await store.makeReviewCardsDueToday([cards[1]], intervalDays: 40)
+
+            let model = StatisticsModel(store: store)
+            model.scope = .deck(id: spanish)
+            await model.refresh()
+            let stats = try #require(model.graphs)
+
+            #expect(stats.addedDays.map(\.offset) == [0])
+            #expect(stats.addedDays.map(\.count) == [9])
+            #expect(stats.hourlyReviews.count == 24)
+            #expect(stats.hourlyReviews.reduce(0) { $0 + $1.count } == 3)
+            #expect(stats.hourlyReviews.reduce(0) { $0 + $1.correct } == 2)
+            let today = try #require(stats.trueRetention.first { $0.window == .today })
+            #expect(today.young.passed == 1)
+            #expect(today.young.failed == 0)
+            #expect(today.mature.passed == 1)
+            #expect(today.mature.failed == 0)
+            #expect(today.combined.rate == 1)
+            #expect(stats.distributions.map(\.kind) == [.intervals, .ease])
+            let intervals = try #require(stats.distributions.first)
+            #expect(intervals.total == 4)
+            #expect(intervals.buckets.contains { $0.value == 10 && $0.count >= 1 })
+            #expect(intervals.buckets.contains { $0.value == 40 && $0.count >= 1 })
+        }
+    }
+
+    @Test("FSRS replaces ease with stability, difficulty and retrievability distributions")
+    func fsrsDistributions() async throws {
+        try await withTemporaryCollection { store in
+            let deck = try await store.addDeck(named: "FSRS")
+            let cards = try await store.addBasicNotes(count: 2, toDeck: deck)
+            try await store.makeReviewCardsDueToday([cards[0]], intervalDays: 5)
+            try await store.modify(.setConfigJson(.with {
+                $0.key = "fsrs"
+                $0.valueJson = Data("true".utf8)
+            }))
+            var card = try await store.core.getCard(.with { $0.cid = cards[0] })
+            card.memoryState = .with {
+                $0.stability = 9
+                $0.difficulty = 5.5
+            }
+            let reviewedCard = card
+            try await store.modify(.updateCards(.with { $0.cards = [reviewedCard] }))
+
+            let model = StatisticsModel(store: store)
+            model.scope = .deck(id: deck)
+            await model.refresh()
+            let graphs = try #require(model.graphs)
+            #expect(graphs.distributions.map(\.kind) == [.intervals, .stability, .difficulty, .retrievability])
+            let stability = try #require(graphs.distributions.first { $0.kind == .stability })
+            #expect(stability.buckets.map(\.value) == [9])
+            #expect(stability.buckets.map(\.count) == [1])
+            let difficulty = try #require(graphs.distributions.first { $0.kind == .difficulty })
+            #expect(difficulty.buckets.map(\.value) == [50])
+            #expect(difficulty.typicalValue == 50)
+            let retrievability = try #require(graphs.distributions.first { $0.kind == .retrievability })
+            #expect(retrievability.total == 1)
+            #expect(retrievability.estimatedRememberedCards == retrievability.estimatedRememberedNotes)
+            let remembered = try #require(retrievability.estimatedRememberedCards)
+            #expect(remembered > 0 && remembered <= 1)
+        }
+    }
+
     @Test("Card counts divide the cards between new, learning, young, mature, suspended and buried")
     func cardCounts() async throws {
         try await withTemporaryCollection { store in
