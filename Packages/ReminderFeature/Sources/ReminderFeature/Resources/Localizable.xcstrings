@@ -71,6 +71,22 @@
         }
       }
     },
+    "All Decks" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "すべてのデッキ"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "所有牌组"
+          }
+        }
+      }
+    },
     "Allow Hayaki notifications in Settings to receive deck reminders." : {
       "localizations" : {
         "ja" : {

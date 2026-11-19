@@ -244,6 +244,158 @@ extension Date {
 }
 
 @MainActor
+@Test("An All Decks rule sums different decks and applies its count filter to the minimum")
+func allDecksReminderThreshold() async throws {
+    try await withTemporaryCollection { store in
+        let spanish = try await store.addDeck(named: "Spanish")
+        let vocabulary = try await store.addDeck(named: "Spanish::Vocabulary")
+        let japanese = try await store.addDeck(named: "Japanese")
+        try await store.makeDueToday(store.addBasicNotes(count: 2, toDeck: spanish))
+        try await store.makeDueToday(store.addBasicNotes(count: 3, toDeck: vocabulary))
+        try await store.makeDueToday(store.addBasicNotes(count: 1, toDeck: japanese))
+        try await store.addBasicNotes(count: 2, toDeck: japanese)
+        let centre = RecordingNotificationCentre(permission: .allowed)
+        let model = DeckReminderModel(store: store, profileID: UUID(), centre: centre, defaults: .throwaway())
+        let time = Date.now.addingTimeInterval(3600).hourAndMinute
+        var rule = DeckReminder(hour: try #require(time.hour), minute: try #require(time.minute))
+        rule.countNew = false
+        rule.minimumCards = 7
+
+        await model.save(rule)
+        #expect(await centre.pendingReminders().isEmpty)
+
+        rule.minimumCards = 6
+        await model.save(rule)
+        let first = try #require(await centre.pendingReminders().first)
+        #expect(first.title == "Time to Study")
+        #expect(first.body == "6 cards are due. 2 new cards are ready to learn.")
+    }
+}
+
+@MainActor
+@Test("A review in any deck suppresses today's All Decks reminder until the scheduler day changes")
+func allDecksReminderAfterReview() async throws {
+    try await withTemporaryCollection { store in
+        let now = Date.now
+        let rollover = Calendar.current.component(.hour, from: now.addingTimeInterval(3 * 3600))
+        try await store.updateSchedulingPreferences { $0.rollover = UInt32(rollover) }
+        let spanish = try await store.addDeck(named: "Spanish")
+        let japanese = try await store.addDeck(named: "Japanese")
+        try await store.addBasicNotes(count: 2, toDeck: spanish)
+        try await store.addBasicNotes(count: 2, toDeck: japanese)
+        let centre = RecordingNotificationCentre(permission: .allowed)
+        let defaults = UserDefaults.throwaway()
+        let profile = UUID()
+        let model = DeckReminderModel(store: store, profileID: profile, centre: centre, defaults: defaults)
+        let today = now.addingTimeInterval(20 * 60)
+        let time = today.hourAndMinute
+        var global = DeckReminder(hour: try #require(time.hour), minute: try #require(time.minute))
+        global.onlyWithoutReviews = true
+        var deck = DeckReminder(deckID: spanish, hour: global.hour, minute: global.minute)
+        deck.onlyWithoutReviews = true
+        await model.save(global)
+        await model.save(deck)
+        #expect(await centre.pendingReminders().filter { $0.delivery.isSameMinute(as: today) }.count == 2)
+
+        try await store.answerNextCard(inDeck: japanese, rating: .easy)
+        await ReminderSchedule(store: store, centre: centre, defaults: defaults, profileID: profile).update()
+
+        let after = await centre.pendingReminders()
+        let nextDay = Date(timeIntervalSince1970: TimeInterval(try await store.core.schedTimingToday().nextDayAt))
+        let nextGlobal = try #require(after.first { $0.title == "Time to Study" })
+        #expect(after.filter { $0.delivery.isSameMinute(as: today) }.map(\.title) == ["Spanish"])
+        #expect(nextGlobal.delivery >= nextDay)
+    }
+}
+
+@MainActor
+@Test("An All Decks rule and its snooze open the originating profile's deck list")
+func allDecksReminderOpensDeckList() async throws {
+    try await withTemporaryCollection { store in
+        let centre = RecordingNotificationCentre(permission: .allowed)
+        let profile = UUID()
+        let model = DeckReminderModel(store: store, profileID: profile, centre: centre, defaults: .throwaway())
+        let time = Date.now.addingTimeInterval(3600).hourAndMinute
+        var rule = DeckReminder(hour: try #require(time.hour), minute: try #require(time.minute))
+        rule.minimumCards = 0
+        await model.save(rule)
+
+        let reminder = try #require(await centre.pendingReminders().first)
+        #expect(reminder.body == "No cards are due.")
+        let opener = ReminderOpener()
+        opener.opened(notificationIdentifier: reminder.identifier)
+        let target = try #require(opener.deckRequested)
+        #expect(target.profileID == profile)
+        #expect(target.deckID == nil)
+        #expect(!opener.deckListRequested)
+
+        let beforeSnooze = Date.now
+        await DeckReminderActions.snooze(.fiveMinutes, target: target, title: reminder.title, body: reminder.body, in: centre)
+        let snoozed = try #require(await centre.pendingReminders().first)
+        #expect(abs(snoozed.delivery.timeIntervalSince(beforeSnooze) - 300) < 5)
+        opener.deckRequested = nil
+        opener.opened(notificationIdentifier: snoozed.identifier)
+        let snoozedTarget = try #require(opener.deckRequested)
+        #expect(snoozedTarget.profileID == profile)
+        #expect(snoozedTarget.deckID == nil)
+
+        await model.save(rule)
+        #expect(await centre.pendingReminders().contains(snoozed))
+        await model.delete(rule.id)
+        #expect(await centre.pendingReminders().isEmpty)
+    }
+}
+
+@MainActor
+@Test("All Decks rules stay with their own profiles alongside existing daily and deck reminders")
+func allDecksReminderProfileIsolation() async throws {
+    try await withTemporaryCollection { firstStore in
+        try await withTemporaryCollection { secondStore in
+            let spanish = try await firstStore.addDeck(named: "Spanish")
+            let japanese = try await secondStore.addDeck(named: "Japanese")
+            try await firstStore.addBasicNotes(count: 2, toDeck: spanish)
+            try await secondStore.addBasicNotes(count: 5, toDeck: japanese)
+            let centre = RecordingNotificationCentre(permission: .allowed)
+            let defaults = UserDefaults.throwaway()
+            let firstProfile = UUID()
+            let secondProfile = UUID()
+            let oldID = UUID()
+            let oldRules = """
+            [{"id":"\(oldID)","deckID":\(spanish),"hour":9,"minute":0,"enabled":true,"minimumCards":1,
+              "countNew":true,"countLearning":true,"countReview":true,"onlyWithoutReviews":false}]
+            """
+            defaults.set(Data(oldRules.utf8), forKey: "reminder.decks.\(firstProfile.uuidString)")
+            let daily = ReminderModel(store: firstStore, centre: centre, defaults: defaults, profileID: firstProfile)
+            await daily.setOn(true)
+            let first = DeckReminderModel(store: firstStore, profileID: firstProfile, centre: centre, defaults: defaults)
+            let second = DeckReminderModel(store: secondStore, profileID: secondProfile, centre: centre, defaults: defaults)
+            #expect(first.rules.map(\.deckID) == [spanish])
+            #expect(second.rules.isEmpty)
+
+            let firstRule = DeckReminder(hour: 9, minute: 0)
+            let secondRule = DeckReminder(hour: 9, minute: 0)
+            await first.save(firstRule)
+            await second.save(secondRule)
+
+            let pending = await centre.pendingReminders()
+            #expect(pending.contains { $0.title == "Spanish" })
+            #expect(pending.contains { !($0.identifier.hasPrefix(DeckReminderDestination.prefix)) })
+            for (profile, body) in [(firstProfile, "2 new cards are ready to learn."), (secondProfile, "5 new cards are ready to learn.")] {
+                let global = try #require(pending.first {
+                    guard let target = DeckReminderDestination(identifier: $0.identifier) else { return false }
+                    return target.profileID == profile && target.deckID == nil
+                })
+                #expect(global.body == body)
+            }
+            #expect(DeckReminderModel(store: firstStore, profileID: firstProfile, centre: centre, defaults: defaults)
+                .rules.map(\.id) == [oldID, firstRule.id])
+            #expect(DeckReminderModel(store: secondStore, profileID: secondProfile, centre: centre, defaults: defaults)
+                .rules == [secondRule])
+        }
+    }
+}
+
+@MainActor
 @Test("A deck reminder counts only its deck and carries the profile and deck on launch")
 func deckReminderOpensItsDeck() async throws {
     try await withTemporaryCollection { store in
