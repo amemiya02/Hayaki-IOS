@@ -25,6 +25,7 @@ let package = Package(
         .package(path: "../PackagesFeature"),
         .package(path: "../NoteEditorFeature"),
         .package(path: "../ReminderFeature"),
+        .package(path: "../ExtensionBridge"),
     ],
     targets: [
         .target(
@@ -42,6 +43,7 @@ let package = Package(
                 .product(name: "PackagesFeature", package: "PackagesFeature"),
                 .product(name: "NoteEditorFeature", package: "NoteEditorFeature"),
                 .product(name: "ReminderFeature", package: "ReminderFeature"),
+                .product(name: "ExtensionBridge", package: "ExtensionBridge"),
             ],
             resources: [.process("Resources")]
         ),
@@ -49,6 +51,7 @@ let package = Package(
             name: "AppShellTests",
             dependencies: [
                 "AppShell",
+                .product(name: "ExtensionBridge", package: "ExtensionBridge"),
                 .product(name: "SyncFeature", package: "SyncFeature"),
                 .product(name: "SyncTesting", package: "SyncFeature"),
                 .product(name: "CollectionTesting", package: "CollectionStore"),

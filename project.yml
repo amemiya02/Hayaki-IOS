@@ -50,6 +50,9 @@ packages:
   ReminderFeature:
     path: Packages/ReminderFeature
 
+  ExtensionBridge:
+    path: Packages/ExtensionBridge
+
 targets:
   Hayaki:
     type: application
@@ -58,6 +61,10 @@ targets:
       - App
     dependencies:
       - package: AppShell
+      - target: HayakiShare
+        embed: true
+      - target: HayakiWidgets
+        embed: true
     settings:
       base:
         PRODUCT_NAME: Hayaki
@@ -72,6 +79,7 @@ targets:
         GENERATE_INFOPLIST_FILE: YES
         # Document types (Anki packages) that build settings cannot express.
         INFOPLIST_FILE: App/Info.plist
+        CODE_SIGN_ENTITLEMENTS: Extensions/AppGroup.entitlements
         INFOPLIST_KEY_CFBundleDisplayName: Hayaki
         INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.education
         # A sync server the learner enters may be on their local network.
@@ -82,8 +90,52 @@ targets:
         INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone: UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight
         INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad: UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight
         CODE_SIGN_STYLE: Automatic
-        # Set your own team in Xcode to install on a device with a free Apple ID.
+        # Assign the same team to all iOS targets when signing the extensions.
         DEVELOPMENT_TEAM: ""
+
+  HayakiShare:
+    type: app-extension
+    platform: iOS
+    sources:
+      - Extensions/Share
+    dependencies:
+      - package: ExtensionBridge
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: io.github.amemiya02.hayaki.share
+        MARKETING_VERSION: "0.1.0"
+        CURRENT_PROJECT_VERSION: "1"
+        TARGETED_DEVICE_FAMILY: "1,2"
+        "EXCLUDED_ARCHS[sdk=iphonesimulator*]": x86_64
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_FILE: Extensions/Share/Info.plist
+        INFOPLIST_KEY_CFBundleDisplayName: Hayaki
+        APPLICATION_EXTENSION_API_ONLY: YES
+        CODE_SIGN_STYLE: Automatic
+        CODE_SIGN_ENTITLEMENTS: Extensions/AppGroup.entitlements
+        SKIP_INSTALL: YES
+
+  HayakiWidgets:
+    type: app-extension
+    platform: iOS
+    sources:
+      - Extensions/Widgets
+    dependencies:
+      - package: ExtensionBridge
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: io.github.amemiya02.hayaki.widgets
+        MARKETING_VERSION: "0.1.0"
+        CURRENT_PROJECT_VERSION: "1"
+        TARGETED_DEVICE_FAMILY: "1,2"
+        "EXCLUDED_ARCHS[sdk=iphonesimulator*]": x86_64
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_FILE: Extensions/Widgets/Info.plist
+        INFOPLIST_KEY_CFBundleDisplayName: Hayaki
+        APPLICATION_EXTENSION_API_ONLY: YES
+        CODE_SIGN_STYLE: Automatic
+        CODE_SIGN_ENTITLEMENTS: Extensions/AppGroup.entitlements
+        SKIP_INSTALL: YES
 
   # UI tests of the assembled app in the simulator; run them with
   #     xcodebuild test -scheme Hayaki -destination 'platform=iOS Simulator,name=iPhone 17'

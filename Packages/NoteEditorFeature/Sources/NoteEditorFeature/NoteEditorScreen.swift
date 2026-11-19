@@ -28,6 +28,7 @@ public struct NoteEditorScreen: View {
     @State private var selections: [Int: TextSelection] = [:]
     @AppStorage("noteEditorToolbarLayout") private var toolbarLayout = EditorToolbarLayout.scroll
     private let onDelete: () -> Void
+    private let finishesAfterAdding: Bool
     @State private var warning: AddWarning?
     @State private var refusal: AddProblem?
     @State private var failure: String?
@@ -37,11 +38,19 @@ public struct NoteEditorScreen: View {
     public init(store: CollectionStore) {
         _model = State(initialValue: NoteEditorModel(store: store))
         onDelete = {}
+        finishesAfterAdding = false
+    }
+
+    public init(sharedDraft model: NoteEditorModel) {
+        _model = State(initialValue: model)
+        onDelete = {}
+        finishesAfterAdding = true
     }
 
     public init(store: CollectionStore, editingCardID: Int64, onDelete: @escaping () -> Void = {}) {
         _model = State(initialValue: NoteEditorModel(store: store, editingCardID: editingCardID))
         self.onDelete = onDelete
+        finishesAfterAdding = false
     }
 
     public var body: some View {
@@ -399,6 +408,10 @@ public struct NoteEditorScreen: View {
         } else {
             switch await model.add(confirming: accepted) {
             case .added(let note):
+                if finishesAfterAdding {
+                    dismiss()
+                    return
+                }
                 withAnimation { added = note }
                 markupFields = []
                 selections = [:]

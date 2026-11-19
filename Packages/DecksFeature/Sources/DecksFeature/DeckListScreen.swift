@@ -1,19 +1,41 @@
 import CollectionStore
+import DeckOptionsFeature
 import PackagesFeature
 import StudyFeature
 import SwiftUI
+
+/// A deck queued by an external study or options destination.
+public struct DeckPresentation: Identifiable, Equatable, Sendable {
+    public let id = UUID()
+    public let deckID: Int64
+    public let showsOptions: Bool
+
+    public init(deckID: Int64, showsOptions: Bool) {
+        self.deckID = deckID
+        self.showsOptions = showsOptions
+    }
+}
 
 /// The Decks section: every deck as a nested list with today's counts. Tapping
 /// a deck starts studying it, full screen.
 public struct DeckListScreen: View {
     @State private var model: DeckListModel
     @State private var studying: StudyDeck?
+    @State private var optionsDeck: DeckNode?
+    @Binding private var presentation: DeckPresentation?
     @State private var selectedDeckID: DeckNode.ID?
     @Environment(\.scenePhase) private var scenePhase
     private let store: CollectionStore
+    private let profileID: UUID?
 
-    public init(store: CollectionStore) {
+    public init(
+        store: CollectionStore,
+        profileID: UUID? = nil,
+        presentation: Binding<DeckPresentation?> = .constant(nil)
+    ) {
         self.store = store
+        self.profileID = profileID
+        _presentation = presentation
         _model = State(initialValue: DeckListModel(store: store))
     }
 
@@ -38,7 +60,7 @@ public struct DeckListScreen: View {
                         TextExportButton(store: store)
                     }
                 }
-                .deckManagement(model) { deck in
+                .deckManagement(model, profileID: profileID) { deck in
                     selectedDeckID = deck.id
                     studying = deck
                 }
@@ -51,6 +73,15 @@ public struct DeckListScreen: View {
         }
         .onChange(of: selectedDeck?.id, initial: true) { _, id in
             selectedDeckID = id
+        }
+        .onChange(of: presentation, initial: true) { _, _ in openRequestedDeck() }
+        .onChange(of: model.state) { _, _ in openRequestedDeck() }
+        .sheet(item: $optionsDeck) { deck in
+            if deck.isFiltered {
+                FilteredDeckScreen(store: store, deckID: deck.id)
+            } else {
+                DeckOptionsScreen(store: store, deckID: deck.id)
+            }
         }
         .studySession(of: $studying, store: store)
     }
@@ -117,6 +148,17 @@ public struct DeckListScreen: View {
     private var deckToStudy: DeckNode? {
         if let selectedDeck, !selectedDeck.counts.isEmpty { return selectedDeck }
         return model.decks.first { !$0.counts.isEmpty }
+    }
+
+    private func openRequestedDeck() {
+        guard let request = presentation, model.state == .loaded else { return }
+        presentation = nil
+        guard let deck = model.deck(request.deckID) else { return }
+        if request.showsOptions {
+            optionsDeck = deck
+        } else {
+            study(deck)
+        }
     }
 
     private func study(_ deck: DeckNode) {

@@ -100,6 +100,17 @@
 			</dict>
 		</dict>
 	</array>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>io.github.amemiya02.hayaki.decks</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>hayaki</string>
+			</array>
+		</dict>
+	</array>
 	<key>NSMotionUsageDescription</key>
 	<string>Hayaki detects a shake during study when you assign a reviewer command to it.</string>
 	<key>NSMicrophoneUsageDescription</key>
