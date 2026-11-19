@@ -3,32 +3,47 @@ import SwiftUI
 
 struct ReviewHistorySection: View {
     let graphs: StatisticsGraphs
+    @Environment(\.locale) private var locale
+    @Environment(\.statisticsReportPeriod) private var reportPeriod
+    private var displayedPeriod: StatisticsPeriod { reportPeriod ?? period }
     @State private var period: StatisticsPeriod = .month
 
+    var reportReviewTime: Bool? = nil
     @State private var showTime = false
+    private var showsTime: Bool { reportReviewTime ?? showTime }
     @State private var showCumulative = false
     @State private var position: Double?
     private var selection: Int? { position.map { Int($0.rounded()) } }
 
     var body: some View {
-        let days = graphs.displaying(period).reviewDays
-        let firstDay = period == .allTime ? days.first?.offset ?? 0 : period.earliestReviewDay
+        let days = graphs.displaying(displayedPeriod).reviewDays
+        let firstDay = displayedPeriod == .allTime ? days.first?.offset ?? 0 : displayedPeriod.earliestReviewDay
         Section {
-            StatisticsPeriodPicker(
-                selection: $period, label: Text("Review Period", bundle: .module),
-                allowsAllTime: graphs.period == .allTime
-            )
-            Toggle(isOn: $showTime) { Text("Review Time", bundle: .module) }
+            if reportPeriod == nil {
+                StatisticsPeriodPicker(
+                    selection: $period, label: Text("Review Period", bundle: .module),
+                    allowsAllTime: graphs.period == .allTime
+                )
+            }
+            if reportPeriod == nil {
+                Toggle(isOn: $showTime) { Text("Review Time", bundle: .module) }
+            }
             if days.isEmpty {
                 Text("There are no reviews in this period.", bundle: .module)
                     .foregroundStyle(.secondary)
             } else {
-                Toggle(isOn: $showCumulative) { Text("Running Total", bundle: .module) }
+                if reportPeriod == nil {
+                    Toggle(isOn: $showCumulative) { Text("Running Total", bundle: .module) }
+                }
                 chart(days, firstDay: firstDay)
                 summary(days, firstDay: firstDay)
             }
         } header: {
-            Text("Reviews", bundle: .module)
+            if reportReviewTime == true {
+                Text("Review Time", bundle: .module)
+            } else {
+                Text("Reviews", bundle: .module)
+            }
         }
         .onChange(of: graphs.period, initial: true) {
             if graphs.period == .allTime {
@@ -128,7 +143,7 @@ struct ReviewHistorySection: View {
         } label: {
             Text("Average over Period", bundle: .module)
         }
-        if showTime, count > 0 {
+        if showsTime, count > 0 {
             LabeledContent {
                 valueText(total / count)
             } label: {
@@ -160,26 +175,26 @@ struct ReviewHistorySection: View {
     }
 
     private var metric: Text {
-        if showTime {
+        if showsTime {
             Text("Minutes", bundle: .module)
         } else {
             Text("Reviews", bundle: .module)
         }
     }
 
-    private func value(_ day: ReviewDay) -> Int { showTime ? day.milliseconds : day.count }
-    private func value(_ entry: ReviewDay.Entry) -> Int { showTime ? entry.milliseconds : entry.count }
+    private func value(_ day: ReviewDay) -> Int { showsTime ? day.milliseconds : day.count }
+    private func value(_ entry: ReviewDay.Entry) -> Int { showsTime ? entry.milliseconds : entry.count }
 
     private func chartValue(_ value: Int) -> Double {
-        showTime ? Double(value) / 60_000 : Double(value)
+        showsTime ? Double(value) / 60_000 : Double(value)
     }
 
     private func valueText(_ value: Int) -> Text {
-        if showTime {
+        if showsTime {
             Text(Duration.milliseconds(value).formatted(.units(
                 allowed: [.hours, .minutes, .seconds], width: .abbreviated,
                 fractionalPart: .show(length: 1)
-            )))
+            ).locale(locale)))
         } else {
             Text(value, format: .number)
         }

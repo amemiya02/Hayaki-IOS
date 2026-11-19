@@ -5,6 +5,7 @@ import SwiftUI
 /// count and share listed below it.
 struct CardCountsSection: View {
     let counts: CardCounts
+    @Environment(\.statisticsReportPeriod) private var reportPeriod
     @Binding var separateInactive: Bool
     @State private var angle: Int?
 
@@ -19,7 +20,9 @@ struct CardCountsSection: View {
 
     var body: some View {
         Section {
-            Toggle(isOn: $separateInactive) { Text("Separate Suspended and Buried Cards", bundle: .module) }
+            if reportPeriod == nil {
+                Toggle(isOn: $separateInactive) { Text("Separate Suspended and Buried Cards", bundle: .module) }
+            }
             if counts.isEmpty {
                 Text("There are no cards here yet.", bundle: .module)
                     .foregroundStyle(.secondary)

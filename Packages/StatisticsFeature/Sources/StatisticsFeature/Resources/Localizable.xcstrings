@@ -104,6 +104,22 @@
     "Correct" : {
       "comment" : "Today's summary: the share of today's reviews not rated Again."
     },
+    "Could Not Export Statistics" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "統計をエクスポートできませんでした"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "无法导出统计"
+          }
+        }
+      }
+    },
     "Could Not Show Statistics" : {
       "comment" : "Title shown when the statistics could not be read from the collection."
     },
@@ -113,11 +129,43 @@
     "Easy" : {
       "comment" : "Rating: recalled easily."
     },
+    "Export Statistics PDF" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "統計を PDF でエクスポート"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "导出统计 PDF"
+          }
+        }
+      }
+    },
     "Good" : {
       "comment" : "Rating: recalled."
     },
     "Hard" : {
       "comment" : "Rating: recalled with difficulty."
+    },
+    "Hayaki Statistics" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hayaki の統計"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hayaki 统计"
+          }
+        }
+      }
     },
     "Learning" : {
       "comment" : "Card state: being learnt or relearnt."
