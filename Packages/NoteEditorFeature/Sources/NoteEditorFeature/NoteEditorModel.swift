@@ -82,6 +82,10 @@ public final class NoteEditorModel {
     /// The note being built, as the core made it for the chosen note type.
     @ObservationIgnored private var note = Anki_Notes_Note()
     private var notetype = Anki_Notetypes_Notetype()
+    private var occlusionFields: Anki_ImageOcclusion_ImageOcclusionFieldIndexes?
+    private var pendingOcclusionImage: ImageMedia?
+    public private(set) var occlusionMasks: [ImageOcclusionMask] = []
+    public var isImageOcclusion: Bool { occlusionFields != nil }
 
     public init(store: CollectionStore, editingNoteID: Int64? = nil) {
         self.store = store
@@ -96,7 +100,9 @@ public final class NoteEditorModel {
 
     public var mediaFolder: URL { store.location.mediaFolder }
     public var isCloze: Bool { notetype.config.kind == .cloze }
-    public var hasChanges: Bool { fields.contains(where: \.isEdited) || tags != note.tags }
+    public var hasChanges: Bool {
+        pendingOcclusionImage != nil || fields.contains(where: \.isEdited) || tags != note.tags
+    }
 
     public var notetypeName: String? { notetypes.first { $0.id == notetypeID }?.name }
     public var deckName: String? { decks.first { $0.id == deckID }?.name }
@@ -235,6 +241,79 @@ public final class NoteEditorModel {
         if notetypeID == id { notetype = latest }
     }
 
+    // MARK: Image Occlusion
+
+    /// Begins a new image occlusion draft. The image is written when the note is added.
+    public func startImageOcclusion(with data: Data, notetypeID requestedType: Int64? = nil) async throws(CoreError) {
+        guard !isEditing, let image = ImageMedia(data: data) else {
+            throw CoreError(kind: .invalidInput, message: String(localized: "Choose a readable image.", bundle: .module))
+        }
+        try await store.modify(.addImageOcclusionNotetype())
+        let entries = try await store.core.getNotetypeNames().entries
+        var selected = requestedType
+        if selected == nil {
+            for entry in entries {
+                let type = try await store.core.getNotetype(.with { $0.ntid = entry.id })
+                if type.config.originalStockKind == .imageOcclusion {
+                    selected = entry.id
+                    break
+                }
+            }
+        }
+        guard let selected else { throw missingOcclusionType }
+        let type = try await store.core.getNotetype(.with { $0.ntid = selected })
+        guard type.config.originalStockKind == .imageOcclusion else { throw missingOcclusionType }
+        let indexes = try await store.core.getImageOcclusionFields(.with { $0.notetypeID = selected }).fields
+        try await startNote(notetypeID: selected)
+        occlusionFields = indexes
+        pendingOcclusionImage = image
+        occlusionMasks = []
+    }
+
+    public func addOcclusionMask(in rect: CGRect) {
+        guard isImageOcclusion else { return }
+        let rect = rect.intersection(CGRect(x: 0, y: 0, width: 1, height: 1))
+        guard !rect.isNull, rect.width > 0.0001, rect.height > 0.0001 else { return }
+        let ordinals = Set(occlusionMasks.map(\.ordinal))
+        guard let ordinal = (1...UInt32(UInt16.max)).first(where: { !ordinals.contains($0) }) else { return }
+        occlusionMasks.append(ImageOcclusionMask(ordinal: ordinal, rect: rect))
+        updateOcclusionMarkup()
+    }
+
+    private func updateOcclusionMarkup() {
+        guard let indexes = occlusionFields else { return }
+        setMarkup(occlusionMasks.map { $0.cloze(occludeInactive: false) }.joined(), ofField: Int(indexes.occlusions))
+    }
+
+    private var missingOcclusionType: CoreError {
+        CoreError(kind: .invalidInput, message: String(localized: "Could Not Open the Image Occlusion Note Type", bundle: .module))
+    }
+
+    private var needsOcclusionMask: CoreError {
+        CoreError(kind: .invalidInput, message: String(localized: "Draw at least one mask to make a card.", bundle: .module))
+    }
+
+    private func addImageOcclusionNote() async throws(CoreError) -> AddedNote {
+        guard let indexes = occlusionFields, let image = pendingOcclusionImage,
+              occlusionMasks.contains(where: { $0.ordinal > 0 }) else { throw needsOcclusionMask }
+        _ = try await currentTypeWithSameFields()
+        let name = try await store.core.addMediaFile(.with {
+            $0.desiredName = image.fileName
+            $0.data = image.data
+        }).val
+        var newNote = draft
+        var imageField = fields[Int(indexes.image)]
+        imageField.attachImage(named: name)
+        newNote.fields[Int(indexes.image)] = imageField.content
+        let candidate = newNote
+        let response = try await store.modify(.addNote(.with {
+            $0.note = candidate
+            $0.deckID = deckID
+        }))
+        discardDraft()
+        return AddedNote(noteID: response.noteID, cardCount: Int(response.changes.count))
+    }
+
     // MARK: Editing
 
     public func setText(_ text: String, ofField index: Int) {
@@ -335,6 +414,8 @@ public final class NoteEditorModel {
     }
 
     func discardDraft() {
+        pendingOcclusionImage = nil
+        occlusionMasks = []
         fields = zip(notetype.fields.map(\.name), note.fields).map { EditableField(name: $0, storedContent: $1) }
         tags = note.tags
     }
@@ -428,6 +509,7 @@ public final class NoteEditorModel {
         }
         let candidate = draft
         do {
+            if isImageOcclusion { return .added(try await addImageOcclusionNote()) }
             switch try await validate(candidate, confirming: accepted) {
             case .valid: break
             case .refused(let problem): return .refused(problem)
