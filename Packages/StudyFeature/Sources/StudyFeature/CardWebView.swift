@@ -250,6 +250,20 @@ struct CardWebView: UIViewRepresentable {
                 sendIfReady()
                 return
             }
+            if request.command == "enableHorizontalScrollbar" || request.command == "enableVerticalScrollbar" {
+                guard let scrollView = webView?.scrollView else {
+                    replyHandler(TemplateReply.unavailable.message, nil)
+                    return
+                }
+                let visible = request.data?.caseInsensitiveCompare("true") == .orderedSame
+                if request.command == "enableHorizontalScrollbar" {
+                    scrollView.showsHorizontalScrollIndicator = visible
+                } else {
+                    scrollView.showsVerticalScrollIndicator = visible
+                }
+                replyHandler(TemplateReply.accepted.message, nil)
+                return
+            }
             guard awaitingTemplateRequests < 16, let onTemplateRequest else {
                 replyHandler(TemplateReply.unavailable.message, nil)
                 return
