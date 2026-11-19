@@ -41,8 +41,9 @@ public struct RootView: View {
                     Text("Opening Your Collection…", bundle: .module)
                 }
             case .ready(let store):
-                if let importer = model.packageImport, let sync = model.sync, let backups = model.backups {
-                    ReadyView(store: store, model: model, packageImport: importer, sync: sync, backups: backups)
+                if let importer = model.packageImport, let textImport = model.textImport,
+                   let sync = model.sync, let backups = model.backups {
+                    ReadyView(store: store, model: model, packageImport: importer, textImport: textImport, sync: sync, backups: backups)
                         .id(model.activeProfile.id)
                         .disabled(model.isSwitchingProfile)
                         .overlay {
@@ -118,6 +119,7 @@ private struct ReadyView: View {
     let store: CollectionStore
     let model: AppModel
     let packageImport: PackageImportModel
+    let textImport: TextImportModel
     let sync: SyncModel
     let backups: BackupModel
     @Environment(\.scenePhase) private var scenePhase
@@ -131,6 +133,10 @@ private struct ReadyView: View {
             }
         }
         .packageImport(packageImport)
+        .textImport(textImport)
+        .onChange(of: textImport.summary) { _, summary in
+            if let summary, summary.added > 0, model.showsWelcome { model.completeWelcome() }
+        }
         .onChange(of: packageImport.step) { _, step in
             if case .finished = step {
                 backups.loadBackups()

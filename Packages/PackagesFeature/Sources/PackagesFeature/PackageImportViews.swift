@@ -37,13 +37,18 @@ public struct ImportPackageButton: View {
     }
 }
 
-/// Opens Anki's shared-deck catalogue. Downloaded deck packages can be opened
-/// with the existing Files import. Issue #34 tracks in-app discovery and download.
+/// Discovers shared decks on AnkiWeb and imports their downloaded packages.
 public struct SharedDecksLink: View {
+    @Environment(\.importPackage) private var importPackage
+    @State private var showCatalog = false
+    @State private var chooseDownload = false
+
     public init() {}
 
     public var body: some View {
-        Link(destination: URL(string: "https://ankiweb.net/shared/decks/")!) {
+        Button {
+            showCatalog = true
+        } label: {
             Label {
                 Text("Get Shared Decks", bundle: .module)
             } icon: {
@@ -51,6 +56,46 @@ public struct SharedDecksLink: View {
             }
         }
         .accessibilityIdentifier("shared-decks")
+        .sheet(isPresented: $showCatalog, onDismiss: openDownloadedPackage) {
+            NavigationStack {
+                Form {
+                    Link(destination: URL(string: "https://ankiweb.net/shared/decks")!) {
+                        Label {
+                            Text("Browse AnkiWeb", bundle: .module)
+                        } icon: {
+                            Image(systemName: "safari")
+                        }
+                    }
+                    Button {
+                        chooseDownload = true
+                        showCatalog = false
+                    } label: {
+                        Label {
+                            Text("Import Downloaded Deck", bundle: .module)
+                        } icon: {
+                            Image(systemName: "square.and.arrow.down")
+                        }
+                    }
+                    .disabled(importPackage == nil)
+                }
+                .navigationTitle(Text("Get Shared Decks", bundle: .module))
+                .toolbar {
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button {
+                            showCatalog = false
+                        } label: {
+                            Text("Done", bundle: .module)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private func openDownloadedPackage() {
+        guard chooseDownload else { return }
+        chooseDownload = false
+        importPackage?()
     }
 }
 
