@@ -12,6 +12,10 @@ final class MemoryAccountStorage: SyncAccountStorage {
         if let account { try? save(account) }
     }
 
+    init(storedText: String) {
+        stored.withLock { $0 = Data(storedText.utf8) }
+    }
+
     /// The stored bytes, as text: what would be in the Keychain item.
     var storedText: String? {
         stored.withLock { $0.map { String(decoding: $0, as: UTF8.self) } }
