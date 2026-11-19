@@ -1,6 +1,38 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "%@× the workload at %@%% retention" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "保持率 %2$@%% のときの負荷の %1$@ 倍"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "是记忆保留率为 %2$@%% 时的 %1$@ 倍"
+          }
+        }
+      }
+    },
+    "%@ of %@ cards are included in optimization." : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%2$@ 枚中 %1$@ 枚のカードが最適化の対象です。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "共 %2$@ 张卡片，其中 %1$@ 张纳入优化。"
+          }
+        }
+      }
+    },
     "%@ copy" : {
       "comment" : "Suggested name for a copy of a preset. The placeholder is the preset's name.",
       "localizations" : {
