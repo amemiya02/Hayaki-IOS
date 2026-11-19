@@ -119,7 +119,7 @@ public struct StudyScreen: View {
         }
         .modifier(ReviewerActionDialogs(model: model, requestedAction: $requestedAction))
         .sheet(item: $route, onDismiss: {
-            Task { await model.existingReviewerDeckOptionsChanged() }
+            Task { await model.refreshReviewerDeckOptions() }
         }) { route in
             destinations?(route)
         }
@@ -254,9 +254,21 @@ public struct StudyScreen: View {
             if let id = model.previousCardID { route = .cardInfo(cardID: id) }
         case .addNote: route = .addNote
         case .showHint:
-            webCommand = ReviewerWebCommand(javascript: "document.querySelector('a.hint:not([style*=none])')?.click()")
+            webCommand = ReviewerWebCommand(javascript: """
+            if (window.ankidroid?.showHint) {
+                window.ankidroid.showHint();
+            } else {
+                document.querySelector('a.hint:not([style*=none])')?.click();
+            }
+            """)
         case .showAllHints:
-            webCommand = ReviewerWebCommand(javascript: "document.querySelectorAll('a.hint:not([style*=none])').forEach(a => a.click())")
+            webCommand = ReviewerWebCommand(javascript: """
+            if (window.ankidroid?.showAllHints) {
+                window.ankidroid.showAllHints();
+            } else {
+                document.querySelectorAll('a.hint:not([style*=none])').forEach(a => a.click());
+            }
+            """)
         case .pageUp:
             webCommand = ReviewerWebCommand(javascript: "window.scrollBy({top: -window.innerHeight})")
         case .pageDown:

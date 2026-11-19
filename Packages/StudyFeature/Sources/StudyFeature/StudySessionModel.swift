@@ -487,7 +487,7 @@ public final class StudySessionModel {
         )
     }
 
-    func existingReviewerDeckOptionsChanged() async {
+    func refreshReviewerDeckOptions() async {
         cardOptions.removeAll()
         guard let card = state.card, let options = try? await options(for: card), state.card?.id == card.id else { return }
         activeOptions = options
