@@ -4,6 +4,7 @@ import CollectionStore
 import Foundation
 import Observation
 import StudyFeature
+import UniformTypeIdentifiers
 
 /// A note type or deck the learner can choose in the editor.
 public struct Choice: Identifiable, Equatable, Sendable {
@@ -417,6 +418,45 @@ public final class NoteEditorModel {
         } catch {
             throw .notStored(message: error.message)
         }
+    }
+
+    /// Imports a Files selection or a finished local recording into the current field.
+    public func importMedia(from file: URL, toField index: Int) async throws {
+        guard fields.indices.contains(index) else { return }
+        let type = UTType(filenameExtension: file.pathExtension)
+        let isImage = type?.conforms(to: .image) == true
+        let isSoundOrVideo = type?.conforms(to: .audiovisualContent) == true
+            || ["ogg", "opus", "oga", "webm"].contains(file.pathExtension.lowercased())
+        guard isImage || isSoundOrVideo else {
+            throw CoreError(kind: .invalidInput, message: String(localized: "Choose an image, audio, or video file.", bundle: .module))
+        }
+        let data = try await Self.readMediaFile(file)
+        guard !data.isEmpty else {
+            throw CoreError(kind: .invalidInput, message: String(localized: "The selected file is empty.", bundle: .module))
+        }
+        if isImage {
+            try await attachImage(data, toField: index)
+        } else {
+            let desiredName = file.lastPathComponent.replacingOccurrences(of: "]", with: "_")
+            let name = try await store.core.addMediaFile(.with {
+                $0.desiredName = desiredName
+                $0.data = data
+            }).val
+            fields[index].attachSound(named: name)
+        }
+    }
+
+    @concurrent
+    static func readMediaFile(_ file: URL) async throws -> Data {
+        let scoped = file.startAccessingSecurityScopedResource()
+        defer { if scoped { file.stopAccessingSecurityScopedResource() } }
+        try Task.checkCancellation()
+        return try Data(contentsOf: file, options: .mappedIfSafe)
+    }
+
+    public func removeSound(named name: String, fromField index: Int) {
+        guard fields.indices.contains(index) else { return }
+        fields[index].removeSound(named: name)
     }
 
     public func removeImage(named name: String, fromField index: Int) {
