@@ -35,6 +35,9 @@ public struct SettingsScreen<ProfileEntry: View>: View {
         NavigationStack {
             List {
                 profileEntry
+                #if os(iOS)
+                LanguageSettingsRow()
+                #endif
                 SyncSettingsRow(model: sync)
                 ReminderSettingsRow(store: store)
                 NavigationLink {

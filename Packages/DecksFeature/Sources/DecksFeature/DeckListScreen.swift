@@ -205,20 +205,28 @@ private struct DeckRow: View {
     let deck: DeckNode
     let isSelected: Bool
     let study: (DeckNode) -> Void
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     var body: some View {
+        let layout = dynamicTypeSize.isAccessibilitySize
+            ? AnyLayout(VStackLayout(alignment: .leading, spacing: 6))
+            : AnyLayout(HStackLayout())
         Button {
             study(deck)
         } label: {
-            HStack {
-                Text(deck.name)
-                if isSelected {
-                    Image(systemName: "checkmark")
-                        .foregroundStyle(.tint)
-                        .accessibilityHidden(true)
+            layout {
+                HStack {
+                    Text(verbatim: deck.name)
+                        .lineLimit(dynamicTypeSize.isAccessibilitySize ? 2 : 1)
+                    if isSelected {
+                        Image(systemName: "checkmark")
+                            .foregroundStyle(.tint)
+                            .accessibilityHidden(true)
+                    }
                 }
-                Spacer()
+                .frame(maxWidth: .infinity, alignment: .leading)
                 CountsView(counts: deck.counts)
+                    .fixedSize(horizontal: !dynamicTypeSize.isAccessibilitySize, vertical: false)
             }
             .contentShape(.rect)
             .accessibilityElement(children: .combine)
@@ -234,10 +242,9 @@ private struct CountsView: View {
     let counts: DeckCounts
 
     var body: some View {
-        HStack(spacing: 12) {
-            count(counts.new, color: .blue)
-            count(counts.learning, color: .red)
-            count(counts.due, color: .green)
+        ViewThatFits(in: .horizontal) {
+            HStack(spacing: 12) { numbers }
+            VStack(alignment: .leading, spacing: 4) { numbers }
         }
         .font(.callout.monospacedDigit())
         .accessibilityElement(children: .ignore)
@@ -245,6 +252,14 @@ private struct CountsView: View {
             "\(counts.new) new, \(counts.learning) learning, \(counts.due) due",
             bundle: .module
         ))
+    }
+
+    private var numbers: some View {
+        Group {
+            count(counts.new, color: .blue)
+            count(counts.learning, color: .red)
+            count(counts.due, color: .green)
+        }
     }
 
     private func count(_ value: Int, color: Color) -> some View {

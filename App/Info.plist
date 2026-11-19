@@ -12,6 +12,12 @@
 -->
 <plist version="1.0">
 <dict>
+	<key>CFBundleLocalizations</key>
+	<array>
+		<string>en</string>
+		<string>ja</string>
+		<string>zh-Hans</string>
+	</array>
 	<key>NSCameraUsageDescription</key>
 	<string>Hayaki uses the camera to add a picture to a note.</string>
 	<key>CFBundleDocumentTypes</key>

@@ -1,6 +1,38 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "NSLocalNetworkUsageDescription" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hayakiは入力された同期サーバーに接続します。同期サーバーはローカルネットワーク上にある場合があります。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hayaki 会连接到你输入的同步服务器。该服务器可能位于本地网络上。"
+          }
+        }
+      }
+    },
+    "NSMotionUsageDescription" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "端末を振る操作に学習コマンドを割り当てた場合、Hayakiは学習中に端末の揺れを検知します。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "为摇动设备分配复习命令后，Hayaki 会在学习期间检测摇动。"
+          }
+        }
+      }
+    },
     "NSCameraUsageDescription" : {
       "localizations" : {
         "ja" : {
