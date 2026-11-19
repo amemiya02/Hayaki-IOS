@@ -76,6 +76,11 @@ public struct DeckOptionsScreen: View {
                     AutoAdvanceSection(model: model)
                     EasyDaysSection(model: model)
                     AdvancedSchedulingSection(model: model)
+                    Section {
+                        Link(destination: URL(string: "https://docs.ankiweb.net/deck-options.html")!) {
+                            Text("Deck Options Help", bundle: .module)
+                        }
+                    }
                 }
                 .disabled(model.isOptimizingFSRS)
             }

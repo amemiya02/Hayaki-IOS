@@ -11,6 +11,7 @@ struct FSRSSection: View {
             Toggle(isOn: $model.fsrsEnabled) {
                 Text("Enable FSRS", bundle: .module)
             }
+            .offerOptionDefault { model.fsrsEnabled = false }
             .disabled(model.isOptimizingFSRS)
         } header: {
             Text("FSRS", bundle: .module)
@@ -65,6 +66,7 @@ struct FSRSSection: View {
             RetentionStepper(value: $model.desiredRetention) {
                 Text("Shared preset", bundle: .module)
             }
+            .offerOptionDefault { model.desiredRetention = model.settings.defaults.config.desiredRetention }
             Toggle(isOn: Binding {
                 model.deckDesiredRetention != nil
             } set: { enabled in
@@ -111,12 +113,14 @@ struct FSRSSection: View {
                 } label: {
                     Text("Edit Weights", bundle: .module)
                 }
+                .offerOptionDefault { model.fsrsParameterText = "" }
                 if let error = model.fsrsParameterError {
                     Text(verbatim: error).foregroundStyle(.red)
                 }
                 TextField(text: $model.fsrsParameterSearch, prompt: Text(verbatim: model.defaultFSRSParameterSearch)) {
                     Text("Search for optimization", bundle: .module)
                 }
+                .offerOptionDefault { model.fsrsParameterSearch = "" }
                 .autocorrectionDisabled()
                 #if os(iOS)
                 .textInputAutocapitalization(.never)
@@ -124,9 +128,11 @@ struct FSRSSection: View {
                 Toggle(isOn: $model.rescheduleWithFSRS) {
                     Text("Reschedule cards on change", bundle: .module)
                 }
+                .offerOptionDefault { model.rescheduleWithFSRS = false }
                 Toggle(isOn: $model.fsrsHealthCheck) {
                     Text("Check parameter fit during optimization", bundle: .module)
                 }
+                .offerOptionDefault { model.fsrsHealthCheck = false }
             }
             .disabled(model.isOptimizingFSRS)
 

@@ -8,12 +8,15 @@ struct TimerSection: View {
             NumberRow(value: $model.maximumAnswerSeconds, identifier: "maximum-answer-seconds") {
                 Text("Maximum answer seconds", bundle: .module)
             }
+            .restorePresetDefault(model, \.capAnswerTimeToSecs)
             Toggle(isOn: $model.showAnswerTimer) {
                 Text("Show on-screen timer", bundle: .module)
             }
+            .restorePresetDefault(model, \.showTimer)
             Toggle(isOn: $model.stopTimerOnAnswer) {
                 Text("Stop timer when showing answer", bundle: .module)
             }
+            .restorePresetDefault(model, \.stopTimerOnAnswer)
         } header: {
             Text("Timer", bundle: .module)
         }
@@ -28,9 +31,11 @@ struct AudioSection: View {
             Toggle(isOn: $model.automaticallyPlayAudio) {
                 Text("Play audio automatically", bundle: .module)
             }
+            .restorePresetDefault(model, \.disableAutoplay)
             Toggle(isOn: $model.skipQuestionAudioWhenReplayingAnswer) {
                 Text("Skip question audio when replaying answer", bundle: .module)
             }
+            .restorePresetDefault(model, \.skipQuestionWhenReplayingAnswer)
         } header: {
             Text("Audio", bundle: .module)
         }
@@ -45,12 +50,15 @@ struct AutoAdvanceSection: View {
             DecimalOptionRow(value: $model.secondsToShowQuestion) {
                 Text("Seconds to show question", bundle: .module)
             }
+            .restorePresetDefault(model, \.secondsToShowQuestion)
             DecimalOptionRow(value: $model.secondsToShowAnswer) {
                 Text("Seconds to show answer", bundle: .module)
             }
+            .restorePresetDefault(model, \.secondsToShowAnswer)
             Toggle(isOn: $model.waitForAudio) {
                 Text("Wait for audio", bundle: .module)
             }
+            .restorePresetDefault(model, \.waitForAudio)
             Picker(selection: $model.questionAction) {
                 ForEach(AutoAdvanceQuestionAction.allCases, id: \.self) { choice in
                     choice.title.tag(choice)
@@ -58,6 +66,7 @@ struct AutoAdvanceSection: View {
             } label: {
                 Text("Question action", bundle: .module)
             }
+            .restorePresetDefault(model, \.questionAction)
             Picker(selection: $model.answerAction) {
                 ForEach(AutoAdvanceAnswerAction.allCases, id: \.self) { choice in
                     choice.title.tag(choice)
@@ -65,6 +74,7 @@ struct AutoAdvanceSection: View {
             } label: {
                 Text("Answer action", bundle: .module)
             }
+            .restorePresetDefault(model, \.answerAction)
         } header: {
             Text("Auto Advance", bundle: .module)
         } footer: {
@@ -95,10 +105,12 @@ struct AdvancedSchedulingSection: View {
             NumberRow(value: $model.maximumReviewInterval, identifier: "maximum-review-interval") {
                 Text("Maximum interval (days)", bundle: .module)
             }
+            .restorePresetDefault(model, \.maximumReviewInterval)
             if model.fsrsEnabled {
                 DecimalOptionRow(value: $model.historicalRetention, percentage: true) {
                     Text("Historical retention", bundle: .module)
                 }
+                .restorePresetDefault(model, \.historicalRetention)
                 Toggle(isOn: Binding {
                     model.ignoreFSRSHistoryBefore != nil
                 } set: { enabled in
@@ -119,18 +131,23 @@ struct AdvancedSchedulingSection: View {
                 DecimalOptionRow(value: $model.initialEase, percentage: true) {
                     Text("Starting ease", bundle: .module)
                 }
+                .restorePresetDefault(model, \.initialEase)
                 DecimalOptionRow(value: $model.easyMultiplier, percentage: true) {
                     Text("Easy bonus", bundle: .module)
                 }
+                .restorePresetDefault(model, \.easyMultiplier)
                 DecimalOptionRow(value: $model.intervalMultiplier, percentage: true) {
                     Text("Interval modifier", bundle: .module)
                 }
+                .restorePresetDefault(model, \.intervalMultiplier)
                 DecimalOptionRow(value: $model.hardMultiplier, percentage: true) {
                     Text("Hard interval", bundle: .module)
                 }
+                .restorePresetDefault(model, \.hardMultiplier)
                 DecimalOptionRow(value: $model.lapseMultiplier, percentage: true) {
                     Text("New interval", bundle: .module)
                 }
+                .restorePresetDefault(model, \.lapseMultiplier)
             }
         } header: {
             Text("Advanced Scheduling", bundle: .module)
@@ -148,6 +165,7 @@ struct AdvancedSchedulingSection: View {
             } label: {
                 Text("Custom Scheduling", bundle: .module)
             }
+            .offerOptionDefault { model.customScheduling = "" }
         } footer: {
             Text("Custom scheduling is a collection-wide setting.", bundle: .module)
         }

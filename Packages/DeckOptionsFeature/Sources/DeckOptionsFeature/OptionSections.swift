@@ -9,9 +9,11 @@ struct DailyLimitsSection: View {
             NumberRow(value: $model.newCardsPerDay, identifier: "new-cards-per-day") {
                 Text("New cards/day", bundle: .module)
             }
+            .restorePresetDefault(model, \.newPerDay)
             NumberRow(value: $model.reviewsPerDay, identifier: "reviews-per-day") {
                 Text("Maximum reviews/day", bundle: .module)
             }
+            .restorePresetDefault(model, \.reviewsPerDay)
             DisclosureGroup {
                 LimitOverrideRow(value: $model.deckNewCardsLimit, suggested: model.newCardsPerDay, identifier: "deck-new-limit") {
                     Text("New cards/day", bundle: .module)
@@ -35,9 +37,11 @@ struct DailyLimitsSection: View {
             Toggle(isOn: $model.newCardsIgnoreReviewLimit) {
                 Text("New cards ignore review limit", bundle: .module)
             }
+            .offerOptionDefault { model.newCardsIgnoreReviewLimit = false }
             Toggle(isOn: $model.applyAllParentLimits) {
                 Text("Limits start from top", bundle: .module)
             }
+            .offerOptionDefault { model.applyAllParentLimits = false }
         } header: {
             Text("Daily Limits", bundle: .module)
         } footer: {
@@ -87,13 +91,16 @@ struct StepsSections: View {
             StepsRow(text: $model.learningSteps, isInvalid: model.learningStepsError != nil, identifier: "learning-steps") {
                 Text("Learning steps", bundle: .module)
             }
+            .offerOptionDefault { model.learningSteps = Steps.format(model.settings.defaults.config.learnSteps) }
             if !model.fsrsEnabled {
                 NumberRow(value: $model.graduatingInterval, identifier: "graduating-interval") {
                     Text("Graduating interval (days)", bundle: .module)
                 }
+                .restorePresetDefault(model, \.graduatingIntervalGood)
                 NumberRow(value: $model.easyGraduatingInterval, identifier: "easy-graduating-interval") {
                     Text("Easy interval (days)", bundle: .module)
                 }
+                .restorePresetDefault(model, \.graduatingIntervalEasy)
             }
             Picker(selection: $model.newCardInsertionOrder) {
                 ForEach(NewCardInsertionOrder.allCases, id: \.self) { choice in
@@ -102,6 +109,7 @@ struct StepsSections: View {
             } label: {
                 Text("Insertion order", bundle: .module)
             }
+            .restorePresetDefault(model, \.newCardInsertOrder)
         } header: {
             Text("New Cards", bundle: .module)
         } footer: {
@@ -113,14 +121,17 @@ struct StepsSections: View {
             StepsRow(text: $model.relearningSteps, isInvalid: model.relearningStepsError != nil, identifier: "relearning-steps") {
                 Text("Relearning steps", bundle: .module)
             }
+            .offerOptionDefault { model.relearningSteps = Steps.format(model.settings.defaults.config.relearnSteps) }
             if !model.fsrsEnabled {
                 NumberRow(value: $model.minimumLapseInterval, identifier: "minimum-lapse-interval") {
                     Text("Minimum interval (days)", bundle: .module)
                 }
+                .restorePresetDefault(model, \.minimumLapseInterval)
             }
             NumberRow(value: $model.leechThreshold, identifier: "leech-threshold") {
                 Text("Leech threshold", bundle: .module)
             }
+            .restorePresetDefault(model, \.leechThreshold)
             Picker(selection: $model.leechAction) {
                 ForEach(LeechAction.allCases, id: \.self) { choice in
                     choice.title.tag(choice)
@@ -128,6 +139,7 @@ struct StepsSections: View {
             } label: {
                 Text("Leech action", bundle: .module)
             }
+            .restorePresetDefault(model, \.leechAction)
         } header: {
             Text("Lapses", bundle: .module)
         } footer: {
@@ -151,6 +163,7 @@ struct DisplayOrderSection: View {
             } label: {
                 Text("New card gather order", bundle: .module)
             }
+            .restorePresetDefault(model, \.newCardGatherPriority)
             Picker(selection: $model.newCardSortOrder) {
                 ForEach(NewCardSortOrder.allCases, id: \.self) { order in
                     order.title.tag(order)
@@ -158,6 +171,7 @@ struct DisplayOrderSection: View {
             } label: {
                 Text("New card sort order", bundle: .module)
             }
+            .restorePresetDefault(model, \.newCardSortOrder)
             Picker(selection: $model.newReviewMix) {
                 ForEach(ReviewMix.allCases, id: \.self) { mix in
                     mix.title.tag(mix)
@@ -165,6 +179,7 @@ struct DisplayOrderSection: View {
             } label: {
                 Text("New/review order", bundle: .module)
             }
+            .restorePresetDefault(model, \.newMix)
             Picker(selection: $model.interdayLearningReviewMix) {
                 ForEach(ReviewMix.allCases, id: \.self) { mix in
                     mix.title.tag(mix)
@@ -172,6 +187,7 @@ struct DisplayOrderSection: View {
             } label: {
                 Text("Interday learning/review order", bundle: .module)
             }
+            .restorePresetDefault(model, \.interdayLearningMix)
             Picker(selection: $model.reviewSortOrder) {
                 ForEach(model.reviewSortChoices, id: \.self) { order in
                     order.title(fsrs: model.fsrsEnabled).tag(order)
@@ -179,6 +195,7 @@ struct DisplayOrderSection: View {
             } label: {
                 Text("Review sort order", bundle: .module)
             }
+            .restorePresetDefault(model, \.reviewOrder)
         } header: {
             Text("Display Order", bundle: .module)
         }
@@ -194,12 +211,15 @@ struct BuryingSection: View {
             Toggle(isOn: $model.buryNewSiblings) {
                 Text("Bury new siblings", bundle: .module)
             }
+            .restorePresetDefault(model, \.buryNew)
             Toggle(isOn: $model.buryReviewSiblings) {
                 Text("Bury review siblings", bundle: .module)
             }
+            .restorePresetDefault(model, \.buryReviews)
             Toggle(isOn: $model.buryInterdayLearningSiblings) {
                 Text("Bury interday learning siblings", bundle: .module)
             }
+            .restorePresetDefault(model, \.buryInterdayLearning)
         } header: {
             Text("Burying", bundle: .module)
         } footer: {

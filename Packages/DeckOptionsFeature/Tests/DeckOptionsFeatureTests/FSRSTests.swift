@@ -48,9 +48,7 @@ struct FSRSTests {
             let model = await openOptions(store, deck: deck)
             model.fsrsEnabled = true
 
-            let defaults = try await store.core.getDeckConfigsForUpdate(.with { $0.did = deck }).defaults.config.fsrsParams6
-            var poorParameters = defaults
-            poorParameters.replaceSubrange(0..<4, with: [0.01, 0.01, 0.01, 0.01])
+            let poorParameters = try await store.poorFSRSParameters(for: deck)
             model.fsrsParameterText = poorParameters.map { String($0) }.joined(separator: ", ")
             #expect(model.fsrsParameterError == nil)
 
@@ -108,6 +106,8 @@ struct FSRSTests {
             let model = await openOptions(store, deck: deck)
             model.fsrsEnabled = true
             model.newCardsPerDay = 17
+            let poorParameters = try await store.poorFSRSParameters(for: deck)
+            model.fsrsParameterText = poorParameters.map { String($0) }.joined(separator: ", ")
             #expect(await model.saveAndOptimizeAllFSRS())
             #expect(model.hasChanges == false)
             #expect(model.fsrsOutcome == .savedAndOptimized)
@@ -115,6 +115,7 @@ struct FSRSTests {
             #expect(reopened.newCardsPerDay == 17)
             #expect(reopened.fsrsEnabled)
             #expect(reopened.fsrsParameters.count == 21)
+            #expect(reopened.fsrsParameters != poorParameters)
         }
     }
 
@@ -146,6 +147,13 @@ struct FSRSTests {
 }
 
 private extension CollectionStore {
+    func poorFSRSParameters(for deck: Int64) async throws -> [Float] {
+        let options = try await core.getDeckConfigsForUpdate(.with { $0.did = deck })
+        var parameters = options.defaults.config.fsrsParams6
+        parameters.replaceSubrange(0..<4, with: [0.01, 0.01, 0.01, 0.01])
+        return parameters
+    }
+
     func addFSRSHistory(to deck: Int64, cardCount: Int) async throws {
         try await addBasicNotes(count: cardCount, toDeck: deck)
         for (index, card) in try await cardIDs().enumerated() {
