@@ -1,4 +1,5 @@
 import AnkiProto
+import Foundation
 
 /// The core's graphs data for one scope and period, from which every chart
 /// takes its values.
@@ -10,11 +11,20 @@ import AnkiProto
 public struct StatisticsGraphs: Sendable {
     /// The core's response to `Graphs` for this scope and period.
     public let response: Anki_Stats_GraphsResponse
-    /// The period the response was requested for.
+    /// The period shown by the chart.
     public let period: StatisticsPeriod
 
-    public init(response: Anki_Stats_GraphsResponse, period: StatisticsPeriod) {
+    /// The calendar day that contains the start of the current study day.
+    public let studyDate: Date
+
+    public init(response: Anki_Stats_GraphsResponse, period: StatisticsPeriod, studyDate: Date = .now) {
         self.response = response
         self.period = period
+        self.studyDate = studyDate
+    }
+
+    /// Changes a chart's visible range without reading from the core again.
+    func displaying(_ period: StatisticsPeriod) -> Self {
+        Self(response: response, period: period, studyDate: studyDate)
     }
 }

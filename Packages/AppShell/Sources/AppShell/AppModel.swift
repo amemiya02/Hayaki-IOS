@@ -31,6 +31,15 @@ public final class AppModel {
     private static let profilesKey = "hayakiProfiles"
     /// A package opened from another app before the collection was ready.
     @ObservationIgnored private var waitingPackage: URL?
+    @ObservationIgnored private var failedCollection: (location: CollectionLocation, backupFolder: URL)?
+    #if DEBUG
+    @ObservationIgnored private var fixtureLocation: (CollectionLocation, URL)?
+    #endif
+
+    public var canRecover: Bool {
+        if case .failed = state { return failedCollection != nil }
+        return false
+    }
 
     private struct SavedProfiles: Codable {
         var profiles: [CollectionProfile]
@@ -74,7 +83,7 @@ public final class AppModel {
         isOpening = true
         defer { isOpening = false }
         do {
-            let (store, folder) = try await openCollection(for: activeProfile, useFixture: true)
+            let (store, folder) = try await openCollection(for: activeProfile, recordRecovery: true)
             await showCollection(store, backupFolder: folder)
             if let waiting = waitingPackage {
                 waitingPackage = nil
@@ -117,7 +126,7 @@ public final class AppModel {
         }
     }
 
-    private func openCollection(for profile: CollectionProfile, useFixture: Bool = false) async throws -> (CollectionStore, URL) {
+    private func openCollection(for profile: CollectionProfile, recordRecovery: Bool = false) async throws -> (CollectionStore, URL) {
         var location = try location()
         var backups = try backupFolder()
         if !profile.usesLegacyStorage {
@@ -130,11 +139,20 @@ public final class AppModel {
         }
         let core = try await CoreClient(language: language)
         #if DEBUG
-        if profile.usesLegacyStorage, useFixture, let package = UITestLaunch.collectionPackage {
-            location = try await UITestLaunch.collection(from: package, core: core)
+        if profile.usesLegacyStorage, let package = UITestLaunch.collectionPackage {
+            if let fixtureLocation {
+                (location, backups) = fixtureLocation
+            } else {
+                location = try await UITestLaunch.collection(from: package, core: core)
+                backups = location.folder.deletingLastPathComponent().appendingPathComponent("Backups", isDirectory: true)
+                fixtureLocation = (location, backups)
+            }
         }
         #endif
-        return (try await CollectionStore.open(at: location, core: core), backups)
+        if recordRecovery { failedCollection = (location, backups) }
+        let store = try await CollectionStore.open(at: location, core: core)
+        if recordRecovery { failedCollection = nil }
+        return (store, backups)
     }
 
     private func showCollection(_ store: CollectionStore, backupFolder: URL) async {
@@ -169,6 +187,24 @@ public final class AppModel {
         preferences.set(try PropertyListEncoder().encode(saved), forKey: Self.profilesKey)
         self.profiles = sorted
         activeProfile = active
+    }
+
+    /// Restores a selected backup when the active profile's database could not open.
+    public func recoverCollection(from package: URL) async {
+        guard canRecover, let failedCollection, !isOpening else { return }
+        isOpening = true
+        state = .opening
+        do {
+            let core = try await CoreClient(language: language)
+            try await PackageImportModel.restoreAfterFailedOpen(
+                from: package, core: core, location: failedCollection.location, backupFolder: failedCollection.backupFolder
+            )
+            isOpening = false
+            await open()
+        } catch {
+            isOpening = false
+            state = .failed(message: error.localizedDescription)
+        }
     }
 
     /// Continues to Decks and remembers the choice on the next launch.

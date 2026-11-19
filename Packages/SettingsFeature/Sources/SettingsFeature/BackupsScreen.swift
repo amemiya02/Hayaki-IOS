@@ -8,13 +8,18 @@ struct BackupsScreen: View {
 
     var body: some View {
         List {
+            NavigationLink {
+                BackupRetentionScreen(model: model, sync: sync)
+            } label: {
+                Text("Backup Retention", bundle: .module)
+            }
             Section {
                 Button {
                     Task { await model.createBackup() }
                 } label: {
                     Text("Create Backup", bundle: .module)
                 }
-                .disabled(model.status == .creating || sync.isBusy)
+                .disabled(model.isBusy || sync.isBusy)
                 switch model.status {
                 case .idle:
                     EmptyView()
@@ -46,7 +51,7 @@ struct BackupsScreen: View {
                                 .foregroundStyle(.secondary)
                         }
                     }
-                    .disabled(model.status == .creating || sync.isBusy)
+                    .disabled(model.isBusy || sync.isBusy)
                 }
             } header: {
                 Text("Restore a Backup", bundle: .module)
@@ -56,5 +61,56 @@ struct BackupsScreen: View {
         }
         .navigationTitle(Text("Backups", bundle: .module))
         .task { model.loadBackups() }
+    }
+}
+
+
+private struct BackupRetentionScreen: View {
+    let model: BackupModel
+    let sync: SyncModel
+    @State private var draft: BackupRetention?
+    @State private var isSaving = false
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        Form {
+            if let limits = Binding($draft) {
+                TextField(value: limits.intervalMinutes, format: .number.grouping(.never)) {
+                    Text("Minutes Between Automatic Backups", bundle: .module)
+                }
+                TextField(value: limits.daily, format: .number.grouping(.never)) {
+                    Text("Daily Backups to Keep", bundle: .module)
+                }
+                TextField(value: limits.weekly, format: .number.grouping(.never)) {
+                    Text("Weekly Backups to Keep", bundle: .module)
+                }
+                TextField(value: limits.monthly, format: .number.grouping(.never)) {
+                    Text("Monthly Backups to Keep", bundle: .module)
+                }
+                if !limits.wrappedValue.isValid {
+                    Text("Use 5 to 99999 minutes and 0 to 99999 backups.", bundle: .module)
+                        .foregroundStyle(.secondary)
+                }
+                Button {
+                    let updated = limits.wrappedValue
+                    isSaving = true
+                    Task {
+                        if await model.saveRetention(updated) { dismiss() }
+                        isSaving = false
+                    }
+                } label: {
+                    Text("Save", bundle: .module)
+                }
+                .disabled(!limits.wrappedValue.isValid)
+            } else if case .idle = model.status {
+                ProgressView()
+            }
+            if case .failed(let error) = model.status {
+                Label(error, systemImage: "exclamationmark.triangle")
+            }
+        }
+        .disabled(isSaving || sync.isBusy)
+        .navigationTitle(Text("Backup Retention", bundle: .module))
+        .task { draft = await model.loadRetention() }
     }
 }

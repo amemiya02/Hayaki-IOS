@@ -38,6 +38,15 @@ public struct SettingsScreen: View {
                         }
                     }
                 }
+                NavigationLink {
+                    CollectionMaintenanceScreen(store: store, sync: sync)
+                } label: {
+                    Label {
+                        Text("Manage Space", bundle: .module)
+                    } icon: {
+                        Image(systemName: "externaldrive")
+                    }
+                }
                 HelpAndAboutSection(store: store, sync: sync)
             }
             .navigationTitle(SettingsSection.title)
