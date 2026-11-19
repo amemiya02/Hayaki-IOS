@@ -4,6 +4,7 @@ import SwiftUI
 /// clone, rename and delete presets.
 struct PresetSection: View {
     @Bindable var model: DeckOptionsModel
+    let saveToSubdecks: () -> Void
     @State private var naming: Naming?
     @State private var name = ""
     @State private var confirmingDelete = false
@@ -50,6 +51,11 @@ struct PresetSection: View {
                     Label { Text("Delete Preset", bundle: .module) } icon: { Image(systemName: "trash") }
                 }
                 .disabled(!model.canDeleteSelectedPreset)
+                Divider()
+                Button(action: saveToSubdecks) {
+                    Label { Text("Save to All Subdecks", bundle: .module) } icon: { Image(systemName: "square.stack") }
+                }
+                .disabled(!model.canSave)
             } label: {
                 Text("Manage Presets", bundle: .module)
             }

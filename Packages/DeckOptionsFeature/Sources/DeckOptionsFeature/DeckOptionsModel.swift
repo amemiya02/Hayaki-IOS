@@ -188,7 +188,7 @@ public final class DeckOptionsModel {
         }
         stepsDrafts = stepsDrafts.filter { $0.key.preset != entry.id }
         fsrsParameterDrafts[entry.id] = nil
-        selectedID = entries.first { $0.id.rawValue == Self.defaultConfigID }?.id ?? entries[0].id
+        selectedPresetID = entries.first { $0.id.rawValue == Self.defaultConfigID }?.id ?? entries[0].id
     }
 
     // MARK: Saving
@@ -213,8 +213,9 @@ public final class DeckOptionsModel {
     /// and to every deck sharing an edited preset. Returns whether it worked;
     /// on failure `saveError` says why and the edits are kept.
     @discardableResult
-    public func save() async -> Bool {
-        guard canSave, let request = saveRequest(mode: .normal) else { return false }
+    public func save(applyingToSubdecks: Bool = false) async -> Bool {
+        let mode: Anki_DeckConfig_UpdateDeckConfigsMode = applyingToSubdecks ? .applyToChildren : .normal
+        guard canSave, let request = saveRequest(mode: mode) else { return false }
         do {
             try await store.modify(.updateDeckConfigs(request))
             saveError = nil
@@ -287,7 +288,7 @@ public final class DeckOptionsModel {
         let id = PresetID(rawValue: nextUnsavedID)
         nextUnsavedID -= 1
         entries.append(PresetEntry(id: id, config: config, saved: nil, savedDeckCount: 0))
-        selectedID = id
+        selectedPresetID = id
     }
 
     /// How many decks will use a preset once saved: the stored count, moved

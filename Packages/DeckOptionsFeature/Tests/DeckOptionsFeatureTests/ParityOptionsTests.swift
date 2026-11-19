@@ -123,4 +123,22 @@ struct ParityOptionsTests {
             #expect(after.screenData.cardStateCustomizer == "// retained for all decks")
         }
     }
+
+    @Test("Saving to subdecks applies the selected preset within the selected subtree")
+    func savesToAllSubdecks() async throws {
+        try await withTemporaryCollection { store in
+            let parent = try await store.addDeck(named: "Languages")
+            let child = try await store.addDeck(named: "Languages::French")
+            let grandchild = try await store.addDeck(named: "Languages::French::Verbs")
+            let outside = try await store.addDeck(named: "Biology")
+            let model = await openOptions(store, deck: parent)
+            model.addPreset(named: "Languages")
+            model.newCardsPerDay = 8
+            #expect(await model.save(applyingToSubdecks: true))
+
+            #expect(await openOptions(store, deck: child).selectedPreset?.name == "Languages")
+            #expect(await openOptions(store, deck: grandchild).newCardsPerDay == 8)
+            #expect(await openOptions(store, deck: outside).selectedPreset?.name == "Default")
+        }
+    }
 }

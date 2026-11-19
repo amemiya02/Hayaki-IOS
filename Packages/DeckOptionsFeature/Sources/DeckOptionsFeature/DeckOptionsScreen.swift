@@ -62,7 +62,7 @@ public struct DeckOptionsScreen: View {
         case .loaded:
             Form {
                 Group {
-                    PresetSection(model: model)
+                    PresetSection(model: model) { save(applyingToSubdecks: true) }
                     DailyLimitsSection(model: model)
                     StepsSections(model: model)
                     DisplayOrderSection(model: model)
@@ -121,10 +121,10 @@ public struct DeckOptionsScreen: View {
         }
     }
 
-    private func save() {
+    private func save(applyingToSubdecks: Bool = false) {
         isSaving = true
         Task {
-            let saved = await model.save()
+            let saved = await model.save(applyingToSubdecks: applyingToSubdecks)
             isSaving = false
             if saved { dismiss() }
         }
