@@ -2,17 +2,17 @@ import CollectionStore
 import StudyFeature
 import SwiftUI
 
-struct CustomStudyScreen: View {
+public struct CustomStudyScreen: View {
     @State private var model: CustomStudyModel
     @Environment(\.dismiss) private var dismiss
     let onStart: (StudyDeck) -> Void
 
-    init(store: CollectionStore, deckID: Int64, onStart: @escaping (StudyDeck) -> Void) {
+    public init(store: CollectionStore, deckID: Int64, onStart: @escaping (StudyDeck) -> Void) {
         _model = State(initialValue: CustomStudyModel(store: store, deckID: deckID))
         self.onStart = onStart
     }
 
-    var body: some View {
+    public var body: some View {
         @Bindable var form = model
         NavigationStack {
             Form {

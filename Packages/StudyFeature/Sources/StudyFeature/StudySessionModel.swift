@@ -107,7 +107,7 @@ public final class StudySessionModel {
     @ObservationIgnored private var appliedReviews: Set<UInt32> = []
     @ObservationIgnored private var revertedReviews: Set<UInt32> = []
 
-    @ObservationIgnored private let store: CollectionStore
+    @ObservationIgnored let store: CollectionStore
     public let deckID: Int64
     /// When the current card's question was shown, for the time the review
     /// took.
@@ -179,6 +179,22 @@ public final class StudySessionModel {
     /// or the finished state when there is none. Call it after anything that
     /// changes the queue, such as undoing, burying or suspending.
     public func showNextCard() async {
+        await loadQueue(keepingVisibleSide: false)
+    }
+
+    func refreshAfterExternalChanges() async {
+        guard store.allowsNewProfileWork else { return }
+        await runAction { () async throws(CoreError) in
+            let current = try await store.core.getCurrentDeck()
+            if current.id != deckID {
+                try await store.modify(.setCurrentDeck(.with { $0.did = deckID }))
+            }
+            cardOptions.removeAll()
+            await loadQueue(keepingVisibleSide: true)
+        }
+    }
+
+    private func loadQueue(keepingVisibleSide: Bool) async {
         await refreshUndoStatus()
         do {
             let queued = try await store.core.getQueuedCards(.with { $0.fetchLimit = 1 })
@@ -190,6 +206,14 @@ public final class StudySessionModel {
                 audioOptions = settings.audio
                 showsAnswerTimer = settings.showsAnswerTimer
                 currentDeckName = settings.deckName
+                if keepingVisibleSide, state.card?.id == card.id {
+                    if state.answer != nil {
+                        state = .answer(try await card.answering(typed: typedAnswer, core: store.core))
+                    } else {
+                        state = .question(card)
+                    }
+                    return
+                }
                 questionShownAt = .now
                 revealedAt = nil
                 presentationNumber += 1
@@ -410,6 +434,15 @@ public final class StudySessionModel {
         let updated = note
         try await store.modify(.updateNotes(.with { $0.notes = [updated] }))
         await refreshUndoStatus()
+    }
+
+    func updateTemplateTags(noteID: Int64, update: (inout [String]) -> Void) async {
+        await runAction { () async throws(CoreError) in
+            var updated = try await tags(of: noteID)
+            update(&updated)
+            try await setTags(updated, on: noteID)
+            await redrawShownCard()
+        }
     }
 
     public func setDueDate(_ days: String) async {
