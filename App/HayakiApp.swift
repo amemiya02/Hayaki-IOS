@@ -3,6 +3,7 @@ import SwiftUI
 
 @main
 struct HayakiApp: App {
+    @Environment(\.scenePhase) private var scenePhase
     init() {
         RootView.prepareForLaunch()
     }
@@ -10,6 +11,9 @@ struct HayakiApp: App {
     var body: some Scene {
         WindowGroup {
             RootView()
+        }
+        .onChange(of: scenePhase) { _, phase in
+            RootView.handleAppPhase(phase)
         }
     }
 }

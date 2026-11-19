@@ -7,6 +7,9 @@ import ReminderFeature
 import SwiftUI
 import SyncFeature
 import UniformTypeIdentifiers
+#if os(iOS)
+import UIKit
+#endif
 
 /// The whole app: a short opening state while the collection opens, then the
 /// sections.
@@ -34,6 +37,48 @@ public struct RootView: View {
         // Opening a reminder that launched the app is only noticed if the
         // notification delegate is in place by then.
         ReminderOpener.shared.install()
+    }
+
+    /// The app passes its aggregate phase so that one window never starts
+    /// background sync while another window is still active.
+    public static func handleAppPhase(_ phase: ScenePhase) {
+        let model = launchModel
+        guard let sync = model.sync, let backups = model.backups else { return }
+        switch phase {
+        case .active:
+            Task { await foregroundSync(model, sync: sync) }
+        case .background:
+            guard model.collectionIsIdle else { return }
+            #if os(iOS)
+            let time = SyncBackgroundTime { sync.cancel() }
+            guard time.isValid else { return }
+            #endif
+            Task {
+                #if os(iOS)
+                defer { time.end() }
+                #endif
+                #if os(iOS)
+                guard time.isValid else { return }
+                #endif
+                guard model.sync === sync, model.collectionIsIdle else { return }
+                await sync.automaticSync(.background)
+                #if os(iOS)
+                guard time.isValid else { return }
+                #endif
+                if model.sync === sync, model.collectionIsIdle {
+                    await backups.createAutomaticBackup()
+                }
+            }
+        default:
+            break
+        }
+    }
+
+    fileprivate static func foregroundSync(_ model: AppModel, sync: SyncModel) async {
+        guard model.sync === sync, model.collectionIsIdle else { return }
+        if await !sync.automaticSync(.foreground) {
+            await sync.refreshBadge()
+        }
     }
 
     public var body: some View {
@@ -197,13 +242,51 @@ private struct ReadyView: View {
                 if model.showsWelcome { model.completeWelcome() }
             }
         }
-        .task {
-            guard !sync.isBusy else { return }
-            await backups.createAutomaticBackup()
+        .task(id: sync.network != nil) {
+            guard scenePhase == .active, sync.network != nil else { return }
+            if model.collectionIsIdle { await backups.createAutomaticBackup() }
+            guard !Task.isCancelled else { return }
+            await RootView.foregroundSync(model, sync: sync)
         }
-        .onChange(of: scenePhase) { _, phase in
-            guard phase == .background, !sync.isBusy else { return }
-            Task { await backups.createAutomaticBackup() }
+        .task(id: sync.policy.showsStatusBadge) {
+            guard sync.policy.showsStatusBadge else { return }
+            for await change in store.changes() where change.contains(.mtime) {
+                if scenePhase == .active, model.collectionIsIdle { await sync.refreshBadge() }
+            }
+        }
+        .onChange(of: sync.account?.hostKey) { _, _ in refreshSyncBadge() }
+        .onChange(of: sync.account?.server) { _, _ in refreshSyncBadge() }
+        .onChange(of: sync.policy.showsStatusBadge) { _, _ in refreshSyncBadge() }
+        .onChange(of: sync.network) { old, _ in
+            if old != nil { refreshSyncBadge() }
         }
     }
+
+    private func refreshSyncBadge() {
+        guard scenePhase == .active, model.collectionIsIdle else { return }
+        Task { await sync.refreshBadge() }
+    }
 }
+
+
+#if os(iOS)
+@MainActor
+private final class SyncBackgroundTime {
+    private var identifier = UIBackgroundTaskIdentifier.invalid
+
+    var isValid: Bool { identifier != .invalid }
+
+    init(onExpiration: @escaping @MainActor () -> Void) {
+        identifier = UIApplication.shared.beginBackgroundTask(withName: "Hayaki Sync") { [weak self] in
+            onExpiration()
+            self?.end()
+        }
+    }
+
+    func end() {
+        guard isValid else { return }
+        UIApplication.shared.endBackgroundTask(identifier)
+        identifier = .invalid
+    }
+}
+#endif

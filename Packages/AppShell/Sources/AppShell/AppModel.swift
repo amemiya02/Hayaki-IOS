@@ -250,6 +250,7 @@ public final class AppModel {
         }
         sync?.cancelDestinationChange()
         sync?.keepBoth()
+        sync?.dismissMeteredConfirmation()
         sync?.password = ""
         packageImport?.cancel()
         textImport?.dismiss()
@@ -320,7 +321,12 @@ public final class AppModel {
     private func showCollection(_ store: CollectionStore, backupFolder: URL, welcome: Bool) {
         let importer = PackageImportModel(store: store, backupFolder: backupFolder)
         let profileID = activeProfile.usesLegacyStorage ? nil : activeProfile.id
-        sync = SyncModel(store: store, storage: accountStorage(profileID))
+        sync = SyncModel(
+            store: store,
+            storage: accountStorage(profileID),
+            preferences: preferences,
+            profileID: profileID
+        )
         backups = BackupModel(store: store, folder: backupFolder, importer: importer)
         packageImport = importer
         textImport = TextImportModel(store: store)

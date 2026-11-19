@@ -123,6 +123,56 @@ struct ProfilesTests {
         try await returned.close()
     }
 
+    @Test("Sync preferences reopen with their profile")
+    func syncPreferencesReopenSeparately() async throws {
+        let folder = try TemporaryFolder()
+        let location = CollectionLocation(folder: folder.url.appendingPathComponent("Collection"))
+        let backups = folder.url.appendingPathComponent("Backups")
+        let suiteName = "HayakiProfilesTests.\(UUID())"
+        let preferences = try #require(UserDefaults(suiteName: suiteName))
+        defer { preferences.removePersistentDomain(forName: suiteName) }
+
+        func launch() -> AppModel {
+            AppModel(
+                location: { location }, backupFolder: { backups }, language: "en",
+                preferences: preferences, accountStorage: { _ in ProfileTestAccount() }
+            )
+        }
+
+        let app = launch()
+        await app.open()
+        let originalID = app.activeProfile.id
+        let original = try #require(app.sync)
+        #expect(original.policy == SyncPolicy())
+        original.policy.automatic = true
+        original.policy.allowsMetered = true
+        original.policy.showsStatusBadge = false
+        original.policy.media = .onlyUnmetered
+        let validTimeout = original.policy.setTimeoutSeconds(75)
+        let tooShort = original.policy.setTimeoutSeconds(29)
+        let tooLong = original.policy.setTimeoutSeconds(100_000)
+        #expect(validTimeout)
+        #expect(!tooShort)
+        #expect(!tooLong)
+        let firstPolicy = original.policy
+
+        let secondID = try app.addProfile(named: "Second").id
+        try await app.switchProfile(to: secondID)
+        let second = try #require(app.sync)
+        #expect(second.policy == SyncPolicy())
+        second.policy.media = .never
+        try await app.store?.close()
+
+        let restarted = launch()
+        await restarted.open()
+        #expect(restarted.activeProfile.id == secondID)
+        #expect(restarted.sync?.policy.media == .never)
+        #expect(restarted.sync?.policy.timeoutSeconds == 60)
+        try await restarted.switchProfile(to: originalID)
+        #expect(restarted.sync?.policy == firstPolicy)
+        try await restarted.store?.close()
+    }
+
     @Test("Sync sign-ins, pending uploads, staged imports, and backups stay with the profile that owns them",
           .enabled(if: SyncServer.isBuilt, SyncServer.skipMessage))
     func workStaysInItsProfile() async throws {
