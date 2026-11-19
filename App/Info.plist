@@ -100,6 +100,8 @@
 			</dict>
 		</dict>
 	</array>
+	<key>NSMotionUsageDescription</key>
+	<string>Hayaki detects a shake during study when you assign a reviewer command to it.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Hayaki uses the microphone when you record your voice while studying or editing a note.</string>
 	<key>LSSupportsOpeningDocumentsInPlace</key>

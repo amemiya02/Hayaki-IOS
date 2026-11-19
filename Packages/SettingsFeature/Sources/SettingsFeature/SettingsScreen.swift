@@ -2,6 +2,7 @@ import CollectionStore
 import NoteEditorFeature
 import PackagesFeature
 import ReminderFeature
+import StudyFeature
 import SwiftUI
 import SyncFeature
 
@@ -36,6 +37,15 @@ public struct SettingsScreen<ProfileEntry: View>: View {
                 profileEntry
                 SyncSettingsRow(model: sync)
                 ReminderSettingsRow(store: store)
+                NavigationLink {
+                    ReviewerSettingsScreen(store: store)
+                } label: {
+                    Label {
+                        Text("Reviewer", bundle: .module)
+                    } icon: {
+                        Image(systemName: "rectangle.on.rectangle")
+                    }
+                }
                 if let backups {
                     NavigationLink {
                         BackupsScreen(model: backups, sync: sync)
