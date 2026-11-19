@@ -110,25 +110,27 @@ public final class SyncServer {
 
     /// Drops active connections while keeping the server's on-disk data.
     public func interrupt() {
-        if process.isRunning {
-            _ = Darwin.kill(processIdentifier, SIGKILL)
-            process.waitUntilExit()
-        }
+        if process.isRunning { _ = Darwin.kill(processIdentifier, SIGKILL) }
     }
 
     @MainActor public func restart() async throws {
         stop()
+        let oldPID = processIdentifier
+        try await eventually(timeout: .seconds(5), "the previous sync server to exit") {
+            Darwin.kill(oldPID, 0) == -1 && errno == ESRCH
+        }
         let (process, output, _) = try await Self.launch(environment: environment)
         self.process = process
         self.output = output
     }
 
     public func stop() {
-        if process.isRunning {
-            process.terminate()
-            resume()
-            process.waitUntilExit()
-        }
+        guard process.isRunning else { return }
+        // Reap asynchronously. Foundation's synchronous exit wait can hang
+        // under the Swift Testing runner after the child has already exited.
+        let pid = processIdentifier
+        _ = Darwin.kill(pid, SIGTERM)
+        _ = Darwin.kill(pid, SIGCONT)
     }
 
     private static func listeningPort(in output: String) -> String? {

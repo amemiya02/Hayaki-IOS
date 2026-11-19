@@ -68,10 +68,7 @@ final class LocalSyncTLS {
     }
 
     deinit {
-        if server.isRunning {
-            server.terminate()
-            server.waitUntilExit()
-        }
+        if server.isRunning { server.terminate() }
     }
 
     private static func openssl(in folder: URL, _ arguments: [String]) throws {
