@@ -2,6 +2,7 @@ import SwiftUI
 
 struct TrueRetentionSection: View {
     let retention: [TrueRetention]
+    @Environment(\.statisticsReportPeriod) private var reportPeriod
     @State private var mode: Mode = .summary
 
     private enum Mode: CaseIterable {
@@ -18,21 +19,23 @@ struct TrueRetentionSection: View {
 
     var body: some View {
         Section {
-            DisclosureGroup {
-                Text("True retention measures correct answers on cards with review intervals of at least one day.", bundle: .module)
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
-            } label: {
-                Text("About True Retention", bundle: .module)
-            }
-            Picker(selection: $mode) {
-                ForEach(Mode.allCases, id: \.self) { mode in
-                    Text(mode.title).tag(mode)
+            if reportPeriod == nil {
+                DisclosureGroup {
+                    Text("True retention measures correct answers on cards with review intervals of at least one day.", bundle: .module)
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                } label: {
+                    Text("About True Retention", bundle: .module)
                 }
-            } label: {
-                Text("Card Type", bundle: .module)
+                Picker(selection: $mode) {
+                    ForEach(Mode.allCases, id: \.self) { mode in
+                        Text(mode.title).tag(mode)
+                    }
+                } label: {
+                    Text("Card Type", bundle: .module)
+                }
+                .pickerStyle(.segmented)
             }
-            .pickerStyle(.segmented)
             ForEach(retention, id: \.window) { row in
                 retentionRow(row)
             }

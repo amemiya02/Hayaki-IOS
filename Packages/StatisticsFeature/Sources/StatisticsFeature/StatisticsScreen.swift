@@ -6,6 +6,10 @@ public struct StatisticsScreen: View {
     @State private var model: StatisticsModel
     @State private var draftSearch = ""
     @State private var appliedSearch = ""
+    @State private var report: StatisticsPDF?
+    @State private var exportingReport = false
+    @State private var reportError: String?
+    @Environment(\.locale) private var locale
 
     public init(store: CollectionStore) {
         let model = StatisticsModel(store: store, selectCurrentDeckOnFirstLoad: true)
@@ -29,7 +33,40 @@ public struct StatisticsScreen: View {
                 }
             }
             .navigationTitle(StatisticsSection.title)
+            .toolbar {
+                ToolbarItem(placement: .primaryAction) {
+                    if case .loaded = model.state, model.loadedSelection == model.selection, let graphs = model.graphs {
+                        Button {
+                            exportPDF(graphs)
+                        } label: {
+                            Label {
+                                Text("Export Statistics PDF", bundle: .module)
+                            } icon: {
+                                Image(systemName: "square.and.arrow.up")
+                            }
+                        }
+                    }
+                }
+            }
             .refreshable { await model.refresh() }
+        }
+        .fileExporter(
+            isPresented: $exportingReport, document: report, contentTypes: [.pdf],
+            defaultFilename: String(localized: "Hayaki Statistics", bundle: .module)
+        ) { result in
+            if case .failure(let error) = result { reportError = error.localizedDescription }
+            report = nil
+        } onCancellation: {
+            report = nil
+        }
+        .alert(Text("Could Not Export Statistics", bundle: .module), isPresented: Binding {
+            reportError != nil
+        } set: { visible in
+            if !visible { reportError = nil }
+        }) {
+            Button(role: .cancel) { reportError = nil } label: { Text("OK", bundle: .module) }
+        } message: {
+            Text(reportError ?? "")
         }
         .task(id: model.selection) { await model.run() }
         .alert(Text("Could Not Save Statistics Preference", bundle: .module), isPresented: Binding {
@@ -40,6 +77,24 @@ public struct StatisticsScreen: View {
             Button(role: .cancel) { model.preferenceError = nil } label: { Text("OK", bundle: .module) }
         } message: {
             Text(model.preferenceError ?? "")
+        }
+    }
+
+    private func exportPDF(_ graphs: StatisticsGraphs) {
+        let scope: Text
+        switch model.scope {
+        case .collection:
+            scope = Text("Whole Collection", bundle: .module)
+        case .deck(let id):
+            scope = Text(verbatim: model.decks.first { $0.id == id }?.displayName ?? "")
+        case .search(let query):
+            scope = Text(verbatim: query)
+        }
+        do {
+            report = try StatisticsPDF.make(graphs: graphs, preferences: model.preferences, scope: scope, locale: locale)
+            exportingReport = true
+        } catch {
+            reportError = error.localizedDescription
         }
     }
 
