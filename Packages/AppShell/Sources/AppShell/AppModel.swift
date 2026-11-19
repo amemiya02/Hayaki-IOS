@@ -4,8 +4,7 @@ import Foundation
 import Observation
 import PackagesFeature
 
-/// The app at launch: starts the core and opens the learner's collection, in
-/// the background, creating an empty collection the first time.
+/// Opens the active profile and keeps its collection separate from the other profiles.
 @MainActor
 @Observable
 public final class AppModel {
@@ -16,6 +15,8 @@ public final class AppModel {
     }
 
     public private(set) var state: State = .opening
+    public private(set) var profiles: [CollectionProfile]
+    public private(set) var activeProfile: CollectionProfile
     /// Importing packages into the open collection, once it is ready.
     public private(set) var packageImport: PackageImportModel?
     /// Whether the learner should choose how to start the empty collection.
@@ -25,18 +26,22 @@ public final class AppModel {
     @ObservationIgnored private let backupFolder: @Sendable () throws -> URL
     @ObservationIgnored private let language: String
     @ObservationIgnored private let preferences: UserDefaults
+    @ObservationIgnored private var isOpening = false
     private static let welcomeCompletedKey = "hayakiWelcomeCompleted"
+    private static let profilesKey = "hayakiProfiles"
     /// A package opened from another app before the collection was ready.
     @ObservationIgnored private var waitingPackage: URL?
 
+    private struct SavedProfiles: Codable {
+        var profiles: [CollectionProfile]
+        var activeID: UUID
+    }
+
     /// - Parameters:
-    ///   - location: Where the collection lives; the app's standard place
-    ///     unless a test passes another.
-    ///   - backupFolder: Where backups go; the app's standard place unless a
-    ///     test passes another.
-    ///   - language: The language for the core's own text, which must be the
-    ///     one the app's screens resolved to.
-    ///   - preferences: Where first-run preferences are saved.
+    ///   - location: Where the original collection lives; the app's standard place unless overridden.
+    ///   - backupFolder: Where the original profile's backups go; the app's standard place unless overridden.
+    ///   - language: The language for the core's own text, which must be the one the app's screens resolved to.
+    ///   - preferences: Where profile and first-run preferences are saved.
     public init(
         location: @escaping @Sendable () throws -> CollectionLocation = { try .standard() },
         backupFolder: @escaping @Sendable () throws -> URL = { try PackageImportModel.standardBackupFolder() },
@@ -47,6 +52,15 @@ public final class AppModel {
         self.backupFolder = backupFolder
         self.language = language
         self.preferences = preferences
+        let saved = preferences.data(forKey: Self.profilesKey)
+            .flatMap { try? PropertyListDecoder().decode(SavedProfiles.self, from: $0) }
+        if let saved, let active = saved.profiles.first(where: { $0.id == saved.activeID }) {
+            profiles = saved.profiles
+            activeProfile = active
+        } else {
+            profiles = [.legacy]
+            activeProfile = .legacy
+        }
     }
 
     /// The open collection, once it is ready.
@@ -55,55 +69,119 @@ public final class AppModel {
     }
 
     /// Opens the collection unless it is already open or opening has failed.
-    /// The core does the work on its own thread, so the interface stays
-    /// responsive meanwhile.
     public func open() async {
-        guard case .opening = state else { return }
+        guard case .opening = state, !isOpening else { return }
+        isOpening = true
+        defer { isOpening = false }
         do {
-            let core = try await CoreClient(language: language)
-            var location = try location()
-            #if DEBUG
-            if let package = UITestLaunch.collectionPackage {
-                location = try await UITestLaunch.collection(from: package, core: core)
-            }
-            #endif
-            let store = try await CollectionStore.open(at: location, core: core)
-            let packageImport = PackageImportModel(store: store, backupFolder: try backupFolder())
-            if !preferences.bool(forKey: Self.welcomeCompletedKey) {
-                // Existing collections with cards or user-created decks go
-                // straight to Decks when upgrading.
-                let names = try? await store.core.getDeckNames(.with {
-                    $0.skipEmptyDefault = true
-                    $0.includeFiltered = true
-                })
-                if let names {
-                    if names.entries.isEmpty {
-                        showsWelcome = true
-                    } else {
-                        completeWelcome()
-                    }
-                }
-            }
-            self.packageImport = packageImport
-            state = .ready(store)
+            let (store, folder) = try await openCollection(for: activeProfile, useFixture: true)
+            await showCollection(store, backupFolder: folder)
             if let waiting = waitingPackage {
                 waitingPackage = nil
-                await packageImport.open(waiting)
+                await packageImport?.open(waiting)
             }
         } catch {
             state = .failed(message: error.localizedDescription)
         }
     }
 
+    /// Adds an empty profile, leaving the current collection open.
+    @discardableResult
+    public func addProfile(named name: String) throws -> CollectionProfile {
+        let profile = CollectionProfile(id: UUID(), name: try validatedName(name))
+        try saveProfiles(profiles + [profile], active: activeProfile)
+        return profile
+    }
+
+    /// Opens the destination in its own core before releasing the current collection.
+    public func switchProfile(to id: UUID) async throws {
+        guard let target = profiles.first(where: { $0.id == id }) else { throw ProfileError.unavailable }
+        guard target != activeProfile else { return }
+        guard let previous = store, !isOpening else { throw ProfileError.busy }
+        isOpening = true
+        state = .opening
+        defer { isOpening = false }
+        do {
+            let (next, folder) = try await openCollection(for: target)
+            do {
+                try await previous.close()
+                try saveProfiles(profiles, active: target)
+            } catch {
+                try? await next.close()
+                throw error
+            }
+            await showCollection(next, backupFolder: folder)
+        } catch {
+            state = .ready(previous)
+            throw error
+        }
+    }
+
+    private func openCollection(for profile: CollectionProfile, useFixture: Bool = false) async throws -> (CollectionStore, URL) {
+        var location = try location()
+        var backups = try backupFolder()
+        if !profile.usesLegacyStorage {
+            let directory = profile.id.uuidString
+            location = CollectionLocation(folder: location.folder.deletingLastPathComponent()
+                .appendingPathComponent("Profiles", isDirectory: true)
+                .appendingPathComponent(directory, isDirectory: true)
+                .appendingPathComponent("Collection", isDirectory: true))
+            backups.appendPathComponent(directory, isDirectory: true)
+        }
+        let core = try await CoreClient(language: language)
+        #if DEBUG
+        if profile.usesLegacyStorage, useFixture, let package = UITestLaunch.collectionPackage {
+            location = try await UITestLaunch.collection(from: package, core: core)
+        }
+        #endif
+        return (try await CollectionStore.open(at: location, core: core), backups)
+    }
+
+    private func showCollection(_ store: CollectionStore, backupFolder: URL) async {
+        if preferences.bool(forKey: welcomeCompletedKey) {
+            showsWelcome = false
+        } else {
+            // Existing collections with cards or user-created decks skip Welcome.
+            let names = try? await store.core.getDeckNames(.with {
+                $0.skipEmptyDefault = true
+                $0.includeFiltered = true
+            })
+            showsWelcome = names?.entries.isEmpty == true
+            if !showsWelcome, names != nil { completeWelcome() }
+        }
+        packageImport = PackageImportModel(store: store, backupFolder: backupFolder)
+        state = .ready(store)
+    }
+
+    private func validatedName(_ name: String) throws -> String {
+        let cleaned = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !cleaned.isEmpty else { throw ProfileError.emptyName }
+        guard cleaned.utf16.count <= 50 else { throw ProfileError.nameTooLong }
+        guard !profiles.contains(where: { $0.name.caseInsensitiveCompare(cleaned) == .orderedSame }) else {
+            throw ProfileError.duplicateName
+        }
+        return cleaned
+    }
+
+    private func saveProfiles(_ profiles: [CollectionProfile], active: CollectionProfile) throws {
+        let sorted = profiles.sorted { $0.name.caseInsensitiveCompare($1.name) == .orderedAscending }
+        let saved = SavedProfiles(profiles: sorted, activeID: active.id)
+        preferences.set(try PropertyListEncoder().encode(saved), forKey: Self.profilesKey)
+        self.profiles = sorted
+        activeProfile = active
+    }
+
     /// Continues to Decks and remembers the choice on the next launch.
     public func completeWelcome() {
-        preferences.set(true, forKey: Self.welcomeCompletedKey)
+        preferences.set(true, forKey: welcomeCompletedKey)
         showsWelcome = false
     }
 
-    /// Starts importing a package the learner opened from Files, AirDrop or
-    /// another app's share sheet. One opened while the app is still launching
-    /// is taken in as soon as the collection is open.
+    private var welcomeCompletedKey: String {
+        activeProfile.usesLegacyStorage ? Self.welcomeCompletedKey : "\(Self.welcomeCompletedKey).\(activeProfile.id.uuidString)"
+    }
+
+    /// Starts importing a package opened in another app or queues it during launch.
     public func openPackage(_ url: URL) async {
         if let packageImport {
             await packageImport.open(url)
@@ -112,8 +190,7 @@ public final class AppModel {
         }
     }
 
-    /// The language the app's own screens are shown in: the first of the
-    /// learner's preferred languages that the app has strings for.
+    /// The language the app's own screens are shown in.
     public nonisolated static var screenLanguage: String {
         Bundle.main.preferredLocalizations.first ?? "en"
     }
