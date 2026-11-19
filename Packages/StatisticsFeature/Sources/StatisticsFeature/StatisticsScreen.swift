@@ -80,7 +80,8 @@ public struct StatisticsScreen: View {
         let today = graphs.today
         let cardCounts = graphs.cardCounts
         let ratings = graphs.ratings
-        if today.isEmpty && cardCounts.isEmpty && ratings.isEmpty {
+        let reviews = graphs.reviewDays
+        if today.isEmpty && cardCounts.isEmpty && ratings.isEmpty && reviews.isEmpty {
             Section {
                 ContentUnavailableView {
                     Label {
@@ -98,6 +99,7 @@ public struct StatisticsScreen: View {
             }
         } else {
             TodaySection(today: today)
+            ReviewHistorySection(days: reviews, earliestDay: graphs.period.earliestReviewDay)
             CardCountsSection(counts: cardCounts)
             RatingsSection(ratings: ratings)
         }

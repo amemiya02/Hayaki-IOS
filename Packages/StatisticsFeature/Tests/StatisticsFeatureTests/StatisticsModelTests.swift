@@ -43,6 +43,36 @@ struct StatisticsModelTests {
         }
     }
 
+    @Test("Review counts and study time follow the period and deck, and feed the calendar")
+    func dailyReviews() async throws {
+        try await withTemporaryCollection { store in
+            let spanish = try await store.addSpanishWithKnownHistory()
+            let spanishHistory = try await store.addBasicNotes(count: 1, toDeck: spanish)
+            try await store.makeReviewCardsDueToday(spanishHistory, intervalDays: 40)
+            try await store.review(spanishHistory[0], rating: .good, daysAgo: 37, seconds: 11)
+
+            let other = try await store.addDeck(named: "Other")
+            let otherCards = try await store.addBasicNotes(count: 1, toDeck: other)
+            try await store.review(otherCards[0], rating: .good, daysAgo: 2, seconds: 7)
+
+            let model = StatisticsModel(store: store)
+            await model.refresh()
+            let all = try #require(model.graphs)
+            #expect(all.reviewDays.map(\.offset) == [-2, 0])
+            #expect(all.reviewDays.map(\.count) == [1, 3])
+            #expect(all.reviewDays.map(\.milliseconds) == [7_000, 9_000])
+
+            model.scope = .deck(id: spanish)
+            model.period = .threeMonths
+            await model.refresh()
+            let deck = try #require(model.graphs)
+            #expect(deck.reviewDays.map(\.offset) == [-37, 0])
+            #expect(deck.reviewDays.map(\.count) == [1, 3])
+            #expect(deck.reviewDays.map(\.milliseconds) == [11_000, 9_000])
+            #expect(deck.reviewDays.last?.entries.map(\.count) == [1, 0, 1, 1, 0])
+        }
+    }
+
     @Test("Card counts divide the cards between new, learning, young, mature, suspended and buried")
     func cardCounts() async throws {
         try await withTemporaryCollection { store in
