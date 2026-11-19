@@ -40,7 +40,7 @@ public final class PackageImportModel {
     public var mergeOptions = MergeOptions()
 
     @ObservationIgnored private let store: CollectionStore
-    @ObservationIgnored private let backupFolder: URL
+    public let backupFolder: URL
     @ObservationIgnored private var cancelRunningOperation: (() -> Void)?
     @ObservationIgnored private var cancelRequested = false
 
@@ -159,7 +159,7 @@ public final class PackageImportModel {
     }
 
     private func replaceCollection(with package: PackageFile) async throws -> ImportSummary {
-        let backupMade = try await backUpCollection()
+        let backupMade = try await store.backUp(to: backupFolder, force: true)
         try throwIfCancelled()
         try await store.replace { core, location in
             let operation = core.start(.importCollectionPackage(.with {
@@ -180,18 +180,6 @@ public final class PackageImportModel {
             cards: try await store.core.searchCards(.with { $0.search = "" }).ids.count,
             backupMade: backupMade
         ))
-    }
-
-    /// Backs up the current collection through the core and waits for the
-    /// backup to be written. Returns false when the core skipped it because
-    /// nothing changed since its last backup.
-    private func backUpCollection() async throws -> Bool {
-        try FileManager.default.createDirectory(at: backupFolder, withIntermediateDirectories: true)
-        return try await store.core.createBackup(.with {
-            $0.backupFolder = backupFolder.path
-            $0.force = true
-            $0.waitForCompletion = true
-        }).val
     }
 
     /// Lets the learner cancel `operation` and shows its progress until it
