@@ -11,7 +11,9 @@ struct CardBrowserModelTests {
     func pagedRowsUseTheirBrowsersConfiguration() async throws {
         try await withTemporaryCollection { store in
             let deck = try await store.addDeck(named: "Spanish")
-            try await store.addBasicCard(front: "gato", back: "cat", inDeck: deck)
+            let noteID = try #require(try await store.addNotes(
+                ofType: "Basic (and reversed card)", fields: [["gato", "cat"]], toDeck: deck
+            ).first)
             let cards = CardBrowserModel(store: store)
             await cards.search()
             await cards.setColumns(["deck", "noteFld"])
@@ -20,8 +22,9 @@ struct CardBrowserModelTests {
             await notes.setMode(.notes)
             await notes.setColumns(["noteFld", "noteTags"])
 
-            let cardID = try #require(cards.rowIDs.first)
-            let noteID = try #require(notes.rowIDs.first)
+            // The second card has an ID that cannot be resolved as this note.
+            let cardID = try #require(cards.rowIDs.first(where: { $0 != noteID }))
+            #expect(notes.rowIDs == [noteID])
             await cards.loadRow(cardID)
             #expect(cards.row(for: cardID)?.cells["deck"] == "Spanish")
             #expect(cards.row(for: cardID)?.cells["noteFld"] == "gato")
