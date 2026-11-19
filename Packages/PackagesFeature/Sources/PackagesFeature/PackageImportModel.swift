@@ -64,12 +64,19 @@ public final class PackageImportModel {
         if case .importing = step { true } else { false }
     }
 
+    public var isBusy: Bool {
+        switch step {
+        case .preparing, .importing: true
+        default: false
+        }
+    }
+
     /// Takes in a package the learner chose or opened from another app, and
     /// asks for confirmation (collection package) or merge choices (deck
     /// package). Nothing in the collection changes yet. Ignored while an
     /// import is running.
     public func open(_ url: URL) async {
-        guard !isImporting else { return }
+        guard store.allowsNewProfileWork, !isBusy else { return }
         discardPendingPackage()
         step = .preparing(name: url.lastPathComponent)
         do {
@@ -99,6 +106,7 @@ public final class PackageImportModel {
 
     /// Imports the package waiting for confirmation or merge choices.
     public func startImport() async {
+        guard store.allowsNewProfileWork else { return }
         let package: PackageFile
         switch step {
         case .confirmingReplace(let waiting), .choosingMergeOptions(let waiting):

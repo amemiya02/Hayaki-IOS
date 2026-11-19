@@ -88,13 +88,13 @@ public final class SyncModel {
     }
 
     public var canSignIn: Bool {
-        !isBusy && account == nil
+        store.allowsNewProfileWork && !isBusy && account == nil
             && (destination == .ankiWeb || !serverAddress.trimmed.isEmpty)
             && !userName.trimmed.isEmpty && !password.isEmpty
     }
 
     public var canRetryMediaSync: Bool {
-        guard !isBusy, account != nil, case .synced = status else { return false }
+        guard store.allowsNewProfileWork, !isBusy, account != nil, case .synced = status else { return false }
         return switch mediaStatus {
         case .cancelled, .interrupted, .failed: true
         default: false
@@ -164,7 +164,7 @@ public final class SyncModel {
 
     /// Forgets the sign-in and removes the server's key from this device.
     public func signOut() {
-        guard !isBusy else { return }
+        guard store.allowsNewProfileWork, !isBusy else { return }
         do {
             try storage.remove()
         } catch {
@@ -182,7 +182,7 @@ public final class SyncModel {
     /// fetches the server's. When the two cannot be merged, stops at
     /// `.choosingDirection` without changing either side.
     public func sync() async {
-        guard let account, !isBusy else { return }
+        guard store.allowsNewProfileWork, let account, !isBusy else { return }
         SyncClientIdentity.install()
         status = .syncing(.connecting)
         let request = Anki_Sync_SyncCollectionRequest.with {
@@ -245,7 +245,7 @@ public final class SyncModel {
     }
 
     private func fullSync(upload: Bool) async {
-        guard let account, case .choosingDirection(let choice) = status,
+        guard store.allowsNewProfileWork, let account, case .choosingDirection(let choice) = status,
               upload ? choice.allowsUpload : choice.allowsDownload
         else { return }
         status = .syncing(upload ? .uploading(transferred: 0, total: 0) : .downloading(transferred: 0, total: 0))

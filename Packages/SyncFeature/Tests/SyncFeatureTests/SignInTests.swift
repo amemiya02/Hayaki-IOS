@@ -1,6 +1,7 @@
 import CollectionTesting
 import Foundation
 import SyncFeature
+import SyncTesting
 import Testing
 
 @MainActor

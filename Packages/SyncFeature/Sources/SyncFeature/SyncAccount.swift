@@ -63,8 +63,8 @@ public struct KeychainSyncAccountStorage: SyncAccountStorage {
     private let service: String
     private let account = "sync-account"
 
-    public init(service: String = "io.github.amemiya02.hayaki.sync") {
-        self.service = service
+    public init(service: String = "io.github.amemiya02.hayaki.sync", profileID: UUID? = nil) {
+        self.service = profileID.map { "\(service).\($0.uuidString)" } ?? service
     }
 
     public func load() throws -> SyncAccount? {

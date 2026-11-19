@@ -1,3 +1,4 @@
+#if os(macOS)
 import CollectionTesting
 import Foundation
 import Synchronization
@@ -6,28 +7,28 @@ import Testing
 /// Upstream Anki's own sync server, built from the same pinned source as the
 /// core by `scripts/build-sync-server.sh`, running on a free local port with a
 /// throwaway data folder for one test.
-final class SyncServer {
+public final class SyncServer {
     /// Where `scripts/build-sync-server.sh` puts the server, or the path in
     /// `HAYAKI_SYNC_SERVER` when that is set.
     static let binary: URL = {
         if let path = ProcessInfo.processInfo.environment["HAYAKI_SYNC_SERVER"] {
             return URL(fileURLWithPath: path)
         }
-        // Packages/SyncFeature/Tests/SyncFeatureTests/SyncServer.swift -> repository root
+        // Packages/SyncFeature/Sources/SyncTesting/SyncServer.swift -> repository root
         var root = URL(fileURLWithPath: #filePath)
         for _ in 0..<5 { root.deleteLastPathComponent() }
         return root.appendingPathComponent("build/sync-server/anki-sync-server")
     }()
 
-    static var isBuilt: Bool { FileManager.default.isExecutableFile(atPath: binary.path) }
+    public static var isBuilt: Bool { FileManager.default.isExecutableFile(atPath: binary.path) }
 
-    static let skipMessage: Comment = """
+    public static let skipMessage: Comment = """
         The sync server has not been built, so the tests that sync against it are skipped. \
         Build it with scripts/build-sync-server.sh.
         """
 
     /// The address a learner would enter, such as `http://127.0.0.1:53817/`.
-    let address: String
+    public let address: String
     private var process: Process
     private var output: LogBuffer
     private let folder: URL
@@ -35,7 +36,7 @@ final class SyncServer {
 
     /// Starts a server with these users, each `(name, password)`, and waits
     /// until it accepts connections.
-    init(users: [(String, String)]) async throws {
+    public init(users: [(String, String)]) async throws {
         folder = FileManager.default.temporaryDirectory
             .appendingPathComponent("hayaki-sync-server-\(UUID().uuidString)", isDirectory: true)
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
@@ -94,30 +95,30 @@ final class SyncServer {
     }
 
     /// Everything the server has logged so far, one line per request.
-    var log: String { Self.withoutColour(output.text) }
+    public var log: String { Self.withoutColour(output.text) }
 
-    var processIdentifier: Int32 { process.processIdentifier }
+    public var processIdentifier: Int32 { process.processIdentifier }
 
-    func resume() {
+    public func resume() {
         if process.isRunning { _ = Darwin.kill(processIdentifier, SIGCONT) }
     }
 
     /// Drops active connections while keeping the server's on-disk data.
-    func interrupt() {
+    public func interrupt() {
         if process.isRunning {
             _ = Darwin.kill(processIdentifier, SIGKILL)
             process.waitUntilExit()
         }
     }
 
-    @MainActor func restart() async throws {
+    @MainActor public func restart() async throws {
         stop()
         let (process, output, _) = try await Self.launch(environment: environment)
         self.process = process
         self.output = output
     }
 
-    func stop() {
+    public func stop() {
         if process.isRunning {
             process.terminate()
             resume()
@@ -155,7 +156,7 @@ private final class LogBuffer: Sendable {
 
 /// A local address where nothing listens, as when a server is down or the
 /// address is mistyped: connections are refused at once.
-func unreachableAddress() throws -> String {
+public func unreachableAddress() throws -> String {
     let socket = try ListeningSocket()
     let port = socket.port
     socket.close()
@@ -164,11 +165,11 @@ func unreachableAddress() throws -> String {
 
 /// A socket that accepts connections (the system completes them) but never
 /// answers, like a server that has hung.
-final class ListeningSocket: Sendable {
+public final class ListeningSocket: Sendable {
     let port: UInt16
     private let descriptor: Mutex<Int32>
 
-    init() throws {
+    public init() throws {
         let fd = Darwin.socket(AF_INET, SOCK_STREAM, 0)
         guard fd >= 0 else { throw POSIXError(.EIO) }
         var address = sockaddr_in()
@@ -192,9 +193,9 @@ final class ListeningSocket: Sendable {
         descriptor = Mutex(fd)
     }
 
-    var address: String { "http://127.0.0.1:\(port)/" }
+    public var address: String { "http://127.0.0.1:\(port)/" }
 
-    func close() {
+    public func close() {
         descriptor.withLock { fd in
             if fd >= 0 { Darwin.close(fd) }
             fd = -1
@@ -203,3 +204,4 @@ final class ListeningSocket: Sendable {
 
     deinit { close() }
 }
+#endif

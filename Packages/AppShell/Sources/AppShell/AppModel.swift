@@ -3,6 +3,7 @@ import CollectionStore
 import Foundation
 import Observation
 import PackagesFeature
+import SyncFeature
 
 /// Opens the active profile and keeps its collection separate from the other profiles.
 @MainActor
@@ -17,6 +18,9 @@ public final class AppModel {
     public private(set) var state: State = .opening
     public private(set) var profiles: [CollectionProfile]
     public private(set) var activeProfile: CollectionProfile
+    public private(set) var isSwitchingProfile = false
+    public private(set) var sync: SyncModel?
+    public private(set) var backups: BackupModel?
     /// Importing packages into the open collection, once it is ready.
     public private(set) var packageImport: PackageImportModel?
     /// Whether the learner should choose how to start the empty collection.
@@ -26,6 +30,7 @@ public final class AppModel {
     @ObservationIgnored private let backupFolder: @Sendable () throws -> URL
     @ObservationIgnored private let language: String
     @ObservationIgnored private let preferences: UserDefaults
+    @ObservationIgnored private let accountStorage: @Sendable (UUID?) -> any SyncAccountStorage
     @ObservationIgnored private var isOpening = false
     private static let welcomeCompletedKey = "hayakiWelcomeCompleted"
     private static let profilesKey = "hayakiProfiles"
@@ -51,16 +56,19 @@ public final class AppModel {
     ///   - backupFolder: Where the original profile's backups go; the app's standard place unless overridden.
     ///   - language: The language for the core's own text, which must be the one the app's screens resolved to.
     ///   - preferences: Where profile and first-run preferences are saved.
+    ///   - accountStorage: Where each profile's sign-in is stored, using nil for the original profile.
     public init(
         location: @escaping @Sendable () throws -> CollectionLocation = { try .standard() },
         backupFolder: @escaping @Sendable () throws -> URL = { try PackageImportModel.standardBackupFolder() },
         language: String = AppModel.screenLanguage,
-        preferences: UserDefaults = .standard
+        preferences: UserDefaults = .standard,
+        accountStorage: @escaping @Sendable (UUID?) -> any SyncAccountStorage = { KeychainSyncAccountStorage(profileID: $0) }
     ) {
         self.location = location
         self.backupFolder = backupFolder
         self.language = language
         self.preferences = preferences
+        self.accountStorage = accountStorage
         let saved = preferences.data(forKey: Self.profilesKey)
             .flatMap { try? PropertyListDecoder().decode(SavedProfiles.self, from: $0) }
         if let saved, let active = saved.profiles.first(where: { $0.id == saved.activeID }) {
@@ -84,7 +92,8 @@ public final class AppModel {
         defer { isOpening = false }
         do {
             let (store, folder) = try await openCollection(for: activeProfile, recordRecovery: true)
-            await showCollection(store, backupFolder: folder)
+            let welcome = await shouldShowWelcome(for: activeProfile, in: store)
+            showCollection(store, backupFolder: folder, welcome: welcome)
             if let waiting = waitingPackage {
                 waitingPackage = nil
                 await packageImport?.open(waiting)
@@ -97,6 +106,7 @@ public final class AppModel {
     /// Adds an empty profile, leaving the current collection open.
     @discardableResult
     public func addProfile(named name: String) throws -> CollectionProfile {
+        guard !isSwitchingProfile else { throw ProfileError.busy }
         let profile = CollectionProfile(id: UUID(), name: try validatedName(name))
         try saveProfiles(profiles + [profile], active: activeProfile)
         return profile
@@ -106,24 +116,31 @@ public final class AppModel {
     public func switchProfile(to id: UUID) async throws {
         guard let target = profiles.first(where: { $0.id == id }) else { throw ProfileError.unavailable }
         guard target != activeProfile else { return }
-        guard let previous = store, !isOpening else { throw ProfileError.busy }
-        isOpening = true
-        state = .opening
-        defer { isOpening = false }
+        guard let previous = store, !isOpening, !isSwitchingProfile,
+              sync?.isBusy == false, packageImport?.isBusy == false, backups?.isBusy == false
+        else { throw ProfileError.busy }
+        let saved = try PropertyListEncoder().encode(SavedProfiles(profiles: profiles, activeID: id))
+
+        isSwitchingProfile = true
+        previous.allowsNewProfileWork = false
+        defer {
+            isSwitchingProfile = false
+            if activeProfile.id != id { previous.allowsNewProfileWork = true }
+        }
+
+        let (next, folder) = try await openCollection(for: target)
+        let welcome = await shouldShowWelcome(for: target, in: next)
         do {
-            let (next, folder) = try await openCollection(for: target)
-            do {
-                try await previous.close()
-                try saveProfiles(profiles, active: target)
-            } catch {
-                try? await next.close()
-                throw error
-            }
-            await showCollection(next, backupFolder: folder)
+            try await previous.close()
         } catch {
-            state = .ready(previous)
+            try? await next.close()
             throw error
         }
+        sync?.keepBoth()
+        packageImport?.cancel()
+        preferences.set(saved, forKey: Self.profilesKey)
+        activeProfile = target
+        showCollection(next, backupFolder: folder, welcome: welcome)
     }
 
     private func openCollection(for profile: CollectionProfile, recordRecovery: Bool = false) async throws -> (CollectionStore, URL) {
@@ -155,19 +172,25 @@ public final class AppModel {
         return (store, backups)
     }
 
-    private func showCollection(_ store: CollectionStore, backupFolder: URL) async {
-        if preferences.bool(forKey: welcomeCompletedKey) {
-            showsWelcome = false
-        } else {
-            // Existing collections with cards or user-created decks skip Welcome.
-            let names = try? await store.core.getDeckNames(.with {
-                $0.skipEmptyDefault = true
-                $0.includeFiltered = true
-            })
-            showsWelcome = names?.entries.isEmpty == true
-            if !showsWelcome, names != nil { completeWelcome() }
-        }
-        packageImport = PackageImportModel(store: store, backupFolder: backupFolder)
+    private func shouldShowWelcome(for profile: CollectionProfile, in store: CollectionStore) async -> Bool {
+        let key = welcomeCompletedKey(for: profile)
+        guard !preferences.bool(forKey: key) else { return false }
+        // Existing collections with cards or user-created decks skip Welcome.
+        let names = try? await store.core.getDeckNames(.with {
+            $0.skipEmptyDefault = true
+            $0.includeFiltered = true
+        })
+        if names?.entries.isEmpty == false { preferences.set(true, forKey: key) }
+        return names?.entries.isEmpty == true
+    }
+
+    private func showCollection(_ store: CollectionStore, backupFolder: URL, welcome: Bool) {
+        let importer = PackageImportModel(store: store, backupFolder: backupFolder)
+        let profileID = activeProfile.usesLegacyStorage ? nil : activeProfile.id
+        sync = SyncModel(store: store, storage: accountStorage(profileID))
+        backups = BackupModel(store: store, folder: backupFolder, importer: importer)
+        packageImport = importer
+        showsWelcome = welcome
         state = .ready(store)
     }
 
@@ -209,12 +232,12 @@ public final class AppModel {
 
     /// Continues to Decks and remembers the choice on the next launch.
     public func completeWelcome() {
-        preferences.set(true, forKey: welcomeCompletedKey)
+        preferences.set(true, forKey: welcomeCompletedKey(for: activeProfile))
         showsWelcome = false
     }
 
-    private var welcomeCompletedKey: String {
-        activeProfile.usesLegacyStorage ? Self.welcomeCompletedKey : "\(Self.welcomeCompletedKey).\(activeProfile.id.uuidString)"
+    private func welcomeCompletedKey(for profile: CollectionProfile) -> String {
+        profile.usesLegacyStorage ? Self.welcomeCompletedKey : "\(Self.welcomeCompletedKey).\(profile.id.uuidString)"
     }
 
     /// Starts importing a package opened in another app or queues it during launch.

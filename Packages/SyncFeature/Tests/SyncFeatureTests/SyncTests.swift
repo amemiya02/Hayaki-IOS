@@ -3,6 +3,7 @@ import CollectionTesting
 import Foundation
 import Observation
 import SyncFeature
+import SyncTesting
 import Testing
 
 /// Two or three devices, each a throwaway collection with its own core, syncing
