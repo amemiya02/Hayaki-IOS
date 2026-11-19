@@ -60,7 +60,7 @@ public struct NoteEditorScreen: View {
 
     public var body: some View {
         NavigationStack {
-            content
+            editorContent
                 .navigationTitle(model.isEditing ? Text("Edit Note", bundle: .module) : Text("Add Note", bundle: .module))
                 .toolbarTitleDisplayModeInline()
                 .toolbar {
@@ -88,15 +88,6 @@ public struct NoteEditorScreen: View {
                         .accessibilityIdentifier("submit-note")
                         .disabled(model.state != .ready || isBusy)
                         .keyboardShortcut(.return, modifiers: .command)
-                    }
-                }
-                .safeAreaInset(edge: .bottom, spacing: 0) {
-                    VStack(spacing: 0) {
-                        addedBanner
-                        if model.state == .ready {
-                            EditorFormattingToolbar(layout: toolbarLayout, isCloze: model.isCloze, format: applyFormat)
-                                .disabled(isBusy)
-                        }
                     }
                 }
                 .navigationDestination(isPresented: isPresent($preview)) {
@@ -197,6 +188,25 @@ public struct NoteEditorScreen: View {
             Button(role: .cancel) {} label: { Text("OK", bundle: .module) }
         } message: { message in
             Text(message)
+        }
+    }
+
+    private var editorContent: some View {
+        GeometryReader { geometry in
+            content
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .safeAreaInset(edge: .bottom, spacing: 0) {
+                    VStack(spacing: 0) {
+                        addedBanner
+                        if model.state == .ready {
+                            EditorFormattingToolbar(
+                                layout: toolbarLayout, isCloze: model.isCloze,
+                                availableHeight: geometry.size.height, format: applyFormat
+                            )
+                            .disabled(isBusy)
+                        }
+                    }
+                }
         }
     }
 
@@ -470,31 +480,16 @@ public struct NoteEditorScreen: View {
         guard model.fields.indices.contains(index) else { return }
         let field = model.fields[index]
         let editingMarkup = field.requiresMarkup || markupFields.contains(index)
-        let displayed = editingMarkup ? field.content : field.text
-        let selected: Range<String.Index>
-        if case .selection(let range) = selections[index]?.indices,
-           range.lowerBound >= displayed.startIndex, range.upperBound <= displayed.endIndex,
-           displayed.indices.contains(range.lowerBound) || range.lowerBound == displayed.endIndex,
-           displayed.indices.contains(range.upperBound) || range.upperBound == displayed.endIndex {
-            selected = range
+        let selection: Range<String.Index>?
+        if case .selection(let range) = selections[index]?.indices {
+            selection = range
         } else {
-            selected = displayed.endIndex..<displayed.endIndex
+            selection = nil
         }
-        let before = String(displayed[..<selected.lowerBound])
-        let selectedText = String(displayed[selected])
-        let after = String(displayed[selected.upperBound...])
-        let wrap = format.wrapper(fields: model.fields)
-        let start = (editingMarkup ? before : FieldMarkup.html(fromPlainText: before)) + wrap.prefix
-        let middle = editingMarkup ? selectedText : FieldMarkup.html(fromPlainText: selectedText)
-        var html = start + middle + wrap.suffix + (editingMarkup ? after : FieldMarkup.html(fromPlainText: after))
-        if !editingMarkup {
-            html += field.images.map { "<img src=\"\(FieldMarkup.escaped($0, quotes: true))\">" }.joined()
-        }
-        model.setMarkup(html, ofField: index)
+        let result = format.apply(to: field, selection: selection, editingMarkup: editingMarkup, fields: model.fields)
+        model.setMarkup(result.html, ofField: index)
         markupFields.insert(index)
-        let lower = html.index(html.startIndex, offsetBy: start.count)
-        let upper = html.index(lower, offsetBy: middle.count)
-        selections[index] = TextSelection(range: lower..<upper)
+        selections[index] = TextSelection(range: result.selection)
         focusedField = index
     }
 
