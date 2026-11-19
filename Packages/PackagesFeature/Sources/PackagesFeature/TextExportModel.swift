@@ -11,6 +11,7 @@ public final class TextExportModel {
 
     public var format: Format = .notes
     public var deckID: Int64?
+    public let selection: ExportSelection?
     public var includeHTML = true
     public var includeTags = true
     public var includeDeck = false
@@ -27,14 +28,16 @@ public final class TextExportModel {
     @ObservationIgnored private let folder: URL
     @ObservationIgnored private var cancelExport: (() -> Void)?
 
-    public init(store: CollectionStore, folder: URL, deckID: Int64? = nil) {
+    public init(store: CollectionStore, folder: URL, deckID: Int64? = nil, selection: ExportSelection? = nil) {
         self.store = store
         self.folder = folder
         self.deckID = deckID
+        self.selection = selection
+        if case .cards? = selection { format = .cards }
     }
 
     public func loadDecks() async {
-        guard store.allowsNewProfileWork else { return }
+        guard selection == nil, store.allowsNewProfileWork else { return }
         do {
             decks = try await store.core.getDeckNames(.with { $0.includeFiltered = true }).entries
         } catch {
@@ -43,7 +46,7 @@ public final class TextExportModel {
     }
 
     public func export() async {
-        guard !isExporting, store.allowsNewProfileWork else { return }
+        guard !isExporting, selection.map({ $0.count > 0 }) ?? true, store.allowsNewProfileWork else { return }
         isExporting = true
         error = nil
         count = nil
@@ -55,7 +58,7 @@ public final class TextExportModel {
 
         let prefix = format == .notes ? "Hayaki Notes" : "Hayaki Cards"
         let file = folder.appendingPathComponent("\(prefix)-\(UUID().uuidString.prefix(8)).txt")
-        let limit = Anki_ImportExport_ExportLimit.with {
+        let limit = selection?.limit ?? Anki_ImportExport_ExportLimit.with {
             if let deckID {
                 $0.deckID = deckID
             } else {

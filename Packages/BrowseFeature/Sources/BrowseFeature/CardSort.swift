@@ -34,3 +34,9 @@ public struct SortColumn: Identifiable, Hashable, Sendable {
     /// for dates and numbers (newest or largest first).
     public let startsDescending: Bool
 }
+
+/// A column available for display in the active Browse mode.
+public struct BrowserColumn: Identifiable, Hashable, Sendable {
+    public let id: String
+    public let label: String
+}

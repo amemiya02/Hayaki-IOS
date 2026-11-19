@@ -4,21 +4,21 @@ import SwiftUI
 
 /// Everything about one card: its note's fields, its deck, when it is due
 /// and its review history.
-struct CardDetailScreen: View {
+public struct CardInfoScreen: View {
     @State private var model: CardDetailModel
     @State private var isEditing = false
     @State private var didDeleteNote = false
     @Environment(\.dismiss) private var dismiss
     private let store: CollectionStore
 
-    init(store: CollectionStore, cardID: Int64) {
+    public init(store: CollectionStore, cardID: Int64) {
         self.store = store
         _model = State(initialValue: CardDetailModel(store: store, cardID: cardID))
     }
 
-    var body: some View {
+    public var body: some View {
         content
-            .navigationTitle(Text("Card", bundle: .module))
+            .navigationTitle(Text("Card Info", bundle: .module))
             #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
             #endif
@@ -122,6 +122,13 @@ private struct CardDetailList: View {
                 } label: {
                     Text("Due", bundle: .module)
                 }
+                if case .date = detail.due, let position = detail.originalPosition {
+                    LabeledContent {
+                        Text(position, format: .number)
+                    } label: {
+                        Text("Original Position", bundle: .module)
+                    }
+                }
                 if detail.status != .normal {
                     LabeledContent {
                         statusText
@@ -161,6 +168,7 @@ private struct CardDetailList: View {
                 } label: {
                     Text("Card Template", bundle: .module)
                 }
+                SchedulingDetails(detail: detail)
             } header: {
                 Text("Card", bundle: .module)
             }
@@ -177,6 +185,7 @@ private struct CardDetailList: View {
             } header: {
                 Text("Review History", bundle: .module)
             }
+            CardRetentionChart(detail: detail)
         }
     }
 
@@ -200,6 +209,47 @@ private struct CardDetailList: View {
     }
 }
 
+private struct SchedulingDetails: View {
+    let detail: CardDetail
+
+    var body: some View {
+        if let first = detail.firstReview {
+            item(Text("First Review", bundle: .module), Text(first, format: .dateTime.year().month().day()))
+        }
+        if let latest = detail.latestReview {
+            item(Text("Latest Review", bundle: .module), Text(latest, format: .dateTime.year().month().day()))
+        }
+        if let memory = detail.memoryState {
+            let days = memory.stabilityDays.formatted(.number.precision(.fractionLength(0...1)))
+            item(Text("Stability", bundle: .module), Text("\(days) days", bundle: .module))
+            item(Text("Difficulty", bundle: .module), Text(memory.difficulty, format: .percent.precision(.fractionLength(0))))
+            if let retrievability = detail.retrievability {
+                item(Text("Retrievability", bundle: .module), Text(retrievability, format: .percent.precision(.fractionLength(0))))
+            }
+        } else if let ease = detail.ease {
+            item(Text("Ease", bundle: .module), Text(ease, format: .percent.precision(.fractionLength(0...1))))
+        }
+        if detail.totalSeconds > 0 {
+            item(Text("Average Time", bundle: .module), Text(detail.averageSeconds.formatted(.number.precision(.fractionLength(0...1))) + " s"))
+            item(Text("Total Time", bundle: .module), Text(detail.totalSeconds.formatted(.number.precision(.fractionLength(0...1))) + " s"))
+        }
+        item(Text("Preset", bundle: .module), Text(verbatim: detail.preset))
+        item(Text("Card ID", bundle: .module), Text(verbatim: String(detail.cardID)))
+        item(Text("Note ID", bundle: .module), Text(verbatim: String(detail.noteID)))
+        if !detail.customData.isEmpty {
+            item(Text("Custom Data", bundle: .module), Text(verbatim: detail.customData))
+        }
+    }
+
+    private func item(_ title: Text, _ value: Text) -> some View {
+        LabeledContent {
+            value.textSelection(.enabled)
+        } label: {
+            title
+        }
+    }
+}
+
 /// One review: when, what kind, the rating, the interval it led to and how
 /// long the learner took.
 private struct ReviewRow: View {
@@ -218,6 +268,10 @@ private struct ReviewRow: View {
                 if review.intervalSeconds > 0 {
                     Text(verbatim: "·").accessibilityHidden(true)
                     Text("Interval \(intervalText)", bundle: .module)
+                }
+                if let ease = review.ease {
+                    Text(verbatim: "·").accessibilityHidden(true)
+                    Text("Ease \(ease.formatted(.percent.precision(.fractionLength(0...1))))", bundle: .module)
                 }
                 if review.secondsTaken > 0 {
                     Text(verbatim: "·").accessibilityHidden(true)

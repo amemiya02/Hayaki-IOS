@@ -1,3 +1,4 @@
+import AnkiProto
 import Foundation
 
 /// The choices desktop Anki's export screen offers for its two package
@@ -58,4 +59,25 @@ public struct ExportedPackage: Sendable, Equatable {
 
     /// The file's name, such as "Spanish.apkg".
     public var name: String { url.lastPathComponent }
+}
+
+/// Specific cards or notes to export from Browse.
+public enum ExportSelection: Equatable, Sendable {
+    case cards([Int64])
+    case notes([Int64])
+
+    var count: Int {
+        switch self {
+        case .cards(let ids), .notes(let ids): ids.count
+        }
+    }
+
+    var limit: Anki_ImportExport_ExportLimit {
+        .with {
+            switch self {
+            case .cards(let ids): $0.cardIds = .with { $0.cids = ids }
+            case .notes(let ids): $0.noteIds = .with { $0.noteIds = ids }
+            }
+        }
+    }
 }
