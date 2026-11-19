@@ -4,19 +4,19 @@ import SwiftUI
 
 /// Everything about one card: its note's fields, its deck, when it is due
 /// and its review history.
-struct CardDetailScreen: View {
+public struct CardInfoScreen: View {
     @State private var model: CardDetailModel
     @State private var isEditing = false
     @State private var didDeleteNote = false
     @Environment(\.dismiss) private var dismiss
     private let store: CollectionStore
 
-    init(store: CollectionStore, cardID: Int64) {
+    public init(store: CollectionStore, cardID: Int64) {
         self.store = store
         _model = State(initialValue: CardDetailModel(store: store, cardID: cardID))
     }
 
-    var body: some View {
+    public var body: some View {
         content
             .navigationTitle(Text("Card Info", bundle: .module))
             #if os(iOS)

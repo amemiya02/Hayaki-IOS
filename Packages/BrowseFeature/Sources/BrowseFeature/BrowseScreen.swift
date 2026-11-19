@@ -26,9 +26,11 @@ public struct BrowseScreen: View {
     @State private var deletion: DeletionSummary?
     @Environment(\.accessibilityVoiceOverEnabled) private var voiceOverEnabled
 
-    public init(store: CollectionStore) {
+    public init(store: CollectionStore, initialSearch: String = "") {
         self.store = store
-        _model = State(initialValue: CardBrowserModel(store: store))
+        let model = CardBrowserModel(store: store)
+        model.searchText = initialSearch
+        _model = State(initialValue: model)
     }
 
     public var body: some View {
@@ -36,10 +38,10 @@ public struct BrowseScreen: View {
             content
                 .navigationTitle(title)
                 .navigationDestination(for: CardLink.self) { link in
-                    CardDetailScreen(store: store, cardID: link.cardID)
+                    CardInfoScreen(store: store, cardID: link.cardID)
                 }
                 .navigationDestination(item: $inspectedCard) { link in
-                    CardDetailScreen(store: store, cardID: link.cardID)
+                    CardInfoScreen(store: store, cardID: link.cardID)
                 }
                 .toolbar { toolbar }
                 .safeAreaInset(edge: .top, spacing: 0) {
