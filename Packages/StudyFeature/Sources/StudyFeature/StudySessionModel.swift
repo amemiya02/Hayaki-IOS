@@ -6,6 +6,26 @@ import Observation
 
 /// What a study session has come to when nothing is left to study.
 public struct SessionSummary: Equatable, Sendable {
+    public enum Reason: Equatable, Sendable {
+        case dailyLimit
+        case learningLater
+        case buried
+        case done
+    }
+
+    public var reason: Reason {
+        if dailyLimitReached { return .dailyLimit }
+        if nextLearningAt != nil { return .learningLater }
+        if hasBuried { return .buried }
+        return .done
+    }
+
+    public let dailyLimitReached: Bool
+    public let nextLearningAt: Date?
+    public let hasBuried: Bool
+    public let nextDayStartsAt: Date
+    public let isFiltered: Bool
+
     /// Reviews made in this session.
     public let reviewed: Int
     /// The core's own description of today's studying in this collection,
@@ -206,7 +226,17 @@ public final class StudySessionModel {
 
     private func summary() async throws(CoreError) -> SessionSummary {
         let congrats = try await store.core.congratsInfo()
+        let nextDay = try await store.core.schedTimingToday().nextDayAt
+        let learningDelay = congrats.secsUntilNextLearn
+        let nextLearningAt = congrats.learnRemaining > 0 && learningDelay < 86_400
+            ? Date.now.addingTimeInterval(Double(learningDelay))
+            : nil
         return SessionSummary(
+            dailyLimitReached: congrats.newRemaining || congrats.reviewRemaining,
+            nextLearningAt: nextLearningAt,
+            hasBuried: congrats.haveSchedBuried || congrats.haveUserBuried,
+            nextDayStartsAt: Date(timeIntervalSince1970: Double(nextDay)),
+            isFiltered: congrats.isFilteredDeck,
             reviewed: reviewedCount,
             studiedToday: try await store.core.studiedToday().val.withoutIsolationMarks,
             learningLaterToday: Int(congrats.learnRemaining)
