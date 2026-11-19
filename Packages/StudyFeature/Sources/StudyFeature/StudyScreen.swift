@@ -59,7 +59,6 @@ public struct StudyScreen: View {
     @State private var feedback: ReviewFeedback?
     @State private var templateFullscreen: TemplateFullscreen = .standard
     @State private var templateMenu: TemplateMenu?
-    @State private var initialCount = 0
     @Environment(\.reviewerDestination) private var destinations
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.studyNoteEditor) private var noteEditor
@@ -111,11 +110,6 @@ public struct StudyScreen: View {
             let duration = feedback?.duration ?? .seconds(2)
             try? await Task.sleep(for: duration)
             if !Task.isCancelled { feedback = nil }
-        }
-        .onChange(of: model.presentationNumber) {
-            if initialCount == 0, model.state.card != nil {
-                initialCount = model.counts.new + model.counts.learning + model.counts.due
-            }
         }
         .onChange(of: model.reviewedCount) {
             if model.state.card != nil, let progress = model.timeboxProgress() { timebox = progress }
@@ -251,7 +245,6 @@ public struct StudyScreen: View {
         }
         deckName = requested.name
         typedAnswer = ""
-        initialCount = 0
         autoAdvance = false
         templateFullscreen = .standard
         templateMenu = nil
@@ -301,8 +294,7 @@ public struct StudyScreen: View {
         case .browse:
             guard destinations != nil else { return }
             Task {
-                let search = try? await store.core.buildSearchString(.with { $0.deck = deckName }).val
-                route = .browse(search: search ?? "")
+                route = try? await model.browseDestination()
             }
         case .statistics: route = .statistics(deckID: model.deckID)
         case .deckOptions: route = .deckOptions(deckID: model.state.card?.homeDeckID ?? model.deckID)
@@ -360,8 +352,14 @@ public struct StudyScreen: View {
             } else {
                 let typed = typedAnswer
                 Task {
-                    if await model.perform(command, typed: typed), preferences.showFeedback, let rating = command.rating {
-                        feedback = ReviewFeedback(label: rating.title)
+                    guard await model.perform(command, typed: typed), let rating = command.rating else { return }
+                    switch model.leechFeedback {
+                    case .tagged:
+                        feedback = ReviewFeedback(label: Text("Card was a leech.", bundle: .module))
+                    case .suspended:
+                        feedback = ReviewFeedback(label: Text("Card was a leech and has been suspended.", bundle: .module))
+                    case nil:
+                        if preferences.showFeedback { feedback = ReviewFeedback(label: rating.title) }
                     }
                 }
             }
@@ -440,7 +438,14 @@ public struct StudyScreen: View {
                     .lineLimit(1)
                 if model.state.card != nil {
                     HStack {
-                        if model.showsRemainingCounts { StudyCountsView(counts: model.counts) }
+                        if model.showsRemainingCounts {
+                            StudyCountsView(counts: model.counts)
+                            if let minutes = model.minutesRemaining {
+                                Text("\(minutes) min left", bundle: .module)
+                                    .font(.caption)
+                                    .monospacedDigit()
+                            }
+                        }
                         if model.showsAnswerTimer {
                             TimelineView(.periodic(from: .now, by: 1)) { _ in
                                 Text(model.answerTimer().formatted(.time(pattern: .minuteSecond)))
@@ -478,8 +483,8 @@ public struct StudyScreen: View {
         .padding(.horizontal, 8)
         .padding(.top, 4)
         .overlay(alignment: .bottom) {
-            if preferences.showProgress, initialCount > 0 {
-                ProgressView(value: Double(min(model.reviewedCount, initialCount)), total: Double(initialCount))
+            if preferences.showProgress, model.showsRemainingCounts, model.hasStudyProgress {
+                ProgressView(value: model.progress)
                     .labelsHidden()
                     .accessibilityLabel(reviewerLocalized("Study Progress"))
             }

@@ -71,6 +71,7 @@ public struct CardSide: Equatable, Sendable {
 public struct StudyCard: Equatable, Sendable {
     public let id: Int64
     public let noteID: Int64
+    public let deckID: Int64
     public let flag: UInt32
     public let isNoteMarked: Bool
     /// The deck the card belongs to, whose options apply to it.
@@ -151,6 +152,7 @@ public struct StudyCard: Equatable, Sendable {
         return StudyCard(
             id: card.id,
             noteID: card.noteID,
+            deckID: card.deckID,
             flag: card.flags & 7,
             isNoteMarked: note.tags.contains(where: Self.isMarkTag),
             homeDeckID: card.originalDeckID != 0 ? card.originalDeckID : card.deckID,

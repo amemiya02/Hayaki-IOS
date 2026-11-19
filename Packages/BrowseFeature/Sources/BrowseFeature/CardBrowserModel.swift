@@ -316,6 +316,19 @@ public final class CardBrowserModel {
         await setSort(CardSort(column: column.id, reverse: column.startsDescending))
     }
 
+    func rowID(forCard cardID: Int64) async -> Int64? {
+        let generation = generation
+        let id: Int64
+        switch mode {
+        case .cards: id = cardID
+        case .notes:
+            guard let card = try? await store.core.getCard(.with { $0.cid = cardID }) else { return nil }
+            id = card.noteID
+        }
+        guard generation == self.generation, rowIndices[id] != nil else { return nil }
+        return id
+    }
+
     /// The row of a card, if it has been fetched.
     public func row(for cardID: Int64) -> CardRow? {
         rows[cardID]?.row
