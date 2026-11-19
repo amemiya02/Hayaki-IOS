@@ -45,6 +45,8 @@ public enum AddOutcome: Equatable, Sendable {
 
 public enum EditOutcome: Equatable, Sendable {
     case saved
+    case refused(AddProblem)
+    case needsConfirmation(AddWarning)
     case failed(message: String)
 }
 
@@ -238,17 +240,48 @@ public final class NoteEditorModel {
     }
 
     /// Saves the current draft to the existing note, preserving its identity.
-    public func save() async -> EditOutcome {
-        guard editingNoteID != nil, state == .ready else {
+    public func save(confirming accepted: AddWarning? = nil) async -> EditOutcome {
+        guard let editingNoteID, state == .ready else {
             return .failed(message: String(localized: "Could Not Save the Note", bundle: .module))
         }
-        let candidate = draft
         do {
-            try await store.modify(.updateNotes(.with { $0.notes = [candidate] }))
+            // Keep fields and tags changed elsewhere since this editor opened
+            // when the learner left them alone.
+            var candidate = try await store.core.getNote(.with { $0.nid = editingNoteID })
+            guard candidate.notetypeID == note.notetypeID, candidate.fields.count == fields.count else {
+                return .failed(message: String(localized: "The note type changed. Reopen the editor to edit the note.", bundle: .module))
+            }
+            let currentFields = candidate.fields
+            let currentTags = candidate.tags
+            for (index, field) in fields.enumerated() where field.isEdited {
+                candidate.fields[index] = field.content
+            }
+            if tags != note.tags { candidate.tags = tags }
+            if candidate.fields.elementsEqual(currentFields, by: { $0.utf8.elementsEqual($1.utf8) }),
+               candidate.tags == currentTags {
+                return .saved
+            }
+
+            let changedFirstField = !candidate.fields[0].utf8.elementsEqual(currentFields[0].utf8)
+            switch try await validate(candidate, confirming: accepted) {
+            case .refused(.firstFieldEmpty) where !changedFirstField: break
+            case .warning(.duplicate) where !changedFirstField: break
+            case .valid: break
+            case .refused(let problem): return .refused(problem)
+            case .warning(let warning): return .needsConfirmation(warning)
+            }
+            let updated = candidate
+            try await store.modify(.updateNotes(.with { $0.notes = [updated] }))
             return .saved
         } catch {
             return .failed(message: error.message)
         }
+    }
+
+    /// Deletes the note and its cards after the learner confirms deletion.
+    public func delete() async throws(CoreError) {
+        guard let editingNoteID, state == .ready else { return }
+        try await store.modify(.removeNotes(.with { $0.noteIds = [editingNoteID] }))
     }
 
     private var draft: Anki_Notes_Note {
@@ -270,14 +303,10 @@ public final class NoteEditorModel {
         }
         let candidate = draft
         do {
-            switch try await store.core.noteFieldsCheck(candidate).state {
-            case .normal: break
-            case .empty: return .refused(.firstFieldEmpty)
-            case .notetypeNotCloze: return .refused(.clozeOutsideClozeNotetype)
-            case .fieldNotCloze: return .refused(.clozeOutsideClozeField)
-            case .duplicate where accepted != .duplicate: return .needsConfirmation(.duplicate)
-            case .missingCloze where accepted != .noClozeDeletions: return .needsConfirmation(.noClozeDeletions)
-            case .duplicate, .missingCloze, .UNRECOGNIZED: break
+            switch try await validate(candidate, confirming: accepted) {
+            case .valid: break
+            case .refused(let problem): return .refused(problem)
+            case .warning(let warning): return .needsConfirmation(warning)
             }
             let response = try await store.modify(.addNote(.with {
                 $0.note = candidate
@@ -288,6 +317,23 @@ public final class NoteEditorModel {
             return .added(AddedNote(noteID: response.noteID, cardCount: cards.count))
         } catch {
             return .failed(message: error.message)
+        }
+    }
+
+    private enum Validation {
+        case valid
+        case refused(AddProblem)
+        case warning(AddWarning)
+    }
+
+    private func validate(_ candidate: Anki_Notes_Note, confirming accepted: AddWarning?) async throws(CoreError) -> Validation {
+        switch try await store.core.noteFieldsCheck(candidate).state {
+        case .empty: .refused(.firstFieldEmpty)
+        case .notetypeNotCloze: .refused(.clozeOutsideClozeNotetype)
+        case .fieldNotCloze: .refused(.clozeOutsideClozeField)
+        case .duplicate where accepted != .duplicate: .warning(.duplicate)
+        case .missingCloze where accepted != .noClozeDeletions: .warning(.noClozeDeletions)
+        case .normal, .duplicate, .missingCloze, .UNRECOGNIZED: .valid
         }
     }
 }

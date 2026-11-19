@@ -35,4 +35,41 @@ struct EditNoteTests {
             #expect(try await store.cardIDs() == cardIDs)
         }
     }
+
+    @Test("A new empty first field is refused and a duplicate requires confirmation")
+    func checksEditsBeforeSaving() async throws {
+        try await withTemporaryCollection { store in
+            let ids = try await store.addNotes(ofType: "Basic", fields: [["Old", "Back"], ["Taken", "Answer"]], toDeck: 1)
+            let id = try #require(ids.first)
+            let model = NoteEditorModel(store: store, editingNoteID: id)
+            await model.load()
+
+            model.setText(" ", ofField: 0)
+            #expect(await model.save() == .refused(.firstFieldEmpty))
+            model.setText("Taken", ofField: 0)
+            #expect(await model.save() == .needsConfirmation(.duplicate))
+            #expect(try await store.core.getNote(.with { $0.nid = id }).fields[0] == "Old")
+
+            #expect(await model.save(confirming: .duplicate) == .saved)
+            #expect(try await store.core.getNote(.with { $0.nid = id }).fields[0] == "Taken")
+        }
+    }
+
+    @Test("Deleting an edited note removes all its cards")
+    func deletesNoteAndItsCards() async throws {
+        try await withTemporaryCollection { store in
+            let ids = try await store.addNotes(
+                ofType: "Basic (and reversed card)", fields: [["front", "back"]], toDeck: 1
+            )
+            let id = try #require(ids.first)
+            #expect(try await store.cardIDs().count == 2)
+            let model = NoteEditorModel(store: store, editingNoteID: id)
+            await model.load()
+
+            try await model.delete()
+
+            #expect(try await store.noteIDs().isEmpty)
+            #expect(try await store.cardIDs().isEmpty)
+        }
+    }
 }
