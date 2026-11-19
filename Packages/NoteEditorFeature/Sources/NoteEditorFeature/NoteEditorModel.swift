@@ -325,13 +325,44 @@ public final class NoteEditorModel {
     }
 
     func addOcclusionLabel(_ label: String, at point: CGPoint) {
-        let label = label.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !label.isEmpty else { return }
-        // Literal braces and double colons can end an Anki cloze.
-        let safeLabel = label.replacingOccurrences(of: "{", with: "｛")
-            .replacingOccurrences(of: "}", with: "｝")
-            .replacingOccurrences(of: "::", with: "∶∶")
-        occlusionMasks.append(ImageOcclusionMask(label: safeLabel, point: point))
+        guard let label = Self.occlusionLabel(label) else { return }
+        occlusionMasks.append(ImageOcclusionMask(label: label, point: point))
+        updateOcclusionMarkup()
+    }
+
+    func updateOcclusionLabel(_ id: UUID, label: String) {
+        guard let label = Self.occlusionLabel(label),
+              let index = occlusionMasks.firstIndex(where: { $0.id == id && $0.kind == "text" }) else { return }
+        occlusionMasks[index].set("text", label)
+        updateOcclusionMarkup()
+    }
+
+    private static func occlusionLabel(_ text: String) -> String? {
+        let text = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !text.isEmpty else { return nil }
+        // Separate closing delimiters without introducing a visible character.
+        return text.replacingOccurrences(of: "}}", with: "}\u{200B}}")
+    }
+
+    func duplicateOcclusionMasks(_ ids: Set<UUID>) {
+        var copiedGroups: [UInt32: UInt32] = [:]
+        for source in occlusionMasks where ids.contains(source.id) {
+            let ordinal: UInt32
+            if source.ordinal == 0 {
+                ordinal = 0
+            } else if let group = copiedGroups[source.ordinal] {
+                ordinal = group
+            } else if let next = nextOcclusionOrdinal() {
+                ordinal = next
+                copiedGroups[source.ordinal] = next
+            } else {
+                break
+            }
+            let rect = source.rect
+            var copy = ImageOcclusionMask(ordinal: ordinal, shape: source.shape)
+            copy.setRect(rect.offsetBy(dx: rect.maxX < 0.97 ? 0.03 : -0.03, dy: rect.maxY < 0.97 ? 0.03 : -0.03))
+            occlusionMasks.append(copy)
+        }
         updateOcclusionMarkup()
     }
 
@@ -392,7 +423,13 @@ public final class NoteEditorModel {
 
     private func updateOcclusionMarkup() {
         guard let indexes = occlusionFields else { return }
-        setMarkup(occlusionMasks.map { $0.cloze(occludeInactive: occludesInactiveMasks) }.joined(), ofField: Int(indexes.occlusions))
+        let index = Int(indexes.occlusions)
+        let savedMode = savedOcclusionMasks.contains { $0.value("oi") == "1" }
+        if occlusionMasks == savedOcclusionMasks, occludesInactiveMasks == savedMode {
+            setMarkup(fields[index].storedContent, ofField: index)
+        } else {
+            setMarkup(occlusionMasks.map { $0.cloze(occludeInactive: occludesInactiveMasks) }.joined(), ofField: index)
+        }
     }
 
     private var missingOcclusionType: CoreError {
@@ -634,13 +671,20 @@ public final class NoteEditorModel {
         var draft = note
         draft.fields = fields.map(\.content)
         if let indexes = occlusionFields, let image = pendingOcclusionImage {
-            draft.fields[Int(indexes.image)] = "<img src=\"data:\(image.mimeType);base64,\(image.data.base64EncodedString())\">"
+            var field = fields[Int(indexes.image)]
+            field.attachImage(named: image.fileName)
+            draft.fields[Int(indexes.image)] = field.content
         }
         draft.tags = tags
         return draft
     }
 
     // MARK: Preview
+
+    func previewImage() -> (name: String, dataURL: String)? {
+        guard let image = pendingOcclusionImage else { return nil }
+        return (image.fileName, "data:\(image.mimeType);base64,\(image.data.base64EncodedString())")
+    }
 
     /// The core renders the current draft, including unsaved changes.
     public func preview() async throws(CoreError) -> [DraftCard] {

@@ -152,6 +152,8 @@ struct EditorMediaImage: View {
     let accept: (Data, CGRect?) async throws -> Void
     @Environment(\.dismiss) private var dismiss
     @State private var image: UIImage?
+    @State private var croppedPreview: UIImage?
+    @State private var selectedCrop: CGRect?
     @State private var crop = CGRect(x: 0, y: 0, width: 1, height: 1)
     @State private var cropping = false
     @State private var saving = false
@@ -165,7 +167,7 @@ struct EditorMediaImage: View {
                         EditorCropCanvas(image: image, crop: $crop)
                             .padding()
                     } else {
-                        Image(uiImage: image)
+                        Image(uiImage: croppedPreview ?? image)
                             .resizable()
                             .scaledToFit()
                             .accessibilityLabel(Text("Image Preview", bundle: .module))
@@ -183,7 +185,14 @@ struct EditorMediaImage: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button(role: .cancel) { dismiss() } label: { Text("Cancel", bundle: .module) }
+                    Button(role: .cancel) {
+                        if cropping {
+                            cropping = false
+                            crop = selectedCrop ?? CGRect(x: 0, y: 0, width: 1, height: 1)
+                        } else {
+                            dismiss()
+                        }
+                    } label: { Text("Cancel", bundle: .module) }
                 }
                 ToolbarItemGroup(placement: .primaryAction) {
                     if !cropping {
@@ -196,20 +205,28 @@ struct EditorMediaImage: View {
                     }
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    if cropping || !existing {
+                    if cropping || !existing || selectedCrop != nil {
                         Button {
                             saving = true
                             Task {
                                 defer { saving = false }
                                 do {
-                                    try await accept(data, cropping ? crop : nil)
-                                    dismiss()
+                                    if cropping {
+                                        let result = try await ImageMedia.cropped(data, to: crop)
+                                        croppedPreview = UIImage(data: result)
+                                        selectedCrop = crop
+                                        cropping = false
+                                    } else {
+                                        try await accept(data, selectedCrop)
+                                        dismiss()
+                                    }
                                 } catch {
                                     failure = error.localizedDescription
                                 }
                             }
                         } label: {
-                            if existing { Text("Save", bundle: .module) }
+                            if cropping { Text("Done", bundle: .module) }
+                            else if existing { Text("Save", bundle: .module) }
                             else { Text("Use Image", bundle: .module) }
                         }
                         .disabled(image == nil)
@@ -315,6 +332,11 @@ struct EditorDrawingScreen: View {
                         canvas.undoManager?.undo()
                     } label: {
                         Label { Text("Undo", bundle: .module) } icon: { Image(systemName: "arrow.uturn.backward") }
+                    }
+                    Button {
+                        canvas.undoManager?.redo()
+                    } label: {
+                        Label { Text("Redo", bundle: .module) } icon: { Image(systemName: "arrow.uturn.forward") }
                     }
                 }
                 .padding()

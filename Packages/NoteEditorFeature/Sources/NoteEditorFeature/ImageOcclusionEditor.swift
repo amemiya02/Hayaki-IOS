@@ -12,12 +12,17 @@ struct ImageOcclusionEditor: View {
     @State private var polygon: [CGPoint] = []
     @State private var textPoint = CGPoint.zero
     @State private var label = ""
+    @State private var editingLabelID: UUID?
+    @State private var zoom: CGFloat = 1
+    @State private var translucent = false
+    @State private var fillColor = Color(red: 1, green: 0.92, blue: 0.64)
+    @State private var showsFill = false
     @State private var asksForLabel = false
     @State private var undo: [[ImageOcclusionMask]] = []
     @State private var redo: [[ImageOcclusionMask]] = []
 
     private enum Tool: String, CaseIterable {
-        case select, rectangle, ellipse, polygon, text
+        case select, rectangle, ellipse, polygon, text, pan
 
         var icon: String {
             switch self {
@@ -26,6 +31,7 @@ struct ImageOcclusionEditor: View {
             case .ellipse: "oval"
             case .polygon: "pentagon"
             case .text: "textformat"
+            case .pan: "hand.draw"
             }
         }
 
@@ -36,6 +42,7 @@ struct ImageOcclusionEditor: View {
             case .ellipse: LocalizedStringResource("Ellipse", bundle: .atURL(Bundle.module.bundleURL))
             case .polygon: LocalizedStringResource("Polygon", bundle: .atURL(Bundle.module.bundleURL))
             case .text: LocalizedStringResource("Text Label", bundle: .atURL(Bundle.module.bundleURL))
+            case .pan: LocalizedStringResource("Pan Image", bundle: .atURL(Bundle.module.bundleURL))
             }
         }
     }
@@ -45,6 +52,20 @@ struct ImageOcclusionEditor: View {
             if let image {
                 canvas(image)
                 controls
+                if showsFill, !selection.isEmpty {
+                    HStack {
+                        ColorPicker(selection: $fillColor, supportsOpacity: false) {
+                            Text("Mask Color", bundle: .module)
+                        }
+                        Button {
+                            fillSelection()
+                            showsFill = false
+                        } label: {
+                            Text("Apply", bundle: .module)
+                        }
+                        .buttonStyle(.borderless)
+                    }
+                }
                 if tool == .polygon, !polygon.isEmpty {
                     Button {
                         apply { model.addOcclusionPolygon(polygon) }
@@ -85,6 +106,7 @@ struct ImageOcclusionEditor: View {
             case .rectangle, .ellipse: Text("Drag on the image to draw a mask.", bundle: .module)
             case .polygon: Text("Tap the corners of the mask, then finish the polygon.", bundle: .module)
             case .text: Text("Tap the image to place a label.", bundle: .module)
+            case .pan: Text("Drag to pan the zoomed image.", bundle: .module)
             }
         }
         .task(id: data) {
@@ -98,9 +120,14 @@ struct ImageOcclusionEditor: View {
             TextField(text: $label) { Text("Label", bundle: .module) }
             Button(role: .cancel) {}
             Button {
-                apply { model.addOcclusionLabel(label, at: textPoint) }
+                if let editingLabelID {
+                    apply { model.updateOcclusionLabel(editingLabelID, label: label) }
+                } else {
+                    apply { model.addOcclusionLabel(label, at: textPoint) }
+                }
             } label: {
-                Text("Add", bundle: .module)
+                if editingLabelID == nil { Text("Add", bundle: .module) }
+                else { Text("Save", bundle: .module) }
             }
         }
     }
@@ -139,7 +166,26 @@ struct ImageOcclusionEditor: View {
                 }
                 .accessibilityLabel(Text("Redo", bundle: .module))
                 .disabled(redo.isEmpty)
+                Menu {
+                    Button {
+                        zoom = max(1, zoom / 1.35)
+                    } label: { Label { Text("Zoom Out", bundle: .module) } icon: { Image(systemName: "minus.magnifyingglass") } }
+                    .disabled(zoom <= 1)
+                    Button {
+                        zoom = min(5, zoom * 1.35)
+                    } label: { Label { Text("Zoom In", bundle: .module) } icon: { Image(systemName: "plus.magnifyingglass") } }
+                    .disabled(zoom >= 5)
+                    Button {
+                        zoom = 1
+                    } label: { Text("Fit Image", bundle: .module) }
+                    .disabled(zoom <= 1)
+                    Toggle(isOn: $translucent) { Text("Translucent Masks", bundle: .module) }
+                } label: {
+                    Image(systemName: "magnifyingglass")
+                }
+                .accessibilityLabel(Text("View Options", bundle: .module))
                 if tool == .select {
+                    selectionActions
                     Button {
                         apply { model.groupOcclusionMasks(selection) }
                     } label: {
@@ -169,44 +215,139 @@ struct ImageOcclusionEditor: View {
         .scrollIndicators(.hidden)
     }
 
+    private var selectionActions: some View {
+        Menu {
+            Button {
+                selection = Set(model.occlusionMasks.map(\.id))
+            } label: { Text("Select All", bundle: .module) }
+            Button {
+                apply { model.duplicateOcclusionMasks(selection) }
+            } label: { Text("Duplicate Masks", bundle: .module) }
+            .disabled(selection.isEmpty)
+            Button {
+                showsFill.toggle()
+            } label: { Text("Mask Color", bundle: .module) }
+            .disabled(selection.isEmpty)
+            if let mask = selectedMasks.first, selectedMasks.count == 1, mask.kind == "text" {
+                Button {
+                    editingLabelID = mask.id
+                    label = mask.label
+                    asksForLabel = true
+                } label: { Text("Edit Label", bundle: .module) }
+            }
+            Menu {
+                ForEach(AlignmentEdge.allCases, id: \.self) { edge in
+                    Button { align(edge) } label: { Text(edge.title) }
+                }
+            } label: {
+                Text("Align Masks", bundle: .module)
+            }
+            .disabled(selectedMasks.count < 2)
+        } label: {
+            Image(systemName: "ellipsis.circle")
+        }
+        .accessibilityLabel(Text("Mask Options", bundle: .module))
+    }
+
+    private enum AlignmentEdge: CaseIterable {
+        case left, right, top, bottom, horizontalCenter, verticalCenter
+
+        var title: LocalizedStringResource {
+            let bundle = LocalizedStringResource.BundleDescription.atURL(Bundle.module.bundleURL)
+            return switch self {
+            case .left: LocalizedStringResource("Align Left", bundle: bundle)
+            case .right: LocalizedStringResource("Align Right", bundle: bundle)
+            case .top: LocalizedStringResource("Align Top", bundle: bundle)
+            case .bottom: LocalizedStringResource("Align Bottom", bundle: bundle)
+            case .horizontalCenter: LocalizedStringResource("Align Centers Horizontally", bundle: bundle)
+            case .verticalCenter: LocalizedStringResource("Align Centers Vertically", bundle: bundle)
+            }
+        }
+    }
+
+    private var selectedMasks: [ImageOcclusionMask] { model.occlusionMasks.filter { selection.contains($0.id) } }
+
+    private func align(_ edge: AlignmentEdge) {
+        let masks = selectedMasks
+        guard let first = masks.first else { return }
+        let bounds = masks.dropFirst().reduce(first.rect) { $0.union($1.rect) }
+        apply {
+            model.setOcclusionMasks(model.occlusionMasks.map { original in
+                guard selection.contains(original.id) else { return original }
+                var mask = original
+                let rect = mask.rect
+                let offset: CGSize = switch edge {
+                case .left: CGSize(width: bounds.minX - rect.minX, height: 0)
+                case .right: CGSize(width: bounds.maxX - rect.maxX, height: 0)
+                case .top: CGSize(width: 0, height: bounds.minY - rect.minY)
+                case .bottom: CGSize(width: 0, height: bounds.maxY - rect.maxY)
+                case .horizontalCenter: CGSize(width: bounds.midX - rect.midX, height: 0)
+                case .verticalCenter: CGSize(width: 0, height: bounds.midY - rect.midY)
+                }
+                mask.setRect(rect.offsetBy(dx: offset.width, dy: offset.height))
+                return mask
+            })
+        }
+    }
+
+    private func fillSelection() {
+        var r: CGFloat = 0
+        var g: CGFloat = 0
+        var b: CGFloat = 0
+        guard UIColor(fillColor).getRed(&r, green: &g, blue: &b, alpha: nil) else { return }
+        let hex = String(format: "#%02x%02x%02x", Int(r * 255), Int(g * 255), Int(b * 255))
+        apply {
+            model.setOcclusionMasks(model.occlusionMasks.map { original in
+                guard selection.contains(original.id) else { return original }
+                var mask = original
+                mask.set("fill", hex)
+                return mask
+            })
+        }
+    }
+
     private func canvas(_ image: UIImage) -> some View {
         let ratio = max(0.05, image.size.width / max(1, image.size.height))
         return GeometryReader { geometry in
-            let width = min(geometry.size.width, geometry.size.height * ratio)
-            let size = CGSize(width: width, height: width / ratio)
-            Image(uiImage: image)
-                .resizable()
-                .frame(width: size.width, height: size.height)
-                .overlay {
-                    Canvas { context, _ in
-                        for mask in model.occlusionMasks {
-                            draw(mask, in: context, size: size)
+            ScrollView([.horizontal, .vertical]) {
+                let width = min(geometry.size.width, geometry.size.height * ratio) * zoom
+                let size = CGSize(width: width, height: width / ratio)
+                Image(uiImage: image)
+                    .resizable()
+                    .frame(width: size.width, height: size.height)
+                    .overlay {
+                        Canvas { context, _ in
+                            for mask in model.occlusionMasks {
+                                draw(mask, in: context, size: size)
+                            }
+                            if let drag {
+                                let rect = scale(drag, to: size)
+                                let path = tool == .ellipse ? Path(ellipseIn: rect) : Path(rect)
+                                context.fill(path, with: .color(.yellow.opacity(0.55)))
+                                context.stroke(path, with: .color(.yellow), lineWidth: 2)
+                            }
+                            if let first = polygon.first {
+                                var path = Path()
+                                path.move(to: position(first, in: size))
+                                for point in polygon.dropFirst() { path.addLine(to: position(point, in: size)) }
+                                context.stroke(path, with: .color(.yellow), lineWidth: 3)
+                            }
                         }
-                        if let drag {
-                            let rect = scale(drag, to: size)
-                            let path = tool == .ellipse ? Path(ellipseIn: rect) : Path(rect)
-                            context.fill(path, with: .color(.yellow.opacity(0.55)))
-                            context.stroke(path, with: .color(.yellow), lineWidth: 2)
-                        }
-                        if let first = polygon.first {
-                            var path = Path()
-                            path.move(to: position(first, in: size))
-                            for point in polygon.dropFirst() { path.addLine(to: position(point, in: size)) }
-                            context.stroke(path, with: .color(.yellow), lineWidth: 3)
-                        }
+                        .allowsHitTesting(false)
                     }
-                    .allowsHitTesting(false)
-                }
-                .contentShape(.rect)
-                .gesture(DragGesture(minimumDistance: 0).onChanged { gesture in
-                    if tool == .rectangle || tool == .ellipse {
-                        drag = rectangle(gesture, in: size)
-                    }
-                }.onEnded { gesture in
-                    applyGesture(gesture, in: size)
-                })
-                .accessibilityLabel(Text("Image Occlusion Canvas", bundle: .module))
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .contentShape(.rect)
+                    .gesture(DragGesture(minimumDistance: 0).onChanged { gesture in
+                        if tool == .rectangle || tool == .ellipse {
+                            drag = rectangle(gesture, in: size)
+                        }
+                    }.onEnded { gesture in
+                        applyGesture(gesture, in: size)
+                    }, including: tool == .pan ? .none : .all)
+                    .accessibilityLabel(Text("Image Occlusion Canvas", bundle: .module))
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .frame(minWidth: geometry.size.width, minHeight: geometry.size.height)
+            }
+            .scrollDisabled(zoom <= 1)
         }
         .frame(height: min(420, max(220, 380 / ratio)))
     }
@@ -214,9 +355,22 @@ struct ImageOcclusionEditor: View {
     private func draw(_ mask: ImageOcclusionMask, in context: GraphicsContext, size: CGSize) {
         let rect = scale(mask.rect, to: size)
         let isSelected = selection.contains(mask.id)
+        var context = context
+        if mask.kind != "polygon" {
+            context.translateBy(x: rect.minX, y: rect.minY)
+            context.rotate(by: .degrees(Double(mask.number("angle")) * 360 / 10_000))
+            context.translateBy(x: -rect.minX, y: -rect.minY)
+        }
+        let color = mask.value("fill").flatMap { value -> Color? in
+            guard value.count == 7, value.hasPrefix("#"), let hex = UInt32(value.dropFirst(), radix: 16) else { return nil }
+            return Color(red: Double((hex >> 16) & 255) / 255,
+                         green: Double((hex >> 8) & 255) / 255, blue: Double(hex & 255) / 255)
+        }
         if mask.kind == "text" {
-            context.draw(Text(mask.label).font(.system(size: max(12, mask.number("fs") * size.height)))
-                .foregroundStyle(.black), at: rect.origin, anchor: .topLeading)
+            context.fill(Path(rect), with: .color(.white))
+            let fontSize = mask.number("fs") * size.height * max(0.1, mask.number("scale"))
+            context.draw(Text(mask.label).font(.system(size: max(12, fontSize)))
+                .foregroundStyle(color ?? .black), at: rect.origin, anchor: .topLeading)
         } else {
             let path: Path
             if mask.kind == "ellipse" {
@@ -230,7 +384,8 @@ struct ImageOcclusionEditor: View {
             } else {
                 path = Path(rect)
             }
-            context.fill(path, with: .color(.yellow.opacity(isSelected ? 0.65 : 0.45)))
+            let fill = color ?? Color(red: 1, green: 0.92, blue: 0.64)
+            context.fill(path, with: .color(fill.opacity(translucent ? 0.25 : 0.9)))
             context.stroke(path, with: .color(isSelected ? .blue : .black.opacity(0.65)), lineWidth: 1.5)
         }
         if isSelected {
@@ -243,6 +398,7 @@ struct ImageOcclusionEditor: View {
         let start = normalized(gesture.startLocation, in: size)
         let end = normalized(gesture.location, in: size)
         switch tool {
+        case .pan: break
         case .rectangle, .ellipse:
             let rect = rectangle(gesture, in: size)
             drag = nil
@@ -253,6 +409,7 @@ struct ImageOcclusionEditor: View {
             polygon.append(end)
         case .text:
             textPoint = end
+            editingLabelID = nil
             label = ""
             asksForLabel = true
         case .select:

@@ -90,7 +90,8 @@ public struct NoteEditorScreen: View {
                         NotePreviewScreen(
                             cards: preview.cards,
                             initialOrdinal: model.preferredPreviewOrdinal,
-                            mediaFolder: model.mediaFolder
+                            mediaFolder: model.mediaFolder,
+                            inlineImage: preview.inlineImage
                         )
                     }
                 }
@@ -429,7 +430,7 @@ public struct NoteEditorScreen: View {
         defer { isBusy = false }
         commitTags()
         do {
-            preview = PreviewRequest(cards: try await model.preview())
+            preview = PreviewRequest(cards: try await model.preview(), inlineImage: model.previewImage())
         } catch {
             failure = error.message
         }
@@ -561,6 +562,7 @@ public struct NoteEditorScreen: View {
 
 private struct PreviewRequest {
     let cards: [DraftCard]
+    let inlineImage: (name: String, dataURL: String)?
 }
 
 /// One field: its text, the images attached to it, and a button to attach
