@@ -169,3 +169,28 @@ extension BrowserParityTests {
         }
     }
 }
+
+extension BrowserParityTests {
+    @Test("Bulk changes and undo retain the submitted query while an edit is still a draft")
+    func undoWithDraftQuery() async throws {
+        try await withTemporaryCollection { store in
+            let deck = try await store.addDeck(named: "Spanish")
+            let other = try await store.addDeck(named: "Japanese")
+            let card = try await store.addBasicCard(front: "correr", back: "run", inDeck: deck)
+            try await store.addBasicCard(front: "hashiru", back: "run", inDeck: other)
+            let model = CardBrowserModel(store: store)
+            model.searchText = "deck:Spanish"
+            await model.search()
+            model.selectAll()
+            model.searchText = "deck:Japanese"
+            await model.perform(.flag(.red))
+            #expect(model.rowIDs == [card])
+            #expect(model.searchedText == "deck:Spanish")
+            #expect(model.searchText == "deck:Japanese")
+            model.dismissCompletedAction()
+            await model.undoCurrentAction()
+            #expect(model.rowIDs == [card])
+            #expect(try await store.cardCount(matching: "flag:1") == 0)
+        }
+    }
+}

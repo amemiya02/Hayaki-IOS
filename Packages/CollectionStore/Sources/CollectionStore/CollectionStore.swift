@@ -116,6 +116,13 @@ public final class CollectionStore: Sendable {
         try await modify(.undo()).operation
     }
 
+    /// Reverts an offered step if it is still current and publishes its changes.
+    public func undo(ifLastStep step: UInt32) async throws(CoreError) -> Bool {
+        guard let applied = try await core.undo(ifLastStep: step) else { return false }
+        signal(CollectionChange(applied.changes))
+        return true
+    }
+
     /// The changes made to the collection from now on, one element per
     /// modifying operation, in order. Each call returns a new subscription;
     /// it ends when the task iterating it is cancelled or the stream is

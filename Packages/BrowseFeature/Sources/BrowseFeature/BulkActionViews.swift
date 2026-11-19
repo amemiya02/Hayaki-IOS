@@ -16,6 +16,7 @@ struct BulkActionMenu: View {
 
     var body: some View {
         Menu {
+            BrowserUndoMenuAction(model: model)
             Menu {
                 ForEach(CardRow.Flag.allCases, id: \.self) { flag in
                     Button {
@@ -206,6 +207,22 @@ struct UndoBanner: View {
         case .move: Text("Moved \(count) cards", bundle: .module)
         case .delete: Text("Deleted \(count) cards", bundle: .module)
         default: Text(verbatim: completed.undoName)
+        }
+    }
+}
+
+struct BrowserUndoMenuAction: View {
+    let model: CardBrowserModel
+
+    var body: some View {
+        if let action = model.availableUndo {
+            Button {
+                Task { await model.undoCurrentAction() }
+            } label: {
+                Text("Undo \(action.name)", bundle: .module)
+            }
+            .disabled(model.isPerformingAction)
+            Divider()
         }
     }
 }

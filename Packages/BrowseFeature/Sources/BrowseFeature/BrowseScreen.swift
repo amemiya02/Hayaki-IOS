@@ -76,7 +76,7 @@ public struct BrowseScreen: View {
                     ChangeNoteTypeScreen(store: store, noteIDs: selection.noteIDs) {
                         model.clearSelection()
                         isSelecting = false
-                        await model.search()
+                        await model.refreshResults()
                     }
                 }
                 // An alert, as in Decks: a dialog would point at the list's
@@ -212,6 +212,7 @@ public struct BrowseScreen: View {
             Text("Browse Mode", bundle: .module)
         }
         .pickerStyle(.segmented)
+        .accessibilityIdentifier("browse-mode")
         .frame(maxWidth: 440)
         .padding(.horizontal, 16)
         .padding(.vertical, 8)
@@ -221,6 +222,7 @@ public struct BrowseScreen: View {
 
     private var configurationMenu: some View {
         Menu {
+            BrowserUndoMenuAction(model: model)
             SortMenu(model: model)
             Button {
                 sheet = .columns
@@ -386,7 +388,7 @@ public struct BrowseScreen: View {
                 row(rowID)
             }
             .listStyle(.plain)
-            .refreshable { await model.search() }
+            .refreshable { await model.refreshResults() }
         }
     }
     @ViewBuilder

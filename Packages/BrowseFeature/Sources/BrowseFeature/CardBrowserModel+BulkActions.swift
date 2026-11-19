@@ -71,7 +71,7 @@ extension CardBrowserModel {
             let undoBefore = try await store.core.getUndoStatus()
             let result = try await apply(action, selected: selected, mode: mode)
             let undo = try await store.core.getUndoStatus()
-            if !CollectionChange(result.changes).isEmpty, !undo.undo.isEmpty, undo.lastStep != undoBefore.lastStep {
+            if !CollectionChange(result.changes).isEmpty, !undo.undo.isEmpty, undo.lastStep == undoBefore.lastStep &+ 1 {
                 completedAction = CompletedAction(
                     action: action, cardCount: result.cardCount, undoName: undo.undo, undoStep: undo.lastStep
                 )
@@ -79,7 +79,7 @@ extension CardBrowserModel {
         } catch {
             failure = error.message
         }
-        await search()
+        await refreshResults()
     }
 
     private func apply(_ action: BulkAction, selected: [Int64], mode: Mode) async throws(CoreError)
@@ -242,24 +242,35 @@ extension CardBrowserModel {
         }
     }
 
-    /// Undoes the last bulk action, unless the collection was changed in
-    /// another way since (which the core would undo instead). Returns whether
-    /// it was undone.
+    /// Undoes the operation the banner is offering, if that step is still current.
     @discardableResult
     public func undoLastAction() async -> Bool {
-        guard let completedAction, !isPerformingAction else { return false }
-        self.completedAction = nil
+        guard let completedAction else { return false }
+        return await undo(step: completedAction.undoStep)
+    }
+
+    /// Undoes the current operation offered by the Browse menu.
+    @discardableResult
+    public func undoCurrentAction() async -> Bool {
+        guard let availableUndo else { return false }
+        return await undo(step: availableUndo.step)
+    }
+
+    private func undo(step: UInt32) async -> Bool {
+        guard !isPerformingAction else { return false }
+        isPerformingAction = true
+        defer { isPerformingAction = false }
+        completedAction = nil
         failure = nil
+        let applied: Bool
         do {
-            let undo = try await store.core.getUndoStatus()
-            guard undo.lastStep == completedAction.undoStep, undo.undo == completedAction.undoName else { return false }
-            try await store.undo()
+            applied = try await store.undo(ifLastStep: step)
         } catch {
             failure = error.message
             return false
         }
-        await search()
-        return true
+        await refreshResults()
+        return applied
     }
 
     /// Stops offering to undo the last bulk action (the core can still undo

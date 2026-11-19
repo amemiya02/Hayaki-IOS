@@ -4,10 +4,10 @@ import CollectionStore
 import Foundation
 import Observation
 
-/// The card browser: the cards matching a search in Anki's search syntax,
+/// The browser: the cards or notes matching a search in Anki's search syntax,
 /// in the chosen sort order.
 ///
-/// A search asks the core only for the matching card ids, in order, which
+/// A search asks the core only for the matching row ids, in order, which
 /// stays fast with a very large collection. Each card's row is fetched from
 /// the core when it is needed (`loadRow(_:)`, called as the row appears),
 /// together with the rest of its page of rows, and kept until the next search
@@ -59,18 +59,18 @@ public final class CardBrowserModel {
     public var searchText = ""
     var filterSelection: (query: String, filters: [QuickFilter], builtQuery: String)?
 
-    /// The order of the cards. Change it with `setSort(_:)`.
+    /// The order of the results. Change it with `setSort(_:)`.
     public private(set) var sort: CardSort = .default
 
-    /// The columns the cards can be sorted by, named in the core's language.
+    /// The columns the current row mode can be sorted by, named in the core's language.
     /// Empty until the first search.
     public private(set) var sortColumns: [SortColumn] = []
 
-    /// The search that found `cardIDs`, which may differ from `searchText`
+    /// The search that found `rowIDs`, which may differ from `searchText`
     /// while the learner edits it.
     public private(set) var searchedText = ""
 
-    /// The ids of the cards matching the last search, in sort order.
+    /// The ids of the cards or notes matching the last search, in sort order.
     public private(set) var rowIDs: [Int64] = []
 
     /// Card IDs are available while Browse shows cards.
@@ -78,8 +78,7 @@ public final class CardBrowserModel {
 
     @ObservationIgnored private var rowIndices: [Int64: Int] = [:]
 
-    /// The selected cards, which bulk actions act on. Every search keeps only
-    /// the selected cards it still lists.
+    /// Selected row IDs. Every search keeps only the selected rows it still lists.
     public var selection: Set<Int64> = []
 
     /// The decks and tags the quick filters and the Move action offer. Empty
@@ -89,6 +88,7 @@ public final class CardBrowserModel {
     /// The last bulk action, which `undoLastAction()` can undo; nil once it
     /// is undone or can no longer be.
     public internal(set) var completedAction: CompletedAction?
+    private(set) var availableUndo: (name: String, step: UInt32)?
 
     /// Why the last bulk action or undo failed, in the core's words.
     public var failure: String?
@@ -98,6 +98,8 @@ public final class CardBrowserModel {
     @ObservationIgnored var updatingSavedSearches = false
 
     @ObservationIgnored private var searchCount = 0
+    @ObservationIgnored private var finishedSearch = 0
+    @ObservationIgnored private var submittedSearch: String?
 
     /// The rows fetched so far, by card id.
     private var rows: [Int64: CachedRow] = [:]
@@ -129,11 +131,22 @@ public final class CardBrowserModel {
 
     /// Runs the current search in the current sort order.
     public func search() async {
+        submittedSearch = searchText
+        await refreshResults()
+    }
+
+    /// Refreshes the displayed query without submitting any unfinished text.
+    func refreshResults() async {
+        let text = submittedSearch ?? searchText
+        submittedSearch = text
+        await search(text: text)
+    }
+
+    private func search(text: String) async {
         // Searches can overlap (the learner submits while a change triggers
         // one); only the latest may update what is shown.
         searchCount += 1
         let thisSearch = searchCount
-        let text = searchText
         do {
             if !hasLoadedMode {
                 let notes = try await store.core.getConfigBool(.with { $0.key = .browserTableShowNotesMode }).val
@@ -174,7 +187,9 @@ public final class CardBrowserModel {
                 $0.order = order.order
             }
             let found = try await (mode == .cards ? store.core.searchCards(request) : store.core.searchNotes(request))
+            let undo = try await store.core.getUndoStatus()
             guard thisSearch == searchCount else { return }
+            availableUndo = undo.undo.isEmpty ? nil : (undo.undo, undo.lastStep)
             sorts[mode] = order
             sort = order
             columnSelections[mode] = columns
@@ -192,6 +207,7 @@ public final class CardBrowserModel {
                 selection.formIntersection(found.ids)
             }
             searchedText = text
+            finishedSearch = thisSearch
             rows.removeAll(keepingCapacity: true)
             generation += 1
             state = .loaded
@@ -202,9 +218,12 @@ public final class CardBrowserModel {
             rows.removeAll()
             selection = []
             searchedText = text
+            finishedSearch = thisSearch
+            availableUndo = nil
             state = .invalidSearch(message: error.message)
         } catch {
             guard thisSearch == searchCount else { return }
+            availableUndo = nil
             state = .failed(message: error.message)
         }
     }
@@ -217,6 +236,8 @@ public final class CardBrowserModel {
         hasLoadedMode = true
         mode = newMode
         sort = sorts[newMode] ?? .default
+        availableColumns = []
+        sortColumns = []
         state = .loading
         rowIDs = []
         rowIndices = [:]
@@ -235,7 +256,7 @@ public final class CardBrowserModel {
             return
         }
         guard change == searchCount else { return }
-        await search()
+        await refreshResults()
     }
 
     /// Sets the displayed columns, in the learner's chosen order.
@@ -246,7 +267,7 @@ public final class CardBrowserModel {
         do {
             try await writeConfig(columns, key: mode.columnsKey)
             columnSelections[mode] = columns
-            if self.mode == mode { await search() }
+            if self.mode == mode { await refreshResults() }
         } catch {
             failure = error.localizedDescription
         }
@@ -265,7 +286,7 @@ public final class CardBrowserModel {
         } catch {
             failure = error.localizedDescription
         }
-        if self.mode == mode { await search() }
+        if self.mode == mode { await refreshResults() }
     }
 
     private static func validColumns(_ requested: [String], known: Set<String>) -> [String] {
@@ -305,6 +326,7 @@ public final class CardBrowserModel {
     /// with the rest of its page of rows (`pageSize` rows of `cardIDs`), so
     /// scrolling fetches rows a page at a time.
     public func loadRow(_ cardID: Int64) async {
+        guard finishedSearch == searchCount else { return }
         if let cached = rows[cardID], cached.generation == generation { return }
         guard let index = rowIndices[cardID] else { return }
         let page = index / Self.pageSize
@@ -322,10 +344,11 @@ public final class CardBrowserModel {
     /// redraws once per page rather than once per row.
     private func loadRows(_ ids: [Int64]) async {
         let generation = generation
+        let search = searchCount
         let columns = visibleColumnIDs
         var fetched: [(Int64, CachedRow?)] = []
         for id in ids {
-            guard generation == self.generation else { return }
+            guard generation == self.generation, search == searchCount else { return }
             do {
                 let row = try await store.core.browserRowForId(.with { $0.val = id })
                 fetched.append((id, CachedRow(row: CardRow(id: id, row, columnIDs: columns), generation: generation)))
@@ -334,7 +357,7 @@ public final class CardBrowserModel {
                 fetched.append((id, nil))
             }
         }
-        guard generation == self.generation else { return }
+        guard generation == self.generation, search == searchCount else { return }
         // No suspension point in between, so the list redraws once.
         for (id, row) in fetched {
             rows[id] = row
@@ -356,10 +379,17 @@ public final class CardBrowserModel {
     /// calling task is cancelled. The browse screen runs this in its `.task`.
     public func run() async {
         let changes = store.changes()
-        await search()
+        await refreshResults()
         await loadChoices()
         for await change in changes where !change.isDisjoint(with: Self.relevantChanges) {
-            await search()
+            if change == .everything {
+                hasLoadedMode = false
+                sorts.removeAll()
+                columnSelections.removeAll()
+                selection.removeAll()
+                completedAction = nil
+            }
+            await refreshResults()
             if !change.isDisjoint(with: [.deck, .tag, .note, .notetype]) {
                 await loadChoices()
             }

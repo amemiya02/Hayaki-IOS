@@ -74,6 +74,16 @@ public final class CoreClient: Sendable {
         try await worker.run { self.execute(call) }.get()
     }
 
+    /// Atomically applies an undo offer if the core is still at the expected step.
+    public func undo(ifLastStep step: UInt32) async throws(CoreError) -> Anki_Collection_OpChangesAfterUndo? {
+        try await worker.run {
+            self.execute(.getUndoStatus()).flatMap { status in
+                guard status.lastStep == step, !status.undo.isEmpty else { return .success(nil) }
+                return self.execute(.undo()).map(Optional.some)
+            }
+        }.get()
+    }
+
     /// Starts a long operation on the worker thread, queued behind earlier
     /// calls like any other, and returns at once. The operation polls the
     /// core's progress every `pollingInterval` while it runs; the core itself
