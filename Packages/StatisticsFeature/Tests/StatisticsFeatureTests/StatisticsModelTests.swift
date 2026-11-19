@@ -1,5 +1,6 @@
 import CollectionStore
 import CollectionTesting
+import Foundation
 import StatisticsFeature
 import Testing
 
@@ -43,6 +44,202 @@ struct StatisticsModelTests {
         }
     }
 
+    @Test("Review counts and study time follow the period and deck, and feed the calendar")
+    func dailyReviews() async throws {
+        try await withTemporaryCollection { store in
+            let spanish = try await store.addSpanishWithKnownHistory()
+            let spanishHistory = try await store.addBasicNotes(count: 1, toDeck: spanish)
+            try await store.makeReviewCardsDueToday(spanishHistory, intervalDays: 40)
+            try await store.review(spanishHistory[0], rating: .good, daysAgo: 37, seconds: 11)
+
+            let other = try await store.addDeck(named: "Other")
+            let otherCards = try await store.addBasicNotes(count: 1, toDeck: other)
+            try await store.review(otherCards[0], rating: .good, daysAgo: 2, seconds: 7)
+
+            let model = StatisticsModel(store: store)
+            await model.refresh()
+            let all = try #require(model.graphs)
+            #expect(all.reviewDays.map(\.offset) == [-2, 0])
+            #expect(all.reviewDays.map(\.count) == [1, 3])
+            #expect(all.reviewDays.map(\.milliseconds) == [7_000, 9_000])
+
+            model.scope = .deck(id: spanish)
+            model.period = .threeMonths
+            await model.refresh()
+            let deck = try #require(model.graphs)
+            #expect(deck.reviewDays.map(\.offset) == [-37, 0])
+            #expect(deck.reviewDays.map(\.count) == [1, 3])
+            #expect(deck.reviewDays.map(\.milliseconds) == [11_000, 9_000])
+            #expect(deck.reviewDays.last?.entries.map(\.count) == [1, 0, 1, 1, 0])
+        }
+    }
+
+    @Test("Forecast filters scheduled days and overdue cards, and calendar uses the same study days as reviews")
+    func forecastAndCalendar() async throws {
+        try await withTemporaryCollection { store in
+            let spanish = try await store.addDeck(named: "Spanish")
+            let spanishCards = try await store.addBasicNotes(count: 6, toDeck: spanish)
+            try await store.review(spanishCards[0], rating: .again, daysAgo: 2)
+            try await store.makeDue(inDays: 1, [spanishCards[1]])
+            try await store.makeDue(inDays: 45, [spanishCards[2]])
+            try await store.makeOverdue(byDays: 2, [spanishCards[3]])
+            try await store.makeDue(inDays: 4, [spanishCards[4]])
+            try await store.suspend([spanishCards[4]])
+            try await store.review(spanishCards[5], rating: .good)
+            try await store.makeDue(inDays: 7, [spanishCards[0], spanishCards[5]])
+            let other = try await store.addDeck(named: "Other")
+            let otherCards = try await store.addBasicNotes(count: 1, toDeck: other)
+            try await store.makeDue(inDays: 1, otherCards)
+
+            let model = StatisticsModel(store: store)
+            await model.refresh()
+            #expect(model.graphs?.forecast().tomorrow == 2)
+
+            model.scope = .deck(id: spanish)
+            await model.refresh()
+            let month = try #require(model.graphs)
+            #expect(month.forecast().days.map(\.offset) == [1, 7])
+            #expect(month.forecast().days.map(\.count) == [1, 2])
+            #expect(month.forecast().hasBacklog)
+            #expect(month.forecast(includeBacklog: true).days.map(\.offset) == [-2, 1, 7])
+            #expect(month.forecast(includeBacklog: true).total == 4)
+
+            let calendar = Calendar.statisticsCalendar
+            let timing = try await store.core.schedTimingToday()
+            let cutoff = Date(timeIntervalSince1970: TimeInterval(timing.nextDayAt))
+            let expectedToday = calendar.date(byAdding: .day, value: -1, to: calendar.startOfDay(for: cutoff))
+            let expectedEarlier = calendar.date(byAdding: .day, value: -3, to: calendar.startOfDay(for: cutoff))
+            #expect(month.activityDays().map(\.date) == [expectedEarlier, expectedToday].compactMap { $0 })
+            #expect(month.activityDays().map(\.count) == [1, 1])
+
+            model.period = .threeMonths
+            await model.refresh()
+            #expect(model.graphs?.forecast().days.map(\.offset) == [1, 7, 45])
+        }
+    }
+
+    @Test("Scheduling charts use interval, hourly, added and true retention data from the collection")
+    func schedulingCharts() async throws {
+        try await withTemporaryCollection { store in
+            let spanish = try await store.addSpanishWithKnownHistory()
+            let cards = try await store.addBasicNotes(count: 2, toDeck: spanish)
+            try await store.makeReviewCardsDueToday([cards[0]], intervalDays: 10)
+            try await store.makeReviewCardsDueToday([cards[1]], intervalDays: 40)
+
+            let model = StatisticsModel(store: store)
+            model.scope = .deck(id: spanish)
+            await model.refresh()
+            let stats = try #require(model.graphs)
+
+            #expect(stats.addedDays.map(\.offset) == [0])
+            #expect(stats.addedDays.map(\.count) == [9])
+            #expect(stats.hourlyReviews.count == 24)
+            #expect(stats.hourlyReviews.reduce(0) { $0 + $1.count } == 3)
+            #expect(stats.hourlyReviews.reduce(0) { $0 + $1.correct } == 2)
+            let today = try #require(stats.trueRetention.first { $0.window == .today })
+            #expect(today.young.passed == 1)
+            #expect(today.young.failed == 0)
+            #expect(today.mature.passed == 1)
+            #expect(today.mature.failed == 0)
+            #expect(today.combined.rate == 1)
+            #expect(stats.distributions.map(\.kind) == [.intervals, .ease])
+            let intervals = try #require(stats.distributions.first)
+            #expect(intervals.total == 4)
+            #expect(intervals.buckets.contains { $0.value == 10 && $0.count >= 1 })
+            #expect(intervals.buckets.contains { $0.value == 40 && $0.count >= 1 })
+        }
+    }
+
+    @Test("FSRS replaces ease with stability, difficulty and retrievability distributions")
+    func fsrsDistributions() async throws {
+        try await withTemporaryCollection { store in
+            let deck = try await store.addDeck(named: "FSRS")
+            let cards = try await store.addBasicNotes(count: 2, toDeck: deck)
+            try await store.makeReviewCardsDueToday([cards[0]], intervalDays: 5)
+            try await store.modify(.setConfigJson(.with {
+                $0.key = "fsrs"
+                $0.valueJson = Data("true".utf8)
+            }))
+            var card = try await store.core.getCard(.with { $0.cid = cards[0] })
+            card.memoryState = .with {
+                $0.stability = 9
+                $0.difficulty = 5.5
+            }
+            let reviewedCard = card
+            try await store.modify(.updateCards(.with { $0.cards = [reviewedCard] }))
+
+            let model = StatisticsModel(store: store)
+            model.scope = .deck(id: deck)
+            await model.refresh()
+            let graphs = try #require(model.graphs)
+            #expect(graphs.distributions.map(\.kind) == [.intervals, .stability, .difficulty, .retrievability])
+            let stability = try #require(graphs.distributions.first { $0.kind == .stability })
+            #expect(stability.buckets.map(\.value) == [9])
+            #expect(stability.buckets.map(\.count) == [1])
+            let difficulty = try #require(graphs.distributions.first { $0.kind == .difficulty })
+            #expect(difficulty.buckets.map(\.value) == [50])
+            #expect(difficulty.typicalValue == 50)
+            let retrievability = try #require(graphs.distributions.first { $0.kind == .retrievability })
+            #expect(retrievability.total == 1)
+            #expect(retrievability.estimatedRememberedCards == retrievability.estimatedRememberedNotes)
+            let remembered = try #require(retrievability.estimatedRememberedCards)
+            #expect(remembered > 0 && remembered <= 1)
+        }
+    }
+
+    @Test("Anki search expressions filter charts and can be corrected after an error")
+    func searchScope() async throws {
+        try await withTemporaryCollection { store in
+            let deck = try await store.addDeck(named: "Languages::Spanish")
+            let cards = try await store.addBasicNotes(count: 2, toDeck: deck)
+            let tagged = try await store.core.getCard(.with { $0.cid = cards[0] }).noteID
+            try await store.modify(.addNoteTags(.with { $0.noteIds = [tagged]; $0.tags = "included" }))
+            try await store.review(cards[0], rating: .good)
+
+            let model = StatisticsModel(store: store)
+            model.scope = .search(#"deck:"Languages::Spanish" tag:included"#)
+            await model.refresh()
+            #expect(model.graphs?.cardCounts.total == 1)
+            #expect(model.graphs?.reviewDays.map(\.count) == [1])
+
+            model.scope = .search("(")
+            await model.refresh()
+            guard case .failed = model.state else {
+                Issue.record("A malformed search should show an error")
+                return
+            }
+            model.scope = .deck(id: deck)
+            await model.refresh()
+            #expect(model.state == .loaded)
+            #expect(model.graphs?.cardCounts.total == 2)
+        }
+    }
+
+    @Test("Calendar weekday, inactive cards and forecast backlog preferences are saved in the collection")
+    func chartPreferences() async throws {
+        try await withTemporaryCollection { store in
+            try await store.addSpanishWithKnownHistory()
+            let model = StatisticsModel(store: store)
+            await model.refresh()
+            #expect(model.graphs?.cardCounts.count(.suspended) == 1)
+
+            await model.setPreference(.firstWeekday(.friday))
+            await model.setPreference(.includeBacklog(false))
+            await model.setPreference(.separateInactive(false))
+
+            let reopened = StatisticsModel(store: store)
+            await reopened.refresh()
+            #expect(reopened.preferences.firstWeekday == .friday)
+            #expect(reopened.preferences.includeBacklog == false)
+            #expect(reopened.preferences.separateInactive == false)
+            let combined = try #require(reopened.graphs?.cardCounts(separateInactive: false))
+            #expect(combined.count(.new) == 4)
+            #expect(combined.count(.suspended) == 0)
+            #expect(combined.count(.buried) == 0)
+            #expect(combined.total == 7)
+        }
+    }
+
     @Test("Card counts divide the cards between new, learning, young, mature, suspended and buried")
     func cardCounts() async throws {
         try await withTemporaryCollection { store in
@@ -52,7 +249,7 @@ struct StatisticsModelTests {
 
             let counts = try #require(model.graphs?.cardCounts)
             #expect(counts.summary == [
-                "New: 2", "Learning: 1", "Young: 1", "Mature: 1", "Suspended: 1", "Buried: 1",
+                "New: 2", "Learning: 1", "Relearning: 0", "Young: 1", "Mature: 1", "Suspended: 1", "Buried: 1",
             ])
             #expect(counts.total == 7)
             #expect(counts.fraction(.new) == 2.0 / 7.0)

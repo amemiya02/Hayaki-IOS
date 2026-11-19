@@ -2,6 +2,7 @@ import BrowseFeature
 import CollectionStore
 import DecksFeature
 import NoteEditorFeature
+import PackagesFeature
 import ReminderFeature
 import SettingsFeature
 import StatisticsFeature
@@ -16,6 +17,7 @@ import SyncFeature
 struct SectionsView: View {
     let store: CollectionStore
     let sync: SyncModel
+    let backups: BackupModel
     @State private var selection: AppSection = .decks
 
     var body: some View {
@@ -36,7 +38,7 @@ struct SectionsView: View {
                 Label { Text("Stats", bundle: .module) } icon: { Image(systemName: StatisticsSection.systemImage) }
             }
             Tab(value: AppSection.more) {
-                SettingsScreen(store: store, sync: sync)
+                SettingsScreen(store: store, sync: sync, backups: backups)
             } label: {
                 Label { SettingsSection.title } icon: { Image(systemName: SettingsSection.systemImage) }
             }

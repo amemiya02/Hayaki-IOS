@@ -5,59 +5,95 @@ import SwiftUI
 /// count and share listed below it.
 struct CardCountsSection: View {
     let counts: CardCounts
+    @Binding var separateInactive: Bool
+    @State private var angle: Int?
+
+    private var selected: CardCounts.Entry? {
+        guard let angle else { return nil }
+        var start = 0
+        return shownEntries.first { entry in
+            start += entry.count
+            return angle <= start
+        }
+    }
 
     var body: some View {
-        StatisticsSectionView(
-            title: Text("Card Counts", bundle: .module),
-            emptyMessage: counts.isEmpty ? Text("There are no cards here yet.", bundle: .module) : nil
-        ) {
-            Chart(shownEntries) { entry in
-                SectorMark(
-                    angle: .value(Text("Cards", bundle: .module), entry.count),
-                    innerRadius: .ratio(0.6),
-                    angularInset: 1.5
-                )
-                .cornerRadius(3)
-                .foregroundStyle(by: .value(Text("State", bundle: .module), entry.state.title))
-                .accessibilityLabel(entry.state.title)
-                .accessibilityValue(Text(accessibilityValue(entry)))
-            }
-            .chartForegroundStyleScale(
-                domain: shownEntries.map(\.state.title),
-                range: shownEntries.map(\.state.color)
-            )
-            .chartLegend(.hidden)
-            .chartBackground { _ in
-                VStack {
-                    Text(counts.total, format: .number)
-                        .font(.title2.bold().monospacedDigit())
-                    Text("Total", bundle: .module)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+        Section {
+            Toggle(isOn: $separateInactive) { Text("Separate Suspended and Buried Cards", bundle: .module) }
+            if counts.isEmpty {
+                Text("There are no cards here yet.", bundle: .module)
+                    .foregroundStyle(.secondary)
+            } else {
+                chart
+                ForEach(shownRows) { entry in
+                    countRow(entry)
                 }
-                .accessibilityHidden(true)
             }
-            .frame(height: 220)
-            .padding(.vertical, 8)
+        } header: {
+            Text("Card Counts", bundle: .module)
+        }
+        .onChange(of: counts) { angle = nil }
+    }
 
-            ForEach(counts.entries) { entry in
-                LabeledContent {
-                    Text(
-                        "\(entry.count, format: .number) (\(counts.fraction(entry.state), format: .percent.precision(.fractionLength(0))))",
-                        bundle: .module
-                    )
-                    .monospacedDigit()
-                } label: {
-                    Label {
-                        Text(entry.state.title)
-                    } icon: {
-                        Image(systemName: "circle.fill")
-                            .foregroundStyle(entry.state.color)
-                            .accessibilityHidden(true)
+    private var chart: some View {
+        Chart(shownEntries) { entry in
+            SectorMark(
+                angle: .value(Text("Cards", bundle: .module), entry.count),
+                innerRadius: .ratio(0.6),
+                angularInset: 1.5
+            )
+            .cornerRadius(3)
+            .foregroundStyle(by: .value(Text("State", bundle: .module), entry.state.title))
+            .accessibilityLabel(entry.state.title)
+            .accessibilityValue(Text(accessibilityValue(entry)))
+        }
+        .chartForegroundStyleScale(
+            domain: shownEntries.map(\.state.title),
+            range: shownEntries.map(\.state.color)
+        )
+        .chartLegend(.hidden)
+        .chartAngleSelection(value: $angle)
+        .chartBackground { _ in
+            VStack {
+                Text(selected?.count ?? counts.total, format: .number)
+                    .font(.title2.bold().monospacedDigit())
+                Group {
+                    if let selected {
+                        Text(selected.state.title)
+                    } else {
+                        Text("Total", bundle: .module)
                     }
                 }
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            }
+            .accessibilityHidden(true)
+        }
+        .frame(height: 220)
+        .padding(.vertical, 8)
+
+    }
+
+    private func countRow(_ entry: CardCounts.Entry) -> some View {
+        LabeledContent {
+            Text(
+                "\(entry.count, format: .number) (\(counts.fraction(entry.state), format: .percent.precision(.fractionLength(0))))",
+                bundle: .module
+            )
+            .monospacedDigit()
+        } label: {
+            Label {
+                Text(entry.state.title)
+            } icon: {
+                Image(systemName: "circle.fill")
+                    .foregroundStyle(entry.state.color)
+                    .accessibilityHidden(true)
             }
         }
+    }
+
+    private var shownRows: [CardCounts.Entry] {
+        counts.entries.filter { separateInactive || ($0.state != .suspended && $0.state != .buried) }
     }
 
     /// Only states that have cards get a slice.
@@ -80,6 +116,7 @@ extension CardState {
         switch self {
         case .new: .blue
         case .learning: .orange
+        case .relearning: .red
         case .young: .mint
         case .mature: .green
         case .suspended: .yellow
