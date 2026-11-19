@@ -20,6 +20,7 @@ public final class SyncModel {
         /// The two sides cannot be merged; one must replace the other. Waits
         /// for `upload()`, `download()` or `keepBoth()`.
         case choosingDirection(FullSyncChoice)
+        case fullSyncRequested
         case synced(SyncOutcome)
         case failed(SyncFailure)
 
@@ -51,6 +52,7 @@ public final class SyncModel {
     public private(set) var mediaStatus: MediaSyncStatus = .idle
 
     private var statusBeforeDestinationChange: Status?
+    private var markingFullSync = false
 
     public var isChangingDestination: Bool { statusBeforeDestinationChange != nil }
 
@@ -84,7 +86,8 @@ public final class SyncModel {
 
     /// Whether signing in or a collection or media sync is under way.
     public var isBusy: Bool {
-        switch status {
+        if markingFullSync { return true }
+        return switch status {
         case .signingIn, .syncing: true
         default:
             if case .syncing = mediaStatus { true } else { false }
@@ -239,6 +242,37 @@ public final class SyncModel {
         case .noChanges, .normalSync, .UNRECOGNIZED:
             // A finished normal sync reports no further changes required.
             await finishCollectionSync(SyncOutcome(kind: .merged, serverMessage: response.serverMessage.nilIfEmpty))
+        }
+    }
+
+    public var canForceFullSync: Bool {
+        guard store.allowsNewProfileWork, account != nil, !isBusy, !isChangingDestination else { return false }
+        if case .choosingDirection = status { return false }
+        return status != .fullSyncRequested
+    }
+
+    /// Asks the core to require an upload or download at the next sync.
+    @discardableResult
+    public func forceFullSync() async -> Bool {
+        guard canForceFullSync, let account else { return false }
+        markingFullSync = true
+        defer { markingFullSync = false }
+
+        // The pinned core exposes the database command Android uses for
+        // Collection.setSchemaModified(). Keep its schema and modified times
+        // newer than the prior sync even if the device's clock changed.
+        let now = Int64(Date().timeIntervalSince1970 * 1_000)
+        let command = Data("""
+            {"kind":"query","sql":"UPDATE col SET scm=max(?, scm+1, ls+1), mod=max(?, mod+1)","args":[\(now),\(now)],"first_row_only":false}
+            """.utf8)
+        do {
+            _ = try await store.core.runDbCommand(.with { $0.json = command })
+            store.signal(.everything)
+            status = .fullSyncRequested
+            return true
+        } catch {
+            status = .failed(SyncFailure(error, server: account.server, signingIn: false))
+            return false
         }
     }
 
