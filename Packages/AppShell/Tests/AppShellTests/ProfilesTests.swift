@@ -204,6 +204,45 @@ struct ProfilesTests {
         try await reopened.close()
     }
 
+    @Test("An active sync blocks switching until the core stops")
+    func switchWaitsForActiveSync() async throws {
+        let folder = try TemporaryFolder()
+        let location = CollectionLocation(folder: folder.url.appendingPathComponent("Collection"))
+        let backups = folder.url.appendingPathComponent("Backups")
+        let suite = "HayakiProfilesTests.\(UUID())"
+        let preferences = try #require(UserDefaults(suiteName: suite))
+        defer { preferences.removePersistentDomain(forName: suite) }
+        let storage = ProfileTestAccount()
+        let server = try ListeningSocket()
+        let app = AppModel(
+            location: { location }, backupFolder: { backups }, language: "en",
+            preferences: preferences, accountStorage: { _ in storage }
+        )
+        await app.open()
+        let original = app.activeProfile
+        let second = try app.addProfile(named: "Second")
+        let sync = try #require(app.sync)
+        sync.selectDestination(.selfHosted)
+        sync.serverAddress = server.address
+        sync.userName = "alice"
+        sync.password = "passphrase"
+
+        let signingIn = Task { await sync.signIn() }
+        defer { signingIn.cancel() }
+        try await eventually("the core to contact the server") { sync.isBusy }
+        await #expect(throws: ProfileError.busy) { try await app.switchProfile(to: second.id) }
+        #expect(app.activeProfile == original)
+        try await Task.sleep(for: .milliseconds(500))
+        sync.cancel()
+        await signingIn.value
+        #expect(sync.status.failure?.reason == .cancelled)
+
+        try await app.switchProfile(to: second.id)
+        #expect(app.activeProfile == second)
+        #expect(app.sync?.destination == .ankiWeb)
+        try await app.store?.close()
+    }
+
     private func signIn(_ model: SyncModel, server: SyncServer, user: String, password: String) async {
         model.selectDestination(.selfHosted)
         model.serverAddress = server.address
