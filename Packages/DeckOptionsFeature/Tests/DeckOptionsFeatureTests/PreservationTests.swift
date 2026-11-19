@@ -81,6 +81,34 @@ struct PreservationTests {
         }
     }
 
+    @Test("Saving a preset with FSRS 5 weights keeps its legacy weights and effective behavior")
+    func preservesLegacyFSRSWeights() async throws {
+        try await withTemporaryCollection { store in
+            let deck = try await store.addDeck(named: "Legacy weights")
+            let options = try await store.core.getDeckConfigsForUpdate(.with { $0.did = deck })
+            let presetID = options.currentDeck.configID
+            let defaults = options.defaults.config.fsrsParams6
+            let weights = Array(defaults.prefix(19))
+            let legacy = try await store.core.getDeckConfigLegacy(.with { $0.dcid = presetID })
+            var payload = try #require(JSONSerialization.jsonObject(with: legacy.json) as? [String: Any])
+            payload["fsrsParams5"] = weights
+            let encoded = try JSONSerialization.data(withJSONObject: payload)
+            _ = try await store.core.addOrUpdateDeckConfigLegacy(.with { $0.json = encoded })
+
+            let raw = try await store.core.getDeckConfig(.with { $0.dcid = presetID })
+            #expect(raw.config.fsrsParams5 == weights)
+            #expect(raw.config.fsrsParams6.isEmpty)
+            let model = await openOptions(store, deck: deck)
+            #expect(model.fsrsParameters == weights)
+
+            model.applyAllParentLimits = true
+            #expect(await model.save())
+            let saved = try await store.core.getDeckConfig(.with { $0.dcid = presetID })
+            #expect(saved.config.fsrsParams5 == weights)
+            #expect(await openOptions(store, deck: deck).fsrsParameters == weights)
+        }
+    }
+
     /// One presented option, edited on the screen, and the field of the core's
     /// message it must change.
     enum Edit: String, CaseIterable, CustomTestStringConvertible {

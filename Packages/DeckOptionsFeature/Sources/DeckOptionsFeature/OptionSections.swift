@@ -331,10 +331,6 @@ extension ReviewMix {
 }
 
 extension ReviewSortOrder {
-    var title: Text {
-        title(fsrs: false)
-    }
-
     func title(fsrs: Bool) -> Text {
         switch self {
         case .day: Text("Due date, then random", bundle: .module)

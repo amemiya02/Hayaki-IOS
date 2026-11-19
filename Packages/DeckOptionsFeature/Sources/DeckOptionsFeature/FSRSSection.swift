@@ -248,7 +248,7 @@ struct RetentionStepper<Label: View>: View {
 
     var body: some View {
         Stepper(value: Binding {
-            Int((value * 100).rounded())
+            Int((DeckOptionsModel.validDesiredRetention(value) * 100).rounded())
         } set: { value = Float($0) / 100 }, in: 70...99) {
             LabeledContent {
                 Text(value, format: .percent.precision(.fractionLength(0)))
