@@ -97,18 +97,18 @@
         }
       }
     },
-    "Card %llu" : {
+    "Card %u" : {
       "localizations" : {
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "カード %llu"
+            "value" : "カード %u"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "卡片 %llu"
+            "value" : "卡片 %u"
           }
         }
       }
