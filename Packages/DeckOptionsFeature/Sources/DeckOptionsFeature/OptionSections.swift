@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// New cards and reviews per day, set on the preset.
+/// Shared preset limits and two levels of overrides for the deck.
 struct DailyLimitsSection: View {
     @Bindable var model: DeckOptionsModel
 
@@ -12,11 +12,67 @@ struct DailyLimitsSection: View {
             NumberRow(value: $model.reviewsPerDay, identifier: "reviews-per-day") {
                 Text("Maximum reviews/day", bundle: .module)
             }
+            DisclosureGroup {
+                LimitOverrideRow(value: $model.deckNewCardsLimit, suggested: model.newCardsPerDay, identifier: "deck-new-limit") {
+                    Text("New cards/day", bundle: .module)
+                }
+                LimitOverrideRow(value: $model.deckReviewsLimit, suggested: model.reviewsPerDay, identifier: "deck-review-limit") {
+                    Text("Maximum reviews/day", bundle: .module)
+                }
+            } label: {
+                scopeLabel(Text("This deck", bundle: .module), active: model.deckNewCardsLimit != nil || model.deckReviewsLimit != nil)
+            }
+            DisclosureGroup {
+                LimitOverrideRow(value: $model.todayNewCardsLimit, suggested: model.suggestedTodayNewCardsLimit, identifier: "today-new-limit") {
+                    Text("New cards/day", bundle: .module)
+                }
+                LimitOverrideRow(value: $model.todayReviewsLimit, suggested: model.suggestedTodayReviewsLimit, identifier: "today-review-limit") {
+                    Text("Maximum reviews/day", bundle: .module)
+                }
+            } label: {
+                scopeLabel(Text("Today only", bundle: .module), active: model.todayNewCardsLimit != nil || model.todayReviewsLimit != nil)
+            }
+            Toggle(isOn: $model.newCardsIgnoreReviewLimit) {
+                Text("New cards ignore review limit", bundle: .module)
+            }
+            Toggle(isOn: $model.applyAllParentLimits) {
+                Text("Limits start from top", bundle: .module)
+            }
         } header: {
             Text("Daily Limits", bundle: .module)
         } footer: {
-            if model.deckHasOwnLimits {
-                Text("This deck has its own limits, set in Anki on another device. They apply instead of these and are kept.", bundle: .module)
+            Text("The first two values are shared by every deck using this preset. Deck and today overrides affect this deck. Both switches apply to the whole collection.", bundle: .module)
+        }
+    }
+
+    private func scopeLabel(_ title: Text, active: Bool) -> some View {
+        LabeledContent {
+            if active { Text("Override active", bundle: .module) }
+        } label: {
+            title
+        }
+    }
+}
+
+private struct LimitOverrideRow<Label: View>: View {
+    @Binding var value: Int?
+    let suggested: Int
+    let identifier: String
+    @ViewBuilder let label: Label
+
+    var body: some View {
+        Toggle(isOn: Binding {
+            value != nil
+        } set: { enabled in
+            value = enabled ? suggested : nil
+        }) {
+            label
+        }
+        if value != nil {
+            NumberRow(value: Binding {
+                value ?? suggested
+            } set: { value = $0 }, identifier: identifier) {
+                Text("Limit", bundle: .module)
             }
         }
     }
