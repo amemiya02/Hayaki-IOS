@@ -72,6 +72,38 @@
           }
         }
       }
+    },
+    "NSMicrophoneUsageDescription" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "学習やノートの編集で音声を録音するときに、Hayaki はマイクを使います。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "学习或编辑笔记时，Hayaki 会使用麦克风录音。"
+          }
+        }
+      }
+    },
+    "NSSpeechRecognitionUsageDescription" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "許可した場合、Hayaki はカードテンプレートの要求に応じて端末上で音声を認識します。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "经你允许后，Hayaki 会在本机为卡片模板进行语音识别。"
+          }
+        }
+      }
     }
   },
   "version" : "1.0"
