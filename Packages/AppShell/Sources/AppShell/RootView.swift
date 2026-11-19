@@ -3,11 +3,15 @@ import PackagesFeature
 import ReminderFeature
 import SwiftUI
 import SyncFeature
+import UniformTypeIdentifiers
 
 /// The whole app: a short opening state while the collection opens, then the
 /// sections.
 public struct RootView: View {
     @State private var model: AppModel
+    @State private var choosingRecoveryPackage = false
+    @State private var recoveryPackage: URL?
+    @State private var recoveryPickerError: String?
 
     public init() {
         #if DEBUG
@@ -47,10 +51,48 @@ public struct RootView: View {
                     }
                 } description: {
                     Text(message)
+                } actions: {
+                    if model.canRecover {
+                        Button {
+                            choosingRecoveryPackage = true
+                        } label: {
+                            Text("Choose Recovery Package", bundle: .module)
+                        }
+                    }
                 }
             }
         }
         .task { await model.open() }
+        .fileImporter(isPresented: $choosingRecoveryPackage, allowedContentTypes: [.ankiCollectionPackage]) { result in
+            switch result {
+            case .success(let url): recoveryPackage = url
+            case .failure(let error): recoveryPickerError = error.localizedDescription
+            }
+        }
+        .alert(
+            Text("Restore Collection?", bundle: .module),
+            isPresented: Binding(get: { recoveryPackage != nil }, set: { if !$0 { recoveryPackage = nil } }),
+            presenting: recoveryPackage
+        ) { package in
+            Button(role: .destructive) {
+                Task { await model.recoverCollection(from: package) }
+            } label: {
+                Text("Restore", bundle: .module)
+            }
+            Button(role: .cancel) { recoveryPackage = nil } label: {
+                Text("Cancel", bundle: .module)
+            }
+        } message: { package in
+            Text("Restore “\(package.lastPathComponent)” to this device? The damaged database is copied to Backups first.", bundle: .module)
+        }
+        .alert(
+            Text("Could Not Open Package", bundle: .module),
+            isPresented: Binding(get: { recoveryPickerError != nil }, set: { if !$0 { recoveryPickerError = nil } })
+        ) {
+            Button { recoveryPickerError = nil } label: { Text("OK", bundle: .module) }
+        } message: {
+            Text(verbatim: recoveryPickerError ?? "")
+        }
         // A collection package or deck package opened from Files, AirDrop or
         // another app's share sheet.
         .onOpenURL { url in
