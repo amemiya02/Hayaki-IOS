@@ -88,9 +88,16 @@ final class SyncServer {
     /// Everything the server has logged so far, one line per request.
     var log: String { Self.withoutColour(output.text) }
 
+    var processIdentifier: Int32 { process.processIdentifier }
+
+    func resume() {
+        if process.isRunning { _ = Darwin.kill(processIdentifier, SIGCONT) }
+    }
+
     func stop() {
         if process.isRunning {
             process.terminate()
+            resume()
             process.waitUntilExit()
         }
     }

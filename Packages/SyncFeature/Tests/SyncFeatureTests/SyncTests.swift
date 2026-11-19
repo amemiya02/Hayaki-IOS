@@ -1,6 +1,7 @@
 import CollectionStore
 import CollectionTesting
 import Foundation
+import Observation
 import SyncFeature
 import Testing
 
@@ -37,6 +38,42 @@ struct SyncTests {
                 await phoneSync.sync()
                 let receivedAudio = phone.location.mediaFolder.appendingPathComponent("example.mp3")
                 #expect(try Data(contentsOf: receivedAudio) == audio)
+            }
+        }
+    }
+
+    @Test("Media shows progress while the collection is usable, and Cancel lets it resume on retry")
+    func cancelAndRetryMedia() async throws {
+        let server = try await SyncServer(users: [("alice", "correct horse")])
+        try await withTemporaryCollection { phone in
+            try await phone.addBasicNotes(count: 1, toDeck: phone.addDeck(named: "Spanish"))
+            let media = Data("a media transfer in progress".utf8)
+            try media.write(to: phone.location.mediaFolder.appendingPathComponent("cancel-retry.png"))
+            let model = try await signedIn(phone, to: server)
+            await model.sync()
+
+            pauseServerWhenMediaStarts(server, model: model)
+            async let uploading: Void = model.upload()
+            try await eventually(timeout: .seconds(15), "media progress to show while the server is paused") {
+                if case .syncing(.some(let progress)) = model.mediaStatus { !progress.checked.isEmpty } else { false }
+            }
+            #expect(model.status == .synced(SyncOutcome(kind: .uploaded, serverMessage: nil)))
+            #expect(try await phone.cardCount(matching: "deck:Spanish") == 1)
+
+            model.cancel()
+            await uploading
+            #expect(model.mediaStatus == .cancelled)
+            #expect(model.status == .synced(SyncOutcome(kind: .uploaded, serverMessage: nil)))
+
+            server.resume()
+            await model.retryMediaSync()
+            #expect(model.mediaStatus == .synced)
+            try await withTemporaryCollection { tablet in
+                let other = try await signedIn(tablet, to: server)
+                await other.sync()
+                await other.download()
+                let received = tablet.location.mediaFolder.appendingPathComponent("cancel-retry.png")
+                #expect(try Data(contentsOf: received) == media)
             }
         }
     }
@@ -334,5 +371,16 @@ struct SyncTests {
         await model.signIn()
         try #require(model.account != nil, "sign-in failed: \(String(describing: model.status))")
         return model
+    }
+
+    /// Freeze only the local server once collection sync has returned and before
+    /// media starts, so the media stage can be observed and cancelled reliably.
+    private func pauseServerWhenMediaStarts(_ server: SyncServer, model: SyncModel) {
+        let pid = server.processIdentifier
+        withObservationTracking {
+            _ = model.mediaStatus
+        } onChange: {
+            _ = Darwin.kill(pid, SIGSTOP)
+        }
     }
 }

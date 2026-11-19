@@ -89,6 +89,14 @@ public final class SyncModel {
             && !userName.trimmed.isEmpty && !password.isEmpty
     }
 
+    public var canRetryMediaSync: Bool {
+        guard !isBusy, account != nil, case .synced = status else { return false }
+        return switch mediaStatus {
+        case .cancelled, .failed: true
+        default: false
+        }
+    }
+
     public func selectDestination(_ destination: Destination) {
         guard !isBusy, account == nil, destination != self.destination else { return }
         self.destination = destination
@@ -219,6 +227,13 @@ public final class SyncModel {
         cancelRunning?()
     }
 
+    /// Continues a previous media transfer with the same sign-in.
+    public func retryMediaSync() async {
+        guard canRetryMediaSync, let account else { return }
+        SyncClientIdentity.install()
+        await syncMedia(for: account)
+    }
+
     private func fullSync(upload: Bool) async {
         guard let account, case .choosingDirection(let choice) = status,
               upload ? choice.allowsUpload : choice.allowsDownload
@@ -248,7 +263,9 @@ public final class SyncModel {
             _ = try await run(store.core.startMediaSync(account.auth))
             mediaStatus = .synced
         } catch {
-            mediaStatus = .failed(SyncFailure(error, server: account.server, signingIn: false))
+            mediaStatus = error.isInterrupted
+                ? .cancelled
+                : .failed(SyncFailure(error, server: account.server, signingIn: false))
         }
     }
 

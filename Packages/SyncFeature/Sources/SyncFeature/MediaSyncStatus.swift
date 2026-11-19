@@ -3,6 +3,7 @@ public enum MediaSyncStatus: Equatable, Sendable {
     case idle
     case syncing(MediaSyncProgress?)
     case synced
+    case cancelled
     case failed(SyncFailure)
 }
 
