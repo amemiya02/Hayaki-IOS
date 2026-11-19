@@ -4,13 +4,17 @@ import SwiftUI
 struct NotePreviewScreen: View {
     let cards: [DraftCard]
     let mediaFolder: URL
+    let inlineImage: (name: String, dataURL: String)?
     @State private var ordinal: UInt32
     @State private var showsAnswer = false
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 
-    init(cards: [DraftCard], initialOrdinal: UInt32, mediaFolder: URL) {
+    init(
+        cards: [DraftCard], initialOrdinal: UInt32, mediaFolder: URL, inlineImage: (name: String, dataURL: String)? = nil
+    ) {
         self.cards = cards
         self.mediaFolder = mediaFolder
+        self.inlineImage = inlineImage
         _ordinal = State(initialValue: cards.first { $0.id == initialOrdinal }?.id ?? cards.first?.id ?? 0)
     }
 
@@ -20,7 +24,9 @@ struct NotePreviewScreen: View {
                 VStack(spacing: 0) {
                     templates
                     Divider()
-                    CardPreviewView(content: card.content, showsAnswer: showsAnswer, mediaFolder: mediaFolder) {
+                    CardPreviewView(
+                        content: card.content, showsAnswer: showsAnswer, mediaFolder: mediaFolder, inlineImage: inlineImage
+                    ) {
                         showsAnswer = true
                     }
                         .frame(maxWidth: horizontalSizeClass == .regular ? 820 : .infinity)

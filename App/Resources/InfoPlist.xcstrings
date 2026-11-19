@@ -1,6 +1,22 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "NSCameraUsageDescription" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hayakiはノートに追加する写真を撮るためにカメラを使用します。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hayaki 使用相机拍照并将照片添加到笔记。"
+          }
+        }
+      }
+    },
     "CFBundleDisplayName" : {
       "comment" : "The app's name on the Home Screen.",
       "extractionState" : "extracted_with_value",

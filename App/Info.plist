@@ -12,6 +12,8 @@
 -->
 <plist version="1.0">
 <dict>
+	<key>NSCameraUsageDescription</key>
+	<string>Hayaki uses the camera to add a picture to a note.</string>
 	<key>CFBundleDocumentTypes</key>
 	<array>
 		<dict>

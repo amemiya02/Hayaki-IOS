@@ -96,6 +96,20 @@
         text-align: left;
         overflow-x: auto;
     }
+    /* The stock Anki note type places the image and mask canvas together. */
+    #image-occlusion-container {
+        position: relative;
+        margin-inline: auto;
+        max-height: calc(95vh - 40px);
+    }
+    #image-occlusion-container img, #image-occlusion-canvas {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        max-width: none;
+        max-height: none;
+    }
     /* Typed answers, as in Anki. */
     #typeans {
         width: 100%;
@@ -155,6 +169,7 @@
 </style>
 <style id="card-style"></style>
 <script src="/_hayaki/card-template.js"></script>
+<script src="/_hayaki/image-occlusion.js"></script>
 </head>
 <body class="card">
 <div id="qa"></div>

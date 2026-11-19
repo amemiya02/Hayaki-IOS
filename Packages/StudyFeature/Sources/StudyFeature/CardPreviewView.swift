@@ -7,6 +7,7 @@ public struct CardPreviewView: View {
     let mediaFolder: URL
     let onReveal: (() -> Void)?
     @Environment(\.colorScheme) private var colorScheme
+    let inlineImage: (name: String, dataURL: String)?
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     #if os(iOS)
     @State private var audio = CardAudioPlayer()
@@ -14,12 +15,17 @@ public struct CardPreviewView: View {
     #endif
 
     public init(
-        content: CardPreviewContent, showsAnswer: Bool, mediaFolder: URL, onReveal: (() -> Void)? = nil
+        content: CardPreviewContent,
+        showsAnswer: Bool,
+        mediaFolder: URL,
+        inlineImage: (name: String, dataURL: String)? = nil,
+        onReveal: (() -> Void)? = nil
     ) {
         self.content = content
         self.showsAnswer = showsAnswer
         self.mediaFolder = mediaFolder
         self.onReveal = onReveal
+        self.inlineImage = inlineImage
     }
 
     public var body: some View {
@@ -27,7 +33,7 @@ public struct CardPreviewView: View {
         #if os(iOS)
         CardWebView(
             display: CardDisplay(
-                html: side.html, css: content.css, bodyClass: "card card\(content.ordinal + 1)",
+                html: htmlForDisplay(side.html), css: content.css, bodyClass: "card card\(content.ordinal + 1)",
                 isAnswer: showsAnswer, cardID: Int64(content.ordinal)
             ),
             mediaFolder: mediaFolder, zoom: dynamicTypeSize.cardZoom,
@@ -64,5 +70,10 @@ public struct CardPreviewView: View {
         #else
         Text(verbatim: side.html)
         #endif
+    }
+
+    private func htmlForDisplay(_ html: String) -> String {
+        guard let inlineImage else { return html }
+        return html.replacingOccurrences(of: "src=\"\(inlineImage.name)\"", with: "src=\"\(inlineImage.dataURL)\"")
     }
 }
