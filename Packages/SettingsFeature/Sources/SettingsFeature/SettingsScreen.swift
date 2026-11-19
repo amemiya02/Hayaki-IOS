@@ -1,4 +1,5 @@
 import CollectionStore
+import PackagesFeature
 import ReminderFeature
 import SwiftUI
 import SyncFeature
@@ -12,10 +13,12 @@ public enum SettingsSection {
 /// The More section: one row per area, each leading to its own screen.
 public struct SettingsScreen: View {
     private let store: CollectionStore
+    private let backups: BackupModel?
     @State private var sync: SyncModel
 
-    public init(store: CollectionStore, sync: SyncModel? = nil) {
+    public init(store: CollectionStore, sync: SyncModel? = nil, backups: BackupModel? = nil) {
         self.store = store
+        self.backups = backups
         _sync = State(initialValue: sync ?? SyncModel(store: store))
     }
 
@@ -24,6 +27,17 @@ public struct SettingsScreen: View {
             List {
                 SyncSettingsRow(model: sync)
                 ReminderSettingsRow(store: store)
+                if let backups {
+                    NavigationLink {
+                        BackupsScreen(model: backups, sync: sync)
+                    } label: {
+                        Label {
+                            Text("Backups", bundle: .module)
+                        } icon: {
+                            Image(systemName: "externaldrive.badge.clock")
+                        }
+                    }
+                }
                 HelpAndAboutSection(store: store, sync: sync)
             }
             .navigationTitle(SettingsSection.title)

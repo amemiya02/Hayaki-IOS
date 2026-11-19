@@ -28,6 +28,7 @@ public final class BackupModel {
     @ObservationIgnored private let store: CollectionStore
     @ObservationIgnored private let folder: URL
     @ObservationIgnored private let importer: PackageImportModel
+    @ObservationIgnored private var creatingAutomaticBackup = false
 
     public init(store: CollectionStore, folder: URL, importer: PackageImportModel) {
         self.store = store
@@ -44,12 +45,25 @@ public final class BackupModel {
     }
 
     public func createBackup() async {
-        guard status != .creating, !importer.isImporting else { return }
+        guard status != .creating, !creatingAutomaticBackup, !importer.isImporting else { return }
         status = .creating
         do {
             let created = try await store.backUp(to: folder, force: true)
             try reload()
             status = created ? .created : .unchanged
+        } catch {
+            status = .failed(error.localizedDescription)
+        }
+    }
+
+    public func createAutomaticBackup() async {
+        guard status != .creating, !creatingAutomaticBackup, !importer.isImporting else { return }
+        creatingAutomaticBackup = true
+        defer { creatingAutomaticBackup = false }
+        do {
+            if try await store.backUp(to: folder, force: false) {
+                try reload()
+            }
         } catch {
             status = .failed(error.localizedDescription)
         }

@@ -64,12 +64,15 @@ private struct ReadyView: View {
     let model: AppModel
     let packageImport: PackageImportModel
     @State private var sync: SyncModel
+    @State private var backups: BackupModel
+    @Environment(\.scenePhase) private var scenePhase
 
     init(store: CollectionStore, model: AppModel, packageImport: PackageImportModel) {
         self.store = store
         self.model = model
         self.packageImport = packageImport
         _sync = State(initialValue: SyncModel(store: store))
+        _backups = State(initialValue: BackupModel(store: store, folder: packageImport.backupFolder, importer: packageImport))
     }
 
     var body: some View {
@@ -77,14 +80,23 @@ private struct ReadyView: View {
             if model.showsWelcome {
                 WelcomeScreen(sync: sync, onContinue: model.completeWelcome)
             } else {
-                SectionsView(store: store, sync: sync)
+                SectionsView(store: store, sync: sync, backups: backups)
             }
         }
         .packageImport(packageImport)
         .onChange(of: packageImport.step) { _, step in
-            if model.showsWelcome, case .finished = step {
-                model.completeWelcome()
+            if case .finished = step {
+                backups.loadBackups()
+                if model.showsWelcome { model.completeWelcome() }
             }
+        }
+        .task {
+            guard !sync.isBusy else { return }
+            await backups.createAutomaticBackup()
+        }
+        .onChange(of: scenePhase) { _, phase in
+            guard phase == .background, !sync.isBusy else { return }
+            Task { await backups.createAutomaticBackup() }
         }
     }
 }
