@@ -5,17 +5,14 @@ struct ReviewHistorySection: View {
     let graphs: StatisticsGraphs
     @State private var period: StatisticsPeriod = .month
 
-    private var days: [ReviewDay] { graphs.displaying(period).reviewDays }
-    private var earliestDay: Int { period.earliestReviewDay }
-
     @State private var showTime = false
     @State private var showCumulative = false
     @State private var position: Double?
     private var selection: Int? { position.map { Int($0.rounded()) } }
 
-    private var firstDay: Int { earliestDay == .min ? days.first?.offset ?? 0 : earliestDay }
-
     var body: some View {
+        let days = graphs.displaying(period).reviewDays
+        let firstDay = period == .allTime ? days.first?.offset ?? 0 : period.earliestReviewDay
         Section {
             StatisticsPeriodPicker(
                 selection: $period, label: Text("Review Period", bundle: .module),
@@ -27,8 +24,8 @@ struct ReviewHistorySection: View {
                     .foregroundStyle(.secondary)
             } else {
                 Toggle(isOn: $showCumulative) { Text("Running Total", bundle: .module) }
-                chart
-                summary
+                chart(days, firstDay: firstDay)
+                summary(days, firstDay: firstDay)
             }
         } header: {
             Text("Reviews", bundle: .module)
@@ -42,12 +39,12 @@ struct ReviewHistorySection: View {
         }
     }
 
-    private var chart: some View {
+    private func chart(_ days: [ReviewDay], firstDay: Int) -> some View {
         Chart {
             if showCumulative {
-                cumulativeMarks
+                cumulativeMarks(days)
             } else {
-                dailyMarks
+                dailyMarks(days)
             }
             if let selection {
                 RuleMark(x: .value("Day", Double(selection)))
@@ -64,11 +61,11 @@ struct ReviewHistorySection: View {
         .chartXSelection(value: $position)
         .chartYAxisLabel { metric }
         .frame(height: 210)
-        .onChange(of: earliestDay) { position = nil }
+        .onChange(of: period) { position = nil }
     }
 
     @ChartContentBuilder
-    private var cumulativeMarks: some ChartContent {
+    private func cumulativeMarks(_ days: [ReviewDay]) -> some ChartContent {
         let totals = days.reduce(into: [Int]()) { values, day in
             values.append((values.last ?? 0) + value(day))
         }
@@ -85,7 +82,7 @@ struct ReviewHistorySection: View {
     }
 
     @ChartContentBuilder
-    private var dailyMarks: some ChartContent {
+    private func dailyMarks(_ days: [ReviewDay]) -> some ChartContent {
         ForEach(days) { day in
             ForEach(day.entries.indices, id: \.self) { index in
                 let entry = day.entries[index]
@@ -107,7 +104,7 @@ struct ReviewHistorySection: View {
     }
 
     @ViewBuilder
-    private var summary: some View {
+    private func summary(_ days: [ReviewDay], firstDay: Int) -> some View {
         let total = days.reduce(0) { $0 + value($1) }
         let count = days.reduce(0) { $0 + $1.count }
         let numberOfDays = 1 - firstDay

@@ -25,7 +25,7 @@ struct CardCountsSection: View {
                     .foregroundStyle(.secondary)
             } else {
                 chart
-                ForEach(counts.entries) { entry in
+                ForEach(shownRows) { entry in
                     countRow(entry)
                 }
             }
@@ -90,6 +90,10 @@ struct CardCountsSection: View {
                     .accessibilityHidden(true)
             }
         }
+    }
+
+    private var shownRows: [CardCounts.Entry] {
+        counts.entries.filter { separateInactive || ($0.state != .suspended && $0.state != .buried) }
     }
 
     /// Only states that have cards get a slice.
