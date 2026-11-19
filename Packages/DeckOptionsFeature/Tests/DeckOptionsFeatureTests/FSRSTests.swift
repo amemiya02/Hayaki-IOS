@@ -99,6 +99,50 @@ struct FSRSTests {
             #expect(model.canSave)
         }
     }
+
+    @Test("Save and optimize applies pending settings and reloads the preset")
+    func savesWhileOptimizingAllPresets() async throws {
+        try await withTemporaryCollection { store in
+            let deck = try await store.addDeck(named: "Portuguese")
+            try await store.addFSRSHistory(to: deck, cardCount: 160)
+            let model = await openOptions(store, deck: deck)
+            model.fsrsEnabled = true
+            model.newCardsPerDay = 17
+            #expect(await model.saveAndOptimizeAllFSRS())
+            #expect(model.hasChanges == false)
+            #expect(model.fsrsOutcome == .savedAndOptimized)
+            let reopened = await openOptions(store, deck: deck)
+            #expect(reopened.newCardsPerDay == 17)
+            #expect(reopened.fsrsEnabled)
+            #expect(reopened.fsrsParameters.count == 21)
+        }
+    }
+
+    @Test("Review simulator and retention workload use the draft limits without saving them")
+    func simulatesReviewAndWorkload() async throws {
+        try await withTemporaryCollection { store in
+            let deck = try await store.addDeck(named: "Spanish")
+            let model = await openOptions(store, deck: deck)
+            model.fsrsEnabled = true
+            #expect(await model.save())
+            await model.load()
+
+            model.newCardsPerDay = 3
+            var input = model.fsrsSimulationSettings(workload: false)
+            input.days = 14
+            input.additionalNewCards = 12
+            let simulation = try await model.simulateFSRSReviews(input)
+            #expect(simulation.dailyNewCount.count == 14)
+            #expect(simulation.dailyReviewCount.count == 14)
+            #expect(simulation.dailyTimeCost.count == 14)
+            #expect(Array(simulation.dailyNewCount.prefix(4)) == [3, 3, 3, 3])
+
+            let workload = try await model.simulateFSRSWorkload(input)
+            #expect(workload.memorized.keys.sorted() == Array(70...99))
+            #expect(workload.reviewCount[90, default: 0] > 0)
+            #expect(await openOptions(store, deck: deck).newCardsPerDay == 20)
+        }
+    }
 }
 
 private extension CollectionStore {

@@ -3,6 +3,8 @@ import SwiftUI
 struct FSRSSection: View {
     @Bindable var model: DeckOptionsModel
     @State private var editingWeights = false
+    @State private var confirmingOptimizeAll = false
+    @State private var simulation: Simulation?
 
     var body: some View {
         Section {
@@ -20,6 +22,41 @@ struct FSRSSection: View {
             retention
                 .disabled(model.isOptimizingFSRS)
             parameters
+            simulationSection
+                .disabled(model.isOptimizingFSRS)
+                .sheet(item: $simulation) { mode in
+                    FSRSSimulatorScreen(model: model, workload: mode == .workload)
+                }
+        }
+    }
+
+    private enum Simulation: Identifiable {
+        case review, workload
+        var id: Self { self }
+    }
+
+    private var simulationSection: some View {
+        Section {
+            Button {
+                simulation = .workload
+            } label: {
+                Text("Compare Desired Retention", bundle: .module)
+            }
+            .disabled(!model.canSimulateFSRS)
+            Button {
+                simulation = .review
+            } label: {
+                Text("FSRS Simulator", bundle: .module)
+            }
+            .disabled(!model.canSimulateFSRS)
+        } header: {
+            Text("FSRS Simulations", bundle: .module)
+        } footer: {
+            if !model.canSimulateFSRS {
+                Text("Save the preset and weights before running a simulation.", bundle: .module)
+            } else {
+                Text("Experiment with limits and retention to estimate the workload before changing the preset.", bundle: .module)
+            }
         }
     }
 
@@ -96,7 +133,11 @@ struct FSRSSection: View {
             if model.isOptimizingFSRS {
                 if let progress = model.fsrsProgress, progress.total > 0, progress.current < progress.total {
                     ProgressView(value: Double(progress.current), total: Double(progress.total)) {
-                        Text("Optimizing with \(progress.reviews) reviews", bundle: .module)
+                        if progress.totalPresets > 1 {
+                            Text("Preset \(progress.currentPreset) of \(progress.totalPresets) · \(progress.reviews) reviews", bundle: .module)
+                        } else {
+                            Text("Processing \(progress.reviews) reviews", bundle: .module)
+                        }
                     }
                 } else {
                     ProgressView {
@@ -122,6 +163,24 @@ struct FSRSSection: View {
                     Text("Optimize Current Preset", bundle: .module)
                 }
                 .disabled(!model.canOptimizeFSRS)
+                if model.canEvaluateFSRS {
+                    Button {
+                        Task { await model.evaluateFSRS() }
+                    } label: {
+                        Text("Evaluate Parameters", bundle: .module)
+                    }
+                    .disabled(!model.canOptimizeFSRS)
+                }
+                Button {
+                    confirmingOptimizeAll = true
+                } label: {
+                    Text("Save and Optimize All Presets", bundle: .module)
+                }
+                .disabled(!model.canSave)
+                if model.daysSinceLastFSRSOptimization > 30 {
+                    Text("More than 30 days have passed since all presets were optimized.", bundle: .module)
+                        .foregroundStyle(.secondary)
+                }
                 if !model.hasSavedFSRSPreset {
                     Text("Save preset changes before optimizing.", bundle: .module)
                         .foregroundStyle(.secondary)
@@ -141,6 +200,14 @@ struct FSRSSection: View {
                 Text("Optimization uses your review history. Save to apply new parameters.", bundle: .module)
             }
         }
+        .confirmationDialog(Text("Save changes and optimize all presets?", bundle: .module), isPresented: $confirmingOptimizeAll, titleVisibility: .visible) {
+            Button {
+                Task { await model.saveAndOptimizeAllFSRS() }
+            } label: {
+                Text("Save and Optimize", bundle: .module)
+            }
+            Button(role: .cancel) {} label: { Text("Cancel", bundle: .module) }
+        }
     }
 
     @ViewBuilder
@@ -152,6 +219,10 @@ struct FSRSSection: View {
         case .alreadyOptimal(let passed):
             Text("The current parameters already fit your review history.", bundle: .module)
             healthCheck(passed)
+        case .savedAndOptimized:
+            Text("Deck options saved and all presets optimized.", bundle: .module)
+        case .evaluated(let logLoss, let rmse):
+            Text("Log loss \(logLoss, format: .number.precision(.fractionLength(4))) · RMSE \(rmse, format: .percent.precision(.fractionLength(2)))", bundle: .module)
         case .insufficientHistory:
             Text("There is not enough review history for this search. Keep reviewing or broaden the search.", bundle: .module)
         case .cancelled:

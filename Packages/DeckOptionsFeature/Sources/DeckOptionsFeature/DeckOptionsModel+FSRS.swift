@@ -6,9 +6,15 @@ extension DeckOptionsModel {
     public enum FSRSOutcome: Equatable, Sendable {
         case optimized(healthCheckPassed: Bool?)
         case alreadyOptimal(healthCheckPassed: Bool?)
+        case savedAndOptimized
+        case evaluated(logLoss: Float, rmse: Float)
         case insufficientHistory
         case cancelled
         case failed(String)
+    }
+
+    enum FSRSActivity {
+        case optimize, optimizeAll, evaluate
     }
 
     /// FSRS is enabled for the whole collection.
@@ -95,7 +101,11 @@ extension DeckOptionsModel {
         return "preset:\"\(name)\" -is:suspended"
     }
 
-    public var isOptimizingFSRS: Bool { fsrsOptimization != nil }
+    public var isOptimizingFSRS: Bool { fsrsActivity != nil }
+
+    var canEvaluateFSRS: Bool { settings.fsrsLegacyEvaluate }
+
+    var daysSinceLastFSRSOptimization: UInt32 { settings.daysSinceLastFsrsOptimize }
 
     public var canOptimizeFSRS: Bool {
         canSave && fsrsEnabled && hasSavedFSRSPreset
@@ -110,22 +120,67 @@ extension DeckOptionsModel {
         guard canOptimizeFSRS else { return }
         let preset = selectedID
         let params = fsrsParameters
-        let search = fsrsParameterSearch.trimmingCharacters(in: .whitespacesAndNewlines)
         let request = Anki_Scheduler_ComputeFsrsParamsRequest.with {
-            $0.search = search.isEmpty ? defaultFSRSParameterSearch : search
+            $0.search = effectiveFSRSParameterSearch
             $0.currentParams = params
             $0.ignoreRevlogsBeforeMs = fsrsIgnoreHistoryBeforeMilliseconds
             $0.numOfRelearningSteps = fsrsRelearningStepsInOneDay
             $0.healthCheck = fsrsHealthCheck
         }
 
-        // The core publishes its initial progress immediately. Poll before the
-        // first training checkpoint so even short runs can show progress.
-        let operation = store.core.start(.computeFsrsParams(request), pollingInterval: .milliseconds(40))
-        fsrsOptimization = operation
-        fsrsProgress = nil
-        fsrsOutcome = nil
+        await runFSRS(.computeFsrsParams(request), activity: .optimize) { result in
+            let healthCheck = result.hasHealthCheckPassed ? result.healthCheckPassed : nil
+            if result.fsrsItems == 0 {
+                fsrsOutcome = .insufficientHistory
+            } else if result.params == params || result.params.isEmpty {
+                fsrsOutcome = .alreadyOptimal(healthCheckPassed: healthCheck)
+            } else if let index = entries.firstIndex(where: { $0.id == preset }) {
+                entries[index].config.config.fsrsParams6 = result.params
+                fsrsParameterDrafts[preset] = nil
+                fsrsOutcome = .optimized(healthCheckPassed: healthCheck)
+            }
+        }
+    }
+
+    @discardableResult
+    public func saveAndOptimizeAllFSRS() async -> Bool {
+        guard canSave, fsrsEnabled, let request = saveRequest(mode: .computeAllParams) else { return false }
+        return await runFSRS(
+            .updateDeckConfigs(request),
+            activity: .optimizeAll,
+            collect: { operation async throws(CoreError) in try await self.store.modify(operation) }
+        ) { _ in
+            await load()
+            fsrsOutcome = .savedAndOptimized
+        }
+    }
+
+    func evaluateFSRS() async {
+        guard canOptimizeFSRS, canEvaluateFSRS else { return }
+        let request = Anki_Scheduler_EvaluateParamsLegacyRequest.with {
+            $0.search = effectiveFSRSParameterSearch
+            $0.params = fsrsParameters
+            $0.ignoreRevlogsBeforeMs = fsrsIgnoreHistoryBeforeMilliseconds
+        }
+        await runFSRS(.evaluateParamsLegacy(request), activity: .evaluate) { result in
+            fsrsOutcome = .evaluated(logLoss: result.logLoss, rmse: result.rmseBins)
+        }
+    }
+
+    @discardableResult
+    private func runFSRS<Response>(
+        _ call: CoreCall<Response>,
+        activity: FSRSActivity,
+        collect: (LongOperation<Response>) async throws(CoreError) -> Response = { try await $0.result },
+        apply: (Response) async -> Void
+    ) async -> Bool {
+        // The core publishes initial progress before the first training checkpoint.
+        let operation = store.core.start(call, pollingInterval: .milliseconds(40))
+        fsrsActivity = activity
+        cancelFSRSOperation = { operation.cancel() }
+        resetFSRSFeedback()
         isCancellingFSRS = false
+
         let progress = Task {
             for await report in operation.progress {
                 if case .computeParams(let value) = report.value { fsrsProgress = value }
@@ -133,31 +188,36 @@ extension DeckOptionsModel {
         }
         defer {
             progress.cancel()
-            fsrsOptimization = nil
+            cancelFSRSOperation = nil
+            fsrsActivity = nil
             isCancellingFSRS = false
         }
+
         do {
-            let result = try await operation.result
-            if isCancellingFSRS || Task.isCancelled {
+            let result = try await collect(operation)
+            // A read-only result can be discarded if Cancel races with completion.
+            // A successful batch save has already been committed by the core.
+            if activity != .optimizeAll && (isCancellingFSRS || Task.isCancelled) {
                 fsrsOutcome = .cancelled
-            } else if result.fsrsItems == 0 {
-                fsrsOutcome = .insufficientHistory
-            } else if result.params == params || result.params.isEmpty {
-                fsrsOutcome = .alreadyOptimal(healthCheckPassed: result.hasHealthCheckPassed ? result.healthCheckPassed : nil)
-            } else if let index = entries.firstIndex(where: { $0.id == preset }) {
-                entries[index].config.config.fsrsParams6 = result.params
-                fsrsParameterDrafts[preset] = nil
-                fsrsOutcome = .optimized(healthCheckPassed: result.hasHealthCheckPassed ? result.healthCheckPassed : nil)
+                return false
             }
+            await apply(result)
+            return true
         } catch {
-            fsrsOutcome = error.isInterrupted || isCancellingFSRS ? .cancelled : .failed(error.message)
+            fsrsOutcome = error.isInterrupted ? .cancelled : .failed(error.message)
+            return false
         }
     }
 
     public func cancelFSRSOptimization() {
-        guard let fsrsOptimization else { return }
+        guard let cancelFSRSOperation else { return }
         isCancellingFSRS = true
-        fsrsOptimization.cancel()
+        cancelFSRSOperation()
+    }
+
+    private var effectiveFSRSParameterSearch: String {
+        let search = fsrsParameterSearch.trimmingCharacters(in: .whitespacesAndNewlines)
+        return search.isEmpty ? defaultFSRSParameterSearch : search
     }
 
     func resetFSRSFeedback() {

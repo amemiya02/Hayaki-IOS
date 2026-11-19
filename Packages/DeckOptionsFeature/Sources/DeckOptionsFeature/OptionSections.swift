@@ -124,7 +124,7 @@ struct BuryingSection: View {
 
 // MARK: Rows
 
-private struct NumberRow<Label: View>: View {
+struct NumberRow<Label: View>: View {
     @Binding var value: Int
     let identifier: String
     @ViewBuilder let label: Label
@@ -137,7 +137,7 @@ private struct NumberRow<Label: View>: View {
         LabeledContent {
             TextField(text: $text, prompt: Text(value, format: .number)) { label }
                 .multilineTextAlignment(.trailing)
-                .accessibilityIdentifier(identifier)
+                .accessibilityIdentifier(identifier, isEnabled: !identifier.isEmpty)
                 .monospacedDigit()
                 // Room for four digits, leaving the rest to the label.
                 .frame(maxWidth: 80)
