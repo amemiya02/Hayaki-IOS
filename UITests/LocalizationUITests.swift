@@ -5,6 +5,9 @@ final class LocalizationUITests: XCTestCase {
     private struct Interface {
         let language: String
         let locale: String
+        let browse: String
+        let stats: String
+        let more: String
         let showAnswer: String
         let good: String
         let minuteSuffix: String
@@ -14,7 +17,7 @@ final class LocalizationUITests: XCTestCase {
     }
 
     private let english = Interface(
-        language: "en", locale: "en_US", showAnswer: "Show Answer", good: "Good", minuteSuffix: "m",
+        language: "en", locale: "en_US", browse: "Browse", stats: "Stats", more: "More", showAnswer: "Show Answer", good: "Good", minuteSuffix: "m",
         studyActions: "Study Actions", editNote: "Edit Note", noteType: "Note Type"
     )
 
@@ -24,21 +27,22 @@ final class LocalizationUITests: XCTestCase {
 
     func testJapaneseAfterRelaunch() throws {
         try verify(.init(
-            language: "ja", locale: "ja_JP", showAnswer: "解答を表示", good: "正解", minuteSuffix: "分",
+            language: "ja", locale: "ja_JP", browse: "閲覧", stats: "統計", more: "その他", showAnswer: "解答を表示", good: "正解", minuteSuffix: "分",
             studyActions: "学習操作", editNote: "ノートを編集", noteType: "ノートタイプ"
         ))
     }
 
     func testSimplifiedChineseAfterRelaunch() throws {
         try verify(.init(
-            language: "zh-Hans", locale: "zh_CN", showAnswer: "显示答案", good: "良好", minuteSuffix: "分",
+            language: "zh-Hans", locale: "zh_CN", browse: "浏览", stats: "统计", more: "更多", showAnswer: "显示答案", good: "良好", minuteSuffix: "分",
             studyActions: "学习操作", editNote: "编辑笔记", noteType: "笔记类型"
         ))
     }
 
     func testUnsupportedArabicUsesEnglishAndLongDeckCountsRemainReadableInRTL() throws {
         let app = try app(byLaunching: .init(
-            language: "ar", locale: "ar_SA", showAnswer: english.showAnswer, good: english.good,
+            language: "ar", locale: "ar_SA", browse: english.browse, stats: english.stats, more: english.more,
+            showAnswer: english.showAnswer, good: english.good,
             minuteSuffix: english.minuteSuffix,
             studyActions: english.studyActions, editNote: english.editNote, noteType: english.noteType
         ), rightToLeft: true)
@@ -72,6 +76,12 @@ final class LocalizationUITests: XCTestCase {
         app.terminate()
         app.launch()
         XCTAssertTrue(row.waitForExistence(timeout: 60))
+        for label in [language.browse, language.stats, language.more] {
+            let destination = UIDevice.current.userInterfaceIdiom == .pad
+                ? app.staticTexts[label].firstMatch
+                : app.tabBars.buttons[label]
+            XCTAssertTrue(destination.waitForExistence(timeout: 10), label)
+        }
         try verifyStudyAndEditor(language, in: app, row: row)
     }
 
