@@ -46,9 +46,11 @@ public struct StudyScreen: View {
     @Environment(\.studyNoteEditor) private var noteEditor
     #if os(iOS)
     @State private var audio = CardAudioPlayer()
+    @State private var templateSpeech = TemplateSpeech()
     #endif
     private let deckName: String
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.colorScheme) private var colorScheme
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 
@@ -179,7 +181,16 @@ public struct StudyScreen: View {
     @ViewBuilder
     private func cardView(_ display: CardDisplay) -> some View {
         #if os(iOS)
-        CardWebView(display: display, mediaFolder: model.mediaFolder, zoom: dynamicTypeSize.cardZoom) { event in
+        CardWebView(
+            display: display, mediaFolder: model.mediaFolder, zoom: dynamicTypeSize.cardZoom,
+            onTemplateRequest: { request, cardID, isAnswer in
+                if request.command == "isInNightMode" { return .value(.boolean(colorScheme == .dark)) }
+                if let response = templateSpeech.handle(request, prepareAudio: { audio.stop() }) {
+                    return response
+                }
+                return await model.handleTemplate(request, cardID: cardID, isAnswer: isAnswer, typedAnswer: typedAnswer)
+            }
+        ) { event in
             switch event {
             case .tap, .submitTypedAnswer: showAnswer()
             case .play(let id): model.sound(forPlayButton: id).map { audio.play([$0]) }
@@ -193,7 +204,10 @@ public struct StudyScreen: View {
             typedAnswer = display.isAnswer ? typedAnswer : ""
             audio.play(model.soundsToAutoplay())
         }
-        .onDisappear { audio.stop() }
+        .onDisappear {
+            audio.stop()
+            templateSpeech.stop()
+        }
         #else
         Text(verbatim: display.html)
         #endif

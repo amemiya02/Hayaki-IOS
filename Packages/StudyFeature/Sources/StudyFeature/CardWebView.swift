@@ -50,6 +50,7 @@ struct CardWebView: UIViewRepresentable {
     /// The page zoom that follows the learner's text size.
     let zoom: CGFloat
     /// Called for what the learner does on the card.
+    var onTemplateRequest: ((TemplateRequest, Int64, Bool) async -> TemplateReply)? = nil
     let onEvent: (CardPageEvent) -> Void
 
     func makeCoordinator() -> Coordinator {
@@ -59,6 +60,9 @@ struct CardWebView: UIViewRepresentable {
     func makeUIView(context: Context) -> WKWebView {
         let configuration = WKWebViewConfiguration()
         configuration.userContentController.add(context.coordinator, name: Coordinator.messageHandler)
+        configuration.userContentController.addScriptMessageHandler(
+            context.coordinator, contentWorld: .page, name: Coordinator.templateHandler
+        )
         configuration.setURLSchemeHandler(
             CardSchemeHandler(resources: CardResources(mediaFolder: mediaFolder)),
             forURLScheme: CardResources.scheme
@@ -84,6 +88,7 @@ struct CardWebView: UIViewRepresentable {
 
     func updateUIView(_ webView: WKWebView, context: Context) {
         context.coordinator.onEvent = onEvent
+        context.coordinator.onTemplateRequest = onTemplateRequest
         if webView.pageZoom != zoom {
             webView.pageZoom = zoom
         }
@@ -92,14 +97,21 @@ struct CardWebView: UIViewRepresentable {
 
     static func dismantleUIView(_ webView: WKWebView, coordinator: Coordinator) {
         webView.configuration.userContentController.removeScriptMessageHandler(forName: Coordinator.messageHandler)
+        webView.configuration.userContentController.removeScriptMessageHandler(forName: Coordinator.templateHandler)
+        coordinator.invalidateTemplate()
     }
 
     @MainActor
-    final class Coordinator: NSObject, WKNavigationDelegate, WKScriptMessageHandler {
+    final class Coordinator: NSObject, WKNavigationDelegate, WKScriptMessageHandler, WKScriptMessageHandlerWithReply {
         static let messageHandler = "hayaki"
+        static let templateHandler = "hayakiTemplate"
 
         weak var webView: WKWebView?
         var onEvent: (CardPageEvent) -> Void = { _ in }
+        var onTemplateRequest: ((TemplateRequest, Int64, Bool) async -> TemplateReply)?
+        private var templateToken: String?
+        private var reloaded: CardDisplay?
+        private var awaitingTemplateRequests = 0
         /// The side the page should show.
         private var wanted: CardDisplay?
         /// The side last handed to the page.
@@ -108,11 +120,13 @@ struct CardWebView: UIViewRepresentable {
 
         func loadHostPage() {
             pageLoaded = false
+            invalidateTemplate()
             shown = nil
             webView?.load(URLRequest(url: CardResources.hostPageURL))
         }
 
         func show(_ display: CardDisplay) {
+            if wanted != display { reloaded = nil }
             wanted = display
             sendIfReady()
         }
@@ -122,8 +136,11 @@ struct CardWebView: UIViewRepresentable {
             guard let json = try? JSONEncoder().encode(wanted), let argument = String(data: json, encoding: .utf8) else {
                 return
             }
+            let token = UUID().uuidString
+            templateToken = token
+            awaitingTemplateRequests = 0
             shown = wanted
-            webView.evaluateJavaScript("hayaki.show(\(argument)); true") { _, error in
+            webView.evaluateJavaScript("hayaki.show(\(argument), '\(token)'); true") { _, error in
                 if let error {
                     Self.log.error("The card host page could not show a card: \(error, privacy: .public)")
                 }
@@ -151,22 +168,75 @@ struct CardWebView: UIViewRepresentable {
             decidePolicyFor navigationAction: WKNavigationAction,
             decisionHandler: @escaping @MainActor (WKNavigationActionPolicy) -> Void
         ) {
-            // The host page is the only page; a link on a card opens in the
-            // learner's browser instead of replacing it.
-            if navigationAction.navigationType == .linkActivated, let url = navigationAction.request.url {
-                // A link to a place on the card itself (#…) just scrolls.
-                if url.scheme == CardResources.scheme, url.fragment != nil,
-                   url.path(percentEncoded: false).isEmpty || url.path(percentEncoded: false) == "/" {
-                    decisionHandler(.allow)
-                    return
-                }
-                if url.scheme == "http" || url.scheme == "https" {
-                    UIApplication.shared.open(url)
-                }
+            guard let url = navigationAction.request.url else {
                 decisionHandler(.cancel)
                 return
             }
-            decisionHandler(.allow)
+            if Self.isHost(url) {
+                decisionHandler(.allow)
+                return
+            }
+            // A card can link to a site, but the site opens in the user's browser.
+            if navigationAction.navigationType == .linkActivated,
+               url.scheme == "http" || url.scheme == "https" {
+                UIApplication.shared.open(url)
+            }
+            decisionHandler(.cancel)
+        }
+
+        private static func isHost(_ url: URL) -> Bool {
+            url.scheme == CardResources.scheme && url.host == CardResources.hostPageURL.host &&
+                (url.path.isEmpty || url.path == "/") && url.query == nil
+        }
+
+        func invalidateTemplate() {
+            templateToken = nil
+            awaitingTemplateRequests = 0
+        }
+
+        func userContentController(
+            _ userContentController: WKUserContentController,
+            didReceive message: WKScriptMessage,
+            replyHandler: @escaping @MainActor (Any?, String?) -> Void
+        ) {
+            guard message.name == Self.templateHandler, message.frameInfo.isMainFrame,
+                  let url = message.frameInfo.request.url, Self.isHost(url),
+                  let pageToken = templateToken,
+                  let body = message.body as? [String: Any], body["token"] as? String == pageToken,
+                  let display = shown, let request = TemplateRequest(message: body)
+            else {
+                replyHandler(TemplateReply.unavailable.message, nil)
+                return
+            }
+            guard request.isValid else {
+                replyHandler(TemplateReply.invalid.message, nil)
+                return
+            }
+            if request.command == "reloadPage" {
+                guard reloaded != display else {
+                    replyHandler(TemplateReply.unavailable.message, nil)
+                    return
+                }
+                reloaded = display
+                replyHandler(TemplateReply.accepted.message, nil)
+                shown = nil
+                sendIfReady()
+                return
+            }
+            guard awaitingTemplateRequests < 16, let onTemplateRequest else {
+                replyHandler(TemplateReply.unavailable.message, nil)
+                return
+            }
+            awaitingTemplateRequests += 1
+            Task {
+                guard pageToken == templateToken else {
+                    replyHandler(TemplateReply.unavailable.message, nil)
+                    return
+                }
+                let result = await onTemplateRequest(request, display.cardID, display.isAnswer)
+                if pageToken == templateToken { awaitingTemplateRequests -= 1 }
+                replyHandler(result.message, nil)
+            }
         }
 
         func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {

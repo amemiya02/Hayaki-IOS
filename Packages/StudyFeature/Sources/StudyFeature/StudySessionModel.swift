@@ -94,7 +94,7 @@ public final class StudySessionModel {
     @ObservationIgnored private var appliedReviews: Set<UInt32> = []
     @ObservationIgnored private var revertedReviews: Set<UInt32> = []
 
-    @ObservationIgnored private let store: CollectionStore
+    @ObservationIgnored let store: CollectionStore
     public let deckID: Int64
     /// When the current card's question was shown, for the time the review
     /// took.

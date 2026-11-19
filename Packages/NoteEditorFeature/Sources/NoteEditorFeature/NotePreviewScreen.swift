@@ -20,7 +20,9 @@ struct NotePreviewScreen: View {
                 VStack(spacing: 0) {
                     templates
                     Divider()
-                    CardPreviewView(content: card.content, showsAnswer: showsAnswer, mediaFolder: mediaFolder)
+                    CardPreviewView(content: card.content, showsAnswer: showsAnswer, mediaFolder: mediaFolder) {
+                        showsAnswer = true
+                    }
                         .frame(maxWidth: horizontalSizeClass == .regular ? 820 : .infinity)
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                         .accessibilityIdentifier("note-preview-card")
