@@ -2,8 +2,7 @@
 
 import PackageDescription
 
-// Sync: signing in to the learner's own sync server and syncing the collection
-// with it, presented from Settings. There is no AnkiWeb sign-in (ADR 0002).
+// Sync: signing in to AnkiWeb or a self-hosted server from Settings.
 let package = Package(
     name: "SyncFeature",
     defaultLocalization: "en",

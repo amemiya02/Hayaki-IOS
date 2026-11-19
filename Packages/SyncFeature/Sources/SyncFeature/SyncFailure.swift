@@ -15,6 +15,8 @@ public struct SyncFailure: Equatable, Sendable {
         case cancelled
         /// The server explained why it would not sync.
         case serverMessage
+        /// A redirect would leave the selected sync destination.
+        case unexpectedRedirect
         /// The Keychain could not be read or written.
         case secureStorage
         case other
@@ -36,36 +38,37 @@ public struct SyncFailure: Equatable, Sendable {
         self.init(reason: .secureStorage, detail: error.localizedDescription)
     }
 
-    init(_ error: CoreError, server: URL, signingIn: Bool) {
-        let host = server.host() ?? server.absoluteString
+    init(_ error: CoreError, server: URL?, signingIn: Bool) {
         switch error.kind {
         case .syncAuthError:
             self.init(reason: .wrongCredentials, message: signingIn
                 ? String(localized: "The server did not accept this user name and password.", bundle: .module)
                 : String(localized: "The server no longer accepts this device's sign-in. Sign out, then sign in again.", bundle: .module))
         case .networkError:
-            self.init(
-                reason: .unreachable,
-                message: String(localized: "Could not reach the sync server at \(host). Check the address, and that the server is running and reachable from this device.", bundle: .module),
-                detail: error.message
-            )
+            let message: String
+            if let server {
+                let host = server.host() ?? server.absoluteString
+                message = String(localized: "Could not reach the sync server at \(host). Check the address, and that the server is running and reachable from this device.", bundle: .module)
+            } else {
+                message = String(localized: "Could not reach AnkiWeb. Check your internet connection and try again.", bundle: .module)
+            }
+            self.init(reason: .unreachable, message: message, detail: error.message)
         case .interrupted:
             self.init(reason: .cancelled, message: signingIn
                 ? String(localized: "Signing in was cancelled.", bundle: .module)
                 : String(localized: "The sync was cancelled before it finished.", bundle: .module))
         case .syncServerMessage:
             self.init(reason: .serverMessage, message: error.message)
-        case .invalidInput where signingIn:
+        case .invalidInput where signingIn && server != nil:
             self.init(reason: .invalidAddress, detail: error.message)
         default:
-            // Some of the core's sync messages are written for AnkiWeb, which
-            // Hayaki never talks to; those would mislead, so they are left out.
+            // The core can mention AnkiWeb in advice for a self-hosted server.
             self.init(
                 reason: .other,
                 message: signingIn
                     ? String(localized: "Signing in failed.", bundle: .module)
                     : String(localized: "The sync failed.", bundle: .module),
-                detail: error.message.localizedCaseInsensitiveContains("AnkiWeb") ? nil : error.message
+                detail: server != nil && error.message.localizedCaseInsensitiveContains("AnkiWeb") ? nil : error.message
             )
         }
     }
@@ -74,6 +77,8 @@ public struct SyncFailure: Equatable, Sendable {
         switch reason {
         case .invalidAddress:
             String(localized: "Enter the server's full address, starting with http:// or https://.", bundle: .module)
+        case .unexpectedRedirect:
+            String(localized: "The sync server redirected to an address outside the selected destination.", bundle: .module)
         case .secureStorage:
             String(localized: "Could not use the device's secure storage for the sign-in.", bundle: .module)
         case .cancelled:

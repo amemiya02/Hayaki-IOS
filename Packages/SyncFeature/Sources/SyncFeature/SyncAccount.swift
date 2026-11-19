@@ -1,21 +1,44 @@
 import Foundation
 import Security
 
-/// The learner's sign-in to their own sync server: the server's address, the
-/// user name, and the key the server issued for them in exchange for their
-/// password. The password itself is never kept.
+/// The learner's sign-in to one sync destination.
 public struct SyncAccount: Codable, Equatable, Sendable {
-    /// The sync server's address, as the learner entered it.
-    public var server: URL
-    public var userName: String
+    /// The configured self-hosted address. Nil selects the core's AnkiWeb default.
+    public let server: URL?
+    public let userName: String
     /// The key the server issued at sign-in (Anki calls it the host key). It
     /// authorises syncing without the password.
-    public var hostKey: String
+    public let hostKey: String
+    /// A redirect returned by the core for this sign-in. Keep it separate
+    /// from the configured address so it does not change the destination.
+    var redirectedEndpoint: URL?
 
-    public init(server: URL, userName: String, hostKey: String) {
+    public init(server: URL?, userName: String, hostKey: String) {
         self.server = server
         self.userName = userName
         self.hostKey = hostKey
+    }
+
+    // The required server key is either a self-hosted URL (including legacy
+    // items) or explicit null for AnkiWeb. A missing key indicates invalid data.
+    private enum CodingKeys: String, CodingKey {
+        case server, userName, hostKey, redirectedEndpoint
+    }
+
+    public init(from decoder: any Decoder) throws {
+        let values = try decoder.container(keyedBy: CodingKeys.self)
+        server = try values.decode(URL?.self, forKey: .server)
+        userName = try values.decode(String.self, forKey: .userName)
+        hostKey = try values.decode(String.self, forKey: .hostKey)
+        redirectedEndpoint = try values.decodeIfPresent(URL.self, forKey: .redirectedEndpoint)
+    }
+
+    public func encode(to encoder: any Encoder) throws {
+        var values = encoder.container(keyedBy: CodingKeys.self)
+        try values.encode(server, forKey: .server)
+        try values.encode(userName, forKey: .userName)
+        try values.encode(hostKey, forKey: .hostKey)
+        try values.encodeIfPresent(redirectedEndpoint, forKey: .redirectedEndpoint)
     }
 }
 
