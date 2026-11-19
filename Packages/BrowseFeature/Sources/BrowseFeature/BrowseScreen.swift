@@ -202,6 +202,30 @@ public struct BrowseScreen: View {
     }
 
     private var modePicker: some View {
+        HStack {
+            modeToggle
+            if model.state == .loaded {
+                resultCount
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .monospacedDigit()
+            }
+        }
+        .frame(maxWidth: 440)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 8)
+        .frame(maxWidth: .infinity)
+        .background(.bar)
+    }
+
+    private var resultCount: Text {
+        switch model.mode {
+        case .cards: Text("\(model.rowIDs.count) Cards", bundle: .module)
+        case .notes: Text("\(model.rowIDs.count) Notes", bundle: .module)
+        }
+    }
+
+    private var modeToggle: some View {
         Picker(selection: Binding {
             model.mode
         } set: { mode in
@@ -214,11 +238,6 @@ public struct BrowseScreen: View {
         }
         .pickerStyle(.segmented)
         .accessibilityIdentifier("browse-mode")
-        .frame(maxWidth: 440)
-        .padding(.horizontal, 16)
-        .padding(.vertical, 8)
-        .frame(maxWidth: .infinity)
-        .background(.bar)
     }
 
     private var configurationMenu: some View {

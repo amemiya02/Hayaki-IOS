@@ -26,8 +26,15 @@ extension CardBrowserModel {
 
     public func saveSearch(named input: String) async {
         let name = input.trimmingCharacters(in: .whitespacesAndNewlines)
-        let query = searchedText.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard state == .loaded, !name.isEmpty, !query.isEmpty else { return }
+        let submitted = searchedText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard state == .loaded, !name.isEmpty, !submitted.isEmpty else { return }
+        let query: String
+        do {
+            query = try await store.core.buildSearchString(.with { $0.parsableText = submitted }).val
+        } catch {
+            failure = error.message
+            return
+        }
         await updateSavedSearches { saved in
             guard saved[name] == nil else {
                 failure = String(localized: "A saved search already has that name.", bundle: .module)

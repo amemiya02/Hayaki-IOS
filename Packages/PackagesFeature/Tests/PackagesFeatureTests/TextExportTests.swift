@@ -1,3 +1,4 @@
+import AnkiCore
 import CollectionTesting
 import Foundation
 import PackagesFeature
@@ -49,6 +50,15 @@ extension TextExportTests {
             let output = try String(contentsOf: #require(text.exportedFile), encoding: .utf8)
             #expect(output.contains("selected\tretained"))
             #expect(!output.contains("omitted"))
+
+            let noteID = try await store.core.getCard(.with { $0.cid = selectedCard }).noteID
+            let notes = TextExportModel(store: store, folder: folder.url, selection: .notes([noteID]))
+            await notes.export()
+            #expect(notes.format == .notes)
+            #expect(notes.count == 1)
+            let noteText = try String(contentsOf: #require(notes.exportedFile), encoding: .utf8)
+            #expect(noteText.contains("selected\tretained"))
+            #expect(!noteText.contains("omitted"))
 
             let archive = PackageExportModel(store: store, exportFolder: folder.url, selection: selected)
             await archive.export()
