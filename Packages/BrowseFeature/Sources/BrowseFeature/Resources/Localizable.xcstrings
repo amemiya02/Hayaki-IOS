@@ -486,6 +486,22 @@
           }
         }
       }
+    },
+    "Change Note Type" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ノートタイプを変更"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "更改笔记类型"
+          }
+        }
+      }
     }
   },
   "version" : "1.0"

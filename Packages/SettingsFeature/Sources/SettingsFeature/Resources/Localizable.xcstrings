@@ -1121,6 +1121,22 @@
           }
         }
       }
+    },
+    "Note Types" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ノートタイプ"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "笔记类型"
+          }
+        }
+      }
     }
   },
   "version" : "1.0"

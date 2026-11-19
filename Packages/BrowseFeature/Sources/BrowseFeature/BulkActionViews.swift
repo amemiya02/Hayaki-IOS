@@ -7,6 +7,7 @@ struct BulkActionMenu: View {
     let model: CardBrowserModel
     @Binding var isMoving: Bool
     @Binding var deletion: DeletionSummary?
+    let changeNoteType: () -> Void
 
     var body: some View {
         Menu {
@@ -65,6 +66,13 @@ struct BulkActionMenu: View {
                     Text("Unsuspend", bundle: .module)
                 } icon: {
                     Image(systemName: "play.circle")
+                }
+            }
+            Button(action: changeNoteType) {
+                Label {
+                    Text("Change Note Type", bundle: .module)
+                } icon: {
+                    Image(systemName: "rectangle.2.swap")
                 }
             }
             Divider()
