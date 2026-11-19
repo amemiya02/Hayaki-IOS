@@ -1,6 +1,70 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "Answer Side Only": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "裏面のみ"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "仅显示背面"
+          }
+        }
+      }
+    },
+    "Preview Controls": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "プレビューの操作"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "预览控件"
+          }
+        }
+      }
+    },
+    "Previous Card": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "前のカード"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "上一张卡片"
+          }
+        }
+      }
+    },
+    "Next Card": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "次のカード"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "下一张卡片"
+          }
+        }
+      }
+    },
     "Custom scheduling could not run. Standard intervals were kept." : {
       "localizations" : {
         "ja" : {

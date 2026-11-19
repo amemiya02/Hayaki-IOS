@@ -14,6 +14,7 @@ final class NavigationUITests: XCTestCase {
         }
         app = XCUIApplication()
         app.launchEnvironment["HAYAKI_UI_TEST_COLLECTION_PACKAGE"] = package.path
+        app.launchArguments += ["-AppleLanguages", "(en)"]
         app.launch()
     }
 
@@ -80,6 +81,36 @@ final class NavigationUITests: XCTestCase {
         rename.buttons["Rename"].tap()
         XCTAssertTrue(deckRow("Phrases and idioms").waitForExistence(timeout: 10))
         attachScreen("Nested deck after rename")
+    }
+
+    func testBrowsePreviewNavigatesAndEditsTheShownCard() {
+        select("Browse")
+        let browseOptions = app.buttons["Browse Options"]
+        XCTAssertTrue(browseOptions.waitForExistence(timeout: 15))
+        browseOptions.tap()
+        let previewAction = app.buttons["Preview"]
+        XCTAssertTrue(previewAction.waitForExistence(timeout: 10))
+        previewAction.tap()
+
+        let question = app.buttons["Show Answer"]
+        let answer = app.buttons["Show Question"]
+        XCTAssertTrue(question.waitForExistence(timeout: 10))
+        XCTAssertTrue(question.isEnabled)
+        app.buttons["Next Card"].tap()
+        XCTAssertTrue(answer.waitForExistence(timeout: 5))
+
+        let options = app.buttons["Preview Options"]
+        options.tap()
+        app.buttons["Mark Note"].tap()
+        options.tap()
+        XCTAssertTrue(app.buttons["Unmark Note"].exists)
+        app.buttons["Edit Note"].tap()
+        XCTAssertTrue(app.navigationBars["Edit Note"].waitForExistence(timeout: 10))
+        app.navigationBars["Edit Note"].buttons["Close"].tap()
+        XCTAssertTrue(answer.waitForExistence(timeout: 10))
+        app.buttons["Previous Card"].tap()
+        XCTAssertTrue(question.waitForExistence(timeout: 5))
+        attachScreen("Browse preview with the selected card")
     }
 
     private func select(_ section: String) {

@@ -5,27 +5,60 @@ import SwiftUI
 
 /// Watches connected controllers only while a reviewer is active.
 struct ReviewerController: ViewModifier {
+    var enabled = true
     let onInput: @MainActor (ReviewerInput) -> Void
-    @State private var profiles: [ObjectIdentifier: [GCControllerButtonInput]] = [:]
+    @State private var owner = UUID()
 
     func body(content: Content) -> some View {
         content
-            .onAppear { GCController.controllers().forEach(attach) }
+            .onAppear { updateRouting() }
+            .onChange(of: enabled) { updateRouting() }
             .onReceive(NotificationCenter.default.publisher(for: .GCControllerDidConnect)) { event in
-                if let controller = event.object as? GCController { attach(controller) }
+                if enabled, let controller = event.object as? GCController {
+                    ControllerInputRouting.shared.attach(controller)
+                }
             }
             .onReceive(NotificationCenter.default.publisher(for: .GCControllerDidDisconnect)) { event in
-                if let controller = event.object as? GCController { detach(ObjectIdentifier(controller)) }
-            }
-            .onDisappear {
-                for buttons in profiles.values {
-                    buttons.forEach { $0.pressedChangedHandler = nil }
+                if let controller = event.object as? GCController {
+                    ControllerInputRouting.shared.detach(ObjectIdentifier(controller))
                 }
-                profiles.removeAll()
             }
+            .onDisappear { ControllerInputRouting.shared.end(owner: owner) }
     }
 
-    private func attach(_ controller: GCController) {
+    private func updateRouting() {
+        if enabled {
+            ControllerInputRouting.shared.begin(owner: owner, onInput: onInput)
+        } else {
+            ControllerInputRouting.shared.end(owner: owner)
+        }
+    }
+}
+
+@MainActor
+private final class ControllerInputRouting {
+    static let shared = ControllerInputRouting()
+
+    private var profiles: [ObjectIdentifier: [GCControllerButtonInput]] = [:]
+    private var listeners: [(owner: UUID, input: @MainActor (ReviewerInput) -> Void)] = []
+
+    func begin(owner: UUID, onInput: @escaping @MainActor (ReviewerInput) -> Void) {
+        listeners.removeAll { $0.owner == owner }
+        listeners.append((owner, onInput))
+        GCController.controllers().forEach(attach)
+    }
+
+    func end(owner: UUID) {
+        listeners.removeAll { $0.owner == owner }
+        if listeners.isEmpty {
+            for buttons in profiles.values {
+                buttons.forEach { $0.pressedChangedHandler = nil }
+            }
+            profiles.removeAll()
+        }
+    }
+
+    func attach(_ controller: GCController) {
         let identity = ObjectIdentifier(controller)
         guard profiles[identity] == nil else { return }
         var buttons: [(String, GCControllerButtonInput?)] = []
@@ -45,13 +78,15 @@ struct ReviewerController: ViewModifier {
         profiles[identity] = buttons.compactMap { name, button in
             button?.pressedChangedHandler = { _, _, pressed in
                 guard pressed else { return }
-                Task { @MainActor in onInput(.controller(name)) }
+                Task { @MainActor in
+                    Self.shared.listeners.last?.input(.controller(name))
+                }
             }
             return button
         }
     }
 
-    private func detach(_ identity: ObjectIdentifier) {
+    func detach(_ identity: ObjectIdentifier) {
         profiles.removeValue(forKey: identity)?.forEach { $0.pressedChangedHandler = nil }
     }
 
