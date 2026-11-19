@@ -1,19 +1,22 @@
 import AnkiCore
 import DeckOptionsFeature
 import PackagesFeature
+import StudyFeature
 import SwiftUI
 
 extension View {
     /// Lets the learner organise the decks of `model`: a toolbar button to
     /// create a deck, and the sheets and alerts behind each deck row's
     /// actions (see `deckActions(for:)`).
-    func deckManagement(_ model: DeckListModel) -> some View {
-        modifier(DeckManagement(model: model))
+    func deckManagement(_ model: DeckListModel, onStudy: @escaping (StudyDeck) -> Void) -> some View {
+        modifier(DeckManagement(model: model, onStudy: onStudy))
     }
 }
 
 private struct DeckManagement: ViewModifier {
     let model: DeckListModel
+    let onStudy: (StudyDeck) -> Void
+    @State private var studyAfterDismiss: StudyDeck?
     @State private var request = DeckActionRequest()
     @State private var renaming: DeckNode?
     @State private var newName = ""
@@ -45,7 +48,7 @@ private struct DeckManagement: ViewModifier {
                     }
                 }
             }
-            .sheet(item: sheet) { action in
+            .sheet(item: sheet, onDismiss: startPendingStudy) { action in
                 switch action {
                 case .create(let parentID):
                     NewDeckSheet(model: model, parentID: parentID) { error in
@@ -59,6 +62,8 @@ private struct DeckManagement: ViewModifier {
                     DeckOptionsScreen(store: model.store, deckID: deck.id)
                 case .filteredOptions(let id):
                     FilteredDeckScreen(store: model.store, deckID: id)
+                case .customStudy(let deck):
+                    CustomStudyScreen(store: model.store, deckID: deck.id) { studyAfterDismiss = $0 }
                 case .export(let deck):
                     PackageExportScreen(store: model.store, decks: [deck.id])
                 case .rename, .delete, .rebuild, .empty:
@@ -80,7 +85,7 @@ private struct DeckManagement: ViewModifier {
                 case .empty(let deck):
                     request.pending = nil
                     manageFilteredDeck(deck, empty: true)
-                case .create, .move, .options, .filteredOptions, .export, nil:
+                case .create, .move, .options, .filteredOptions, .customStudy, .export, nil:
                     break
                 }
             }
@@ -134,10 +139,16 @@ private struct DeckManagement: ViewModifier {
     private var sheet: Binding<DeckAction?> {
         Binding {
             switch request.pending {
-            case .create, .move, .options, .filteredOptions, .export: request.pending
+            case .create, .move, .options, .filteredOptions, .customStudy, .export: request.pending
             default: nil
             }
         } set: { request.pending = $0 }
+    }
+
+    private func startPendingStudy() {
+        guard let deck = studyAfterDismiss else { return }
+        studyAfterDismiss = nil
+        onStudy(deck)
     }
 
     private func isPresented<Value>(_ value: Binding<Value?>) -> Binding<Bool> {
