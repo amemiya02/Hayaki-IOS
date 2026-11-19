@@ -2,8 +2,7 @@
 
 import PackageDescription
 
-// Deck options: a deck's preset, daily limits, learning steps, display order
-// and burying, edited natively over the core's deck options calls (ADR 0004).
+// Deck options and FSRS, edited natively through the embedded core.
 let package = Package(
     name: "DeckOptionsFeature",
     defaultLocalization: "en",
