@@ -1,6 +1,22 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "Custom scheduling could not run. Standard intervals were kept." : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "カスタムスケジュールを実行できなかったため、標準の間隔を使用しました。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "自定义排程未能运行，已保留标准间隔。"
+          }
+        }
+      }
+    },
     "Custom Study" : {
       "localizations" : {
         "ja" : {

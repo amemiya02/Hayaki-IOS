@@ -88,10 +88,10 @@ public struct StudyCard: Equatable, Sendable {
     /// first card template, `card card2` for the second, and so on.
     public let bodyClass: String
     /// The interval each rating would give.
-    public let intervals: RatingIntervals
+    public private(set) var intervals: RatingIntervals
     /// The card's scheduling now and after each rating, from the core,
     /// which answering hands back to the core.
-    let states: Anki_Scheduler_SchedulingStates
+    private(set) var states: Anki_Scheduler_SchedulingStates
     /// What a card that asks for typing expects; nil for other cards.
     let typedAnswerPrompt: TypedAnswerPrompt?
     /// The answer side before the comparison goes in.
@@ -168,6 +168,13 @@ public struct StudyCard: Equatable, Sendable {
             typedAnswerPrompt: typing.prompt,
             answerBeforeTyping: answer.side.html
         )
+    }
+
+    func applyingSchedule(_ states: Anki_Scheduler_SchedulingStates, core: CoreClient) async throws(CoreError) -> StudyCard {
+        var card = self
+        card.states = states
+        card.intervals = RatingIntervals(try await core.describeNextStates(states).vals)
+        return card
     }
 
     /// The card with its answer side showing the core's comparison of
