@@ -27,6 +27,57 @@
     "Choose Which Collection to Keep" : {
       "comment" : "Title shown when the collection here and on the server cannot be merged."
     },
+    "Collection download complete." : {
+      "comment" : "Status shown after the collection has downloaded.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "コレクションのダウンロードが完了しました。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "集合下载完成。"
+          }
+        }
+      }
+    },
+    "Collection sync complete." : {
+      "comment" : "Status shown when collection changes have been exchanged.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "コレクションの同期が完了しました。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "集合同步完成。"
+          }
+        }
+      }
+    },
+    "Collection upload complete." : {
+      "comment" : "Status shown after the collection has uploaded.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "コレクションのアップロードが完了しました。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "集合上传完成。"
+          }
+        }
+      }
+    },
     "Connecting…" : {
       "comment" : "Shown while a sync connects to the server."
     },
@@ -96,6 +147,91 @@
         }
       }
     },
+    "Media Sync" : {
+      "comment" : "Heading for the media stage of sync.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "メディアの同期"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "媒体同步"
+          }
+        }
+      }
+    },
+    "Media sync cancelled." : {
+      "comment" : "Status shown after the learner cancelled syncing media.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "メディアの同期をキャンセルしました。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "媒体同步已取消。"
+          }
+        }
+      }
+    },
+    "Media sync complete." : {
+      "comment" : "Status shown after the media stage finishes.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "メディアの同期が完了しました。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "媒体同步完成。"
+          }
+        }
+      }
+    },
+    "Media sync failed." : {
+      "comment" : "Status shown if the collection synced but the media stage failed.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "メディアの同期に失敗しました。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "媒体同步失败。"
+          }
+        }
+      }
+    },
+    "Media sync was interrupted." : {
+      "comment" : "Status shown on relaunch after the app closed while syncing media.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "メディアの同期が中断されました。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "媒体同步已中断。"
+          }
+        }
+      }
+    },
     "Not Now" : {
       "comment" : "Button that leaves both collections as they are instead of uploading or downloading."
     },
@@ -131,8 +267,22 @@
     "Required" : {
       "comment" : "Placeholder of a sign-in field that must be filled in."
     },
-    "Send the collection on this device to the server, so your other devices can download it." : {
-      "comment" : "Explains uploading to a server that has no collection yet."
+    "Retry Media Sync" : {
+      "comment" : "Button that retries the media stage with the current sync destination.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "メディアの同期を再試行"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "重试媒体同步"
+          }
+        }
+      }
     },
     "Self-Hosted" : {
       "comment" : "Sync destination option for a server the learner runs or chooses.",
@@ -150,6 +300,9 @@
           }
         }
       }
+    },
+    "Send the collection on this device to the server, so your other devices can download it." : {
+      "comment" : "Explains uploading to a server that has no collection yet."
     },
     "Server Address" : {
       "comment" : "Label of the field for the sync server's web address.",
@@ -223,6 +376,23 @@
     "Sync Now" : {
       "comment" : "Button that syncs the collection with the server."
     },
+    "Syncing Media…" : {
+      "comment" : "Status shown while the core syncs media.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "メディアを同期中…"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正在同步媒体…"
+          }
+        }
+      }
+    },
     "Syncing sends the changes made on this device to the server and brings in the changes made on your other devices." : {
       "comment" : "Footer explaining what syncing does."
     },
@@ -247,9 +417,6 @@
     "The server no longer accepts this device's sign-in. Sign out, then sign in again." : {
       "comment" : "Sync failure: the stored key was refused."
     },
-    "The server now has the collection from this device." : {
-      "comment" : "Shown after uploading."
-    },
     "The sync failed." : {
       "comment" : "Sync failure for any other reason; the cause is shown below it."
     },
@@ -258,12 +425,6 @@
     },
     "The sync was cancelled before it finished." : {
       "comment" : "Shown after the learner cancelled a sync."
-    },
-    "This device and the server are in step." : {
-      "comment" : "Shown after a sync that merged changes."
-    },
-    "This device now has the collection from the server." : {
-      "comment" : "Shown after downloading."
     },
     "Upload to Server" : {
       "comment" : "Button that replaces the server's collection with this device's."

@@ -78,6 +78,57 @@ struct SyncTests {
         }
     }
 
+    @Test("A media-only failure leaves the collection synced and can be retried after reopening")
+    func mediaFailureSurvivesRelaunch() async throws {
+        let server = try await SyncServer(users: [("alice", "correct horse")])
+        try await withTemporaryCollection { phone in
+            try await phone.addBasicNotes(count: 1, toDeck: phone.addDeck(named: "Spanish"))
+            let media = Data("a pending media file".utf8)
+            try media.write(to: phone.location.mediaFolder.appendingPathComponent("pending.png"))
+            let storage = MemoryAccountStorage()
+            let model = try await signedIn(phone, to: server, storage: storage)
+            await model.sync()
+
+            pauseServerWhenMediaStarts(server, model: model)
+            async let uploading: Void = model.upload()
+            try await eventually(timeout: .seconds(15), "media progress before interrupting the server") {
+                if case .syncing(.some) = model.mediaStatus { true } else { false }
+            }
+            let inProgress = try #require(storage.storedText)
+            server.interrupt()
+            await uploading
+
+            let collectionOutcome = SyncModel.Status.synced(SyncOutcome(kind: .uploaded, serverMessage: nil))
+            #expect(model.status == collectionOutcome)
+            guard case .failed = model.mediaStatus else {
+                Issue.record("Expected a media failure after the connection dropped, got \(model.mediaStatus)")
+                return
+            }
+
+            try await phone.close()
+            let reopened = try await CollectionStore.open(at: phone.location, core: phone.core)
+            let afterTermination = SyncModel(store: reopened, storage: MemoryAccountStorage(storedText: inProgress))
+            #expect(afterTermination.status == collectionOutcome)
+            #expect(afterTermination.mediaStatus == .interrupted)
+
+            let afterFailure = SyncModel(store: reopened, storage: storage)
+            #expect(afterFailure.status == collectionOutcome)
+            #expect(afterFailure.canRetryMediaSync)
+            try await server.restart()
+            await afterFailure.retryMediaSync()
+            #expect(afterFailure.mediaStatus == .synced)
+            #expect(SyncModel(store: reopened, storage: storage).mediaStatus == .synced)
+
+            try await withTemporaryCollection { tablet in
+                let other = try await signedIn(tablet, to: server)
+                await other.sync()
+                await other.download()
+                let received = tablet.location.mediaFolder.appendingPathComponent("pending.png")
+                #expect(try Data(contentsOf: received) == media)
+            }
+        }
+    }
+
     @Test("The first sync to an empty server asks before uploading, then uploads")
     func firstSyncUploads() async throws {
         let server = try await SyncServer(users: [("alice", "correct horse")])
@@ -362,8 +413,12 @@ struct SyncTests {
     }
 
     /// A sync model for `store`, signed in to `server` as alice.
-    private func signedIn(_ store: CollectionStore, to server: SyncServer) async throws -> SyncModel {
-        let model = SyncModel(store: store, storage: MemoryAccountStorage())
+    private func signedIn(
+        _ store: CollectionStore,
+        to server: SyncServer,
+        storage: MemoryAccountStorage = MemoryAccountStorage()
+    ) async throws -> SyncModel {
+        let model = SyncModel(store: store, storage: storage)
         model.selectDestination(.selfHosted)
         model.serverAddress = server.address
         model.userName = "alice"

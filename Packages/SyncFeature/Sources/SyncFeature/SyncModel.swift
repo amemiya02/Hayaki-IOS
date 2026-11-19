@@ -71,6 +71,10 @@ public final class SyncModel {
                 customServerAddress = server.absoluteString
             }
             userName = account.userName
+            if let saved = account.mediaSync {
+                status = .synced(saved.collection)
+                mediaStatus = saved.status
+            }
         }
     }
 
@@ -92,7 +96,7 @@ public final class SyncModel {
     public var canRetryMediaSync: Bool {
         guard !isBusy, account != nil, case .synced = status else { return false }
         return switch mediaStatus {
-        case .cancelled, .failed: true
+        case .cancelled, .interrupted, .failed: true
         default: false
         }
     }
@@ -199,9 +203,7 @@ public final class SyncModel {
             status = .choosingDirection(.uploadOnly)
         case .noChanges, .normalSync, .UNRECOGNIZED:
             // A finished normal sync reports no further changes required.
-            store.signal(.everything)
-            status = .synced(SyncOutcome(kind: .merged, serverMessage: response.serverMessage.nilIfEmpty))
-            if let account = self.account { await syncMedia(for: account) }
+            await finishCollectionSync(SyncOutcome(kind: .merged, serverMessage: response.serverMessage.nilIfEmpty))
         }
     }
 
@@ -229,9 +231,9 @@ public final class SyncModel {
 
     /// Continues a previous media transfer with the same sign-in.
     public func retryMediaSync() async {
-        guard canRetryMediaSync, let account else { return }
+        guard canRetryMediaSync, case .synced(let outcome) = status else { return }
         SyncClientIdentity.install()
-        await syncMedia(for: account)
+        await syncMedia(after: outcome)
     }
 
     private func fullSync(upload: Bool) async {
@@ -252,20 +254,52 @@ public final class SyncModel {
         }
         // The core closed the collection and opened it again, replaced when
         // downloading.
-        store.signal(.everything)
-        status = .synced(SyncOutcome(kind: upload ? .uploaded : .downloaded, serverMessage: nil))
-        await syncMedia(for: account)
+        await finishCollectionSync(SyncOutcome(kind: upload ? .uploaded : .downloaded, serverMessage: nil))
     }
 
-    private func syncMedia(for account: SyncAccount) async {
+    private func finishCollectionSync(_ outcome: SyncOutcome) async {
+        store.signal(.everything)
+        status = .synced(outcome)
+        await syncMedia(after: outcome)
+    }
+
+    private func syncMedia(after outcome: SyncOutcome) async {
+        guard var account else { return }
+        func save(_ phase: SavedMediaSync.Phase) throws {
+            account.mediaSync = SavedMediaSync(phase: phase, collection: outcome)
+            try storage.save(account)
+            self.account = account
+        }
+
+        do {
+            try save(.transferring)
+        } catch {
+            mediaStatus = .failed(SyncFailure(storageError: error))
+            return
+        }
         mediaStatus = .syncing(nil)
+
+        let phase: SavedMediaSync.Phase
+        let result: MediaSyncStatus
         do {
             _ = try await run(store.core.startMediaSync(account.auth))
-            mediaStatus = .synced
+            phase = .synced
+            result = .synced
         } catch {
-            mediaStatus = error.isInterrupted
-                ? .cancelled
-                : .failed(SyncFailure(error, server: account.server, signingIn: false))
+            if error.isInterrupted {
+                phase = .cancelled
+                result = .cancelled
+            } else {
+                phase = .failed
+                result = .failed(SyncFailure(error, server: account.server, signingIn: false))
+            }
+        }
+
+        do {
+            try save(phase)
+            mediaStatus = result
+        } catch {
+            mediaStatus = .failed(SyncFailure(storageError: error))
         }
     }
 
@@ -361,8 +395,8 @@ public enum FullSyncChoice: Equatable, Sendable {
     public var allowsDownload: Bool { self != .uploadOnly }
 }
 
-public struct SyncOutcome: Equatable, Sendable {
-    public enum Kind: Equatable, Sendable {
+public struct SyncOutcome: Codable, Equatable, Sendable {
+    public enum Kind: String, Codable, Sendable {
         /// Changes were exchanged both ways (or there were none).
         case merged
         case uploaded

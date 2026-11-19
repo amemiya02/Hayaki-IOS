@@ -28,9 +28,10 @@ final class SyncServer {
 
     /// The address a learner would enter, such as `http://127.0.0.1:53817/`.
     let address: String
-    private let process: Process
-    private let output: LogBuffer
+    private var process: Process
+    private var output: LogBuffer
     private let folder: URL
+    private let environment: [String: String]
 
     /// Starts a server with these users, each `(name, password)`, and waits
     /// until it accepts connections.
@@ -50,6 +51,15 @@ final class SyncServer {
         for (index, user) in users.enumerated() {
             environment["SYNC_USER\(index + 1)"] = "\(user.0):\(user.1)"
         }
+        let (process, output, port) = try await Self.launch(environment: environment)
+        environment["SYNC_PORT"] = port
+        self.environment = environment
+        self.process = process
+        self.output = output
+        address = "http://127.0.0.1:\(port)/"
+    }
+
+    private static func launch(environment: [String: String]) async throws -> (Process, LogBuffer, String) {
         let process = Process()
         process.executableURL = Self.binary
         process.environment = environment
@@ -75,9 +85,7 @@ final class SyncServer {
         guard let port else {
             throw ServerFailed(description: "The sync server exited:\n\(output.text)")
         }
-        self.process = process
-        self.output = output
-        address = "http://127.0.0.1:\(port)/"
+        return (process, output, port)
     }
 
     deinit {
@@ -92,6 +100,21 @@ final class SyncServer {
 
     func resume() {
         if process.isRunning { _ = Darwin.kill(processIdentifier, SIGCONT) }
+    }
+
+    /// Drops active connections while keeping the server's on-disk data.
+    func interrupt() {
+        if process.isRunning {
+            _ = Darwin.kill(processIdentifier, SIGKILL)
+            process.waitUntilExit()
+        }
+    }
+
+    @MainActor func restart() async throws {
+        stop()
+        let (process, output, _) = try await Self.launch(environment: environment)
+        self.process = process
+        self.output = output
     }
 
     func stop() {
