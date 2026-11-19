@@ -66,10 +66,10 @@ struct AboutScreen: View {
             }
 
             Section {
-                Link(destination: Self.repository.appending(path: "tree/hayaki-v1")) {
+                Link(destination: Self.repository) {
                     Text(verbatim: "github.com/amemiya02/Hayaki-IOS")
                 }
-                Link(destination: Self.repository.appending(path: "blob/hayaki-v1/LICENSE")) {
+                Link(destination: Self.repository.appending(path: "blob/main/LICENSE")) {
                     Text(verbatim: "AGPL-3.0-or-later")
                 }
             } header: {
@@ -84,9 +84,6 @@ struct AboutScreen: View {
                 }
                 Link(destination: URL(string: "https://github.com/ankidroid/Anki-Android")!) {
                     Text(verbatim: "AnkiDroid")
-                }
-                Link(destination: URL(string: "https://github.com/antigluten/amgi")!) {
-                    Text(verbatim: "Amgi")
                 }
             } header: {
                 Text("Credits", bundle: .module)

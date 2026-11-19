@@ -33,9 +33,8 @@ final class HelpAndAboutUITests: XCTestCase {
         copied.buttons["OK"].tap()
         reveal(element("github.com/amemiya02/Hayaki-IOS"))
         reveal(element("AGPL-3.0-or-later"))
-        reveal(element("Amgi"))
+        reveal(element("AnkiDroid"))
         XCTAssertTrue(element("Anki").exists)
-        XCTAssertTrue(element("AnkiDroid").exists)
         screenshot("About")
 
         let changelog = app.buttons["Changelog"]
