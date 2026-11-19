@@ -14,6 +14,8 @@ public struct CardPreviewView: View {
     let inlineImage: (name: String, dataURL: String)?
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     #if os(iOS)
+    @State private var cardHostUnavailable = false
+    @State private var cardHostRevision = 0
     @State private var audio = CardAudioPlayer()
     @State private var templateSpeech = TemplateSpeech()
     @State private var gesturePreferences: ReviewerPreferences?
@@ -81,12 +83,25 @@ public struct CardPreviewView: View {
                 }
             }
         ) { event in
-            if case .reviewer(let input) = event {
+            if event == .rendered {
+                cardHostUnavailable = false
+            } else if event == .unavailable {
+                cardHostUnavailable = true
+            } else if case .reviewer(let input) = event {
                 handleWebInput(input)
             } else if case .play(let id) = event, let button = PlayButtons.parse(id) {
                 let sounds = button.isQuestion ? content.question.audio : content.answer.audio
                 if sounds.indices.contains(button.index) {
                     audio.play([CardSound(sounds[button.index], mediaFolder: mediaFolder)])
+                }
+            }
+        }
+        .id(cardHostRevision)
+        .overlay {
+            if cardHostUnavailable {
+                CardHostFailure {
+                    cardHostUnavailable = false
+                    cardHostRevision += 1
                 }
             }
         }

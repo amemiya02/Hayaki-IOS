@@ -159,7 +159,8 @@ struct CardWebView: UIViewRepresentable {
     static func dismantleUIView(_ webView: WKWebView, coordinator: Coordinator) {
         webView.configuration.userContentController.removeScriptMessageHandler(forName: Coordinator.messageHandler)
         webView.configuration.userContentController.removeScriptMessageHandler(forName: Coordinator.templateHandler)
-        coordinator.invalidateTemplate()
+        coordinator.stop()
+        webView.navigationDelegate = nil
         webView.configuration.userContentController.removeScriptMessageHandler(
             forName: Coordinator.inputHandler, contentWorld: .defaultClient
         )
@@ -189,6 +190,10 @@ struct CardWebView: UIViewRepresentable {
         /// The side last handed to the page.
         private var shown: CardDisplay?
         private var pageLoaded = false
+        private var navigation: WKNavigation?
+        private var renderDeadline: Task<Void, Never>?
+        private var retries = 0
+        private var hostFailed = false
         private var theme: HayakiTheme?
 
         func loadHostPage() {
@@ -196,7 +201,37 @@ struct CardWebView: UIViewRepresentable {
             sentSchedule = nil
             invalidateTemplate()
             shown = nil
-            webView?.load(URLRequest(url: CardResources.hostPageURL))
+            navigation = webView?.load(URLRequest(url: CardResources.hostPageURL))
+            waitForRendering()
+        }
+
+        func stop() {
+            renderDeadline?.cancel()
+            renderDeadline = nil
+            invalidateTemplate()
+        }
+
+        private func waitForRendering() {
+            renderDeadline?.cancel()
+            renderDeadline = Task { [weak self] in
+                try? await Task.sleep(for: .seconds(8))
+                guard !Task.isCancelled else { return }
+                self?.recoverHost()
+            }
+        }
+
+        private func recoverHost() {
+            stop()
+            guard !hostFailed else { return }
+            guard retries == 0 else {
+                hostFailed = true
+                pageLoaded = false
+                Self.log.error("The card host did not render after reloading.")
+                onEvent(.unavailable)
+                return
+            }
+            retries += 1
+            loadHostPage()
         }
 
         func updateReviewer(_ options: ReviewerWebOptions?) {
@@ -259,9 +294,16 @@ struct CardWebView: UIViewRepresentable {
         }
 
         func show(_ display: CardDisplay) {
-            if wanted != display { reloaded = nil }
+            let changed = wanted != display
+            if changed { reloaded = nil }
             wanted = display
-            sendIfReady()
+            if hostFailed && changed {
+                hostFailed = false
+                retries = 0
+                loadHostPage()
+            } else {
+                sendIfReady()
+            }
         }
 
         private func sendIfReady() {
@@ -273,28 +315,51 @@ struct CardWebView: UIViewRepresentable {
             templateToken = token
             awaitingTemplateRequests = 0
             shown = wanted
-            webView.evaluateJavaScript("hayaki.show(\(argument), '\(token)', \(focusTypedAnswer)); true") { _, error in
-                if let error {
+            waitForRendering()
+            webView.callAsyncJavaScript(
+                "window.hayaki.show(JSON.parse(payload), token, focus);",
+                arguments: ["payload": argument, "token": token, "focus": focusTypedAnswer],
+                in: nil, in: .page
+            ) { [weak self] result in
+                guard let self, templateToken == token else { return }
+                if case .failure(let error) = result {
                     Self.log.error("The card host page could not show a card: \(error, privacy: .public)")
+                    recoverHost()
                 }
             }
         }
 
         func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+            guard self.navigation === navigation, !hostFailed else { return }
             pageLoaded = true
             sendAppearance()
-            sendIfReady()
+            if wanted == nil {
+                renderDeadline?.cancel()
+                renderDeadline = nil
+            } else {
+                sendIfReady()
+            }
             sendScheduleIfReady()
             sendReviewerOptions()
         }
 
         func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: any Error) {
+            didFail(navigation, with: error)
+        }
+
+        func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: any Error) {
+            didFail(navigation, with: error)
+        }
+
+        private func didFail(_ navigation: WKNavigation?, with error: any Error) {
+            guard self.navigation === navigation else { return }
             Self.log.error("The card host page did not load: \(error, privacy: .public)")
+            recoverHost()
         }
 
         func webViewWebContentProcessDidTerminate(_ webView: WKWebView) {
             Self.log.error("The card web view's content process ended; reloading")
-            loadHostPage()
+            recoverHost()
         }
 
         private static let log = Logger(subsystem: "io.github.amemiya02.hayaki", category: "CardWebView")
@@ -409,16 +474,44 @@ struct CardWebView: UIViewRepresentable {
             guard message.frameInfo.isMainFrame else { return }
             if message.name == Self.inputHandler {
                 if let input = ReviewerWebInput(message.body) { onEvent(.reviewer(input)) }
+            } else if message.name == Self.messageHandler,
+                      let body = message.body as? [String: Any],
+                      let token = body["rendered"] as? String {
+                guard token == templateToken else { return }
+                renderDeadline?.cancel()
+                renderDeadline = nil
+                retries = 0
+                onEvent(.rendered)
             } else if let event = CardPageEvent(message: message.body) {
                 onEvent(event)
             }
         }
     }
 }
+
+struct CardHostFailure: View {
+    let retry: () -> Void
+
+    var body: some View {
+        ContentUnavailableView {
+            Label {
+                Text("Could Not Display Card", bundle: .module)
+            } icon: {
+                Image(systemName: "rectangle.slash")
+            }
+        } actions: {
+            Button(action: retry) { Text("Retry", bundle: .module) }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(.background)
+    }
+}
 #endif
 
 /// What the learner does on the card host page.
 enum CardPageEvent: Equatable {
+    case rendered
+    case unavailable
     /// A tap on the card, not on a link or control.
     case tap
     case reviewer(ReviewerWebInput)
