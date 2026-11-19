@@ -3,6 +3,8 @@ import SwiftUI
 /// Actions that apply to the current review, card or note.
 struct ReviewerActionsMenu: View {
     let model: StudySessionModel
+    let showsEditNote: Bool
+    let onEditNote: (Int64) -> Void
     @State private var editingDueDate = false
     @State private var confirmingReset = false
     @State private var confirmingDelete = false
@@ -30,6 +32,15 @@ struct ReviewerActionsMenu: View {
             }
             if let card = model.state.card {
                 Section {
+                    if showsEditNote {
+                        Button { onEditNote(card.id) } label: {
+                            Label {
+                                Text("Edit Note", bundle: .module)
+                            } icon: {
+                                Image(systemName: "square.and.pencil")
+                            }
+                        }
+                    }
                     if card.isNoteMarked {
                         option("Unmark Note") { await model.toggleMark() }
                     } else {

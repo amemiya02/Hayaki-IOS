@@ -14,6 +14,13 @@ public struct StudyDeck: Identifiable, Hashable, Sendable {
 }
 
 extension View {
+    /// Supplies the sheet the reviewer opens when the learner edits a note.
+    public func studyNoteEditor<Editor: View>(
+        @ViewBuilder _ editor: @escaping @MainActor @Sendable (Int64) -> Editor
+    ) -> some View {
+        environment(\.studyNoteEditor) { cardID in AnyView(editor(cardID)) }
+    }
+
     /// Presents a full-screen study session over `deck` while it is set,
     /// and sets it back to nil when the learner closes the session.
     public func studySession(of deck: Binding<StudyDeck?>, store: CollectionStore) -> some View {
@@ -35,6 +42,8 @@ public struct StudyScreen: View {
     @State private var model: StudySessionModel
     /// What the learner typed on a card that asks for typing.
     @State private var typedAnswer = ""
+    @State private var editedCard: EditedCard?
+    @Environment(\.studyNoteEditor) private var noteEditor
     #if os(iOS)
     @State private var audio = CardAudioPlayer()
     #endif
@@ -55,6 +64,9 @@ public struct StudyScreen: View {
         }
         .background(Color.studyBackground.ignoresSafeArea())
         .task { await model.run() }
+        .sheet(item: $editedCard) { card in
+            noteEditor?(card.id)
+        }
         .alert(
             Text("Study Action Failed", bundle: .module),
             isPresented: Binding(
@@ -93,7 +105,7 @@ public struct StudyScreen: View {
                 .keyboardShortcut(.cancelAction)
                 Spacer()
                 if model.state.card != nil || model.canUndo || model.canRedo {
-                    ReviewerActionsMenu(model: model)
+                    reviewerActions
                 }
             }
         }
@@ -185,6 +197,12 @@ public struct StudyScreen: View {
         #endif
     }
 
+    private var reviewerActions: some View {
+        ReviewerActionsMenu(model: model, showsEditNote: noteEditor != nil) { cardID in
+            editedCard = EditedCard(id: cardID)
+        }
+    }
+
     /// Turns the card over, with what the learner typed if the card asks
     /// for typing.
     private func showAnswer() {
@@ -195,6 +213,21 @@ public struct StudyScreen: View {
         } else {
             model.showAnswer()
         }
+    }
+}
+
+private struct EditedCard: Identifiable {
+    let id: Int64
+}
+
+private struct StudyNoteEditorKey: EnvironmentKey {
+    static let defaultValue: (@MainActor @Sendable (Int64) -> AnyView)? = nil
+}
+
+private extension EnvironmentValues {
+    var studyNoteEditor: (@MainActor @Sendable (Int64) -> AnyView)? {
+        get { self[StudyNoteEditorKey.self] }
+        set { self[StudyNoteEditorKey.self] = newValue }
     }
 }
 
@@ -395,7 +428,7 @@ private extension Color {
     }
 }
 
-private extension DynamicTypeSize {
+extension DynamicTypeSize {
     /// How much larger or smaller than at the default text size the card is
     /// drawn, so cards follow the learner's text size like the rest of the app.
     var cardZoom: CGFloat {

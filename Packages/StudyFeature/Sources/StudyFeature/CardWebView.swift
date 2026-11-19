@@ -11,11 +11,18 @@ struct CardDisplay: Equatable, Encodable {
     let cardID: Int64
 
     init(_ card: StudyCard, isAnswer: Bool) {
-        html = isAnswer ? card.answer.html : card.question.html
-        css = card.css
-        bodyClass = card.bodyClass
+        self.init(
+            html: isAnswer ? card.answer.html : card.question.html,
+            css: card.css, bodyClass: card.bodyClass, isAnswer: isAnswer, cardID: card.id
+        )
+    }
+
+    init(html: String, css: String, bodyClass: String, isAnswer: Bool, cardID: Int64) {
+        self.html = html
+        self.css = css
+        self.bodyClass = bodyClass
         self.isAnswer = isAnswer
-        cardID = card.id
+        self.cardID = cardID
     }
 
     /// The page reads only these.

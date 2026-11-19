@@ -1,12 +1,18 @@
 import CollectionStore
+import NoteEditorFeature
 import SwiftUI
 
 /// Everything about one card: its note's fields, its deck, when it is due
 /// and its review history.
 struct CardDetailScreen: View {
     @State private var model: CardDetailModel
+    @State private var isEditing = false
+    @State private var didDeleteNote = false
+    @Environment(\.dismiss) private var dismiss
+    private let store: CollectionStore
 
     init(store: CollectionStore, cardID: Int64) {
+        self.store = store
         _model = State(initialValue: CardDetailModel(store: store, cardID: cardID))
     }
 
@@ -16,6 +22,28 @@ struct CardDetailScreen: View {
             #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
             #endif
+            .toolbar {
+                if case .loaded = model.state {
+                    ToolbarItem(placement: .primaryAction) {
+                        Button { isEditing = true } label: {
+                            Label {
+                                Text("Edit Note", bundle: .module)
+                            } icon: {
+                                Image(systemName: "square.and.pencil")
+                            }
+                        }
+                    }
+                }
+            }
+            .sheet(isPresented: $isEditing, onDismiss: {
+                guard didDeleteNote else { return }
+                didDeleteNote = false
+                dismiss()
+            }) {
+                NoteEditorScreen(store: store, editingCardID: model.cardID) {
+                    didDeleteNote = true
+                }
+            }
             .task { await model.run() }
     }
 
