@@ -1,8 +1,552 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "A collection package (.colpkg) replaces the receiving collection." : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "コレクションパッケージ（.colpkg）は、取り込み先のコレクション全体を置き換えます。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "集合包（.colpkg）会替换接收端的整个集合。"
+          }
+        }
+      }
+    },
+    "A deck package (.apkg) merges into the receiving collection." : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "デッキパッケージ（.apkg）は、取り込み先のコレクションに統合されます。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "牌组包（.apkg）会合并到接收端的集合中。"
+          }
+        }
+      }
+    },
+    "About" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "このアプリについて"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "关于"
+          }
+        }
+      }
+    },
+    "Added an in-app transfer guide, help links and build information." : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "アプリ内の移行ガイド、ヘルプへのリンク、ビルド情報を追加しました。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "新增应用内迁移指南、帮助链接和构建信息。"
+          }
+        }
+      }
+    },
+    "Anki Core" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Anki コア"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Anki 核心"
+          }
+        }
+      }
+    },
+    "Anki Forums" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Anki フォーラム"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Anki 论坛"
+          }
+        }
+      }
+    },
+    "AnkiDroid Manual" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "AnkiDroid マニュアル"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "AnkiDroid 手册"
+          }
+        }
+      }
+    },
+    "App Version" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "アプリのバージョン"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "应用版本"
+          }
+        }
+      }
+    },
+    "Bring a Package into Hayaki" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hayaki に取り込む"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "将包导入 Hayaki"
+          }
+        }
+      }
+    },
+    "Build" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ビルド番号"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "构建编号"
+          }
+        }
+      }
+    },
+    "Changelog" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "更新履歴"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "更新日志"
+          }
+        }
+      }
+    },
+    "Choose a Package" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "パッケージの選び方"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "选择包类型"
+          }
+        }
+      }
+    },
+    "Credits" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "クレジット"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "致谢"
+          }
+        }
+      }
+    },
+    "Desktop Anki Manual" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "デスクトップ版 Anki マニュアル"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "桌面版 Anki 手册"
+          }
+        }
+      }
+    },
+    "Export a deck or collection package below. Include media to bring images and audio. For a deck package, also include scheduling information if you want to move review progress." : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "下のボタンからデッキまたはコレクションのパッケージを書き出します。画像や音声を移すにはメディアを含めます。デッキの復習の進み具合も移すには、スケジュール情報を含めます。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "在下方导出牌组包或集合包。要转移图片和音频，请选择包含媒体。导出牌组包时，如果还想转移复习进度，请选择包含排程信息。"
+          }
+        }
+      }
+    },
+    "For your own server, choose Self-Hosted. Enter its address and sign in with the user name and password for that server." : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "自分のサーバーを使う場合は「セルフホスト」を選びます。サーバーアドレスを入力し、そのサーバーのユーザー名とパスワードでログインします。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "如果使用自己的服务器，请选择「自托管」，输入服务器地址，再用该服务器的用户名和密码登录。"
+          }
+        }
+      }
+    },
+    "Hayaki is an independent project. It has no affiliation with or endorsement from the makers of Anki, AnkiWeb or AnkiDroid." : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hayaki は独立したプロジェクトです。Anki、AnkiWeb、AnkiDroid の開発元との提携関係はなく、各開発元の公認も受けていません。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hayaki 是独立项目，与 Anki、AnkiWeb 或 AnkiDroid 的开发方无关联，也未获其认可。"
+          }
+        }
+      }
+    },
+    "Help" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ヘルプ"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "帮助"
+          }
+        }
+      }
+    },
+    "Help & About" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ヘルプとアプリ情報"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "帮助与应用信息"
+          }
+        }
+      }
+    },
+    "In Hayaki on Android or in AnkiDroid, choose Export from the Decks menu for the whole collection. For one deck, touch and hold the deck, then choose Export." : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Android 版 Hayaki または AnkiDroid では、デッキ画面のメニューで「エクスポート」を選ぶと、コレクション全体を書き出せます。デッキを一つだけ書き出すには、デッキを長押しして「エクスポート」を選びます。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "在 Android 版 Hayaki 或 AnkiDroid 中，从牌组页面的菜单选择「导出」，即可导出整个集合。只导出一个牌组时，请长按该牌组，再选择「导出」。"
+          }
+        }
+      }
+    },
+    "In Sync Destination, choose AnkiWeb and sign in with your AnkiWeb email address and password." : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "「同期先」で AnkiWeb を選び、AnkiWeb のメールアドレスとパスワードでログインします。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "在「同步目标」中选择 AnkiWeb，然后使用你的 AnkiWeb 电子邮件地址和密码登录。"
+          }
+        }
+      }
+    },
+    "In desktop Anki, choose File > Export and select a deck or collection package." : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "デスクトップ版 Anki では、「ファイル」から「エクスポート」を開き、デッキまたはコレクションのパッケージを選びます。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "在桌面版 Anki 中，选择「文件」>「导出」，然后选择牌组包或集合包。"
+          }
+        }
+      }
+    },
+    "Initial iPhone and iPad development release." : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "iPhone・iPad 向けの最初の開発版です。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "iPhone 和 iPad 开发版首次发布。"
+          }
+        }
+      }
+    },
+    "Manuals" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "マニュアル"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "使用手册"
+          }
+        }
+      }
+    },
+    "Report a Hayaki Issue" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hayaki の問題を報告"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "反馈 Hayaki 问题"
+          }
+        }
+      }
+    },
+    "Save or share the package to Files on your iPhone or iPad, then choose it below. Hayaki asks you to confirm and makes a backup before replacing your collection." : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "パッケージを iPhone や iPad の「ファイル」に保存または共有してから、下のボタンで選びます。コレクションを置き換える前に確認画面が表示され、バックアップが作られます。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "将包保存或分享到 iPhone 或 iPad 的「文件」应用，然后在下方选择该文件。Hayaki 会先请你确认并备份，再替换集合。"
+          }
+        }
+      }
+    },
+    "Send a Package from Hayaki" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hayaki から書き出す"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "从 Hayaki 发送包"
+          }
+        }
+      }
+    },
     "Settings" : {
       "comment" : "Title of the Settings section and its tab."
+    },
+    "Source Code and License" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ソースコードとライセンス"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "源代码与许可证"
+          }
+        }
+      }
+    },
+    "Study and edit collections offline. Import and export deck and collection packages, review statistics, and change deck options." : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "オフラインでコレクションを学習・編集できます。パッケージの読み込みと書き出し、統計の確認、デッキオプションの変更に対応しました。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "离线学习和编辑集合。支持导入和导出牌组包与集合包、查看统计数据和修改牌组选项。"
+          }
+        }
+      }
+    },
+    "Sync Between Devices" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "端末間の同期"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "在设备之间同步"
+          }
+        }
+      }
+    },
+    "Sync with AnkiWeb or a self-hosted Anki sync server." : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "AnkiWeb またはセルフホストの Anki 同期サーバーで同期できます。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "支持使用 AnkiWeb 或自托管 Anki 同步服务器进行同步。"
+          }
+        }
+      }
+    },
+    "Tap Share to send the package to the other device. In Hayaki on Android or in AnkiDroid, open the file from the Decks menu with Import. In desktop Anki, choose File > Import." : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "「共有」をタップし、パッケージを別の端末に送ります。Android 版 Hayaki または AnkiDroid では、デッキ画面のメニューで「インポート」を選んで開きます。デスクトップ版 Anki では、「ファイル」から「インポート」を選びます。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "轻点「共享」，将包发送到另一台设备。在 Android 版 Hayaki 或 AnkiDroid 中，从牌组页面的菜单选择「导入」并打开文件。在桌面版 Anki 中，选择「文件」>「导入」。"
+          }
+        }
+      }
+    },
+    "Transfer Guide" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "移行ガイド"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "迁移指南"
+          }
+        }
+      }
+    },
+    "Use the same sync destination on your other devices. To switch destinations, sign out first." : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ほかの端末でも同じ同期先を使用してください。同期先を切り替えるには、先にログアウトします。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "请在其他设备上使用相同的同步目标。要切换同步目标，请先退出登录。"
+          }
+        }
+      }
     }
   },
   "version" : "1.0"
