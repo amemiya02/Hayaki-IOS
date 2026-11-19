@@ -27,7 +27,7 @@ struct AppearanceSettingsScreen: View {
                 } label: { Text("System Night Theme", bundle: .module) }
                 .disabled(settings.mode != .system)
             } footer: {
-                Text("The system theme uses Light during the day and your night theme when the device uses Dark Mode.", bundle: .module)
+                Text("System uses Light when the device uses Light Mode and your night theme in Dark Mode.", bundle: .module)
             }
 
             Section {

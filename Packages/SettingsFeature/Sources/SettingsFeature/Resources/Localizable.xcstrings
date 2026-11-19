@@ -1348,7 +1348,7 @@
       },
       "extractionState" : "manual"
     },
-    "The system theme uses Light during the day and your night theme when the device uses Dark Mode." : {
+    "System uses Light when the device uses Light Mode and your night theme in Dark Mode." : {
       "localizations" : {
         "ja" : {
           "stringUnit" : {

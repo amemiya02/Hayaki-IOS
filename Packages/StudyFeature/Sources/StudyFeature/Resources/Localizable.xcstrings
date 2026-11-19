@@ -2295,6 +2295,12 @@
         "ja": { "stringUnit": { "state": "translated", "value": "タイムボックス（分）" } },
         "zh-Hans": { "stringUnit": { "state": "translated", "value": "限时时长（分钟）" } }
       }
+    },
+    "Scheduling": {
+      "localizations": {
+        "ja": { "stringUnit": { "state": "translated", "value": "スケジュール" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "排程" } }
+      }
     }
   },
   "version" : "1.0"
