@@ -33,18 +33,18 @@
         }
       }
     },
-    "%lld min left" : {
+    "%@ left" : {
       "localizations" : {
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "残り%lld分"
+            "value" : "残り%@"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "剩余 %lld 分钟"
+            "value" : "剩余 %@"
           }
         }
       }

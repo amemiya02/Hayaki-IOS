@@ -441,7 +441,10 @@ public struct StudyScreen: View {
                         if model.showsRemainingCounts {
                             StudyCountsView(counts: model.counts)
                             if let minutes = model.minutesRemaining {
-                                Text("\(minutes) min left", bundle: .module)
+                                let duration = Duration.seconds(max(1, minutes) * 60)
+                                let units: Set<Duration.UnitsFormatStyle.Unit> =
+                                    minutes >= 24 * 60 ? [.days, .hours] : [.hours, .minutes]
+                                Text("\(duration.formatted(.units(allowed: units))) left", bundle: .module)
                                     .font(.caption)
                                     .monospacedDigit()
                             }
