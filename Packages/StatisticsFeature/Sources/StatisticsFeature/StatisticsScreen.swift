@@ -5,6 +5,8 @@ import SwiftUI
 /// the whole collection, over a chosen period.
 public struct StatisticsScreen: View {
     @State private var model: StatisticsModel
+    @State private var showBacklog = false
+    @State private var firstWeekday: StatisticsWeekday = .sunday
 
     public init(store: CollectionStore) {
         _model = State(initialValue: StatisticsModel(store: store))
@@ -99,6 +101,8 @@ public struct StatisticsScreen: View {
             }
         } else {
             TodaySection(today: today)
+            ForecastSection(graphs: graphs, includeBacklog: $showBacklog)
+            CalendarSection(graphs: graphs, firstWeekday: $firstWeekday)
             ReviewHistorySection(days: reviews, earliestDay: graphs.period.earliestReviewDay)
             CardCountsSection(counts: cardCounts)
             RatingsSection(ratings: ratings)

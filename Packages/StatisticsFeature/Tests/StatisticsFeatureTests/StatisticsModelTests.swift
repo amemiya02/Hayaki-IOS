@@ -1,5 +1,6 @@
 import CollectionStore
 import CollectionTesting
+import Foundation
 import StatisticsFeature
 import Testing
 
@@ -70,6 +71,50 @@ struct StatisticsModelTests {
             #expect(deck.reviewDays.map(\.count) == [1, 3])
             #expect(deck.reviewDays.map(\.milliseconds) == [11_000, 9_000])
             #expect(deck.reviewDays.last?.entries.map(\.count) == [1, 0, 1, 1, 0])
+        }
+    }
+
+    @Test("Forecast filters scheduled days and overdue cards, and calendar uses the same study days as reviews")
+    func forecastAndCalendar() async throws {
+        try await withTemporaryCollection { store in
+            let spanish = try await store.addDeck(named: "Spanish")
+            let spanishCards = try await store.addBasicNotes(count: 6, toDeck: spanish)
+            try await store.review(spanishCards[0], rating: .again, daysAgo: 2)
+            try await store.makeDue(inDays: 1, [spanishCards[1]])
+            try await store.makeDue(inDays: 45, [spanishCards[2]])
+            try await store.makeOverdue(byDays: 2, [spanishCards[3]])
+            try await store.makeDue(inDays: 4, [spanishCards[4]])
+            try await store.suspend([spanishCards[4]])
+            try await store.review(spanishCards[5], rating: .good)
+            try await store.makeDue(inDays: 7, [spanishCards[0], spanishCards[5]])
+            let other = try await store.addDeck(named: "Other")
+            let otherCards = try await store.addBasicNotes(count: 1, toDeck: other)
+            try await store.makeDue(inDays: 1, otherCards)
+
+            let model = StatisticsModel(store: store)
+            await model.refresh()
+            #expect(model.graphs?.forecast().tomorrow == 2)
+
+            model.scope = .deck(id: spanish)
+            await model.refresh()
+            let month = try #require(model.graphs)
+            #expect(month.forecast().days.map(\.offset) == [1, 7])
+            #expect(month.forecast().days.map(\.count) == [1, 2])
+            #expect(month.forecast().hasBacklog)
+            #expect(month.forecast(includeBacklog: true).days.map(\.offset) == [-2, 1, 7])
+            #expect(month.forecast(includeBacklog: true).total == 4)
+
+            let calendar = Calendar.statisticsCalendar
+            let timing = try await store.core.schedTimingToday()
+            let cutoff = Date(timeIntervalSince1970: TimeInterval(timing.nextDayAt))
+            let expectedToday = calendar.date(byAdding: .day, value: -1, to: calendar.startOfDay(for: cutoff))
+            let expectedEarlier = calendar.date(byAdding: .day, value: -3, to: calendar.startOfDay(for: cutoff))
+            #expect(month.activityDays().map(\.date) == [expectedEarlier, expectedToday].compactMap { $0 })
+            #expect(month.activityDays().map(\.count) == [1, 1])
+
+            model.period = .threeMonths
+            await model.refresh()
+            #expect(model.graphs?.forecast().days.map(\.offset) == [1, 7, 45])
         }
     }
 

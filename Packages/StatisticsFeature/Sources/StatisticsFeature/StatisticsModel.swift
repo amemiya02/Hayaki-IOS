@@ -67,11 +67,16 @@ public final class StatisticsModel {
                 $0.days = requested.period.days
             })
 
+            let timing = try await store.core.schedTimingToday()
+            let calendar = Calendar.statisticsCalendar
+            let cutoff = Date(timeIntervalSince1970: TimeInterval(timing.nextDayAt))
+            let today = calendar.date(byAdding: .day, value: -1, to: calendar.startOfDay(for: cutoff)) ?? cutoff
+
             // A newer selection's load has taken over.
             guard !Task.isCancelled, requested == selection else { return }
             self.decks = decks
             if scope != self.scope { self.scope = scope }
-            graphs = StatisticsGraphs(response: response, period: requested.period)
+            graphs = StatisticsGraphs(response: response, period: requested.period, studyDate: today)
             state = .loaded
         } catch {
             guard !Task.isCancelled, requested == selection else { return }
