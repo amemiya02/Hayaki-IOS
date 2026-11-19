@@ -74,7 +74,7 @@ public final class SyncModel {
     public var policy: SyncPolicy {
         didSet {
             if let data = try? PropertyListEncoder().encode(policy) {
-                preferences?.set(data, forKey: policyKey)
+                preferences?.set(data, forKey: preferenceKeys.policy)
             }
         }
     }
@@ -95,7 +95,7 @@ public final class SyncModel {
     private var checkingStatus = false
     @ObservationIgnored private var didCancelStatusCheck = false
     @ObservationIgnored private var lastAttempt: Date? {
-        didSet { preferences?.set(lastAttempt, forKey: "\(policyKey).lastAttempt") }
+        didSet { preferences?.set(lastAttempt, forKey: preferenceKeys.lastAttempt) }
     }
     @ObservationIgnored private let now: () -> Date
 
@@ -121,7 +121,7 @@ public final class SyncModel {
     @ObservationIgnored private let store: CollectionStore
     @ObservationIgnored private let storage: any SyncAccountStorage
     @ObservationIgnored private let preferences: UserDefaults?
-    @ObservationIgnored private let policyKey: String
+    @ObservationIgnored private let preferenceKeys: (policy: String, lastAttempt: String)
     @ObservationIgnored private let networkOverride: (() -> SyncNetwork)?
     @ObservationIgnored private let monitor: NWPathMonitor?
     /// Cancels whatever is running: signing in or a sync.
@@ -140,11 +140,11 @@ public final class SyncModel {
         self.store = store
         self.storage = storage
         self.preferences = preferences
-        let key = profileID.map { "hayakiSyncPolicy.\($0.uuidString)" } ?? "hayakiSyncPolicy"
-        policyKey = key
+        let keys = Self.keys(for: profileID)
+        preferenceKeys = keys
         self.now = now
-        lastAttempt = preferences?.object(forKey: "\(key).lastAttempt") as? Date
-        policy = preferences?.data(forKey: key)
+        lastAttempt = preferences?.object(forKey: keys.lastAttempt) as? Date
+        policy = preferences?.data(forKey: keys.policy)
             .flatMap { try? PropertyListDecoder().decode(SyncPolicy.self, from: $0) } ?? SyncPolicy()
         networkOverride = network
         monitor = network == nil ? NWPathMonitor() : nil
@@ -173,6 +173,18 @@ public final class SyncModel {
 
     deinit {
         monitor?.cancel()
+    }
+
+    /// Removes sync preferences when the owning profile is deleted.
+    public static func removePolicy(in preferences: UserDefaults, profileID: UUID?) {
+        let keys = keys(for: profileID)
+        preferences.removeObject(forKey: keys.policy)
+        preferences.removeObject(forKey: keys.lastAttempt)
+    }
+
+    private static func keys(for profileID: UUID?) -> (policy: String, lastAttempt: String) {
+        let policy = profileID.map { "hayakiSyncPolicy.\($0.uuidString)" } ?? "hayakiSyncPolicy"
+        return (policy, "\(policy).lastAttempt")
     }
 
     /// Whether signing in or a collection or media sync is under way.
