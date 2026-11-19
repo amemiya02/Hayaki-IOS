@@ -5,7 +5,21 @@
       "comment" : "Upload or download progress: bytes transferred of the total, such as “1.2 MB of 3.4 MB”."
     },
     "AnkiWeb" : {
-      "comment" : "Header of the section explaining that Hayaki does not sign in to AnkiWeb."
+      "comment" : "The hosted sync destination operated by Anki.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "AnkiWeb"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "AnkiWeb"
+          }
+        }
+      }
     },
     "Cancel" : {
       "comment" : "Button that stops signing in or syncing."
@@ -15,6 +29,23 @@
     },
     "Connecting…" : {
       "comment" : "Shown while a sync connects to the server."
+    },
+    "Could not reach AnkiWeb. Check your internet connection and try again." : {
+      "comment" : "Shown when a network error prevents reaching AnkiWeb.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "AnkiWeb に接続できませんでした。インターネット接続を確認して、もう一度お試しください。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "无法连接 AnkiWeb。请检查网络连接后重试。"
+          }
+        }
+      }
     },
     "Could not reach the sync server at %@. Check the address, and that the server is running and reachable from this device." : {
       "comment" : "Failure: the server could not be reached. The placeholder is the server's host name."
@@ -28,17 +59,62 @@
     "Downloading…" : {
       "comment" : "Shown while the collection is downloaded from the server."
     },
+    "Email Address" : {
+      "comment" : "The email address used to sign in to AnkiWeb.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "メールアドレス"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "电子邮件地址"
+          }
+        }
+      }
+    },
     "Enter the server's full address, starting with http:// or https://." : {
       "comment" : "Shown when the server address is not a web address."
     },
-    "Hayaki does not sign in to AnkiWeb. AnkiWeb's terms allow only apps its operators have approved, and Hayaki is not one of them. Hayaki syncs only with a sync server you run or choose yourself." : {
-      "comment" : "Explains why there is no AnkiWeb sign-in. AnkiWeb is a product name; do not translate it."
+    "Hayaki stores the sign-in key in this device’s Keychain." : {
+      "comment" : "Footer of the sync sign-in form.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hayaki はサインインキーをこのデバイスのキーチェーンに保存します。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hayaki 将登录密钥存储在此设备的钥匙串中。"
+          }
+        }
+      }
     },
     "Not Now" : {
       "comment" : "Button that leaves both collections as they are instead of uploading or downloading."
     },
     "Off" : {
-      "comment" : "Value of the Sync row in Settings when sync is not set up."
+      "comment" : "Value of the Sync row in Settings when sync is not set up.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "オフ"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "关闭"
+          }
+        }
+      }
     },
     "Password" : {
       "comment" : "Label of the field for the password on the sync server."
@@ -58,11 +134,39 @@
     "Send the collection on this device to the server, so your other devices can download it." : {
       "comment" : "Explains uploading to a server that has no collection yet."
     },
-    "Server" : {
-      "comment" : "Label of the signed-in sync server's address."
+    "Self-Hosted" : {
+      "comment" : "Sync destination option for a server the learner runs or chooses.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "セルフホスト"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "自托管"
+          }
+        }
+      }
     },
     "Server Address" : {
-      "comment" : "Label of the field for the sync server's web address."
+      "comment" : "Label of the field for the sync server's web address.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "サーバーアドレス"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "服务器地址"
+          }
+        }
+      }
     },
     "Sign In" : {
       "comment" : "Button that signs in to the sync server."
@@ -83,7 +187,38 @@
       "comment" : "Footer under Sign Out."
     },
     "Sync" : {
-      "comment" : "Title of the Sync row in Settings and of the sync screen."
+      "comment" : "Title of the Sync row in Settings and of the sync screen.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "同期"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "同步"
+          }
+        }
+      }
+    },
+    "Sync Destination" : {
+      "comment" : "Label of the destination picker and of the active destination when signed in.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "同期先"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "同步目标"
+          }
+        }
+      }
     },
     "Sync Now" : {
       "comment" : "Button that syncs the collection with the server."
@@ -115,11 +250,11 @@
     "The server now has the collection from this device." : {
       "comment" : "Shown after uploading."
     },
-    "The server's address, and your user name and password on it. Hayaki keeps only the key the server issues in exchange, in this device's Keychain; your password is not stored." : {
-      "comment" : "Footer under the sign-in fields, saying what is kept."
-    },
     "The sync failed." : {
       "comment" : "Sync failure for any other reason; the cause is shown below it."
+    },
+    "The sync server redirected to an address outside the selected destination." : {
+      "comment" : "Sync failure for an unexpected server redirect."
     },
     "The sync was cancelled before it finished." : {
       "comment" : "Shown after the learner cancelled a sync."
@@ -129,9 +264,6 @@
     },
     "This device now has the collection from the server." : {
       "comment" : "Shown after downloading."
-    },
-    "To move your collection to or from AnkiWeb, export it from Hayaki as a collection package and sync it from desktop Anki or AnkiDroid." : {
-      "comment" : "How to reach AnkiWeb without Hayaki signing in to it."
     },
     "Upload to Server" : {
       "comment" : "Button that replaces the server's collection with this device's."
