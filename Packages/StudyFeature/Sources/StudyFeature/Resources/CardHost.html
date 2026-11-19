@@ -179,6 +179,7 @@
 
     const dark = window.matchMedia("(prefers-color-scheme: dark)");
     let shownBodyClass = "card";
+    let legacyDark = dark.matches;
 
     function post(message) {
         window.webkit?.messageHandlers?.hayaki?.postMessage(message);
@@ -188,8 +189,15 @@
         const night = dark.matches;
         document.documentElement.classList.toggle("night-mode", night);
         const settings = Array.from(document.body.classList).filter(name => name.startsWith("reviewer-"));
-        document.body.className = shownBodyClass + (night ? " nightMode night_mode ankidroid_dark_mode" : "");
+        document.body.className = shownBodyClass + (night ? " nightMode night_mode" : "");
+        document.body.classList.toggle("ankidroid_dark_mode", night && legacyDark);
         document.body.classList.add(...settings);
+    }
+
+    function appearance(canvas, isLegacyDark) {
+        legacyDark = isLegacyDark;
+        document.documentElement.style.setProperty("--hayaki-night-canvas", canvas);
+        applyColorScheme();
     }
 
     // Scripts inserted with innerHTML do not run; replace each with a fresh
@@ -313,7 +321,7 @@
         post("tap");
     });
 
-    window.hayaki = { show: show };
+    window.hayaki = { show, appearance };
 })();
 </script>
 </body>

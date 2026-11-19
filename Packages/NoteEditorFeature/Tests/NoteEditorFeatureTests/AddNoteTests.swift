@@ -121,6 +121,19 @@ struct AddNoteTests {
         }
     }
 
+    @Test func disabledHTMLReplacementPreservesLiteralLineBreaks() async throws {
+        try await withTemporaryCollection { store in
+            let editor = NoteEditorModel(store: store)
+            await editor.load()
+            editor.setText("Question", ofField: 0)
+            editor.setText("first\nsecond", ofField: 1, replaceNewlines: false)
+            editor.setText("first\nthird", ofField: 1, replaceNewlines: false)
+            let result = await editor.add()
+            let note = try await store.core.getNote(.with { $0.nid = result.noteID })
+            #expect(note.fields[1] == "first\nthird")
+        }
+    }
+
     @Test("After adding, the fields are empty again while note type, deck and tags stay for the next note")
     func readyForTheNextNote() async throws {
         try await withTemporaryCollection { store in

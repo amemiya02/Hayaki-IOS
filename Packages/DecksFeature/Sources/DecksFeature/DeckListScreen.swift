@@ -24,6 +24,8 @@ public struct DeckListScreen: View {
     public var body: some View {
         NavigationStack {
             content
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background { deckBackground }
                 .navigationTitle(Text("Decks", bundle: .module))
                 .toolbar {
                     ToolbarItem(placement: .primaryAction) {
@@ -112,7 +114,6 @@ public struct DeckListScreen: View {
                 }
             }
             .scrollContentBackground(.hidden)
-            .background { deckBackground }
             .refreshable { await model.refresh() }
             .environment(model)
         }

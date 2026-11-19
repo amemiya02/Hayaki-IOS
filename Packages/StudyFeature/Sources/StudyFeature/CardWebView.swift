@@ -222,8 +222,9 @@ struct CardWebView: UIViewRepresentable {
             let canvas = String(format: "#%06X", theme.backgroundRGB)
             // The template's own styling can supply --canvas or style .nightMode.
             webView.callAsyncJavaScript(
-                "document.documentElement.style.setProperty('--hayaki-night-canvas', canvas)",
-                arguments: ["canvas": canvas], in: nil, in: .page, completionHandler: nil
+                "window.hayaki.appearance(canvas, legacyDark)",
+                arguments: ["canvas": canvas, "legacyDark": theme == .dark],
+                in: nil, in: .page, completionHandler: nil
             )
         }
 

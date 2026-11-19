@@ -232,7 +232,9 @@ public final class NoteEditorModel {
             return field.name != fields[Int(indexes.occlusions)].name && field.name != fields[Int(indexes.image)].name
         }
         do {
+            let rememberedDeck = try await store.core.defaultDeckForNotetype(.with { $0.ntid = id }).did
             try await startNote(notetypeID: id)
+            if decks.contains(where: { $0.id == rememberedDeck }) { deckID = rememberedDeck }
         } catch {
             state = .failed(message: error.message)
             return
