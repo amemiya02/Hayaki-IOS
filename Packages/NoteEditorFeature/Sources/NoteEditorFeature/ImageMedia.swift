@@ -4,11 +4,18 @@ import ImageIO
 import UniformTypeIdentifiers
 
 /// Why an image could not be attached.
-public enum AttachImageError: Error, Equatable {
+public enum AttachImageError: Error, Equatable, LocalizedError {
     /// The data is not an image the system can read.
     case notAnImage
     /// The core could not store the file in the collection's media.
     case notStored(message: String)
+
+    public var errorDescription: String? {
+        switch self {
+        case .notAnImage: String(localized: "Choose a readable image.", bundle: .module)
+        case .notStored(let message): message
+        }
+    }
 }
 
 /// An image prepared for the collection's media: in a format every Anki
@@ -42,6 +49,32 @@ struct ImageMedia {
         let hash = Insecure.SHA1.hash(data: output.data).map { String(format: "%02x", $0) }.joined()
         let fileExtension = output.format == .jpeg ? "jpg" : output.format.preferredFilenameExtension ?? "jpg"
         fileName = "paste-\(hash).\(fileExtension)"
+    }
+
+    /// Applies the oriented preview's crop to the full-resolution image.
+    @concurrent
+    static func cropped(_ original: Data, to rect: CGRect) async throws -> Data {
+        let rect = rect.intersection(CGRect(x: 0, y: 0, width: 1, height: 1))
+        guard !rect.isNull, !rect.isEmpty,
+              let source = CGImageSourceCreateWithData(original as CFData, nil),
+              let properties = CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [CFString: Any],
+              let width = properties[kCGImagePropertyPixelWidth] as? Int,
+              let height = properties[kCGImagePropertyPixelHeight] as? Int,
+              let image = CGImageSourceCreateThumbnailAtIndex(source, 0, [
+                kCGImageSourceCreateThumbnailFromImageAlways: true,
+                kCGImageSourceCreateThumbnailWithTransform: true,
+                kCGImageSourceThumbnailMaxPixelSize: max(width, height),
+              ] as CFDictionary) else { throw AttachImageError.notAnImage }
+        let pixelRect = CGRect(x: rect.minX * CGFloat(image.width), y: rect.minY * CGFloat(image.height),
+                               width: rect.width * CGFloat(image.width), height: rect.height * CGFloat(image.height)).integral
+        guard let cropped = image.cropping(to: pixelRect) else { throw AttachImageError.notAnImage }
+        let format = CGImageSourceGetType(source) as String? == UTType.jpeg.identifier ? UTType.jpeg : .png
+        let output = NSMutableData()
+        guard let destination = CGImageDestinationCreateWithData(output, format.identifier as CFString, 1, nil)
+        else { throw AttachImageError.notAnImage }
+        CGImageDestinationAddImage(destination, cropped, nil)
+        guard CGImageDestinationFinalize(destination) else { throw AttachImageError.notAnImage }
+        return output as Data
     }
 
     /// The image re-written without its GPS metadata, losslessly. Nil for

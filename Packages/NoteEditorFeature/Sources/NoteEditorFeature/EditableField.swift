@@ -55,6 +55,16 @@ public struct EditableField: Equatable, Sendable {
         }
     }
 
+    mutating func replaceImage(named name: String, with replacement: String) {
+        content = content.replacing(FieldMarkup.imageTag) { match in
+            let source = match.output.1
+            guard FieldMarkup.plainText(fromHTML: String(source)) == name else { return String(match.output.0) }
+            return String(content[match.range.lowerBound..<source.startIndex])
+                + FieldMarkup.escaped(replacement, quotes: true)
+                + String(content[source.endIndex..<match.range.upperBound])
+        }
+    }
+
     private func plainHTML(_ text: String) -> String {
         let attachments = content.matches(of: FieldMarkup.mediaTag).map { match in
             let value = String(match.output)

@@ -1,4 +1,9 @@
 import CollectionStore
+import UniformTypeIdentifiers
+#if os(iOS)
+import AVFoundation
+import UIKit
+#endif
 import PhotosUI
 import SwiftUI
 
@@ -14,6 +19,11 @@ public struct NoteEditorScreen: View {
     @State private var showingConversion = false
     @State private var preview: PreviewRequest?
     @State private var newTag = ""
+    #if os(iOS)
+    @State private var occlusionPhoto: PhotosPickerItem?
+    @State private var showsOcclusionFiles = false
+    @State private var pendingOcclusionImage: Data?
+    #endif
     @State private var markupFields: Set<Int> = []
     @State private var selections: [Int: TextSelection] = [:]
     @AppStorage("noteEditorToolbarLayout") private var toolbarLayout = EditorToolbarLayout.scroll
@@ -86,6 +96,40 @@ public struct NoteEditorScreen: View {
                 }
         }
         .task { await model.load() }
+        #if os(iOS)
+        .onChange(of: occlusionPhoto) { _, item in
+            guard let item else { return }
+            Task {
+                defer { occlusionPhoto = nil }
+                do {
+                    if let data = try await item.loadTransferable(type: Data.self) {
+                        await chooseOcclusionImage(data)
+                    }
+                } catch {
+                    failure = error.localizedDescription
+                }
+            }
+        }
+        .fileImporter(isPresented: $showsOcclusionFiles, allowedContentTypes: [.image]) { result in
+            Task {
+                do {
+                    await chooseOcclusionImage(try await NoteEditorModel.readMediaFile(result.get()))
+                } catch {
+                    failure = error.localizedDescription
+                }
+            }
+        }
+        .alert(Text("Replace This Draft?", bundle: .module), isPresented: isPresent($pendingOcclusionImage), presenting: pendingOcclusionImage) { data in
+            Button(role: .destructive) {
+                Task { await startOcclusion(data) }
+            } label: {
+                Text("Replace Draft", bundle: .module)
+            }
+            Button(role: .cancel) {}
+        } message: { _ in
+            Text("The image occlusion note uses different fields.", bundle: .module)
+        }
+        #endif
         .interactiveDismissDisabled(isBusy || model.hasChanges || !newTag.isEmpty)
         .alert(Text("Discard Changes?", bundle: .module), isPresented: $confirmDiscard) {
             Button(role: .destructive) { dismiss() } label: { Text("Discard", bundle: .module) }
@@ -187,6 +231,9 @@ public struct NoteEditorScreen: View {
                     }
                 } else {
                     Picker(selection: notetypeSelection) {
+                        if model.isImageOcclusion, let name = model.notetypeName {
+                            Text(name).tag(model.notetypeID)
+                        }
                         ForEach(model.notetypes) { notetype in
                             Text(notetype.name).tag(notetype.id)
                         }
@@ -203,7 +250,39 @@ public struct NoteEditorScreen: View {
                     .navigationLinkPickerStyle()
                 }
             }
-            ForEach(Array(model.fields.enumerated()), id: \.offset) { index, field in
+            #if os(iOS)
+            if model.isImageOcclusion {
+                if let data = model.occlusionImageData {
+                    ImageOcclusionEditor(model: model, data: data)
+                } else if model.isEditing {
+                    Section {
+                        Text("The image file is missing from this collection.", bundle: .module)
+                    } header: {
+                        Text("Image Occlusion", bundle: .module)
+                    }
+                }
+            }
+            if !model.isEditing, model.occlusionImageData == nil {
+                let isImageOcclusion = model.isImageOcclusion
+                Section {
+                    PhotosPicker(selection: $occlusionPhoto, matching: .images, preferredItemEncoding: .current) {
+                        Label {
+                            if isImageOcclusion { Text("Choose Image", bundle: .module) }
+                            else { Text("Image Occlusion", bundle: .module) }
+                        } icon: {
+                            Image(systemName: "rectangle.dashed")
+                        }
+                    }
+                    .accessibilityIdentifier("start-image-occlusion")
+                    if model.isImageOcclusion {
+                        Button { showsOcclusionFiles = true } label: {
+                            Text("Choose Image from Files", bundle: .module)
+                        }
+                    }
+                }
+            }
+            #endif
+            ForEach(Array(model.fields.enumerated().filter { model.showsEditor(forField: $0.offset) }), id: \.offset) { index, field in
                 FieldSection(
                     model: model, index: index, field: field,
                     focusedField: $focusedField,
@@ -230,6 +309,13 @@ public struct NoteEditorScreen: View {
             } label: {
                 Text("Toolbar Layout", bundle: .module)
             }
+            #if os(iOS)
+            if !model.isEditing, model.occlusionImageData == nil {
+                Button { showsOcclusionFiles = true } label: {
+                    Label { Text("Image Occlusion from Files", bundle: .module) } icon: { Image(systemName: "folder") }
+                }
+            }
+            #endif
             if model.isEditing {
                 Button(role: .destructive) {
                     confirmDeletion = true
@@ -242,6 +328,29 @@ public struct NoteEditorScreen: View {
         }
         .disabled(model.state != .ready || isBusy)
     }
+
+    #if os(iOS)
+    private func chooseOcclusionImage(_ data: Data) async {
+        if !model.isImageOcclusion && model.hasChanges {
+            pendingOcclusionImage = data
+        } else {
+            await startOcclusion(data)
+        }
+    }
+
+    private func startOcclusion(_ data: Data) async {
+        guard !isBusy else { return }
+        isBusy = true
+        defer { isBusy = false }
+        commitTags()
+        do {
+            try await model.startImageOcclusion(with: data)
+            resetFieldInput()
+        } catch {
+            failure = error.localizedDescription
+        }
+    }
+    #endif
 
     private func close() {
         if model.hasChanges || !newTag.isEmpty { confirmDiscard = true }
@@ -292,7 +401,7 @@ public struct NoteEditorScreen: View {
                 withAnimation { added = note }
                 markupFields = []
                 selections = [:]
-                focusedField = 0
+                focusedField = model.isImageOcclusion ? nil : 0
                 AccessibilityNotification.Announcement(addedMessage(note)).post()
             case .needsConfirmation(let warning): self.warning = warning
             case .refused(let problem): refusal = problem
@@ -468,6 +577,14 @@ private struct FieldSection: View {
     @State private var photo: PhotosPickerItem?
     @State private var isLoadingPhoto = false
     @State private var attachError: AttachImageError?
+    #if os(iOS)
+    @Environment(\.openURL) private var openURL
+    @State private var media: EditorMediaRequest?
+    @State private var importsFile = false
+    @State private var camera = false
+    @State private var cameraDenied = false
+    @State private var cameraImage: Data?
+    #endif
 
     var body: some View {
         Section {
@@ -480,11 +597,45 @@ private struct FieldSection: View {
             .accessibilityIdentifier("note-field-\(index)")
             .font(showsMarkup ? .body.monospaced() : .body)
             .disableMarkupAutocorrection(showsMarkup)
-            ForEach(field.images, id: \.self) { name in
-                ImageRow(file: model.mediaFile(named: name), fieldName: field.name) {
+            ForEach(Array(Set(field.images)).sorted(), id: \.self) { name in
+                ImageRow(file: model.localMediaFile(named: name), fieldName: field.name) {
+                    #if os(iOS)
+                    guard let file = model.localMediaFile(named: name) else { return }
+                    Task {
+                        do {
+                            let data = try await NoteEditorModel.readMediaFile(file)
+                            media = EditorMediaRequest(.image(data, replacing: name))
+                        } catch {
+                            attachError = .notStored(message: error.localizedDescription)
+                        }
+                    }
+                    #endif
+                } remove: {
                     model.removeImage(named: name, fromField: index)
                 }
             }
+            #if os(iOS)
+            ForEach(Array(Set(field.sounds)).sorted(), id: \.self) { name in
+                HStack {
+                    Button {
+                        if let file = model.localMediaFile(named: name) {
+                            media = EditorMediaRequest(.playback(file))
+                        }
+                    } label: {
+                        Label(name, systemImage: "play.circle")
+                    }
+                    .buttonStyle(.borderless)
+                    Spacer()
+                    Button(role: .destructive) {
+                        model.removeSound(named: name, fromField: index)
+                    } label: {
+                        Image(systemName: "minus.circle.fill").foregroundStyle(.red)
+                    }
+                    .buttonStyle(.borderless)
+                    .accessibilityLabel(Text("Remove Media", bundle: .module))
+                }
+            }
+            #endif
             PhotosPicker(selection: $photo, matching: .images, preferredItemEncoding: .current) {
                 Label {
                     Text("Add Image", bundle: .module)
@@ -494,6 +645,9 @@ private struct FieldSection: View {
             }
             .disabled(isLoadingPhoto)
             .accessibilityLabel(Text("Add Image to \(field.name)", bundle: .module))
+            #if os(iOS)
+            mediaMenu
+            #endif
         } header: {
             HStack {
                 Text(field.name)
@@ -519,12 +673,54 @@ private struct FieldSection: View {
                 }
             }
         }
+        #if os(iOS)
+        .sheet(item: $media) { request in
+            mediaSheet(request)
+        }
+        .fullScreenCover(isPresented: $camera, onDismiss: {
+            if let data = cameraImage {
+                cameraImage = nil
+                media = EditorMediaRequest(.image(data, replacing: nil))
+            }
+        }) {
+            EditorCamera { data in
+                cameraImage = data
+                camera = false
+            }
+            .ignoresSafeArea()
+        }
+        .fileImporter(isPresented: $importsFile, allowedContentTypes: [.audio, .movie, .image]) { result in
+            Task {
+                do {
+                    let file = try result.get()
+                    if UTType(filenameExtension: file.pathExtension)?.conforms(to: .image) == true {
+                        let data = try await NoteEditorModel.readMediaFile(file)
+                        media = EditorMediaRequest(.image(data, replacing: nil))
+                    } else {
+                        try await model.importMedia(from: file, toField: index)
+                    }
+                } catch {
+                    attachError = .notStored(message: error.localizedDescription)
+                }
+            }
+        }
+        .alert(Text("Allow Camera Access", bundle: .module), isPresented: $cameraDenied) {
+            Button(role: .cancel) {}
+            Button {
+                if let url = URL(string: UIApplication.openSettingsURLString) { openURL(url) }
+            } label: {
+                Text("Open Settings", bundle: .module)
+            }
+        } message: {
+            Text("Allow camera access in Settings to take a picture for this field.", bundle: .module)
+        }
+        #endif
         .onChange(of: photo) { _, item in
             guard let item else { return }
             Task { await attach(item) }
         }
         .alert(
-            Text("Could Not Add the Image", bundle: .module),
+            Text("Could Not Open Media", bundle: .module),
             isPresented: Binding(get: { attachError != nil }, set: { if !$0 { attachError = nil } }),
             presenting: attachError
         ) { _ in
@@ -536,6 +732,62 @@ private struct FieldSection: View {
             }
         }
     }
+
+    #if os(iOS)
+    private var mediaMenu: some View {
+        Menu {
+            if UIImagePickerController.isSourceTypeAvailable(.camera) {
+                Button {
+                    Task {
+                        let granted = await AVCaptureDevice.requestAccess(for: .video)
+                        if granted { camera = true }
+                        else { cameraDenied = true }
+                    }
+                } label: {
+                    Label { Text("Take a Picture", bundle: .module) } icon: { Image(systemName: "camera") }
+                }
+            }
+            Button {
+                media = EditorMediaRequest(.drawing)
+            } label: {
+                Label { Text("Draw", bundle: .module) } icon: { Image(systemName: "pencil.tip") }
+            }
+            Button {
+                media = EditorMediaRequest(.recording)
+            } label: {
+                Label { Text("Record Audio", bundle: .module) } icon: { Image(systemName: "mic") }
+            }
+            Button { importsFile = true } label: {
+                Label { Text("Import from Files", bundle: .module) } icon: { Image(systemName: "folder") }
+            }
+        } label: {
+            Label { Text("Add Media", bundle: .module) } icon: { Image(systemName: "paperclip") }
+        }
+    }
+
+    @ViewBuilder
+    private func mediaSheet(_ request: EditorMediaRequest) -> some View {
+        switch request.kind {
+        case .recording:
+            EditorRecordingScreen { file in try await model.importMedia(from: file, toField: index) }
+        case .drawing:
+            EditorDrawingScreen { data in try await model.attachImage(data, toField: index) }
+        case .playback(let file):
+            EditorMediaPlayback(file: file)
+        case .image(let data, let original):
+            EditorMediaImage(data: data, existing: original != nil) { data, crop in
+                if let original, let crop {
+                    try await model.cropImage(named: original, to: crop, inField: index)
+                } else if original == nil {
+                    let edited: Data
+                    if let crop { edited = try await ImageMedia.cropped(data, to: crop) }
+                    else { edited = data }
+                    try await model.attachImage(edited, toField: index)
+                }
+            }
+        }
+    }
+    #endif
 
     private var text: Binding<String> {
         Binding(get: { showsMarkup ? field.content : field.text }, set: {
@@ -555,7 +807,11 @@ private struct FieldSection: View {
                 attachError = .notAnImage
                 return
             }
+            #if os(iOS)
+            media = EditorMediaRequest(.image(data, replacing: nil))
+            #else
             try await model.attachImage(data, toField: index)
+            #endif
         } catch let error as AttachImageError {
             attachError = error
         } catch {
@@ -564,17 +820,37 @@ private struct FieldSection: View {
     }
 }
 
+#if os(iOS)
+private struct EditorMediaRequest: Identifiable {
+    enum Kind {
+        case image(Data, replacing: String?)
+        case drawing
+        case recording
+        case playback(URL)
+    }
+
+    let id = UUID()
+    let kind: Kind
+    init(_ kind: Kind) { self.kind = kind }
+}
+#endif
+
 /// An attached image, small, with a button to remove it from the field.
 private struct ImageRow: View {
-    let file: URL
+    let file: URL?
     let fieldName: String
+    let open: () -> Void
     let remove: () -> Void
 
     var body: some View {
         HStack {
-            thumbnail
-                .frame(maxWidth: .infinity, maxHeight: 160, alignment: .leading)
-                .accessibilityLabel(Text("Image in \(fieldName)", bundle: .module))
+            Button(action: open) {
+                thumbnail
+                    .frame(maxWidth: .infinity, maxHeight: 160, alignment: .leading)
+            }
+            .buttonStyle(.borderless)
+            .disabled(file == nil)
+            .accessibilityLabel(Text("Open Image in \(fieldName)", bundle: .module))
             Button(role: .destructive, action: remove) {
                 Label {
                     Text("Remove Image", bundle: .module)
@@ -591,7 +867,7 @@ private struct ImageRow: View {
     @ViewBuilder
     private var thumbnail: some View {
         #if canImport(UIKit)
-        if let image = UIImage(contentsOfFile: file.path) {
+        if let file, let image = UIImage(contentsOfFile: file.path) {
             Image(uiImage: image)
                 .resizable()
                 .scaledToFit()
