@@ -12,6 +12,8 @@
 -->
 <plist version="1.0">
 <dict>
+	<key>NSCameraUsageDescription</key>
+	<string>Hayaki uses the camera to add a picture to a note.</string>
 	<key>CFBundleDocumentTypes</key>
 	<array>
 		<dict>
@@ -109,6 +111,10 @@
 			</array>
 		</dict>
 	</array>
+	<key>NSMotionUsageDescription</key>
+	<string>Hayaki detects a shake during study when you assign a reviewer command to it.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Hayaki uses the microphone when you record your voice while studying or editing a note.</string>
 	<key>LSSupportsOpeningDocumentsInPlace</key>
 	<true/>
 	<!-- Exports and backups in Documents show in the Files app, under Hayaki. -->

@@ -29,6 +29,7 @@ public final class PackageExportModel {
 
     /// What to export: the whole collection or the chosen decks.
     public var kind: PackageKind
+    public let selection: ExportSelection?
     /// The decks a deck package holds, each with its subdecks.
     public var selectedDeckIDs: Set<Int64>
     public var options: ExportOptions
@@ -52,14 +53,17 @@ public final class PackageExportModel {
         store: CollectionStore,
         exportFolder: URL,
         decks: Set<Int64> = [],
+        selection: ExportSelection? = nil,
         now: @escaping @Sendable () -> Date = Date.init
     ) {
         self.store = store
         self.exportFolder = exportFolder
         self.now = now
+        self.selection = selection
         selectedDeckIDs = decks
-        kind = decks.isEmpty ? .collectionPackage : .deckPackage
-        options = ExportOptions(includeScheduling: decks.isEmpty)
+        let entireCollection = selection == nil && decks.isEmpty
+        kind = entireCollection ? .collectionPackage : .deckPackage
+        options = ExportOptions(includeScheduling: entireCollection)
     }
 
     /// The folder exports go to: `Exports` in the app's Documents folder,
@@ -77,11 +81,12 @@ public final class PackageExportModel {
     /// Whether the choices make a package: a deck package needs at least one
     /// deck.
     public var canExport: Bool {
-        !isExporting && (kind == .collectionPackage || !selectedDeckIDs.isEmpty)
+        !isExporting && (selection.map { $0.count > 0 } ?? (kind == .collectionPackage || !selectedDeckIDs.isEmpty))
     }
 
     /// Lists the decks the learner can choose from.
     public func loadDecks() async {
+        guard selection == nil else { return }
         decks = (try? await allDecks()) ?? decks
     }
 
@@ -94,9 +99,15 @@ public final class PackageExportModel {
         defer { cancelRunningOperation = nil }
         do {
             try FileManager.default.createDirectory(at: exportFolder, withIntermediateDirectories: true)
-            let exported = switch kind {
-            case .collectionPackage: try await exportCollection()
-            case .deckPackage: try await exportDecks()
+            let exported: ExportedPackage
+            if let selection {
+                let url = exportFolder.appendingPathComponent("selection-\(timestamp()).apkg")
+                exported = try await exportDeckPackage(limit: selection.limit, to: url)
+            } else {
+                exported = switch kind {
+                case .collectionPackage: try await exportCollection()
+                case .deckPackage: try await exportDecks()
+                }
             }
             step = .finished(exported)
         } catch let error as CoreError where error.isInterrupted {
@@ -149,6 +160,10 @@ public final class PackageExportModel {
         }
         let limit = try await limit(to: chosen)
         let url = exportFolder.appendingPathComponent(deckFileName(for: chosen))
+        return try await exportDeckPackage(limit: limit, to: url)
+    }
+
+    private func exportDeckPackage(limit: Anki_ImportExport_ExportLimit, to url: URL) async throws -> ExportedPackage {
         try throwIfCancelled()
         let operation = store.core.start(.exportAnkiPackage(.with {
             $0.outPath = url.path

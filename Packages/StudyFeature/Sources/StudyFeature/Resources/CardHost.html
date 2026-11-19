@@ -65,6 +65,26 @@
         max-height: 95vh;
         object-fit: contain;
     }
+    .reviewer-input {
+        touch-action: manipulation;
+    }
+    .reviewer-hide-audio .replay-button {
+        display: none;
+    }
+    .reviewer-reduced-motion *, .reviewer-reduced-motion *::before, .reviewer-reduced-motion *::after {
+        animation-duration: 0s !important;
+        transition-duration: 0s !important;
+        scroll-behavior: auto !important;
+    }
+    .reviewer-centered {
+        min-height: calc(100vh - 40px);
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+    }
+    img {
+        zoom: var(--reviewer-image-zoom, 1);
+    }
     video {
         max-width: 100%;
         height: auto;
@@ -75,6 +95,20 @@
     pre {
         text-align: left;
         overflow-x: auto;
+    }
+    /* The stock Anki note type places the image and mask canvas together. */
+    #image-occlusion-container {
+        position: relative;
+        margin-inline: auto;
+        max-height: calc(95vh - 40px);
+    }
+    #image-occlusion-container img, #image-occlusion-canvas {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        max-width: none;
+        max-height: none;
     }
     /* Typed answers, as in Anki. */
     #typeans {
@@ -134,6 +168,7 @@
     }
 </style>
 <style id="card-style"></style>
+<script src="/_hayaki/image-occlusion.js"></script>
 </head>
 <body class="card">
 <div id="qa"></div>
@@ -151,7 +186,9 @@
     function applyColorScheme() {
         const night = dark.matches;
         document.documentElement.classList.toggle("night-mode", night);
-        document.body.className = shownBodyClass + (night ? " nightMode night_mode" : "");
+        const settings = Array.from(document.body.classList).filter(name => name.startsWith("reviewer-"));
+        document.body.className = shownBodyClass + (night ? " nightMode night_mode ankidroid_dark_mode" : "");
+        document.body.classList.add(...settings);
     }
 
     // Scripts inserted with innerHTML do not run; replace each with a fresh

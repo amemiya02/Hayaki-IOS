@@ -33,12 +33,14 @@ public struct PackageExportScreen: View {
     @Environment(\.dismiss) private var dismiss
     private let store: CollectionStore
     private let decks: Set<Int64>
+    private let selection: ExportSelection?
 
     /// - Parameter decks: Decks to start with as a deck package; empty to
     ///   start with the whole collection.
-    public init(store: CollectionStore, decks: Set<Int64> = []) {
+    public init(store: CollectionStore, decks: Set<Int64> = [], selection: ExportSelection? = nil) {
         self.store = store
         self.decks = decks
+        self.selection = selection
     }
 
     public var body: some View {
@@ -56,7 +58,7 @@ public struct PackageExportScreen: View {
         .interactiveDismissDisabled(model?.isExporting ?? false)
         .onAppear {
             guard model == nil, let folder = try? PackageExportModel.standardExportFolder() else { return }
-            model = PackageExportModel(store: store, exportFolder: folder, decks: decks)
+            model = PackageExportModel(store: store, exportFolder: folder, decks: decks, selection: selection)
         }
     }
 }
@@ -99,34 +101,38 @@ private struct ExportChoices: View {
 
     var body: some View {
         Form {
-            Section {
-                Picker(selection: $model.kind) {
-                    Text("Collection Package", bundle: .module).tag(PackageKind.collectionPackage)
-                    Text("Deck Package", bundle: .module).tag(PackageKind.deckPackage)
-                } label: {
-                    Text("Export", bundle: .module)
+            if model.selection != nil {
+                Text("Export Selection as Deck Package", bundle: .module)
+            } else {
+                Section {
+                    Picker(selection: $model.kind) {
+                        Text("Collection Package", bundle: .module).tag(PackageKind.collectionPackage)
+                        Text("Deck Package", bundle: .module).tag(PackageKind.deckPackage)
+                    } label: {
+                        Text("Export", bundle: .module)
+                    }
+                    .pickerStyle(.segmented)
+                    .labelsHidden()
+                } footer: {
+                    switch model.kind {
+                    case .collectionPackage:
+                        Text(
+                            "Your whole collection, with its scheduling and review history. Importing it into Anki or AnkiDroid replaces the collection there.",
+                            bundle: .module
+                        )
+                    case .deckPackage:
+                        Text(
+                            "The decks you choose, each with its subdecks. Importing it into Anki or AnkiDroid adds them to the collection there.",
+                            bundle: .module
+                        )
+                    }
                 }
-                .pickerStyle(.segmented)
-                .labelsHidden()
-            } footer: {
-                switch model.kind {
-                case .collectionPackage:
-                    Text(
-                        "Your whole collection, with its scheduling and review history. Importing it into Anki or AnkiDroid replaces the collection there.",
-                        bundle: .module
-                    )
-                case .deckPackage:
-                    Text(
-                        "The decks you choose, each with its subdecks. Importing it into Anki or AnkiDroid adds them to the collection there.",
-                        bundle: .module
-                    )
+
+                if model.kind == .deckPackage {
+                    DeckChoices(model: model)
                 }
-            }
 
-            if model.kind == .deckPackage {
-                DeckChoices(model: model)
             }
-
             Section {
                 if model.kind == .deckPackage {
                     Toggle(isOn: $model.options.includeScheduling) {

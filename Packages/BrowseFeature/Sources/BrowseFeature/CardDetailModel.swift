@@ -16,8 +16,22 @@ public struct CardDetail: Equatable, Sendable {
     public let noteType: String
     /// The name of the card template that made the card.
     public let cardTemplate: String
+    public let cardID: Int64
+    public let noteID: Int64
+    public let preset: String
     public let added: Date
+    public let firstReview: Date?
+    public let latestReview: Date?
+    public let ease: Double?
+    public let averageSeconds: Double
+    public let totalSeconds: Double
+    public let memoryState: MemoryState?
+    public let retrievability: Double?
+    public let desiredRetention: Double?
+    let fsrsDecay: Double
+    public let customData: String
     public let due: Due
+    public let originalPosition: Int?
     public let status: Status
     /// The current interval in days; 0 for a card not yet in review.
     public let intervalDays: Int
@@ -25,6 +39,17 @@ public struct CardDetail: Equatable, Sendable {
     public let lapseCount: Int
     /// The card's reviews, newest first.
     public let history: [Review]
+
+    public struct MemoryState: Equatable, Sendable {
+        public let stabilityDays: Double
+        /// Difficulty as a fraction between 0 and 1.
+        public let difficulty: Double
+
+        init(_ state: Anki_Cards_FsrsMemoryState) {
+            stabilityDays = Double(state.stability)
+            difficulty = (Double(state.difficulty) - 1) / 9
+        }
+    }
 
     public struct NoteField: Equatable, Sendable {
         public let name: String
@@ -57,7 +82,11 @@ public struct CardDetail: Equatable, Sendable {
         public let rating: Rating?
         /// The interval given after the review, in seconds.
         public let intervalSeconds: Int
+        public let previousIntervalSeconds: Int
+        public let ease: Double?
+        public let memoryState: MemoryState?
         public let secondsTaken: Double
+        let recordedEase: UInt32
 
         public enum Kind: Equatable, Sendable {
             case learning, review, relearning, filtered, manual, rescheduled
@@ -87,7 +116,7 @@ public final class CardDetailModel {
 
     @ObservationIgnored private let store: CollectionStore
 
-    private static let relevantChanges: CollectionChange = [.card, .note, .deck, .notetype, .noteText]
+    private static let relevantChanges: CollectionChange = [.card, .note, .deck, .notetype, .noteText, .deckConfig]
 
     public init(store: CollectionStore, cardID: Int64) {
         self.store = store
@@ -136,7 +165,27 @@ extension CardDetail {
         originalDeck = stats.hasOriginalDeck ? stats.originalDeck : nil
         noteType = stats.notetype
         cardTemplate = stats.cardType
+        cardID = stats.cardID
+        noteID = stats.noteID
+        preset = stats.preset
         added = Date(timeIntervalSince1970: TimeInterval(stats.added))
+        firstReview = stats.hasFirstReview ? Date(timeIntervalSince1970: TimeInterval(stats.firstReview)) : nil
+        latestReview = stats.hasLatestReview ? Date(timeIntervalSince1970: TimeInterval(stats.latestReview)) : nil
+        ease = stats.ease > 0 && !stats.hasDesiredRetention ? Double(stats.ease) / 1_000 : nil
+        averageSeconds = Double(stats.averageSecs)
+        totalSeconds = Double(stats.totalSecs)
+        memoryState = stats.hasMemoryState ? MemoryState(stats.memoryState) : nil
+        retrievability = stats.hasFsrsRetrievability ? Double(stats.fsrsRetrievability) : nil
+        desiredRetention = stats.hasDesiredRetention ? Double(stats.desiredRetention) : nil
+        fsrsDecay = if stats.fsrsParams.isEmpty {
+            0.1542
+        } else if stats.fsrsParams.count >= 21, stats.fsrsParams[20] > 0 {
+            Double(stats.fsrsParams[20])
+        } else {
+            0.5
+        }
+        customData = stats.customData
+        originalPosition = stats.hasDuePosition ? Int(stats.duePosition) : nil
         due = if stats.hasDueDate {
             .date(Date(timeIntervalSince1970: TimeInterval(stats.dueDate)))
         } else if stats.hasDuePosition {
@@ -172,6 +221,10 @@ extension CardDetail.Review {
         }
         rating = Rating(rawValue: Int(entry.buttonChosen))
         intervalSeconds = Int(entry.interval)
+        previousIntervalSeconds = Int(entry.lastInterval)
+        ease = entry.ease > 1_100 ? Double(entry.ease) / 1_000 : nil
+        memoryState = entry.hasMemoryState ? CardDetail.MemoryState(entry.memoryState) : nil
         secondsTaken = Double(entry.takenSecs)
+        recordedEase = entry.ease
     }
 }

@@ -80,6 +80,19 @@ public final class StudySessionModel {
     public private(set) var counts = StudyCounts(new: 0, learning: 0, due: 0)
     /// Reviews made in this session so far.
     public private(set) var reviewedCount = 0
+    public private(set) var previousCardID: Int64?
+    public private(set) var presentationNumber = 0
+    public private(set) var showsRemainingCounts = true
+    public private(set) var showsRatingIntervals = true
+    public private(set) var hidesAudioButtons = false
+    public private(set) var interruptsAudioWhenAnswering = false
+    public private(set) var currentDeckName = ""
+    public private(set) var showsAnswerTimer = false
+    public private(set) var timeboxLimit: Duration = .zero
+    @ObservationIgnored private var timeboxBeganAt = ContinuousClock.now
+    @ObservationIgnored private var timeboxReviewed = 0
+    @ObservationIgnored private var revealedAt: ContinuousClock.Instant?
+    private var activeOptions: CardOptions?
     /// Whether an answer is being sent to the core, so another one is not.
     public private(set) var isAnswering = false
     public private(set) var isPerformingAction = false
@@ -121,6 +134,8 @@ public final class StudySessionModel {
             state = .failed(message: error.message)
             return
         }
+        await refreshReviewerPreferences()
+        restartTimebox()
         await showNextCard()
     }
 
@@ -170,9 +185,15 @@ public final class StudySessionModel {
             counts = StudyCounts(queued)
             if let next = queued.cards.first {
                 let card = try await StudyCard.render(next, core: store.core)
-                audioOptions = try await options(for: card).audio
-                state = .question(card)
+                let settings = try await options(for: card)
+                activeOptions = settings
+                audioOptions = settings.audio
+                showsAnswerTimer = settings.showsAnswerTimer
+                currentDeckName = settings.deckName
                 questionShownAt = .now
+                revealedAt = nil
+                presentationNumber += 1
+                state = .question(card)
             } else {
                 state = .finished(try await summary())
             }
@@ -187,6 +208,7 @@ public final class StudySessionModel {
     public func showAnswer() {
         guard case .question(let card) = state, !isBusy else { return }
         typedAnswer = ""
+        revealedAt = .now
         state = .answer(card)
     }
 
@@ -199,11 +221,14 @@ public final class StudySessionModel {
             showAnswer()
             return
         }
+        isPerformingAction = true
+        defer { isPerformingAction = false }
         do {
             let answered = try await card.answering(typed: typed, core: store.core)
             // The learner may have moved on meanwhile.
             guard case .question(let shown) = state, shown.id == card.id else { return }
             typedAnswer = typed
+            revealedAt = .now
             state = .answer(answered)
         } catch {
             state = .failed(message: error.message)
@@ -234,6 +259,7 @@ public final class StudySessionModel {
                     + taken.components.attoseconds / 1_000_000_000_000_000)
             }))
             reviewedCount += 1
+            previousCardID = card.id
             if let status = try? await store.core.getUndoStatus(), !status.undo.isEmpty {
                 appliedReviews.insert(status.lastStep)
             }
@@ -243,6 +269,45 @@ public final class StudySessionModel {
             return
         }
         await showNextCard()
+    }
+
+    /// Runs a command that acts on the study session or changes the collection.
+    /// Presentation commands are handled by the reviewer after this returns false.
+    @discardableResult
+    public func perform(_ command: ReviewerCommand, typed: String = "") async -> Bool {
+        guard !isBusy else { return false }
+        if let rating = command.rating {
+            guard state.answer != nil else { return false }
+            await answer(rating)
+            return true
+        }
+        if let flag = command.flag {
+            guard let card = state.card else { return false }
+            await setFlag(command.togglesFlag && card.flag == flag ? 0 : flag)
+            return true
+        }
+        switch command {
+        case .undo:
+            guard canUndo else { return false }
+            await undo()
+        case .redo:
+            guard canRedo else { return false }
+            await redo()
+        case .showAnswer:
+            guard state.question != nil else { return false }
+            await showAnswer(typed: typed)
+        case .mark, .buryCard, .buryNote, .suspendCard, .suspendNote:
+            guard state.card != nil else { return false }
+            switch command {
+            case .mark: await toggleMark()
+            case .buryCard, .buryNote: await bury(note: command == .buryNote)
+            case .suspendCard, .suspendNote: await suspend(note: command == .suspendNote)
+            default: break
+            }
+        default:
+            return false
+        }
+        return true
     }
 
     public func undo() async {
@@ -334,6 +399,19 @@ public final class StudySessionModel {
         }
     }
 
+    func tags(of noteID: Int64) async throws(CoreError) -> [String] {
+        try await store.core.getNote(.with { $0.nid = noteID }).tags
+    }
+
+    func setTags(_ tags: [String], on noteID: Int64) async throws(CoreError) {
+        var note = try await store.core.getNote(.with { $0.nid = noteID })
+        guard note.tags != tags else { return }
+        note.tags = tags
+        let updated = note
+        try await store.modify(.updateNotes(.with { $0.notes = [updated] }))
+        await refreshUndoStatus()
+    }
+
     public func setDueDate(_ days: String) async {
         guard let card = state.card else { return }
         await runAction { () async throws(CoreError) in
@@ -409,6 +487,52 @@ public final class StudySessionModel {
         )
     }
 
+    func refreshReviewerDeckOptions() async {
+        cardOptions.removeAll()
+        guard let card = state.card, let options = try? await options(for: card), state.card?.id == card.id else { return }
+        activeOptions = options
+        audioOptions = options.audio
+        showsAnswerTimer = options.showsAnswerTimer
+        currentDeckName = options.deckName
+    }
+
+    public func refreshReviewerPreferences() async {
+        guard let config = try? await store.core.getPreferences().reviewing else { return }
+        showsRemainingCounts = config.showRemainingDueCounts
+        showsRatingIntervals = config.showIntervalsOnButtons
+        hidesAudioButtons = config.hideAudioPlayButtons
+        interruptsAudioWhenAnswering = config.interruptAudioWhenAnswering
+        timeboxLimit = .seconds(config.timeLimitSecs)
+    }
+
+    public var autoAdvancePlan: AutoAdvancePlan? {
+        guard let options = activeOptions, state.card != nil else { return nil }
+        let showingAnswer = state.answer != nil
+        let delay = showingAnswer ? options.answerDelay : options.questionDelay
+        guard delay > .zero else { return nil }
+        return AutoAdvancePlan(
+            delay: delay, waitForAudio: options.waitForAudio,
+            command: showingAnswer ? options.answerAction : options.questionAction
+        )
+    }
+
+    public func answerTimer(at now: ContinuousClock.Instant = .now) -> Duration {
+        guard let options = activeOptions, state.card != nil else { return .zero }
+        let end = options.stopsTimerOnAnswer ? (revealedAt ?? now) : now
+        return min(max(.zero, end - questionShownAt), options.answerTimeCap)
+    }
+
+    public func restartTimebox(at now: ContinuousClock.Instant = .now) {
+        timeboxBeganAt = now
+        timeboxReviewed = reviewedCount
+    }
+
+    public func timeboxProgress(at now: ContinuousClock.Instant = .now) -> StudyTimebox? {
+        let reviewed = reviewedCount - timeboxReviewed
+        guard timeboxLimit > .zero, now - timeboxBeganAt >= timeboxLimit, reviewed > 0 else { return nil }
+        return StudyTimebox(reviewed: reviewed, limit: timeboxLimit)
+    }
+
     /// "Maximum answer seconds" from the options of the card's home deck,
     /// as Anki caps the time a review is recorded as taking.
     private func answerTimeCap(for card: StudyCard) async throws(CoreError) -> Duration {
@@ -422,8 +546,23 @@ public final class StudySessionModel {
         let deck = try await store.core.getDeck(.with { $0.did = card.homeDeckID })
         let config = try await store.core.getDeckConfig(.with { $0.dcid = deck.normal.configID }).config
         let seconds = config.capAnswerTimeToSecs
+        let answerAction: ReviewerCommand? = switch config.answerAction {
+        case .answerAgain: .rateAgain
+        case .answerHard: .rateHard
+        case .answerGood: .rateGood
+        case .showReminder: nil
+        default: .buryCard
+        }
         let options = CardOptions(
             answerTimeCap: .seconds(seconds > 0 ? Int(seconds) : 60),
+            deckName: deck.name.replacingOccurrences(of: "\u{1F}", with: "::"),
+            showsAnswerTimer: config.showTimer,
+            stopsTimerOnAnswer: config.stopTimerOnAnswer,
+            questionDelay: Self.autoAdvanceDelay(config.secondsToShowQuestion),
+            answerDelay: Self.autoAdvanceDelay(config.secondsToShowAnswer),
+            waitForAudio: config.waitForAudio,
+            questionAction: config.questionAction == .showReminder ? nil : .showAnswer,
+            answerAction: answerAction,
             audio: AudioOptions(
                 autoplay: !config.disableAutoplay,
                 replaysQuestionOnAnswer: !config.skipQuestionWhenReplayingAnswer
@@ -431,6 +570,11 @@ public final class StudySessionModel {
         )
         cardOptions[card.homeDeckID] = options
         return options
+    }
+
+    private static func autoAdvanceDelay(_ seconds: Float) -> Duration {
+        guard seconds.isFinite, seconds > 0 else { return .zero }
+        return .milliseconds(Int64(min(9999, seconds) * 1000))
     }
 
     // MARK: Audio
@@ -475,7 +619,27 @@ public final class StudySessionModel {
 /// The deck options that studying a card follows.
 private struct CardOptions {
     var answerTimeCap: Duration
+    var deckName: String
+    var showsAnswerTimer: Bool
+    var stopsTimerOnAnswer: Bool
+    var questionDelay: Duration
+    var answerDelay: Duration
+    var waitForAudio: Bool
+    var questionAction: ReviewerCommand?
+    var answerAction: ReviewerCommand?
     var audio: AudioOptions
+}
+
+public struct AutoAdvancePlan: Equatable, Sendable {
+    public let delay: Duration
+    public let waitForAudio: Bool
+    /// A nil command shows the time-elapsed reminder.
+    public let command: ReviewerCommand?
+}
+
+public struct StudyTimebox: Equatable, Sendable {
+    public let reviewed: Int
+    public let limit: Duration
 }
 
 extension String {

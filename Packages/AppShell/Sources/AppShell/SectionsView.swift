@@ -1,11 +1,13 @@
 import BrowseFeature
 import CollectionStore
+import DeckOptionsFeature
 import DecksFeature
 import NoteEditorFeature
 import PackagesFeature
 import ReminderFeature
 import SettingsFeature
 import StatisticsFeature
+import StudyFeature
 import SwiftUI
 import SyncFeature
 
@@ -62,6 +64,9 @@ struct SectionsView: View {
         .tabViewStyle(.sidebarAdaptable)
         .sidebarOnWideScreens()
         .addNoteAction(store: store)
+        .reviewerDestination { route in
+            ReviewerDestinationView(route: route, store: store)
+        }
         .onChange(of: model.decksRequested, initial: true) { _, request in
             if request != nil { selection = .decks }
         }
