@@ -1,19 +1,22 @@
 import AnkiCore
 import DeckOptionsFeature
 import PackagesFeature
+import StudyFeature
 import SwiftUI
 
 extension View {
     /// Lets the learner organise the decks of `model`: a toolbar button to
     /// create a deck, and the sheets and alerts behind each deck row's
     /// actions (see `deckActions(for:)`).
-    func deckManagement(_ model: DeckListModel) -> some View {
-        modifier(DeckManagement(model: model))
+    func deckManagement(_ model: DeckListModel, onStudy: @escaping (StudyDeck) -> Void) -> some View {
+        modifier(DeckManagement(model: model, onStudy: onStudy))
     }
 }
 
 private struct DeckManagement: ViewModifier {
     let model: DeckListModel
+    let onStudy: (StudyDeck) -> Void
+    @State private var studyAfterDismiss: StudyDeck?
     @State private var request = DeckActionRequest()
     @State private var renaming: DeckNode?
     @State private var newName = ""
@@ -33,8 +36,19 @@ private struct DeckManagement: ViewModifier {
                     NewDeckButton()
                         .environment(request)
                 }
+                ToolbarItem(placement: .secondaryAction) {
+                    Button {
+                        request.pending = .filteredOptions(nil)
+                    } label: {
+                        Label {
+                            Text("New Filtered Deck", bundle: .module)
+                        } icon: {
+                            Image(systemName: "line.3.horizontal.decrease")
+                        }
+                    }
+                }
             }
-            .sheet(item: sheet) { action in
+            .sheet(item: sheet, onDismiss: startPendingStudy) { action in
                 switch action {
                 case .create(let parentID):
                     NewDeckSheet(model: model, parentID: parentID) { error in
@@ -46,9 +60,13 @@ private struct DeckManagement: ViewModifier {
                     }
                 case .options(let deck):
                     DeckOptionsScreen(store: model.store, deckID: deck.id)
+                case .filteredOptions(let id):
+                    FilteredDeckScreen(store: model.store, deckID: id)
+                case .customStudy(let deck):
+                    CustomStudyScreen(store: model.store, deckID: deck.id) { studyAfterDismiss = $0 }
                 case .export(let deck):
                     PackageExportScreen(store: model.store, decks: [deck.id])
-                case .rename, .delete:
+                case .rename, .delete, .rebuild, .empty:
                     EmptyView()
                 }
             }
@@ -61,7 +79,13 @@ private struct DeckManagement: ViewModifier {
                 case .delete(let deck):
                     request.pending = nil
                     confirmDeletion(of: deck)
-                case .create, .move, .options, .export, nil:
+                case .rebuild(let deck):
+                    request.pending = nil
+                    manageFilteredDeck(deck, empty: false)
+                case .empty(let deck):
+                    request.pending = nil
+                    manageFilteredDeck(deck, empty: true)
+                case .create, .move, .options, .filteredOptions, .customStudy, .export, nil:
                     break
                 }
             }
@@ -115,10 +139,16 @@ private struct DeckManagement: ViewModifier {
     private var sheet: Binding<DeckAction?> {
         Binding {
             switch request.pending {
-            case .create, .move, .options, .export: request.pending
+            case .create, .move, .options, .filteredOptions, .customStudy, .export: request.pending
             default: nil
             }
         } set: { request.pending = $0 }
+    }
+
+    private func startPendingStudy() {
+        guard let deck = studyAfterDismiss else { return }
+        studyAfterDismiss = nil
+        onStudy(deck)
     }
 
     private func isPresented<Value>(_ value: Binding<Value?>) -> Binding<Bool> {
@@ -140,6 +170,20 @@ private struct DeckManagement: ViewModifier {
     }
 
     // MARK: Actions
+
+    private func manageFilteredDeck(_ deck: DeckNode, empty: Bool) {
+        let editor = FilteredDeckModel(store: model.store, deckID: deck.id)
+        Task {
+            if empty {
+                await editor.empty()
+            } else {
+                await editor.rebuild()
+            }
+            if let error = editor.error {
+                failure = Failure(title: Text("Could Not Update Filtered Deck", bundle: .module), message: error)
+            }
+        }
+    }
 
     /// Counts what goes with the deck, then asks the learner to confirm.
     private func confirmDeletion(of deck: DeckNode) {

@@ -32,7 +32,10 @@ public struct DeckListScreen: View {
                         SharedDecksLink()
                     }
                 }
-                .deckManagement(model)
+                .deckManagement(model) { deck in
+                    selectedDeckID = deck.id
+                    studying = deck
+                }
         }
         .task { await model.run() }
         .onChange(of: scenePhase) { _, phase in
