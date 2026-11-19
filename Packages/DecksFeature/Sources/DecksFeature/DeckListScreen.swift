@@ -32,7 +32,10 @@ public struct DeckListScreen: View {
                         SharedDecksLink()
                     }
                     ToolbarItem(placement: .secondaryAction) {
-                        TextImportButton(store: store)
+                        TextImportButton()
+                    }
+                    ToolbarItem(placement: .secondaryAction) {
+                        TextExportButton(store: store)
                     }
                 }
                 .deckManagement(model) { deck in

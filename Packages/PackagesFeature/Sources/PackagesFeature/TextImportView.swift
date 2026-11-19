@@ -3,16 +3,13 @@ import SwiftUI
 import UniformTypeIdentifiers
 
 public struct TextImportButton: View {
-    private let store: CollectionStore
-    @State private var presented = false
+    @Environment(TextImportModel.self) private var model: TextImportModel?
 
-    public init(store: CollectionStore) {
-        self.store = store
-    }
+    public init() {}
 
     public var body: some View {
         Button {
-            presented = true
+            model?.show()
         } label: {
             Label {
                 Text("Import Text File", bundle: .module)
@@ -20,22 +17,26 @@ public struct TextImportButton: View {
                 Image(systemName: "tablecells")
             }
         }
-        .sheet(isPresented: $presented) {
-            TextImportSheet(store: store)
-        }
+        .disabled(model == nil)
+    }
+}
+
+extension View {
+    public func textImport(_ model: TextImportModel) -> some View {
+        environment(model)
+            .sheet(isPresented: Binding(
+                get: { model.isPresented },
+                set: { if !$0 { model.dismiss() } }
+            )) {
+                TextImportSheet(model: model)
+            }
     }
 }
 
 private struct TextImportSheet: View {
-    @State private var model: TextImportModel
+    let model: TextImportModel
     @State private var choosingFile = false
     @State private var pickerError: String?
-    @Environment(\.dismiss) private var dismiss
-
-    init(store: CollectionStore) {
-        _model = State(initialValue: TextImportModel(store: store))
-    }
-
     var body: some View {
         NavigationStack {
             Form {
@@ -71,7 +72,7 @@ private struct TextImportSheet: View {
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button(role: .cancel) {
-                        if model.isImporting { model.cancel() } else { dismiss() }
+                        if model.isImporting { model.cancel() } else { model.dismiss() }
                     } label: {
                         if model.summary == nil {
                             Text("Cancel", bundle: .module)
@@ -227,9 +228,9 @@ private struct TextImportSheet: View {
 
     private func result(_ summary: TextImportSummary) -> some View {
         Section {
-            resultCount(Text("Added", bundle: .module), summary.changes.added.count)
-            resultCount(Text("Updated", bundle: .module), summary.changes.updated.count)
-            resultCount(Text("Skipped", bundle: .module), summary.changes.skipped.count)
+            resultCount(Text("Added", bundle: .module), summary.added)
+            resultCount(Text("Updated", bundle: .module), summary.updated)
+            resultCount(Text("Skipped", bundle: .module), summary.skipped)
             resultCount(Text("Invalid Rows", bundle: .module), summary.invalidRows)
         }
     }
