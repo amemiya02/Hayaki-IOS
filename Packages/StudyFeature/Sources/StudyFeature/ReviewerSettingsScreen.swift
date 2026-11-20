@@ -42,8 +42,8 @@ public struct ReviewerSettingsScreen: View {
                 )
             }
             Section(reviewerLocalized("Toolbar")) {
-                Picker(reviewerLocalized("Position"), selection: $preferences.toolbarPosition) {
-                    ForEach(ReviewerToolbarPosition.allCases, id: \.self) { Text(reviewerLocalized($0.rawValue.capitalized)).tag($0) }
+                Picker(reviewerLocalized("Layout"), selection: $preferences.toolbarStyle) {
+                    ForEach(ReviewerToolbarStyle.allCases, id: \.self) { Text($0.title).tag($0) }
                 }
                 NavigationLink(reviewerLocalized("Toolbar Actions")) { ToolbarActionsSettings(preferences: $preferences) }
             }
