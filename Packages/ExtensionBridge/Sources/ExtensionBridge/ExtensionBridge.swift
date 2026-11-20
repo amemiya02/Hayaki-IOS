@@ -58,6 +58,17 @@ public struct ExtensionNoteType: Codable, Equatable, Identifiable, Sendable {
     }
 }
 
+/// The selected theme's accent in sRGB, for the widgets.
+public struct ExtensionAccent: Codable, Equatable, Sendable {
+    public let lightRGB: UInt32
+    public let darkRGB: UInt32
+
+    public init(lightRGB: UInt32, darkRGB: UInt32) {
+        self.lightRGB = lightRGB
+        self.darkRGB = darkRGB
+    }
+}
+
 public struct SharedNote: Codable, Equatable, Identifiable, Sendable {
     public enum Mode: String, Codable, Sendable {
         case quickAdd
@@ -121,6 +132,21 @@ public struct ExtensionBridge: Sendable {
     public func clearSnapshot() throws {
         guard FileManager.default.fileExists(atPath: snapshotFile.path) else { return }
         try FileManager.default.removeItem(at: snapshotFile)
+    }
+
+    private var accentFile: URL { directory.appending(path: "accent.json") }
+
+    public func accent() -> ExtensionAccent? {
+        guard let data = try? Data(contentsOf: accentFile) else { return nil }
+        return try? JSONDecoder().decode(ExtensionAccent.self, from: data)
+    }
+
+    /// Returns whether the stored accent changed.
+    @discardableResult
+    public func publish(_ accent: ExtensionAccent) throws -> Bool {
+        guard accent != self.accent() else { return false }
+        try write(accent, to: accentFile)
+        return true
     }
 
     public func enqueue(_ note: SharedNote) throws {

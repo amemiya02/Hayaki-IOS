@@ -283,7 +283,7 @@ struct CardWebView: UIViewRepresentable {
         func updateAppearance(_ theme: HayakiTheme) {
             guard self.theme != theme else { return }
             self.theme = theme
-            webView?.overrideUserInterfaceStyle = theme == .light ? .light : .dark
+            webView?.overrideUserInterfaceStyle = theme.appearance == .light ? .light : .dark
             sendAppearance()
         }
 
@@ -294,7 +294,7 @@ struct CardWebView: UIViewRepresentable {
             // The template's own styling can supply --canvas or style .nightMode.
             webView.callAsyncJavaScript(
                 "window.hayaki.appearance(canvas, legacyDark, accent)",
-                arguments: ["canvas": canvas, "legacyDark": theme == .dark, "accent": accent],
+                arguments: ["canvas": canvas, "legacyDark": theme.appearance == .dark, "accent": accent],
                 in: nil, in: .page, completionHandler: nil
             )
         }

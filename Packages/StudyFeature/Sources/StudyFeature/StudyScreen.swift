@@ -724,7 +724,7 @@ public struct StudyScreen: View {
         guard context.isCurrent(), store.allowsNewProfileWork, timebox == nil,
               model.state.card?.id == context.cardID else { return .unavailable }
         switch request.command {
-        case "isInNightMode": return .value(.boolean(theme != .light))
+        case "isInNightMode": return .value(.boolean(theme.appearance != .light))
         case "isInFullscreen": return .value(.boolean(!templateFullscreen.showsTopBar))
         case "isTopbarShown": return .value(.boolean(templateFullscreen.showsTopBar))
         case "setFullscreenButtonsAndMenu": templateFullscreen = .buttonsAndMenu
