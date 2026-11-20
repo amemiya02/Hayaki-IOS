@@ -2431,29 +2431,6 @@
         }
       }
     },
-    "You studied on %@ days in %@" : {
-      "comment" : "Calendar card reading: the number of days with reviews in the year shown, e.g. \"You studied on 120 days in 2026\".",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "You studied on %1$@ days in %2$@"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%2$@年は%1$@日学習"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%2$@ 年学习了 %1$@ 天"
-          }
-        }
-      }
-    },
     "You studied on %@ of the last %@ days" : {
       "comment" : "Reviews card reading: days with reviews, out of the days in the period.",
       "localizations" : {
@@ -2473,6 +2450,53 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "过去 %2$@ 天中学习了 %1$@ 天"
+          }
+        }
+      }
+    },
+    "You studied on %lld days in %@" : {
+      "comment" : "Calendar card reading: the number of days with reviews in the year shown, e.g. \"You studied on 120 days in 2026\".",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "You studied on %1$lld day in %2$@"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "You studied on %1$lld days in %2$@"
+                }
+              }
+            }
+          }
+        },
+        "ja" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%2$@年は%1$lld日学習"
+                }
+              }
+            }
+          }
+        },
+        "zh-Hans" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%2$@ 年学习了 %1$lld 天"
+                }
+              }
+            }
           }
         }
       }

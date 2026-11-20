@@ -79,7 +79,7 @@ struct CalendarSection: View {
             StatisticsCardHeader(
                 title: Text("Calendar", bundle: .module),
                 reading: hasActivity ? Text(
-                    "You studied on \(map.daysStudied, format: .number) days in \(Text(year.formatted(.number.grouping(.never))))",
+                    "You studied on \(map.daysStudied) days in \(Text(year.formatted(.number.grouping(.never))))",
                     bundle: .module,
                     comment: "Calendar card reading: the number of days with reviews in the year shown, e.g. \"You studied on 120 days in 2026\"."
                 ) : nil

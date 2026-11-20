@@ -19,7 +19,18 @@ struct DailyCardCountChart: View {
         let runningTotals = days.reduce(into: [Int]()) { values, day in
             values.append((values.last ?? 0) + day.count)
         }
-        return Chart {
+        return VStack(alignment: .trailing, spacing: 4) {
+            // The axis title sits above the chart rather than in
+            // chartYAxisLabel, which the scrolling plot area clipped.
+            title
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            chart(runningTotals)
+        }
+    }
+
+    private func chart(_ runningTotals: [Int]) -> some View {
+        Chart {
             ForEach(days.indices, id: \.self) { index in
                 let day = days[index]
                 if cumulative {
@@ -61,7 +72,6 @@ struct DailyCardCountChart: View {
         .chartXScale(domain: (Double(range.lowerBound) - 0.5)...(Double(range.upperBound) + 0.5))
         .chartXSelection(value: $position)
         .dailyChartScrolling(range: range, initialDay: initialDay, enabled: reportPeriod == nil)
-        .chartYAxisLabel { title }
         .frame(height: 180)
     }
 
