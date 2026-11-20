@@ -37,6 +37,9 @@ public struct RootView: View {
         // Opening a reminder that launched the app is only noticed if the
         // notification delegate is in place by then.
         ReminderOpener.shared.install()
+        #if DEBUG
+        UITestLaunch.openQuickActionIfAsked()
+        #endif
     }
 
     /// The app passes its aggregate phase so that one window never starts

@@ -65,6 +65,9 @@ struct SectionsView: View {
         }
         .tabViewStyle(.sidebarAdaptable)
         .sidebarOnWideScreens()
+        // Inside addNoteAction, so the quick action and App Shortcut open the
+        // same editor as the + buttons and Command-N.
+        .openingAddNoteRequests(from: AddNoteOpener.shared)
         .addNoteAction(store: store)
         .reviewerDestination { route, study in
             ReviewerDestinationView(route: route, store: store, study: study)
