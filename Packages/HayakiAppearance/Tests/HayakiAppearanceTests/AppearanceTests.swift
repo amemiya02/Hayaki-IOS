@@ -35,16 +35,56 @@ struct AppearanceTests {
 }
 
 extension AppearanceTests {
-    @Test func semanticLabelsHaveReadableContrastAcrossAllThreePalettes() {
-        #expect(HayakiTheme.black.backgroundRGB == 0)
-        #expect(HayakiTheme.dark.backgroundRGB != 0)
-        for theme in [HayakiTheme.light, .dark, .black] {
-            let foregrounds = SemanticColor.allCases.map { theme.rgb(for: $0) }
-            #expect(Set(foregrounds).count == 4)
-            for foreground in foregrounds {
-                #expect(contrast(foreground, theme.backgroundRGB) >= 4.5)
-                #expect(contrast(foreground, theme.surfaceRGB) >= 4.5)
+    @Test func theDefaultHayakiThemeUsesTheIconTealAsItsAccent() {
+        #expect(HayakiTheme.light.accentRGB == 0x2C776E)
+        #expect(HayakiTheme.dark.accentRGB == 0x7ED6CA)
+        // Black mode reuses the dark accent.
+        #expect(HayakiTheme.black.accentRGB == 0x7ED6CA)
+    }
+
+    @Test func theTintIsFaintInLightAndDarkAndAbsentInBlack() {
+        #expect(HayakiTheme.light.tintOpacity == 0.04)
+        #expect(HayakiTheme.dark.tintOpacity == 0.06)
+        #expect(HayakiTheme.black.tintOpacity == 0)
+    }
+
+    @Test func theAccentIsReadableOnEveryTintedSystemBackground() {
+        // iOS system backgrounds: systemBackground and systemGroupedBackground,
+        // then secondarySystemGroupedBackground for surfaces.
+        let backgrounds: [HayakiTheme: [UInt32]] = [
+            .light: [0xFFFFFF, 0xF2F2F7],
+            .dark: [0x000000, 0x1C1C1E],
+            .black: [0x000000, 0x1C1C1E],
+        ]
+        for (theme, systemBackgrounds) in backgrounds {
+            for background in systemBackgrounds {
+                let tinted = blend(theme.accentRGB, over: background, opacity: theme.tintOpacity)
+                #expect(contrast(theme.accentRGB, tinted) >= 4.5)
             }
+        }
+    }
+
+    @Test func theCardCanvasMatchesTheTintedStudyBackground() {
+        #expect(HayakiTheme.light.canvasRGB == 0xF7FAF9)
+        #expect(HayakiTheme.dark.canvasRGB == 0x080D0C)
+        #expect(HayakiTheme.black.canvasRGB == 0x000000)
+    }
+
+    @Test func ratingAndCountColorsAreFixedSystemColors() {
+        #expect(SemanticColor.again.color == .red)
+        #expect(SemanticColor.hard.color == .orange)
+        #expect(SemanticColor.good.color == .green)
+        #expect(SemanticColor.easy.color == .blue)
+        #expect(SemanticColor.new.color == .blue)
+        #expect(SemanticColor.learning.color == .red)
+        #expect(SemanticColor.due.color == .green)
+    }
+
+    private func blend(_ foreground: UInt32, over background: UInt32, opacity: Double) -> UInt32 {
+        [16, 8, 0].reduce(0) { result, shift in
+            let top = Double((foreground >> shift) & 255)
+            let bottom = Double((background >> shift) & 255)
+            return result | UInt32((top * opacity + bottom * (1 - opacity)).rounded()) << shift
         }
     }
 

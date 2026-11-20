@@ -106,7 +106,7 @@ public struct StudyScreen: View {
                 reviewerActions
             }
         }
-        .background(theme.background.ignoresSafeArea())
+        .hayakiBackground(.plain)
         .task(id: ObjectIdentifier(model)) { await model.run() }
         .task(id: autoAdvanceTask) { await runAutoAdvance() }
         .task(id: feedback) {
@@ -781,15 +781,15 @@ private struct SideShown: Equatable {
 /// The new, learning and due counts left today, in Anki's blue, red and green.
 private struct StudyCountsView: View {
     let counts: StudyCounts
-    @Environment(\.hayakiTheme) private var theme
 
     var body: some View {
         HStack(spacing: 14) {
-            Text(counts.new, format: .number).foregroundStyle(theme.color(for: .new))
-            Text(counts.learning, format: .number).foregroundStyle(theme.color(for: .learning))
-            Text(counts.due, format: .number).foregroundStyle(theme.color(for: .due))
+            Text(counts.new, format: .number).foregroundStyle(SemanticColor.new.color)
+            Text(counts.learning, format: .number).foregroundStyle(SemanticColor.learning.color)
+            Text(counts.due, format: .number).foregroundStyle(SemanticColor.due.color)
         }
-        .font(.subheadline.monospacedDigit().weight(.medium))
+        .font(.subheadline.weight(.medium))
+        .hayakiNumeric()
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(Text(
             "\(counts.new) new, \(counts.learning) learning, \(counts.due) due left",
@@ -871,13 +871,12 @@ private struct RatingButton: View {
     let interval: String?
     let buttonHeight: Double
     let action: () -> Void
-    @Environment(\.hayakiTheme) private var theme
 
     var body: some View {
         Button(action: action) {
             VStack(spacing: 2) {
                 if let interval {
-                    Text(interval).font(.caption.monospacedDigit().weight(.medium))
+                    Text(interval).font(.caption.weight(.medium)).hayakiNumeric()
                 }
                 rating.title
                     .font(.subheadline.weight(.semibold))
@@ -887,7 +886,7 @@ private struct RatingButton: View {
             .frame(maxWidth: .infinity, minHeight: buttonHeight)
         }
         .buttonStyle(.bordered)
-        .tint(theme.color(for: rating.semanticColor))
+        .tint(rating.semanticColor.color)
         .accessibilityLabel(rating.title)
         .accessibilityValue(Text(interval ?? ""))
         .accessibilityIdentifier("rating-\(rating)")
