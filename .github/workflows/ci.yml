@@ -214,4 +214,4 @@ jobs:
 
       - name: Verify packages used by the joint release
         if: inputs.joint_release_only
-        run: scripts/test.sh StudyFeature SettingsFeature AppShell CollectionStore
+        run: scripts/test.sh DecksFeature StudyFeature SettingsFeature AppShell CollectionStore
