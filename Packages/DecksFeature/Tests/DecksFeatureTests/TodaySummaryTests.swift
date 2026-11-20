@@ -77,6 +77,29 @@ struct TodaySummaryTests {
         }
     }
 
+    @Test("Completing a deck advances to other work before revisiting the same deck")
+    func studyAllRefreshesACompletedDeck() async throws {
+        try await withTemporaryCollection { store in
+            let geography = try await store.addDeck(named: "Geography")
+            let history = try await store.addDeck(named: "History")
+            try await store.addBasicNotes(count: 1, toDeck: geography)
+            try await store.addBasicNotes(count: 1, toDeck: history)
+            try await store.answerNextCard(inDeck: geography, rating: .easy)
+            let model = DeckListModel(store: store)
+            await model.refresh()
+            #expect(model.nextStudyAllDeck(after: geography)?.id == history)
+
+            // New work arrives while Geography's Finished screen is open.
+            try await store.addBasicNotes(count: 1, toDeck: geography)
+            await model.refresh()
+            #expect(model.nextStudyAllDeck(after: geography)?.id == history)
+
+            try await store.answerNextCard(inDeck: history, rating: .easy)
+            await model.refresh()
+            #expect(model.nextStudyAllDeck(after: geography)?.id == geography)
+        }
+    }
+
     @Test("With nothing left today, Study All has no deck to open")
     func studyAllEmptyWhenNothingIsDue() async throws {
         try await withTemporaryCollection { store in
