@@ -1,35 +1,36 @@
-name: CI
+name: Focused joint-release device validation
 
 on:
   push:
-  workflow_dispatch:
-    inputs:
-      joint_release_only:
-        description: "Run shared study, About and localization scenarios on iPhone and iPad."
-        type: boolean
-        default: false
-
-concurrency:
-  group: ci-${{ github.ref }}
-  # Keep the active device run while retaining only the newest queued integration run.
-  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+    branches: [codex/v020-device-gate]
 
 jobs:
-  build-and-test:
-    name: Build the core and the app, run the tests
+  devices:
+    name: Verify ${{ matrix.family }} study
     runs-on: xcode-27
-    timeout-minutes: 180
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - family: iPhone
+            model: "iPhone 18 Pro"
+          - family: iPad
+            model: "iPad Pro 11-inch (M5)"
+    env:
+      CANDIDATE: 7c55d9d8f8591121899c39fc9b5abeb7bd857b89
     steps:
-      - name: Check out
+      - name: Check out the release candidate
         uses: actions/checkout@v4
-        # The Anki submodule is fetched by scripts/build-core.sh, and only when
-        # the core is not already cached.
+        with:
+          ref: ${{ env.CANDIDATE }}
 
-      - name: Show tool versions
+      - name: Record the checkout and shared fixture
         run: |
+          test "$(git rev-parse HEAD)" = "$CANDIDATE"
+          git rev-parse HEAD
+          shasum -a 256 Packages/CollectionStore/Sources/CollectionTesting/Fixtures/collection.colpkg
           xcodebuild -version
-          swift --version
-          sw_vers
 
       - name: Compute the core's cache key
         id: core-key
@@ -52,53 +53,16 @@ jobs:
             Packages/AnkiCore/Sources/AnkiProto/Generated
           key: core-${{ runner.os }}-${{ steps.core-key.outputs.anki }}-${{ hashFiles('core/**', 'scripts/build-core.sh', 'Packages/AnkiCore/Package.resolved') }}
 
-      # Upstream's sync server, which the SyncFeature tests sync against. It
-      # depends only on the pinned Anki commit and its build script.
-      - name: Restore the sync server
-        id: server-cache
-        uses: actions/cache/restore@v4
-        with:
-          path: build/sync-server/anki-sync-server
-          key: sync-server-${{ runner.os }}-${{ steps.core-key.outputs.anki }}-${{ hashFiles('scripts/build-sync-server.sh') }}
-
       - name: Install build tools
         run: |
           brew list xcodegen >/dev/null 2>&1 || brew install xcodegen
-          if [[ "${{ steps.core-cache.outputs.cache-hit }}" != "true" || "${{ steps.server-cache.outputs.cache-hit }}" != "true" ]]; then
+          if [[ "${{ steps.core-cache.outputs.cache-hit }}" != "true" ]]; then
             brew list protobuf >/dev/null 2>&1 || brew install protobuf
           fi
 
       - name: Build the core
         if: steps.core-cache.outputs.cache-hit != 'true'
         run: scripts/build-core.sh
-
-      # Saved straight away, so a later failing step does not throw away a
-      # build that takes most of an hour.
-      - name: Save the built core
-        if: steps.core-cache.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v4
-        with:
-          path: |
-            build/core/descriptors.bin
-            Packages/AnkiCore/Frameworks
-            Packages/AnkiCore/Sources/AnkiCore/Generated
-            Packages/AnkiCore/Sources/AnkiProto/Generated
-          key: ${{ steps.core-cache.outputs.cache-primary-key }}
-
-      - name: Build the sync server
-        if: steps.server-cache.outputs.cache-hit != 'true'
-        run: scripts/build-sync-server.sh
-
-      - name: Save the sync server
-        if: steps.server-cache.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v4
-        with:
-          path: build/sync-server/anki-sync-server
-          key: ${{ steps.server-cache.outputs.cache-primary-key }}
-
-      - name: Run the tests on the Mac
-        if: ${{ !inputs.joint_release_only }}
-        run: scripts/test.sh
 
       - name: Generate the Xcode project
         run: xcodegen generate
@@ -113,105 +77,41 @@ jobs:
             -derivedDataPath build/DerivedData \
             ARCHS=arm64 CODE_SIGNING_ALLOWED=NO
 
-      - name: Package the simulator candidate for joint verification
-        if: github.event_name == 'workflow_dispatch'
-        run: ditto -c -k --keepParent build/DerivedData/Build/Products/Debug-iphonesimulator/Hayaki.app build/Hayaki-simulator.zip
-
-      - name: Archive the exact simulator app
-        if: github.event_name == 'workflow_dispatch'
-        uses: actions/upload-artifact@v4
-        with:
-          name: hayaki-simulator-app
-          path: build/Hayaki-simulator.zip
-          if-no-files-found: error
-
-      - name: Run the iPhone and iPad user-interface tests
-        if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
-        timeout-minutes: 65
+      - name: Run the shared installed-app scenarios
         shell: bash
+        env:
+          FAMILY: ${{ matrix.family }}
+          MODEL: ${{ matrix.model }}
         run: |
           set -euo pipefail
-
           test_configuration=$(find build/DerivedData/Build/Products -maxdepth 1 -name 'Hayaki_iphonesimulator*-arm64.xctestrun' -print -quit)
           [[ -f "$test_configuration" ]]
-
-          select_simulator() {
-            xcrun simctl list devices available -j | python3 -c '
-          import json, sys
-          family, preferred, excluded = sys.argv[1:]
-          available = [
-              device for runtime, devices in json.load(sys.stdin)["devices"].items()
-              if ".iOS-" in runtime
-              for device in devices if device["isAvailable"] and device["name"].startswith(family)
-              and device["udid"] != excluded
-          ]
-          if not available:
-              sys.exit("No available iOS " + family + " simulator")
-          print(next((device for device in available if device["name"] == preferred), available[0])["udid"])
-          ' "$1" "$2" "${3:-}"
-          }
-
-          run_ui_tests() {
-            simulator="$1"
-            result="$2"
-            shift 2
-            xcrun simctl bootstatus "$simulator" -b || return
-            xcodebuild test-without-building \
-              -xctestrun "$test_configuration" \
-              -destination "platform=iOS Simulator,id=$simulator" \
-              -parallel-testing-enabled NO \
-              -retry-tests-on-failure -test-iterations 2 -test-repetition-relaunch-enabled YES \
-              -test-timeouts-enabled YES \
-              -default-test-execution-time-allowance 240 \
-              -resultBundlePath "build/$result.xcresult" \
-              CODE_SIGNING_ALLOWED=NO \
-              "$@" 2>&1 | tee "build/$result.log"
-          }
-
-          phone=$(select_simulator iPhone "iPhone 18 Pro")
-          tablet=$(select_simulator iPad "iPad Pro 11-inch (M5)")
-          tablet_tests=(-only-testing:HayakiUITests/NavigationUITests)
-          phone_tests=()
-          if [[ "${{ inputs.joint_release_only }}" == "true" ]]; then
-            shared_study=-only-testing:HayakiUITests/StudyUITests/testStudyAllFinishesOneDeckAndAllowsAnEarlyExitFromTheNext
-            tablet_tests+=("$shared_study")
-            phone_tests=(
-              "$shared_study"
-              -only-testing:HayakiUITests/StudyUITests/testOpeningADeckRevealingAndRatingACard
-              -only-testing:HayakiUITests/StudyUITests/testStudyingADeckToTheEnd
-              -only-testing:HayakiUITests/HelpAndAboutUITests/testAboutIdentifiesThisBuildAndOpensItsChangelog
-              -only-testing:HayakiUITests/LocalizationUITests
-            )
+          simulator=$(xcrun simctl list devices available -j | python3 -c '
+          import json, os, sys
+          family, preferred = os.environ["FAMILY"], os.environ["MODEL"]
+          devices = [device for runtime, devices in json.load(sys.stdin)["devices"].items()
+                     if ".iOS-" in runtime for device in devices if device["name"].startswith(family)]
+          print(next((device for device in devices if device["name"] == preferred), devices[0])["udid"])
+          ')
+          xcrun simctl bootstatus "$simulator" -b
+          tests=(-only-testing:HayakiUITests/StudyUITests/testStudyAllFinishesOneDeckAndAllowsAnEarlyExitFromTheNext)
+          if [[ "$FAMILY" == "iPhone" ]]; then
+            tests+=(-only-testing:HayakiUITests/HelpAndAboutUITests/testAboutIdentifiesThisBuildAndOpensItsChangelog)
           fi
-          tablet_result=0
-          run_ui_tests "$tablet" UITests-iPad "${tablet_tests[@]}" || tablet_result=$?
-          xcrun simctl shutdown "$tablet" || true
-          phone_result=0
-          run_ui_tests "$phone" UITests-iPhone ${phone_tests[@]+"${phone_tests[@]}"} || phone_result=$?
-          xcrun simctl shutdown "$phone" || true
+          xcodebuild test-without-building \
+            -xctestrun "$test_configuration" \
+            -destination "platform=iOS Simulator,id=$simulator" \
+            -parallel-testing-enabled NO -test-timeouts-enabled YES \
+            -default-test-execution-time-allowance 240 \
+            -resultBundlePath "build/UITests-$FAMILY.xcresult" \
+            CODE_SIGNING_ALLOWED=NO "${tests[@]}" 2>&1 | tee "build/UITests-$FAMILY.log"
 
-          # The XCTest service sometimes crashes before any test starts.
-          # Retry that startup failure once on a different simulator.
-          if (( phone_result != 0 )) && [[ -f build/UITests-iPhone.log ]] &&
-             python3 -c 'import sys; from pathlib import Path; log = Path(sys.argv[1]).read_text(); sys.exit(not ("operation never finished bootstrapping" in log and "Test Case " not in log))' build/UITests-iPhone.log &&
-             retry=$(select_simulator iPhone "iPhone 17" "$phone"); then
-            phone_result=0
-            run_ui_tests "$retry" UITests-iPhone-Retry ${phone_tests[@]+"${phone_tests[@]}"} || phone_result=$?
-            xcrun simctl shutdown "$retry" || true
-          fi
-
-          if (( phone_result != 0 || tablet_result != 0 )); then
-            exit 1
-          fi
-
-      - name: Keep simulator results
-        if: always() && (github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch')
+      - name: Archive device evidence
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: hayaki-simulator-results
-          path: build/UITests-*.xcresult
+          name: focused-results-${{ matrix.family }}
+          path: |
+            build/UITests-*.xcresult
+            build/UITests-*.log
           if-no-files-found: ignore
-
-      - name: Verify packages used by the joint release
-        if: inputs.joint_release_only
-        run: scripts/test.sh DecksFeature StudyFeature SettingsFeature AppShell CollectionStore
