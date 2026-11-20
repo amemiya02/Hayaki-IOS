@@ -28,10 +28,21 @@ final class StudyUITests: XCTestCase {
 
     func testOpeningADeckRevealingAndRatingACard() throws {
         openDeck("Geography")
-        let counts = app.descendants(matching: .any)["study-counts"]
+        // The counts, Close and the study actions sit in the system navigation bar.
+        let navigationBar = app.navigationBars.firstMatch
+        let counts = navigationBar.descendants(matching: .any)["study-counts"]
         XCTAssertTrue(counts.waitForExistence(timeout: 20))
         let countsBefore = counts.label
         XCTAssertTrue(countsBefore.hasSuffix("due left"), countsBefore)
+        XCTAssertTrue(navigationBar.buttons["Close"].exists)
+        let studyActions = navigationBar.buttons["Study Actions"]
+        XCTAssertTrue(studyActions.exists)
+        studyActions.tap()
+        XCTAssertTrue(app.buttons["Add Note"].waitForExistence(timeout: 5), "Add Note is in the study menu")
+        XCTAssertTrue(app.buttons["Reviewer Settings"].exists)
+        // Dismiss the menu without choosing an action.
+        app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
+        XCTAssertTrue(app.buttons["Add Note"].waitForNonExistence(timeout: 5))
         // A Cloze card's question is drawn in the web view, with its deletion
         // hidden. Generous: the web view's first page load can take many
         // seconds on a busy machine.

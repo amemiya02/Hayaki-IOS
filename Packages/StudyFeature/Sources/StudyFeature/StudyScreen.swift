@@ -38,8 +38,9 @@ extension View {
     }
 }
 
-/// The study screen: the card fills the screen, with the counts above it and
-/// Show Answer or the four rating buttons at the bottom, within thumb reach.
+/// The study screen: the card fills the screen under a navigation bar with the
+/// deck and its counts, and Show Answer or the four rating buttons sit at the
+/// bottom, within thumb reach.
 public struct StudyScreen: View {
     @State private var model: StudySessionModel
     /// What the learner typed on a card that asks for typing.
@@ -97,16 +98,24 @@ public struct StudyScreen: View {
     }
 
     public var body: some View {
-        VStack(spacing: 0) {
-            if templateFullscreen.showsTopBar || model.state.card == nil {
-                topBar
+        NavigationStack {
+            VStack(spacing: 0) {
+                content
+                // A card's template can hide the navigation bar but keep the
+                // reviewer's actions, which then sit below the card.
+                if templateFullscreen.showsActions, !showsNavigationBar {
+                    reviewerActions
+                }
             }
-            content
-            if templateFullscreen.showsActions, preferences.toolbarPosition == .bottom || !templateFullscreen.showsTopBar {
-                reviewerActions
-            }
+            .overlay(alignment: .top) { progressLine }
+            .hayakiBackground(.plain)
+            .navigationTitle(title)
+            .toolbar { navigationBarItems }
+            #if os(iOS)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar(showsNavigationBar ? .automatic : .hidden, for: .navigationBar)
+            #endif
         }
-        .hayakiBackground(.plain)
         .task(id: ObjectIdentifier(model)) { await model.run() }
         .task(id: autoAdvanceTask) { await runAutoAdvance() }
         .task(id: feedback) {
@@ -434,67 +443,93 @@ public struct StudyScreen: View {
         }
     }
 
-    private var topBar: some View {
-        ZStack {
-            VStack(spacing: 2) {
-                Text(preferences.showDeckTitle && !model.currentDeckName.isEmpty ? model.currentDeckName : deckName)
-                    .font(.subheadline.weight(.semibold))
-                    .lineLimit(1)
-                if model.state.card != nil {
-                    HStack {
-                        if model.showsRemainingCounts {
-                            StudyCountsView(counts: model.counts)
-                            if let minutes = model.minutesRemaining {
-                                let duration = Duration.seconds(max(1, minutes) * 60)
-                                let units: Set<Duration.UnitsFormatStyle.Unit> =
-                                    minutes >= 24 * 60 ? [.days, .hours] : [.hours, .minutes]
-                                Text("\(duration.formatted(.units(allowed: units))) left", bundle: .module)
-                                    .font(.caption)
-                                    .monospacedDigit()
-                            }
+    private var showsNavigationBar: Bool {
+        templateFullscreen.showsTopBar || model.state.card == nil
+    }
+
+    private var title: String {
+        preferences.showDeckTitle && !model.currentDeckName.isEmpty ? model.currentDeckName : deckName
+    }
+
+    /// The system navigation bar: Close, the deck with the counts below it,
+    /// and the reviewer's actions.
+    @ToolbarContentBuilder
+    private var navigationBarItems: some ToolbarContent {
+        ToolbarItem(placement: .cancellationAction) {
+            Button {
+                dismiss()
+            } label: {
+                Label {
+                    Text("Close", bundle: .module)
+                } icon: {
+                    Image(systemName: "xmark")
+                }
+            }
+            .keyboardShortcut(.cancelAction)
+        }
+        #if os(iOS)
+        ToolbarItem(placement: .title) { titleView }
+        #else
+        ToolbarItem(placement: .principal) { titleView }
+        #endif
+        if model.state.card != nil {
+            ToolbarItemGroup(placement: .primaryAction) {
+                reviewerToolbar.barButtons
+            }
+            ToolbarItem(placement: .primaryAction) {
+                reviewerToolbar.menu
+            }
+        } else {
+            // With no card to act on, only the settings remain.
+            ToolbarItem(placement: .primaryAction) {
+                Button(reviewerLocalized("Reviewer Settings"), systemImage: "gear") { showingSettings = true }
+            }
+        }
+    }
+
+    /// The deck's name, and below it the counts left, the time left and the
+    /// answer timer, each when turned on.
+    private var titleView: some View {
+        VStack(spacing: 1) {
+            Text(title)
+                .font(.headline)
+                .lineLimit(1)
+            if model.state.card != nil {
+                HStack(spacing: 8) {
+                    if model.showsRemainingCounts {
+                        StudyCountsView(counts: model.counts)
+                        if let minutes = model.minutesRemaining {
+                            let duration = Duration.seconds(max(1, minutes) * 60)
+                            let units: Set<Duration.UnitsFormatStyle.Unit> =
+                                minutes >= 24 * 60 ? [.days, .hours] : [.hours, .minutes]
+                            Text("\(duration.formatted(.units(allowed: units))) left", bundle: .module)
+                                .foregroundStyle(.secondary)
                         }
-                        if model.showsAnswerTimer {
-                            TimelineView(.periodic(from: .now, by: 1)) { _ in
-                                Text(model.answerTimer().formatted(.time(pattern: .minuteSecond)))
-                                    .monospacedDigit()
-                                    .accessibilityLabel(reviewerLocalized("Answer Timer"))
-                            }
+                    }
+                    if model.showsAnswerTimer {
+                        TimelineView(.periodic(from: .now, by: 1)) { _ in
+                            Text(model.answerTimer().formatted(.time(pattern: .minuteSecond)))
+                                .foregroundStyle(.secondary)
+                                .accessibilityLabel(reviewerLocalized("Answer Timer"))
                         }
                     }
                 }
-            }
-            .padding(.horizontal, 64)
-            HStack {
-                Button {
-                    dismiss()
-                } label: {
-                    Image(systemName: "xmark")
-                        .font(.body.weight(.semibold))
-                        .frame(width: 44, height: 44)
-                }
-                .buttonStyle(.plain)
-                .contentShape(.rect)
-                .accessibilityLabel(Text("Close", bundle: .module))
-                .keyboardShortcut(.cancelAction)
-                Spacer()
-                if preferences.toolbarPosition == .hidden {
-                    Button(reviewerLocalized("Reviewer Settings"), systemImage: "gear") { showingSettings = true }
-                        .labelStyle(.iconOnly)
-                        .frame(width: 44, height: 44)
-                } else if preferences.toolbarPosition == .top {
-                    reviewerActions
-                        .frame(maxWidth: 188, alignment: .trailing)
-                }
+                .font(.footnote.weight(.semibold))
+                .hayakiNumeric()
+                .lineLimit(1)
             }
         }
-        .padding(.horizontal, 8)
-        .padding(.top, 4)
-        .overlay(alignment: .bottom) {
-            if preferences.showProgress, model.showsRemainingCounts, model.hasStudyProgress {
-                ProgressView(value: model.progress)
-                    .labelsHidden()
-                    .accessibilityLabel(reviewerLocalized("Study Progress"))
-            }
+    }
+
+    /// A thin line along the bottom edge of the navigation bar.
+    @ViewBuilder
+    private var progressLine: some View {
+        if showsNavigationBar, preferences.showProgress, model.showsRemainingCounts, model.hasStudyProgress {
+            ProgressView(value: model.progress)
+                .progressViewStyle(.linear)
+                .labelsHidden()
+                .scaleEffect(x: 1, y: 0.5, anchor: .top)
+                .accessibilityLabel(reviewerLocalized("Study Progress"))
         }
     }
 
@@ -738,11 +773,16 @@ public struct StudyScreen: View {
     }
     #endif
 
-    private var reviewerActions: some View {
+    private var reviewerToolbar: ReviewerToolbar {
         ReviewerToolbar(
             model: model, preferences: preferences, showsEditNote: noteEditor != nil,
             onSettings: { showingSettings = true }, dispatch: dispatch
         )
+    }
+
+    private var reviewerActions: some View {
+        reviewerToolbar
+            .padding(.horizontal, 8)
     }
 }
 
@@ -778,17 +818,19 @@ private struct SideShown: Equatable {
     }
 }
 
-/// The new, learning and due counts left today, in Anki's blue, red and green.
+/// The new, learning and due counts left today, as `12 · 3 · 40` in Anki's
+/// blue, red and green.
 private struct StudyCountsView: View {
     let counts: StudyCounts
 
     var body: some View {
-        HStack(spacing: 14) {
+        HStack(spacing: 4) {
             Text(counts.new, format: .number).foregroundStyle(SemanticColor.new.color)
+            separator
             Text(counts.learning, format: .number).foregroundStyle(SemanticColor.learning.color)
+            separator
             Text(counts.due, format: .number).foregroundStyle(SemanticColor.due.color)
         }
-        .font(.subheadline.weight(.medium))
         .hayakiNumeric()
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(Text(
@@ -796,6 +838,10 @@ private struct StudyCountsView: View {
             bundle: .module
         ))
         .accessibilityIdentifier("study-counts")
+    }
+
+    private var separator: some View {
+        Text(verbatim: "·").foregroundStyle(.tertiary)
     }
 }
 
