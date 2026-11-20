@@ -148,6 +148,13 @@ private struct ChangelogScreen: View {
     var body: some View {
         List {
             Section {
+                Text("Hayaki now shares its app icon, ten themes and public version across Android, iPhone and iPad.", bundle: .module)
+            } header: {
+                Text(verbatim: "0.2.0")
+                    .monospacedDigit()
+            }
+
+            Section {
                 Text("Initial iPhone and iPad development release.", bundle: .module)
                 Text("Study and edit collections offline. Import and export deck and collection packages, review statistics, and change deck options.", bundle: .module)
                 Text("Sync with AnkiWeb or a self-hosted Anki sync server.", bundle: .module)

@@ -21,7 +21,8 @@ final class HelpAndAboutUITests: XCTestCase {
 
     func testAboutIdentifiesThisBuildAndOpensItsChangelog() {
         openMoreLink("About")
-        XCTAssertTrue(app.staticTexts["0.1.0"].exists)
+        XCTAssertTrue(app.staticTexts["0.2.0"].exists)
+        XCTAssertTrue(app.staticTexts["5"].exists)
         XCTAssertTrue(app.staticTexts["26.09.4"].exists)
         XCTAssertTrue(app.staticTexts["6.6.2"].exists)
         XCTAssertTrue(app.staticTexts["Build Date"].exists)
@@ -41,7 +42,7 @@ final class HelpAndAboutUITests: XCTestCase {
         for _ in 0..<3 where !changelog.isHittable { app.swipeDown() }
         changelog.tap()
         XCTAssertTrue(app.navigationBars["Changelog"].exists)
-        XCTAssertTrue(app.staticTexts["0.1.0"].exists)
+        XCTAssertTrue(app.staticTexts["0.2.0"].exists)
         screenshot("Changelog")
     }
 

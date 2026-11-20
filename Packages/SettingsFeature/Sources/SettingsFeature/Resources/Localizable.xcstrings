@@ -967,6 +967,22 @@
         }
       }
     },
+    "Hayaki now shares its app icon, ten themes and public version across Android, iPhone and iPad." : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Android、iPhone、iPad の Hayaki でアプリアイコン、10 種類のテーマ、バージョン番号を統一しました。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Android、iPhone 和 iPad 版 Hayaki 现已统一应用图标、十款主题和对外版本号。"
+          }
+        }
+      }
+    },
     "Initial iPhone and iPad development release." : {
       "localizations" : {
         "ja" : {
