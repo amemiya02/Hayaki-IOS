@@ -91,11 +91,13 @@
         from { opacity: 0; }
         to { opacity: 1; }
     }
-    .hayaki-answer-side > #answer, .hayaki-answer-side > #answer ~ * {
+    .hayaki-answer-side:not(.hayaki-preparing-side) > #answer,
+    .hayaki-answer-side:not(.hayaki-preparing-side) > #answer ~ * {
         animation: hayaki-answer-in 0.25s ease-out;
     }
     @media (prefers-reduced-motion: reduce) {
-        .hayaki-answer-side > #answer, .hayaki-answer-side > #answer ~ * {
+        .hayaki-answer-side:not(.hayaki-preparing-side) > #answer,
+        .hayaki-answer-side:not(.hayaki-preparing-side) > #answer ~ * {
             animation: none;
         }
     }
@@ -324,14 +326,29 @@
         await window.MathJax.typesetPromise([container]);
     }
 
+    async function waitForFonts(container) {
+        // Lay out the new side so WebKit starts fetching the fonts it uses.
+        container.getBoundingClientRect();
+        if (document.fonts.status !== "loading") return;
+        // Slow or missing media must not hold up review indefinitely.
+        let timeout;
+        await Promise.race([
+            document.fonts.ready,
+            new Promise(resolve => { timeout = setTimeout(resolve, 400); }),
+        ]);
+        clearTimeout(timeout);
+    }
+
     async function render(side, token, focusTypedAnswer) {
-        document.getElementById("card-style").textContent = side.css;
+        const style = document.getElementById("card-style");
+        if (style.textContent !== side.css) style.textContent = side.css;
         shownBodyClass = side.bodyClass;
         applyColorScheme();
         const qa = document.getElementById("qa");
         const hasMaths = mathPattern.test(side.html);
-        // Hidden until the maths is drawn, so raw TeX never flashes up.
-        qa.style.opacity = hasMaths ? "0" : "1";
+        // Keep raw TeX and fallback glyphs out of the first visible frame.
+        qa.style.opacity = "0";
+        qa.classList.add("hayaki-preparing-side");
         qa.classList.toggle("hayaki-answer-side", side.isAnswer);
         qa.innerHTML = side.html;
         post({ rendered: token });
@@ -343,14 +360,16 @@
             } catch (error) {
                 console.error(error);
             }
-            qa.style.opacity = "1";
         }
+        await waitForFonts(qa);
         const answer = side.isAnswer ? document.getElementById("answer") : null;
         if (answer && document.documentElement.scrollHeight > window.innerHeight) {
             answer.scrollIntoView({ block: "start" });
         } else {
             window.scrollTo(0, 0);
         }
+        qa.classList.remove("hayaki-preparing-side");
+        qa.style.opacity = "1";
         const typeans = document.querySelector("input#typeans");
         if (typeans) {
             typeans.addEventListener("input", function () {

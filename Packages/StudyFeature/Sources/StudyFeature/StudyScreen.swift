@@ -897,24 +897,21 @@ private struct StudyCountsView: View {
     let counts: StudyCounts
 
     var body: some View {
-        HStack(spacing: 4) {
-            Text(counts.new, format: .number).foregroundStyle(SemanticColor.new.color)
-            separator
-            Text(counts.learning, format: .number).foregroundStyle(SemanticColor.learning.color)
-            separator
-            Text(counts.due, format: .number).foregroundStyle(SemanticColor.due.color)
-        }
-        .hayakiNumeric()
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel(Text(
-            "\(counts.new) new, \(counts.learning) learning, \(counts.due) due left",
-            bundle: .module
-        ))
-        .accessibilityIdentifier("study-counts")
-    }
+        let new = Text(counts.new, format: .number).foregroundStyle(SemanticColor.new.color)
+        let learning = Text(counts.learning, format: .number).foregroundStyle(SemanticColor.learning.color)
+        let due = Text(counts.due, format: .number).foregroundStyle(SemanticColor.due.color)
+        let separator = Text(verbatim: "·").foregroundStyle(.tertiary)
 
-    private var separator: some View {
-        Text(verbatim: "·").foregroundStyle(.tertiary)
+        // Fit the whole count together before optional time labels use any space.
+        Text("\(new) \(separator) \(learning) \(separator) \(due)")
+            .lineLimit(1)
+            .minimumScaleFactor(0.5)
+            .layoutPriority(1)
+            .accessibilityLabel(Text(
+                "\(counts.new) new, \(counts.learning) learning, \(counts.due) due left",
+                bundle: .module
+            ))
+            .accessibilityIdentifier("study-counts")
     }
 }
 

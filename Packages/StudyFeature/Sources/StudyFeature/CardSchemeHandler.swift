@@ -1,4 +1,3 @@
-#if os(iOS)
 import WebKit
 
 /// Answers the card web view's `hayaki-card://` requests from
@@ -50,4 +49,3 @@ final class CardSchemeHandler: NSObject, WKURLSchemeHandler {
         running.removeValue(forKey: ObjectIdentifier(urlSchemeTask))?.cancel()
     }
 }
-#endif
