@@ -20,22 +20,25 @@
   <a href="https://github.com/amemiya02/Hayaki-IOS/issues">问题反馈</a>
 </p>
 
-Hayaki 用原生 SwiftUI 将 [Hayaki 安卓版](https://github.com/amemiya02/Hayaki) 的学习体验带到 iPhone 和 iPad。集合保存在设备上，离线也能学习、浏览和编辑。应用内嵌上游 Anki 的 Rust 核心，用于复习调度、搜索和同步，并兼容桌面 Anki 和 AnkiDroid 的集合格式。
+Hayaki 用 SwiftUI 和 Liquid Glass 打造原生 iOS 26 应用，将 [Hayaki 安卓版](https://github.com/amemiya02/Hayaki) 的学习体验带到 iPhone 和 iPad。集合保存在设备上，离线也能学习、浏览和编辑。应用内嵌上游 Anki 的 Rust 核心，用于复习调度、搜索和同步，并兼容桌面 Anki 和 AnkiDroid 的集合格式。
 
 <p align="center">
-  <img src="docs/assets/iphone-decks.webp" width="240" alt="牌组页显示今日待学数量和牌组列表">
-  <img src="docs/assets/iphone-review.webp" width="240" alt="复习页显示 MathJax 公式与四种评分">
-  <img src="docs/assets/iphone-browse.webp" width="240" alt="浏览页显示 Anki 搜索、卡片和笔记切换以及搜索结果">
+  <img src="docs/assets/iphone-decks-zh.webp" width="200" alt="牌组页顶部的今日卡片、全部学习按钮，以及每个牌组的彩色数量标签">
+  <img src="docs/assets/iphone-review-zh.webp" width="200" alt="学习页导航栏显示牌组名和数量，下方是 MathJax 卡片和四个玻璃评分按钮">
+  <img src="docs/assets/iphone-finished-zh.webp" width="200" alt="完成页显示本次复习的卡片数、用时和评分分布">
+  <img src="docs/assets/iphone-themes.webp" width="200" alt="外观设置中的十个主题卡片">
 </p>
 
 ## 主要功能
 
 - **离线学习。** 使用 Anki 调度与 FSRS，支持自定义学习、筛选牌组和撤销评分。卡片支持图片、音频和 MathJax 公式。
-- **搜索和编辑。** 支持 Anki 搜索语法、保存搜索、配置列和批量操作，可在卡片和笔记之间切换。支持编辑富文本、媒体、笔记类型和卡片模板。
+- **舒适的学习界面。** 牌组名和「新卡 · 学习中 · 待复习」数量显示在导航栏，评分按钮是带触感反馈的玻璃按钮，每次学习结束会显示卡片数、用时和评分分布。卡片中的汉字可以选择日文或中文字形。
+- **搜索和编辑。** 支持 Anki 搜索语法、保存搜索、配置列和批量操作，可在卡片和笔记之间切换。支持编辑富文本、媒体、笔记类型和卡片模板。可以通过 `+` 按钮、Command-N、主屏幕快捷操作或 Siri 与快捷指令添加笔记。
 - **迁移集合。** 支持导入和导出 `.apkg` 与 `.colpkg`。牌组包合并到当前集合。导入集合包时，应用会在用户确认后先备份，再替换当前集合。
-- **按需同步。** 每个档案可选择 AnkiWeb 或自托管 Anki 同步服务器，集合和媒体分别显示进度。
-- **查看学习进度。** 查看待复习卡片、复习历史和调度统计，设置本地提醒，也可以用独立档案管理不同的集合。
-- **适配 iPhone 和 iPad。** iPhone 使用标签栏，iPad 使用侧栏。支持英语、简体中文和日语。启用 App Groups 的版本还提供分享扩展和牌组小组件。
+- **按需同步。** 每个档案可选择 AnkiWeb 或自托管 Anki 同步服务器。同步时底部玻璃条显示进度，同步页分别显示集合和媒体的状态。
+- **查看学习进度。** 牌组页的今日卡片汇总待学数量。统计页显示复习数、用时、正确率和连续天数，图表可拖动查看数值、横向滚动，还有日历热力图。可设置本地提醒，也可以用独立档案管理不同的集合。
+- **个性化外观。** 外观可选跟随系统、浅色、深色或纯黑，并提供十个主题，其中「纸」和「夜空」主题会改变卡片底色。
+- **适配 iPhone 和 iPad。** iPhone 使用标签栏，iPad 使用侧栏。iPad 上浏览页在列表旁显示所选卡片，卡片保持适合阅读的宽度，按住 Command 可查看全部快捷键。支持英语、简体中文和日语。启用 App Groups 的版本还提供分享扩展和牌组小组件。
 
 已验证的流程和待完成的设备测试记录在 [iOS 验收清单](docs/specs/ios-acceptance.md) 中。
 

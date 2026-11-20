@@ -20,22 +20,25 @@
   <a href="https://github.com/amemiya02/Hayaki-IOS/issues">Issues</a>
 </p>
 
-Hayaki brings [Hayaki for Android](https://github.com/amemiya02/Hayaki) to iPhone and iPad with a native SwiftUI interface. Your collection lives on your device, so you can study, browse, and edit offline. Hayaki embeds upstream Anki’s Rust core for scheduling, search, sync, and file compatibility with desktop Anki and AnkiDroid.
+Hayaki brings [Hayaki for Android](https://github.com/amemiya02/Hayaki) to iPhone and iPad as a native iOS 26 app built in SwiftUI with Liquid Glass. Your collection lives on your device, so you can study, browse, and edit offline. Hayaki embeds upstream Anki’s Rust core for scheduling, search, sync, and file compatibility with desktop Anki and AnkiDroid.
 
 <p align="center">
-  <img src="docs/assets/iphone-decks.webp" width="240" alt="Decks screen showing today's card counts and the deck list">
-  <img src="docs/assets/iphone-review.webp" width="240" alt="Reviewer showing a MathJax equation and the four answer ratings">
-  <img src="docs/assets/iphone-browse.webp" width="240" alt="Browse screen with Anki search, Cards and Notes modes, and a list of card results">
+  <img src="docs/assets/iphone-decks.webp" width="200" alt="Decks screen with the Today card, Study All, and colored count pills on each deck">
+  <img src="docs/assets/iphone-review.webp" width="200" alt="Study screen with deck name and counts in the navigation bar, a MathJax card, and four glass rating buttons">
+  <img src="docs/assets/iphone-finished.webp" width="200" alt="Finished screen with a session summary of cards reviewed, time spent, and the rating breakdown">
+  <img src="docs/assets/iphone-themes.webp" width="200" alt="Appearance settings showing the ten theme cards">
 </p>
 
 ## Features
 
 - **Study offline.** Review with Anki scheduling and FSRS, use custom study and filtered decks, and undo a rating. Cards can display images, play audio, and render equations with MathJax.
-- **Find and edit cards.** Use Anki search syntax, saved searches, configurable columns, and bulk actions in Cards and Notes modes. Edit rich text, media, note types, and card templates.
+- **Study comfortably.** The deck name and New · Learning · Due counts sit in the navigation bar, rating buttons are glass with haptic feedback, and each session ends with a summary of cards, time, and ratings. Choose whether cards draw Kanji/Hanzi in Japanese or Chinese forms.
+- **Find and edit cards.** Use Anki search syntax, saved searches, configurable columns, and bulk actions in Cards and Notes modes. Edit rich text, media, note types, and card templates. Add a note with `+`, Command-N, the Home Screen quick action, or Siri and Shortcuts.
 - **Move your collection.** Import and export `.apkg` and `.colpkg` files. Deck imports merge into the current collection. Collection imports ask for confirmation and create a backup before replacing it.
-- **Sync when you choose.** Connect each profile to AnkiWeb or a self-hosted Anki sync server. Collection and media sync show their progress separately.
-- **See your progress.** Check due cards, review history, and scheduling statistics. Set local reminders and keep separate collections in separate profiles.
-- **Use it on iPhone or iPad.** Navigate with iPhone tabs or the iPad sidebar. English, Simplified Chinese, and Japanese are supported. The App Groups build also includes Share and deck widgets.
+- **Sync when you choose.** Connect each profile to AnkiWeb or a self-hosted Anki sync server. A glass strip shows progress while syncing, and the Sync screen shows collection and media status separately.
+- **See your progress.** A Today card on Decks totals what is due. Statistics shows reviews, time, correct rate, and streak, with charts you can scrub and scroll and a calendar heat map. Set local reminders and keep separate collections in separate profiles.
+- **Make it yours.** Pick System, Light, Dark, or Black appearance and any of ten themes, including Paper and Midnight card canvases.
+- **Use it on iPhone or iPad.** Navigate with iPhone tabs or the iPad sidebar. On iPad, Browse shows the selected card beside the list, cards keep a readable width, and every shortcut appears when you hold Command. English, Simplified Chinese, and Japanese are supported. The App Groups build also includes Share and deck widgets.
 
 See the [acceptance inventory](docs/specs/ios-acceptance.md) for verified workflows and remaining device checks.
 
