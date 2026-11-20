@@ -108,10 +108,14 @@ struct EditorFormattingToolbar: View {
         case .hidden:
             EmptyView()
         case .scroll, .stack:
+            // A floating glass capsule that rides above the keyboard (or the
+            // home indicator when a hardware keyboard is in use).
             controls
                 .padding(.horizontal, 8)
-                .background(.bar)
-                .overlay(alignment: .top) { Divider() }
+                .clipShape(shape)
+                .glassEffect(.regular.interactive(), in: shape)
+                .padding(.horizontal, 12)
+                .padding(.bottom, 8)
                 .alert(Text("Toolbar Button", bundle: .module), isPresented: $isEditingButton) {
                     TextField(text: $buttonName) { Text("Label", bundle: .module) }
                     TextField(text: $prefix) { Text("Before Text", bundle: .module) }
@@ -121,6 +125,11 @@ struct EditorFormattingToolbar: View {
                     Button(role: .cancel) {}
                 }
         }
+    }
+
+    /// One row reads as a capsule; the stacked grid needs straighter sides.
+    private var shape: AnyShape {
+        layout == .scroll ? AnyShape(.capsule) : AnyShape(.rect(cornerRadius: 24))
     }
 
     @ViewBuilder
