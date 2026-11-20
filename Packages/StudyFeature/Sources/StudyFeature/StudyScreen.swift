@@ -24,19 +24,20 @@ extension View {
     }
 
     /// Presents a full-screen study session over `deck` while it is set,
-    /// and sets it back to nil when the learner closes the session.
+    /// and sets it back to nil when the learner closes the session. When the
+    /// presented deck was finished, its ID is available to `onDismiss`.
     public func studySession(
         of deck: Binding<StudyDeck?>, store: CollectionStore,
-        onDismiss: @escaping () -> Void = {},
-        onFinished: @escaping (Int64) -> Void = { _ in }
+        completedDeckID: Binding<StudyDeck.ID?> = .constant(nil),
+        onDismiss: @escaping () -> Void = {}
     ) -> some View {
         #if os(iOS)
         fullScreenCover(item: deck, onDismiss: onDismiss) { deck in
-            StudyScreen(store: store, deck: deck, onFinished: onFinished)
+            StudyScreen(store: store, deck: deck, completedDeckID: completedDeckID)
         }
         #else
         sheet(item: deck, onDismiss: onDismiss) { deck in
-            StudyScreen(store: store, deck: deck, onFinished: onFinished)
+            StudyScreen(store: store, deck: deck, completedDeckID: completedDeckID)
         }
         #endif
     }
@@ -91,7 +92,8 @@ public struct StudyScreen: View {
     @State private var deckTools: ReviewerDeckTools
     #endif
     private let store: CollectionStore
-    private let onFinished: (Int64) -> Void
+    private let presentedDeckID: StudyDeck.ID
+    @Binding private var completedDeckID: StudyDeck.ID?
     @State private var deckName: String
     private let profileFolder: URL
     @Environment(\.dismiss) private var dismiss
@@ -100,10 +102,11 @@ public struct StudyScreen: View {
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 
     public init(
-        store: CollectionStore, deck: StudyDeck, onFinished: @escaping (Int64) -> Void = { _ in }
+        store: CollectionStore, deck: StudyDeck, completedDeckID: Binding<StudyDeck.ID?> = .constant(nil)
     ) {
         self.store = store
-        self.onFinished = onFinished
+        presentedDeckID = deck.id
+        _completedDeckID = completedDeckID
         _model = State(initialValue: StudySessionModel(store: store, deckID: deck.id))
         _deckName = State(initialValue: deck.name)
         profileFolder = store.location.folder
@@ -479,8 +482,8 @@ public struct StudyScreen: View {
     }
 
     private func closeSession() {
-        if model.state.finished != nil {
-            onFinished(model.deckID)
+        if model.deckID == presentedDeckID, model.state.finished != nil {
+            completedDeckID = presentedDeckID
         }
         dismiss()
     }

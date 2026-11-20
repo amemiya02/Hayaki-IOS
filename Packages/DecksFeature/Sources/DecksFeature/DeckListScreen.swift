@@ -91,9 +91,10 @@ public struct DeckListScreen<SyncControl: View>: View {
                 DeckOptionsScreen(store: store, deckID: deck.id)
             }
         }
-        .studySession(of: $studying, store: store, onDismiss: studySessionDismissed) { deckID in
-            if studyingAll, studying?.id == deckID { completedDeckID = deckID }
-        }
+        .studySession(
+            of: $studying, store: store, completedDeckID: $completedDeckID,
+            onDismiss: studySessionDismissed
+        )
     }
 
     /// The `⋯` menu: importing and exporting, and creating decks.
@@ -238,11 +239,12 @@ public struct DeckListScreen<SyncControl: View>: View {
     }
 
     private func studySessionDismissed() {
-        guard studyingAll, let completed = completedDeckID else {
+        let completed = completedDeckID
+        completedDeckID = nil
+        guard studyingAll, let completed else {
             studyingAll = false
             return
         }
-        completedDeckID = nil
         Task {
             await model.refresh()
             guard studyingAll, studying == nil else { return }
