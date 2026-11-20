@@ -267,7 +267,7 @@ private struct TodayDeckSummary: View {
 
     var body: some View {
         Section {
-            VStack(alignment: .leading, spacing: 12) {
+            VStack(alignment: .leading, spacing: isCompact ? 8 : 12) {
                 VStack(alignment: .leading, spacing: 2) {
                     Group {
                         if counts.isEmpty {
@@ -279,25 +279,42 @@ private struct TodayDeckSummary: View {
                     .font(.headline)
                     .accessibilityIdentifier("due-today")
                     Text("\(studied) studied today", bundle: .module)
-                        .font(.subheadline)
+                        .font(isCompact ? .footnote : .subheadline)
                         .foregroundStyle(.secondary)
                         .accessibilityIdentifier("studied-today")
                 }
                 totals
                 buttons
             }
-            .padding(.vertical, 6)
+            .padding(.vertical, isCompact ? 2 : 6)
         }
     }
 
+    /// At accessibility text sizes the card keeps to a few lines, so the
+    /// first decks still show below it.
+    private var isCompact: Bool {
+        dynamicTypeSize.isAccessibilitySize
+    }
+
+    @ViewBuilder
     private var totals: some View {
-        let layout = dynamicTypeSize.isAccessibilitySize
-            ? AnyLayout(VStackLayout(alignment: .leading, spacing: 8))
-            : AnyLayout(HStackLayout(alignment: .top, spacing: 0))
-        return layout {
-            total(counts.new, color: SemanticColor.new.color, label: Text("New", bundle: .module))
-            total(counts.learning, color: SemanticColor.learning.color, label: Text("Learning", bundle: .module))
-            total(counts.due, color: SemanticColor.due.color, label: Text("Due", bundle: .module))
+        Group {
+            if isCompact {
+                // Each count with its label, wrapping onto as many lines as needed.
+                WrappingRow(spacing: 12, lineSpacing: 2) {
+                    inlineTotal(counts.new, color: SemanticColor.new.color, label: Text("New", bundle: .module))
+                    inlineTotal(
+                        counts.learning, color: SemanticColor.learning.color, label: Text("Learning", bundle: .module)
+                    )
+                    inlineTotal(counts.due, color: SemanticColor.due.color, label: Text("Due", bundle: .module))
+                }
+            } else {
+                HStack(alignment: .top, spacing: 0) {
+                    total(counts.new, color: SemanticColor.new.color, label: Text("New", bundle: .module))
+                    total(counts.learning, color: SemanticColor.learning.color, label: Text("Learning", bundle: .module))
+                    total(counts.due, color: SemanticColor.due.color, label: Text("Due", bundle: .module))
+                }
+            }
         }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(Text(
@@ -322,6 +339,19 @@ private struct TodayDeckSummary: View {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
+    private func inlineTotal(_ value: Int, color: Color, label: Text) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: 4) {
+            Text(value, format: .number)
+                .font(.subheadline.weight(.semibold))
+                .hayakiNumeric()
+                .foregroundStyle(value == 0 ? Color.secondary : color)
+            label
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+        }
+        .fixedSize()
+    }
+
     @ViewBuilder
     private var buttons: some View {
         if canStudyAll {
@@ -331,22 +361,75 @@ private struct TodayDeckSummary: View {
             }
             .buttonStyle(.borderedProminent)
             .hayakiProminentLabel()
-            .controlSize(.large)
+            .controlSize(isCompact ? .regular : .large)
             .accessibilityHint(Text("Studies every deck with cards left today.", bundle: .module))
             .accessibilityIdentifier("study-all")
         }
-        if let deck {
+        // At accessibility sizes Study All is the card's one button; the
+        // selected deck's row below starts that deck.
+        if let deck, !(isCompact && canStudyAll) {
             Button {
                 onStudy(deck)
             } label: {
                 Text("Study Now · \(deck.name)", bundle: .module)
-                    .lineLimit(dynamicTypeSize.isAccessibilitySize ? 3 : 1)
+                    .lineLimit(isCompact ? 2 : 1)
                     .frame(maxWidth: .infinity)
             }
             .buttonStyle(.bordered)
-            .controlSize(.large)
+            .controlSize(isCompact ? .regular : .large)
             .accessibilityIdentifier("study-selected-deck")
         }
+    }
+}
+
+/// Lays its subviews out in a row, starting a new line whenever the next one
+/// would not fit, like words in a paragraph.
+private struct WrappingRow: Layout {
+    var spacing: CGFloat
+    var lineSpacing: CGFloat
+
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        let lines = arrange(subviews, width: proposal.width ?? .infinity)
+        let width = lines.map(\.width).max() ?? 0
+        let height = lines.map(\.height).reduce(0, +) + lineSpacing * CGFloat(max(lines.count - 1, 0))
+        return CGSize(width: proposal.width ?? width, height: height)
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        var y = bounds.minY
+        for line in arrange(subviews, width: bounds.width) {
+            var x = bounds.minX
+            for index in line.indices {
+                let size = subviews[index].sizeThatFits(.unspecified)
+                subviews[index].place(at: CGPoint(x: x, y: y), proposal: ProposedViewSize(size))
+                x += size.width + spacing
+            }
+            y += line.height + lineSpacing
+        }
+    }
+
+    private struct Line {
+        var indices: [Int] = []
+        var width: CGFloat = 0
+        var height: CGFloat = 0
+    }
+
+    private func arrange(_ subviews: Subviews, width: CGFloat) -> [Line] {
+        var lines: [Line] = []
+        var line = Line()
+        for index in subviews.indices {
+            let size = subviews[index].sizeThatFits(.unspecified)
+            let added = line.indices.isEmpty ? size.width : line.width + spacing + size.width
+            if !line.indices.isEmpty, added > width {
+                lines.append(line)
+                line = Line()
+            }
+            line.width = line.indices.isEmpty ? size.width : line.width + spacing + size.width
+            line.height = max(line.height, size.height)
+            line.indices.append(index)
+        }
+        if !line.indices.isEmpty { lines.append(line) }
+        return lines
     }
 }
 
