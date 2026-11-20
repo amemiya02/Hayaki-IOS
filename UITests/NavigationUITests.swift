@@ -148,7 +148,7 @@ final class NavigationUITests: XCTestCase {
         let statsBar = app.navigationBars["Statistics"]
         XCTAssertTrue(statsBar.waitForExistence(timeout: 10))
         XCTAssertTrue(statsBar.buttons["statistics-options"].exists)
-        app.typeKey("n", modifierFlags: .command)
+        pressAddNoteShortcut()
         closeAddNote()
 
         select("More")
@@ -194,6 +194,15 @@ final class NavigationUITests: XCTestCase {
         app.buttons["Previous Card"].tap()
         XCTAssertTrue(question.waitForExistence(timeout: 5))
         attachScreen("Browse preview with the selected card")
+    }
+
+    /// Command-N. The simulator drops the first hardware key event after the
+    /// app launches, so a press that opens nothing is repeated once.
+    private func pressAddNoteShortcut() {
+        app.typeKey("n", modifierFlags: .command)
+        if !app.navigationBars["Add Note"].waitForExistence(timeout: 3) {
+            app.typeKey("n", modifierFlags: .command)
+        }
     }
 
     private func closeAddNote() {
