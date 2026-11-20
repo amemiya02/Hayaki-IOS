@@ -4,19 +4,12 @@ import SwiftUI
 struct HourlySection: View {
     let graphs: StatisticsGraphs
     @Environment(\.statisticsReportPeriod) private var reportPeriod
-    private var displayedPeriod: StatisticsPeriod { reportPeriod ?? period }
-    @State private var period: StatisticsPeriod = .year
+    private var displayedPeriod: StatisticsPeriod { reportPeriod ?? graphs.period }
     private var hours: [HourlyReviews] { graphs.displaying(displayedPeriod).hourlyReviews }
     @State private var position: Double?
 
     var body: some View {
         Section {
-            if reportPeriod == nil {
-                StatisticsPeriodPicker(
-                    selection: $period, label: Text("Hourly Period", bundle: .module),
-                    allowsAllTime: graphs.period == .allTime
-                )
-            }
             if hours.contains(where: { $0.count > 0 }) {
                 chart
                 if let selected = position.map({ Int($0.rounded()) }), let hour = hours.first(where: { $0.hour == selected }) {
@@ -31,12 +24,19 @@ struct HourlySection: View {
                     .foregroundStyle(.secondary)
             }
         } header: {
-            Text("Hourly Breakdown", bundle: .module)
+            StatisticsCardHeader(title: Text("Hourly Breakdown", bundle: .module), reading: reading)
         }
-        .onChange(of: period) { position = nil }
-        .onChange(of: graphs.period) {
-            if graphs.period == .year && period == .allTime { period = .year }
-        }
+        .onChange(of: graphs.period) { position = nil }
+    }
+
+    /// The hour with the most reviews.
+    private var reading: Text? {
+        guard let busiest = hours.max(by: { $0.count < $1.count }), busiest.count > 0 else { return nil }
+        return Text(
+            "You review most around \(hourLabel(busiest.hour))",
+            bundle: .module,
+            comment: "Hourly Breakdown card reading: the hour of the day with the most reviews, e.g. \"9 PM\"."
+        )
     }
 
     private var chart: some View {

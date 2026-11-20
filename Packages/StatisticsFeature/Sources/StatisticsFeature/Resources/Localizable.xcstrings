@@ -1061,22 +1061,6 @@
         }
       }
     },
-    "Added Period" : {
-      "localizations" : {
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "追加数の集計期間"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "添加数量统计时段"
-          }
-        }
-      }
-    },
     "All" : {
       "localizations" : {
         "ja" : {
@@ -1105,22 +1089,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "所有卡片"
-          }
-        }
-      }
-    },
-    "All History" : {
-      "localizations" : {
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "すべての履歴"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "全部记录"
           }
         }
       }
@@ -1557,22 +1525,6 @@
         }
       }
     },
-    "Forecast Period" : {
-      "localizations" : {
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "予測期間"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "预测时段"
-          }
-        }
-      }
-    },
     "Future Due" : {
       "localizations" : {
         "ja" : {
@@ -1617,22 +1569,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "按小时分布"
-          }
-        }
-      }
-    },
-    "Hourly Period" : {
-      "localizations" : {
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "時間帯別の集計期間"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "按小时统计的时段"
           }
         }
       }
@@ -1909,22 +1845,6 @@
         }
       }
     },
-    "Ratings Period" : {
-      "localizations" : {
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "評価の集計期間"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "评分统计时段"
-          }
-        }
-      }
-    },
     "Relearning" : {
       "localizations" : {
         "ja" : {
@@ -1941,22 +1861,6 @@
         }
       }
     },
-    "Review History" : {
-      "localizations" : {
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "復習履歴"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "复习记录"
-          }
-        }
-      }
-    },
     "Review Intervals" : {
       "localizations" : {
         "ja" : {
@@ -1969,22 +1873,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "复习间隔"
-          }
-        }
-      }
-    },
-    "Review Period" : {
-      "localizations" : {
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "復習の集計期間"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "复习统计时段"
           }
         }
       }
@@ -2033,22 +1921,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "累计"
-          }
-        }
-      }
-    },
-    "Scope" : {
-      "localizations" : {
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "集計対象"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "统计范围"
           }
         }
       }
@@ -2258,6 +2130,314 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "统计选项"
+          }
+        }
+      }
+    },
+    "%@ cards added, about %@ per day" : {
+      "comment" : "Added card reading: cards added in the period, and the average per day.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ cards added, about %2$@ per day"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@枚のカードを追加、1日あたり約%2$@枚"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "新增 %1$@ 张卡片，平均每天约 %2$@ 张"
+          }
+        }
+      }
+    },
+    "%@ cards, %@ of them mature" : {
+      "comment" : "Card Counts card reading: all cards, and the share of mature cards.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ cards, %2$@ of them mature"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "カード%1$@枚、うち%2$@が成熟"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "共 %1$@ 张卡片，其中 %2$@ 已成熟"
+          }
+        }
+      }
+    },
+    "%@ of reviews passed (%@)" : {
+      "comment" : "True Retention card reading: the share of passed reviews and the window, e.g. \"90% of reviews passed (Last Month)\".",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ of reviews passed (%2$@)"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "復習の%1$@が合格（%2$@）"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ 的复习通过（%2$@）"
+          }
+        }
+      }
+    },
+    "%@ of your answers were correct" : {
+      "comment" : "Ratings card reading: the share of reviews not rated Again (correct answers).",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "解答の%@が正解"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ 的回答正确"
+          }
+        }
+      }
+    },
+    "%@+" : {
+      "comment" : "A streak at least this many days long, e.g. \"31+\".",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@+"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@+"
+          }
+        }
+      }
+    },
+    "About %@ cards due per day over the next %@ days" : {
+      "comment" : "Future Due card reading: the average number of cards due each day, and the number of days ahead.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "About %1$@ cards due per day over the next %2$@ days"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "今後%2$@日間、1日あたり約%1$@枚が期日"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "未来 %2$@ 天平均每天约 %1$@ 张到期"
+          }
+        }
+      }
+    },
+    "Average retrievability is %@" : {
+      "comment" : "Card Retrievability card reading: the average chance of recalling a card.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "平均想起可能性は%@"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "平均可提取性为 %@"
+          }
+        }
+      }
+    },
+    "days" : {
+      "comment" : "Unit after the number of days in the study streak.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "日"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "天"
+          }
+        }
+      }
+    },
+    "Deck or Search" : {
+      "comment" : "Statistics menu: chooses which cards the statistics cover.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "デッキまたは検索"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "牌组或搜索"
+          }
+        }
+      }
+    },
+    "Half of these cards are at %@ days or less" : {
+      "comment" : "Review Intervals and Card Stability card reading: the median in days.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "半数のカードが%@日以下"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "一半卡片不超过 %@ 天"
+          }
+        }
+      }
+    },
+    "min" : {
+      "comment" : "Unit after a number of minutes in the Today card.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "分"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "分钟"
+          }
+        }
+      }
+    },
+    "Streak" : {
+      "comment" : "Today card: the number of days in a row with reviews.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "連続日数"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "连续天数"
+          }
+        }
+      }
+    },
+    "The average is %@" : {
+      "comment" : "Card Ease and Card Difficulty card reading: the average value.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "平均は%@"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "平均为 %@"
+          }
+        }
+      }
+    },
+    "You review most around %@" : {
+      "comment" : "Hourly Breakdown card reading: the hour of the day with the most reviews, e.g. \"9 PM\".",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ごろに最も多く復習"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "你最常在 %@ 左右复习"
+          }
+        }
+      }
+    },
+    "You studied on %@ days in %@" : {
+      "comment" : "Calendar card reading: the number of days with reviews in the year shown, e.g. \"You studied on 120 days in 2026\".",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "You studied on %1$@ days in %2$@"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%2$@年は%1$@日学習"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%2$@ 年学习了 %1$@ 天"
+          }
+        }
+      }
+    },
+    "You studied on %@ of the last %@ days" : {
+      "comment" : "Reviews card reading: days with reviews, out of the days in the period.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "You studied on %1$@ of the last %2$@ days"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "過去%2$@日のうち%1$@日学習"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "过去 %2$@ 天中学习了 %1$@ 天"
           }
         }
       }

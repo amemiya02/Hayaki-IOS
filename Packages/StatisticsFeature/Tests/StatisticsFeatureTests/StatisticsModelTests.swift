@@ -359,6 +359,50 @@ struct StatisticsModelTests {
         }
     }
 
+    @Test("The study streak counts consecutive days with reviews, up to today or yesterday")
+    func studyStreak() async throws {
+        try await withTemporaryCollection { store in
+            let deck = try await store.addDeck(named: "Streak")
+            let cards = try await store.addBasicNotes(count: 4, toDeck: deck)
+            try await store.makeReviewCardsDueToday(cards, intervalDays: 10)
+            try await store.review(cards[0], rating: .good, daysAgo: 1, seconds: 5)
+            try await store.review(cards[1], rating: .good, daysAgo: 2, seconds: 5)
+            try await store.review(cards[2], rating: .good, daysAgo: 4, seconds: 5)
+
+            let model = StatisticsModel(store: store)
+            await model.refresh()
+            // Not studied yet today: the streak still runs through yesterday.
+            #expect(model.graphs?.studyStreak == StudyStreak(days: 2, isAtLeast: false))
+
+            try await store.review(cards[3], rating: .good)
+            await model.refresh()
+            #expect(model.graphs?.studyStreak == StudyStreak(days: 3, isAtLeast: false))
+        }
+    }
+
+    @Test("A streak that reaches the start of the period is shown as at least that long")
+    func studyStreakBeyondPeriod() async throws {
+        try await withTemporaryCollection { store in
+            let deck = try await store.addDeck(named: "Streak")
+            let cards = try await store.addBasicNotes(count: 35, toDeck: deck)
+            try await store.makeReviewCardsDueToday(cards, intervalDays: 60)
+            for (daysAgo, card) in cards.enumerated() {
+                try await store.review(card, rating: .good, daysAgo: daysAgo, seconds: 2)
+            }
+
+            let model = StatisticsModel(store: store)
+            model.period = .month
+            await model.refresh()
+            let month = try #require(model.graphs?.studyStreak)
+            #expect(month.isAtLeast)
+            #expect(month.days == 31)
+
+            model.period = .allTime
+            await model.refresh()
+            #expect(model.graphs?.studyStreak == StudyStreak(days: 35, isAtLeast: false))
+        }
+    }
+
     @Test("While shown, the statistics update after studying, and a deleted deck falls back to the whole collection")
     func refreshesAfterChanges() async throws {
         try await withTemporaryCollection { store in
