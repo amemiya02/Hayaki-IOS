@@ -2575,6 +2575,23 @@
         }
       }
     },
+    "Study" : {
+      "comment" : "iPad menu bar menu that lists the study screen's keyboard shortcuts.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "学習"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "学习"
+          }
+        }
+      }
+    },
     "Show Answer" : {
       "comment" : "Button at the bottom of the study screen that turns the card over to its answer side.",
       "localizations" : {

@@ -176,6 +176,12 @@ public struct StudyScreen: View {
             guard press.phase == .down else { return .ignored }
             return dispatchInput(.keyboard(ReviewerKey(press))) ? .handled : .ignored
         }
+        .focusedSceneValue(\.reviewerShortcutMenu, side.map { side in
+            ReviewerShortcutMenu(
+                shortcuts: preferences.keyboardShortcuts(on: side), isEnabled: acceptsInput
+            ) { _ = dispatchInput(.keyboard($0)) }
+        })
+        .focusedSceneValue(\.addNote, acceptsInput ? AddNoteAction { dispatch(.addNote) } : nil)
         #if os(iOS)
         .task(id: model.customSchedulingRequest?.id) {
             guard let work = model.customSchedulingRequest else { return }
@@ -282,10 +288,14 @@ public struct StudyScreen: View {
         }
     }
 
+    /// Whether a key, gesture or controller input reaches the reviewer now.
+    private var acceptsInput: Bool {
+        editedCard == nil && editedNoteTags == nil && !showingSettings && requestedAction == nil
+            && route == nil && timebox == nil && !model.isBusy
+    }
+
     private func dispatchInput(_ input: ReviewerInput) -> Bool {
-        guard editedCard == nil, editedNoteTags == nil, !showingSettings, requestedAction == nil,
-              route == nil, timebox == nil, !model.isBusy, let side,
-              let command = preferences.command(for: input, on: side) else { return false }
+        guard acceptsInput, let side, let command = preferences.command(for: input, on: side) else { return false }
         dispatch(command)
         return true
     }
@@ -578,11 +588,13 @@ public struct StudyScreen: View {
         }
     }
 
+    /// The widest the card grows in a regular-width window (iPad full screen
+    /// and the larger split-view sizes); narrower windows use their full width.
+    private static let readableCardWidth: CGFloat = 820
+
     private func studying(_ card: StudyCard, showingAnswer: Bool) -> some View {
         VStack(spacing: 0) {
             cardView(CardDisplay(card, isAnswer: showingAnswer, presentation: model.presentationNumber))
-                // On an iPad, a readable column rather than a stretched line.
-                .frame(maxWidth: horizontalSizeClass == .regular ? 820 : .infinity)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .padding(preferences.cardFrame ? 8 : 0)
                 .background(preferences.cardFrame ? theme.surface : Color.clear)
@@ -606,6 +618,9 @@ public struct StudyScreen: View {
                     }
                 }
                 #endif
+                // On an iPad, the whole card is a centered readable column.
+                .frame(maxWidth: horizontalSizeClass == .regular ? Self.readableCardWidth : .infinity)
+                .frame(maxWidth: .infinity)
             #if os(iOS)
             if deckTools.recorderShown {
                 HStack {

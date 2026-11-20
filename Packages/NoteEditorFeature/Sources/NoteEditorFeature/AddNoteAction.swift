@@ -4,8 +4,8 @@ import SwiftUI
 
 public extension View {
     /// Lets every section of a tab view add a note: sets the `addNote`
-    /// environment action that `AddNoteButton` uses, adds Command-N on a
-    /// hardware keyboard, and shows the note editor as a sheet.
+    /// environment action that `AddNoteButton` uses and the focused value
+    /// behind `AddNoteCommands` (Command-N), and shows the note editor as a sheet.
     /// Apply it to the app's `TabView`.
     func addNoteAction(store: CollectionStore) -> some View {
         modifier(AddNoteActionModifier(store: store))
@@ -22,24 +22,10 @@ private struct AddNoteActionModifier: ViewModifier {
     func body(content: Content) -> some View {
         content
             .environment(\.addNote, AddNoteAction { isAdding = true })
-            .background { keyboardShortcut }
+            // Command-N from any section, through the app's File menu.
+            .focusedSceneValue(\.addNote, AddNoteAction { isAdding = true })
             .sheet(isPresented: $isAdding) {
                 NoteEditorScreen(store: store)
             }
-    }
-
-    /// Command-N from any section. The button is invisible: the visible
-    /// entry points are the `+` buttons in Decks and Browse.
-    private var keyboardShortcut: some View {
-        Button {
-            isAdding = true
-        } label: {
-            Text("Add Note", bundle: .module)
-        }
-        .keyboardShortcut("n", modifiers: .command)
-        .opacity(0)
-        .frame(width: 0, height: 0)
-        .allowsHitTesting(false)
-        .accessibilityHidden(true)
     }
 }

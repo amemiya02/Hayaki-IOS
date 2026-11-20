@@ -13,6 +13,7 @@ struct HayakiApp: App {
         WindowGroup {
             RootView()
         }
+        .commands { HayakiCommands() }
         .onChange(of: scenePhase) { _, phase in
             RootView.handleAppPhase(phase)
         }
