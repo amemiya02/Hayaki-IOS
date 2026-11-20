@@ -20,7 +20,7 @@ extension View {
     public func studyNoteEditor<Editor: View>(
         @ViewBuilder _ editor: @escaping @MainActor @Sendable (Int64) -> Editor
     ) -> some View {
-        environment(\.studyNoteEditor) { cardID in AnyView(editor(cardID)) }
+        environment(\.studyNoteEditor, StudyNoteEditor { cardID in AnyView(editor(cardID)) })
     }
 
     /// Presents a full-screen study session over `deck` while it is set,
@@ -158,7 +158,7 @@ public struct StudyScreen: View {
         }
         .modifier(ReviewerActionDialogs(model: model, requestedAction: $requestedAction))
         .sheet(item: $route, onDismiss: returnFromDestination) { route in
-            destinations?(route) { nextStudy = $0 }
+            destinations?.make(route) { nextStudy = $0 }
         }
         .alert(reviewerLocalized("Timebox Reached"), isPresented: Binding(
             get: { timebox != nil },
@@ -246,7 +246,7 @@ public struct StudyScreen: View {
             ReviewerTagsSheet(model: model, noteID: note.id)
         }
         .sheet(item: $editedCard) { card in
-            noteEditor?(card.id)
+            noteEditor?.make(card.id)
         }
         .alert(
             Text("Study Action Failed", bundle: .module),
@@ -847,12 +847,22 @@ private struct EditedCard: Identifiable {
     let id: Int64
 }
 
+/// The note editor the reviewer opens. Equal to itself only, so passing the
+/// environment down again (as every trait change does) does not count as a
+/// change and re-render the study screen; a closure never compares equal.
+private struct StudyNoteEditor: Equatable {
+    let id = UUID()
+    let make: @MainActor @Sendable (Int64) -> AnyView
+
+    static func == (lhs: Self, rhs: Self) -> Bool { lhs.id == rhs.id }
+}
+
 private struct StudyNoteEditorKey: EnvironmentKey {
-    static let defaultValue: (@MainActor @Sendable (Int64) -> AnyView)? = nil
+    static let defaultValue: StudyNoteEditor? = nil
 }
 
 private extension EnvironmentValues {
-    var studyNoteEditor: (@MainActor @Sendable (Int64) -> AnyView)? {
+    var studyNoteEditor: StudyNoteEditor? {
         get { self[StudyNoteEditorKey.self] }
         set { self[StudyNoteEditorKey.self] = newValue }
     }
