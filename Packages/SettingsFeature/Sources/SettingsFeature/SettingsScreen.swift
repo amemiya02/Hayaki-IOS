@@ -13,7 +13,8 @@ public enum SettingsSection {
     public static let systemImage = "ellipsis.circle"
 }
 
-/// The More section: one row per area, each leading to its own screen.
+/// The More section: one row per area, each leading to its own screen, grouped the way
+/// iOS Settings groups its rows, with Profiles on top.
 public struct SettingsScreen<ProfileEntry: View>: View {
     private let store: CollectionStore
     private let backups: BackupModel?
@@ -39,59 +40,71 @@ public struct SettingsScreen<ProfileEntry: View>: View {
     public var body: some View {
         NavigationStack {
             List {
-                if matches(.profiles) { profileEntry }
-                if matches(.general) {
-                    settingsLink("General", symbol: "gearshape") {
-                        GeneralSettingsScreen(store: store)
+                if matches(.profiles) {
+                    Section { profileEntry.settingsIcon(.profiles) }
+                }
+                Section {
+                    if matches(.general) {
+                        settingsLink("General", icon: .general) {
+                            GeneralSettingsScreen(store: store)
+                        }
+                    }
+                    if matches(.appearance) {
+                        settingsLink("Appearance", icon: .appearance) {
+                            AppearanceSettingsScreen(background: DeckBackground(collectionFolder: store.location.folder))
+                        }
+                    }
+                    if matches(.accessibility) {
+                        settingsLink("Accessibility", icon: .accessibility) {
+                            AccessibilitySettingsScreen(store: store)
+                        }
+                    }
+                    if matches(.reviewer) {
+                        settingsLink("Reviewer", icon: .reviewer) {
+                            ReviewerSettingsScreen(store: store)
+                        }
                     }
                 }
-                if matches(.appearance) {
-                    settingsLink("Appearance", symbol: "circle.lefthalf.filled") {
-                        AppearanceSettingsScreen(background: DeckBackground(collectionFolder: store.location.folder))
+                Section {
+                    if matches(.sync) { SyncSettingsRow(model: sync).settingsIcon(.sync) }
+                    if matches(.backups), let backups {
+                        settingsLink("Backups", icon: .backups) {
+                            BackupsScreen(model: backups, sync: sync)
+                        }
+                    }
+                    if matches(.storage) {
+                        settingsLink("Manage Space", icon: .storage) {
+                            CollectionMaintenanceScreen(store: store, sync: sync)
+                        }
                     }
                 }
-                if matches(.reviewer) {
-                    settingsLink("Reviewer", symbol: "rectangle.on.rectangle") {
-                        ReviewerSettingsScreen(store: store)
-                    }
-                }
-                if matches(.accessibility) {
-                    settingsLink("Accessibility", symbol: "accessibility") {
-                        AccessibilitySettingsScreen(store: store)
-                    }
-                }
-                if matches(.sync) { SyncSettingsRow(model: sync) }
                 if matches(.reminders) {
-                    ReminderSettingsRow(store: store, profileID: profileID)
-                    if let profileID { DeckReminderSettingsRow(store: store, profileID: profileID) }
-                }
-                if matches(.backups), let backups {
-                    settingsLink("Backups", symbol: "externaldrive.badge.clock") {
-                        BackupsScreen(model: backups, sync: sync)
+                    Section {
+                        ReminderSettingsRow(store: store, profileID: profileID).settingsIcon(.dailyReminder)
+                        if let profileID {
+                            DeckReminderSettingsRow(store: store, profileID: profileID).settingsIcon(.deckReminders)
+                        }
                     }
                 }
-                if matches(.storage) {
-                    settingsLink("Manage Space", symbol: "externaldrive") {
-                        CollectionMaintenanceScreen(store: store, sync: sync)
+                Section {
+                    if matches(.noteTypes) {
+                        settingsLink("Note Types", icon: .noteTypes) {
+                            NoteTypesScreen(store: store)
+                        }
                     }
-                }
-                if matches(.noteTypes) {
-                    settingsLink("Note Types", symbol: "rectangle.on.rectangle") {
-                        NoteTypesScreen(store: store)
+                    if matches(.advanced) {
+                        settingsLink("Advanced", icon: .advanced) {
+                            AdvancedSettingsScreen()
+                        }
                     }
-                }
-                if matches(.advanced) {
-                    settingsLink("Advanced", symbol: "gearshape.2") {
-                        AdvancedSettingsScreen()
+                    #if DEBUG
+                    if matches(.developer) {
+                        settingsLink("Developer Options", icon: .developer) {
+                            DeveloperSettingsScreen()
+                        }
                     }
+                    #endif
                 }
-                #if DEBUG
-                if matches(.developer) {
-                    settingsLink("Developer Options", symbol: "hammer") {
-                        DeveloperSettingsScreen()
-                    }
-                }
-                #endif
                 HelpAndAboutSection(store: store, sync: sync, shows: matches)
             }
             .hayakiScrollBackground()
@@ -112,13 +125,14 @@ public struct SettingsScreen<ProfileEntry: View>: View {
     }
 
     private func settingsLink<Content: View>(
-        _ title: LocalizedStringKey, symbol: String, @ViewBuilder destination: () -> Content
+        _ title: LocalizedStringKey, icon: SettingsIcon, @ViewBuilder destination: () -> Content
     ) -> some View {
         NavigationLink(destination: destination) {
             Label {
                 Text(title, bundle: .module)
-            } icon: { Image(systemName: symbol) }
+            } icon: { Image(systemName: icon.symbol) }
         }
+        .settingsIcon(icon)
     }
 }
 
