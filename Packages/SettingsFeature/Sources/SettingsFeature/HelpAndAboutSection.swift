@@ -73,5 +73,8 @@ private struct HelpScreen: View {
             }
         }
         .navigationTitle(Text("Help", bundle: .module))
+        #if os(iOS)
+        .navigationBarTitleDisplayMode(.inline)
+        #endif
     }
 }

@@ -64,6 +64,9 @@ public struct FilteredDeckScreen: View {
             }
             .disabled(model.isWorking)
             .navigationTitle(newDeck ? Text("New Filtered Deck", bundle: .module) : Text("Filtered Deck Options", bundle: .module))
+            #if os(iOS)
+            .navigationBarTitleDisplayMode(.inline)
+            #endif
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button(role: .cancel) { dismiss() } label: {

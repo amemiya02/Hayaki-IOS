@@ -1495,6 +1495,23 @@
           }
         }
       }
+    },
+    "Deck List Options" : {
+      "comment" : "Accessibility label of the ⋯ menu in the Decks toolbar, with import, export and new deck actions.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "デッキ一覧のオプション"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "牌组列表选项"
+          }
+        }
+      }
     }
   },
   "version" : "1.0"

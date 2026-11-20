@@ -52,6 +52,9 @@ struct BrowserSavedSearchesSheet: View {
                 }
             }
             .navigationTitle(Text("Saved Searches", bundle: .module))
+            #if os(iOS)
+            .navigationBarTitleDisplayMode(.inline)
+            #endif
             .toolbar {
                 #if os(iOS)
                 ToolbarItem(placement: .automatic) { EditButton() }

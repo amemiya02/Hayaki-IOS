@@ -43,7 +43,10 @@ final class NavigationUITests: XCTestCase {
         XCTAssertTrue(study.waitForExistence(timeout: 10))
         XCTAssertEqual(study.label, "Study Now · Vocabulary")
 
-        app.navigationBars["Decks"].buttons["Import a Package…"].tap()
+        app.navigationBars["Decks"].buttons["deck-list-options"].tap()
+        let importPackage = app.buttons["Import a Package…"]
+        XCTAssertTrue(importPackage.waitForExistence(timeout: 10))
+        importPackage.tap()
         app.cancelFilesPicker()
         XCTAssertTrue(study.waitForExistence(timeout: 10))
         XCTAssertEqual(study.label, "Study Now · Vocabulary")
@@ -102,10 +105,52 @@ final class NavigationUITests: XCTestCase {
         let lastResult = results.descendants(matching: .any)["browse-last-result"].firstMatch
         XCTAssertTrue(lastResult.waitForExistence(timeout: 10))
         XCTAssertTrue(lastResult.isHittable)
-        let addNote = app.buttons["Add Note"]
-        XCTAssertTrue(addNote.exists)
-        XCTAssertLessThanOrEqual(lastResult.frame.maxY, addNote.frame.minY + 1)
+        let tabBar = app.tabBars.firstMatch
+        XCTAssertTrue(tabBar.exists)
+        XCTAssertLessThanOrEqual(lastResult.frame.maxY, tabBar.frame.minY + 1)
         attachScreen("Browse search and last result clear of the toolbars")
+    }
+
+    func testTabRootsFollowTheToolbarRuleAndAddNoteOpensFromToolbarsAndKeyboard() {
+        XCTAssertTrue(deckRow("Vocabulary").waitForExistence(timeout: 60))
+        let decksBar = app.navigationBars["Decks"]
+        XCTAssertTrue(decksBar.buttons["deck-sync"].exists)
+        XCTAssertTrue(decksBar.buttons["deck-list-options"].exists)
+        XCTAssertFalse(decksBar.buttons["Import a Package…"].exists)
+        // Add Note is a toolbar button, not a bar above the tab bar.
+        let addNoteOutsideBars = app.buttons.matching(NSPredicate(format: "label == %@", "Add Note")).allElementsBoundByIndex
+            .filter { !decksBar.frame.contains(CGPoint(x: $0.frame.midX, y: $0.frame.midY)) && $0.isHittable }
+        XCTAssertTrue(addNoteOutsideBars.isEmpty)
+        decksBar.buttons["add-note"].tap()
+        closeAddNote()
+
+        select("Browse")
+        let browseBar = app.navigationBars["Browse"]
+        XCTAssertTrue(browseBar.waitForExistence(timeout: 10))
+        XCTAssertTrue(browseBar.buttons["Browse Options"].exists)
+        browseBar.buttons["add-note"].tap()
+        closeAddNote()
+
+        select("Stats")
+        let statsBar = app.navigationBars["Statistics"]
+        XCTAssertTrue(statsBar.waitForExistence(timeout: 10))
+        XCTAssertTrue(statsBar.buttons["statistics-options"].exists)
+        app.typeKey("n", modifierFlags: .command)
+        closeAddNote()
+
+        select("More")
+        XCTAssertTrue(app.navigationBars["More"].waitForExistence(timeout: 10))
+        let syncRow = app.buttons["sync-settings"].firstMatch
+        XCTAssertTrue(syncRow.waitForExistence(timeout: 10))
+        syncRow.tap()
+        let sync = app.navigationBars["Sync"]
+        XCTAssertTrue(sync.waitForExistence(timeout: 10))
+        // An inline title shares the back button's row.
+        let title = sync.staticTexts["Sync"]
+        let back = sync.buttons.firstMatch
+        XCTAssertTrue(title.exists)
+        XCTAssertLessThan(abs(title.frame.midY - back.frame.midY), 12)
+        attachScreen("More → Sync with an inline title")
     }
 
     func testBrowsePreviewNavigatesAndEditsTheShownCard() {
@@ -136,6 +181,13 @@ final class NavigationUITests: XCTestCase {
         app.buttons["Previous Card"].tap()
         XCTAssertTrue(question.waitForExistence(timeout: 5))
         attachScreen("Browse preview with the selected card")
+    }
+
+    private func closeAddNote() {
+        let editor = app.navigationBars["Add Note"]
+        XCTAssertTrue(editor.waitForExistence(timeout: 10))
+        editor.buttons["Close"].tap()
+        XCTAssertTrue(editor.waitForNonExistence(timeout: 10))
     }
 
     private func select(_ section: String) {

@@ -45,5 +45,8 @@ struct TransferGuideScreen: View {
             }
         }
         .navigationTitle(Text("Transfer Guide", bundle: .module))
+        #if os(iOS)
+        .navigationBarTitleDisplayMode(.inline)
+        #endif
     }
 }
