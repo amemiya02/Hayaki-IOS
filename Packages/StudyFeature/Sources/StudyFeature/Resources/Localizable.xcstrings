@@ -1,6 +1,74 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "Next learning card %@" : {
+      "comment" : "Finished screen: the time the next learning card comes due today.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "次の学習カード %@"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "下一张学习卡 %@"
+          }
+        }
+      }
+    },
+    "New study day %@" : {
+      "comment" : "Finished screen: when the next study day starts, such as \"Tomorrow, 4:00 AM\".",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "新しい学習日 %@"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "新的学习日 %@"
+          }
+        }
+      }
+    },
+    "Reviewed" : {
+      "comment" : "Under the number of cards reviewed in the session.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "復習済み"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已复习"
+          }
+        }
+      }
+    },
+    "Time" : {
+      "comment" : "Under the time spent studying in the session.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "時間"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "用时"
+          }
+        }
+      }
+    },
     "Buttons in Bar" : {
       "localizations" : {
         "ja" : {
@@ -2321,38 +2389,6 @@
         }
       }
     },
-    "Next learning card at %@." : {
-      "localizations" : {
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "次の学習カードは %@ に表示されます。"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "下一张学习卡片在 %@ 到期。"
-          }
-        }
-      }
-    },
-    "The next study day starts at %@." : {
-      "localizations" : {
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "次の学習日は %@ に始まります。"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "下一个学习日从 %@ 开始。"
-          }
-        }
-      }
-    },
     "This filtered deck is finished. Rebuild it to look for more cards." : {
       "localizations" : {
         "ja" : {
@@ -2365,41 +2401,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "此筛选牌组已学完。重新构建可查找更多卡片。"
-          }
-        }
-      }
-    },
-    "%lld learning cards come due later today." : {
-      "comment" : "Shown when a study session ends while learning cards of the deck are due later today, beyond Anki's learn-ahead limit.",
-      "localizations" : {
-        "en" : {
-          "variations" : {
-            "plural" : {
-              "one" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "%lld learning card comes due later today."
-                }
-              },
-              "other" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "%lld learning cards come due later today."
-                }
-              }
-            }
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "今日このあとに学習中のカードが%lld枚出題されます。"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "今天稍后还有 %lld 张学习中的卡片到期。"
           }
         }
       }
@@ -2638,41 +2639,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "输入答案"
-          }
-        }
-      }
-    },
-    "You reviewed %lld cards in this session." : {
-      "comment" : "Summary at the end of a study session: how many reviews the learner made.",
-      "localizations" : {
-        "en" : {
-          "variations" : {
-            "plural" : {
-              "one" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "You reviewed %lld card in this session."
-                }
-              },
-              "other" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "You reviewed %lld cards in this session."
-                }
-              }
-            }
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "このセッションで%lld枚のカードを復習しました。"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "本次学习中，你复习了 %lld 张卡片。"
           }
         }
       }
