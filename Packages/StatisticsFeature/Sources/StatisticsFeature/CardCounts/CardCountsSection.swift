@@ -33,7 +33,14 @@ struct CardCountsSection: View {
                 }
             }
         } header: {
-            Text("Card Counts", bundle: .module)
+            StatisticsCardHeader(
+                title: Text("Card Counts", bundle: .module),
+                reading: counts.isEmpty ? nil : Text(
+                    "\(counts.total, format: .number) cards, \(counts.fraction(.mature), format: .percent.precision(.fractionLength(0))) of them mature",
+                    bundle: .module,
+                    comment: "Card Counts card reading: all cards, and the share of mature cards."
+                )
+            )
         }
         .onChange(of: counts) { angle = nil }
     }
