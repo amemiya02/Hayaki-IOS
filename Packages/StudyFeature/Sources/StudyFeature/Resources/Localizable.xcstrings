@@ -1,6 +1,38 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "Buttons in Bar" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "バーにボタンを表示"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "在栏中显示按钮"
+          }
+        }
+      }
+    },
+    "Layout" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "レイアウト"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "布局"
+          }
+        }
+      }
+    },
     "Card Kanji/Hanzi Style" : {
       "localizations" : {
         "ja" : {
@@ -1638,7 +1670,7 @@
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "メニューに表示"
+            "value": "メニューのみ"
           }
         },
         "zh-Hans": {
