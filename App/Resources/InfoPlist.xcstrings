@@ -104,6 +104,29 @@
           }
         }
       }
+    },
+    "Add Note" : {
+      "comment" : "The Home Screen quick action that opens the note editor.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ノートを追加"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "添加笔记"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add Note"
+          }
+        }
+      }
     }
   },
   "version" : "1.0"

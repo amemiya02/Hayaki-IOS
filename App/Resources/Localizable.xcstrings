@@ -1,0 +1,39 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "Add Note" : {
+      "comment" : "The App Shortcut that opens the note editor, in Spotlight, Siri and Shortcuts.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ノートを追加"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "添加笔记"
+          }
+        }
+      }
+    },
+    "Opens the note editor to add a note to your collection." : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ノートエディタを開き、コレクションにノートを追加します。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "打开笔记编辑器，向你的集合添加笔记。"
+          }
+        }
+      }
+    }
+  },
+  "version" : "1.0"
+}
