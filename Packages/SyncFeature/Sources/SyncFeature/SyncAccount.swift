@@ -14,6 +14,10 @@ public struct SyncAccount: Codable, Equatable, Sendable {
     var redirectedEndpoint: URL?
     var customCertificate: String?
     var mediaSync: SavedMediaSync?
+    /// When a collection sync with this sign-in last finished.
+    var lastCollectionSync: Date?
+    /// When a media sync with this sign-in last finished.
+    var lastMediaSync: Date?
 
     public init(server: URL?, userName: String, hostKey: String) {
         self.server = server
@@ -25,6 +29,7 @@ public struct SyncAccount: Codable, Equatable, Sendable {
     // items) or explicit null for AnkiWeb. A missing key indicates invalid data.
     private enum CodingKeys: String, CodingKey {
         case server, userName, hostKey, redirectedEndpoint, mediaSync, customCertificate
+        case lastCollectionSync, lastMediaSync
     }
 
     public init(from decoder: any Decoder) throws {
@@ -35,6 +40,8 @@ public struct SyncAccount: Codable, Equatable, Sendable {
         redirectedEndpoint = try values.decodeIfPresent(URL.self, forKey: .redirectedEndpoint)
         customCertificate = try values.decodeIfPresent(String.self, forKey: .customCertificate)
         mediaSync = try values.decodeIfPresent(SavedMediaSync.self, forKey: .mediaSync)
+        lastCollectionSync = try values.decodeIfPresent(Date.self, forKey: .lastCollectionSync)
+        lastMediaSync = try values.decodeIfPresent(Date.self, forKey: .lastMediaSync)
     }
 
     public func encode(to encoder: any Encoder) throws {
@@ -45,6 +52,8 @@ public struct SyncAccount: Codable, Equatable, Sendable {
         try values.encodeIfPresent(redirectedEndpoint, forKey: .redirectedEndpoint)
         try values.encodeIfPresent(customCertificate, forKey: .customCertificate)
         try values.encodeIfPresent(mediaSync, forKey: .mediaSync)
+        try values.encodeIfPresent(lastCollectionSync, forKey: .lastCollectionSync)
+        try values.encodeIfPresent(lastMediaSync, forKey: .lastMediaSync)
     }
 }
 
