@@ -284,11 +284,12 @@ struct CardWebView: UIViewRepresentable {
 
         private func sendAppearance() {
             guard pageLoaded, let theme, let webView else { return }
-            let canvas = String(format: "#%06X", theme.backgroundRGB)
+            let canvas = String(format: "#%06X", theme.canvasRGB)
+            let accent = String(format: "#%06X", theme.accentRGB)
             // The template's own styling can supply --canvas or style .nightMode.
             webView.callAsyncJavaScript(
-                "window.hayaki.appearance(canvas, legacyDark)",
-                arguments: ["canvas": canvas, "legacyDark": theme == .dark],
+                "window.hayaki.appearance(canvas, legacyDark, accent)",
+                arguments: ["canvas": canvas, "legacyDark": theme == .dark, "accent": accent],
                 in: nil, in: .page, completionHandler: nil
             )
         }

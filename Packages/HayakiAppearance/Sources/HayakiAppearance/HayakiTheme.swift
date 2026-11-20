@@ -1,49 +1,89 @@
 import SwiftUI
 
+/// The resolved appearance: system backgrounds plus the default Hayaki theme's
+/// teal accent (taken from the app icon's background) and its faint tint.
 public enum HayakiTheme: Sendable {
     case light, dark, black
 
-    /// The pinned Hayaki palettes, expressed in sRGB.
-    public var backgroundRGB: UInt32 {
+    /// The Hayaki accent in sRGB. Black mode reuses the dark accent.
+    public var accentRGB: UInt32 { self == .light ? 0x2C776E : 0x7ED6CA }
+    public var accent: Color { Color(hayakiRGB: accentRGB) }
+
+    /// How strongly the accent tints the screen background. Black mode keeps
+    /// a pure black background.
+    public var tintOpacity: Double {
         switch self {
-        case .light: 0xFEF7FF
-        case .dark: 0x141218
+        case .light: 0.04
+        case .dark: 0.06
+        case .black: 0
+        }
+    }
+
+    /// The study screen's background in sRGB (`systemBackground` plus the tint),
+    /// for the card page's canvas.
+    public var canvasRGB: UInt32 {
+        switch self {
+        case .light: Self.blend(accentRGB, over: 0xFFFFFF, opacity: tintOpacity)
+        case .dark: Self.blend(accentRGB, over: 0x000000, opacity: tintOpacity)
         case .black: 0x000000
         }
     }
 
-    public var surfaceRGB: UInt32 {
-        switch self {
-        case .light: 0xF7F2FA
-        case .dark: 0x211F26
-        case .black: 0x0F0E12
+    /// Card and section surfaces.
+    public var surface: Color { Color.hayakiSecondaryGroupedBackground }
+
+    private static func blend(_ foreground: UInt32, over background: UInt32, opacity: Double) -> UInt32 {
+        [16, 8, 0].reduce(0) { result, shift in
+            let top = Double((foreground >> shift) & 255)
+            let bottom = Double((background >> shift) & 255)
+            return result | UInt32((top * opacity + bottom * (1 - opacity)).rounded()) << shift
         }
-    }
-
-    public var accentRGB: UInt32 { self == .light ? 0x6750A4 : 0xD0BCFF }
-    public var background: Color { Color(hayakiRGB: backgroundRGB) }
-    public var surface: Color { Color(hayakiRGB: surfaceRGB) }
-    public var accent: Color { Color(hayakiRGB: accentRGB) }
-
-    public func rgb(for role: SemanticColor) -> UInt32 {
-        switch role {
-        case .new, .easy: self == .light ? 0x1F5BC4 : 0xA8C7FA
-        case .learning, .again: self == .light ? 0xB3261E : 0xF2B8B5
-        case .due, .good: self == .light ? 0x1B6E3A : 0x8BD8A0
-        case .hard: self == .light ? 0x7A5900 : 0xF0C36D
-        }
-    }
-
-    public func color(for role: SemanticColor) -> Color {
-        Color(hayakiRGB: rgb(for: role))
     }
 }
 
+/// Colors that carry meaning. They are system colors, never themed, so they
+/// stay the same in every theme and follow Increase Contrast.
 public enum SemanticColor: CaseIterable, Sendable {
     case new, learning, due, again, hard, good, easy
+
+    public var color: Color {
+        switch self {
+        case .again, .learning: .red
+        case .hard: .orange
+        case .good, .due: .green
+        case .easy, .new: .blue
+        }
+    }
 }
 
-private extension Color {
+/// Which system background a screen uses.
+public enum HayakiBackgroundStyle: Sendable {
+    /// `systemGroupedBackground`, for lists and forms.
+    case grouped
+    /// `systemBackground`, for the study screen.
+    case plain
+}
+
+/// A system background with the theme tint over it.
+public struct HayakiBackground: View {
+    @Environment(\.hayakiTheme) private var theme
+    private let style: HayakiBackgroundStyle
+
+    public init(_ style: HayakiBackgroundStyle = .grouped) {
+        self.style = style
+    }
+
+    public var body: some View {
+        if theme == .black {
+            Color.black
+        } else {
+            (style == .grouped ? Color.hayakiGroupedBackground : Color.hayakiPlainBackground)
+                .overlay(theme.accent.opacity(theme.tintOpacity))
+        }
+    }
+}
+
+extension Color {
     init(hayakiRGB rgb: UInt32) {
         self.init(
             .sRGB,
@@ -52,6 +92,16 @@ private extension Color {
             blue: Double(rgb & 255) / 255
         )
     }
+
+    #if canImport(UIKit)
+    static var hayakiGroupedBackground: Color { Color(uiColor: .systemGroupedBackground) }
+    static var hayakiPlainBackground: Color { Color(uiColor: .systemBackground) }
+    static var hayakiSecondaryGroupedBackground: Color { Color(uiColor: .secondarySystemGroupedBackground) }
+    #else
+    static var hayakiGroupedBackground: Color { Color(nsColor: .windowBackgroundColor) }
+    static var hayakiPlainBackground: Color { Color(nsColor: .textBackgroundColor) }
+    static var hayakiSecondaryGroupedBackground: Color { Color(nsColor: .controlBackgroundColor) }
+    #endif
 }
 
 private struct HayakiThemeKey: EnvironmentKey {
@@ -70,9 +120,22 @@ public extension View {
         modifier(AppearanceModifier())
     }
 
-    /// Keep the native scroll controls, using the selected appearance behind them.
+    /// Keep the native scroll controls, using the tinted grouped background behind them.
     func hayakiScrollBackground() -> some View {
-        modifier(ScrollBackgroundModifier())
+        scrollContentBackground(.hidden)
+            .hayakiBackground(.grouped)
+    }
+
+    /// Fill the screen behind this view with a tinted system background.
+    func hayakiBackground(_ style: HayakiBackgroundStyle = .grouped) -> some View {
+        background { HayakiBackground(style).ignoresSafeArea() }
+    }
+
+    /// The style for text that is only digits: SF Rounded with monospaced digits.
+    /// Keep any words (units, labels) in a separate `Text`, since SF Rounded has
+    /// no Chinese or Japanese glyphs.
+    func hayakiNumeric() -> some View {
+        fontDesign(.rounded).monospacedDigit()
     }
 }
 
@@ -83,19 +146,12 @@ private struct AppearanceModifier: ViewModifier {
     func body(content: Content) -> some View {
         let theme = settings.resolved(for: systemColorScheme)
         content
+            // Fill the screen so a small view (such as a loading spinner)
+            // does not get a background rectangle of its own.
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .hayakiBackground(.grouped)
             .environment(\.hayakiTheme, theme)
             .tint(theme.accent)
-            .background(theme.background.ignoresSafeArea())
             .preferredColorScheme(settings.preferredColorScheme)
-    }
-}
-
-private struct ScrollBackgroundModifier: ViewModifier {
-    @Environment(\.hayakiTheme) private var theme
-
-    func body(content: Content) -> some View {
-        content
-            .scrollContentBackground(.hidden)
-            .background(theme.background.ignoresSafeArea())
     }
 }

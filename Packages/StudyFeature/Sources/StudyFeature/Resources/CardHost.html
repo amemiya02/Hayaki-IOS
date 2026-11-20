@@ -124,6 +124,12 @@
         border-radius: 8px;
         color: var(--fg);
         background: transparent;
+        caret-color: var(--hayaki-accent, auto);
+    }
+    /* The focus ring uses the theme accent rather than system blue. */
+    input#typeans:focus {
+        outline: 2px solid var(--hayaki-accent, -webkit-focus-ring-color);
+        outline-offset: -1px;
     }
     code#typeans {
         white-space: pre-wrap;
@@ -195,9 +201,10 @@
         document.body.classList.add(...settings);
     }
 
-    function appearance(canvas, isLegacyDark) {
+    function appearance(canvas, isLegacyDark, accent) {
         legacyDark = isLegacyDark;
         document.documentElement.style.setProperty("--hayaki-night-canvas", canvas);
+        if (accent) document.documentElement.style.setProperty("--hayaki-accent", accent);
         applyColorScheme();
     }
 

@@ -69,7 +69,7 @@ Any theme can be combined with any appearance mode. The settings screen shows ea
 
 | Theme | 中文 / 日本語 | Accent (light) | Accent (dark) | Canvas override |
 |---|---|---|---|---|
-| Shu (default) | 朱 / 朱 | `#A63D25` | `#FF8E70` | none |
+| Hayaki (default) | 速 / 速 | `#2C776E` | `#7ED6CA` | none |
 | Sakura | 樱 / 桜 | `#D9567A` | `#FF9DB7` | none |
 | Matcha | 抹茶 / 抹茶 | `#5F8A4B` | `#A8CF8E` | none |
 | Ocean | 海 / 海 | `#0A6E9E` | `#5EC4F0` | none |
@@ -83,7 +83,7 @@ Any theme can be combined with any appearance mode. The settings screen shows ea
 - **Contrast:** every accent must reach 4.5:1 against its background for text-on-background use. Check this when finalising the values; the table values are starting points.
 - **Adding a theme** means adding one entry of tokens, with no structural code change.
 - **Widgets** follow the selected theme accent.
-- **Shu** uses the app icon's brick red, so the icon and the app read as one brand. The icon is redrawn to match (see #43).
+- **Hayaki** is the default. Its teal comes from the app icon's background, so the icon and the app read as one brand. The light accent is `#2C776E`, darkened slightly from the icon's `#2E7D74` so it reaches 4.5:1 on the tinted grouped background.
 
 ## Navigation rules (all tabs)
 
