@@ -122,22 +122,18 @@ final class StudyUITests: XCTestCase {
         studyAll.tap()
         let reveal = app.buttons["show-answer"]
         let finished = app.staticTexts["All Done for Today"]
-        var reviews = 0
-        while !finished.waitForExistence(timeout: 2) {
-            guard reveal.waitForExistence(timeout: 15) else {
-                return XCTFail("Expected the next question or the finished Deck")
-            }
+        let reviews = 3
+        for _ in 0..<reviews {
+            XCTAssertTrue(reveal.waitForExistence(timeout: 20), "Study All loads the next Geography card")
             reveal.tap()
             let easy = app.buttons["rating-easy"]
             XCTAssertTrue(easy.waitForExistence(timeout: 10))
             easy.tap()
-            reviews += 1
-            XCTAssertLessThanOrEqual(reviews, 3, "Geography has three Cards in the fixture")
         }
-        XCTAssertEqual(reviews, 3)
+        XCTAssertTrue(finished.waitForExistence(timeout: 10), "Geography finishes after three ratings")
         let figures = app.descendants(matching: .any)
         XCTAssertTrue(figures.matching(NSPredicate(
-            format: "label BEGINSWITH %@ AND label CONTAINS %@", "3", "Reviewed"
+            format: "label BEGINSWITH %@ AND label CONTAINS %@", "\(reviews)", "Reviewed"
         )).firstMatch.exists)
         XCTAssertTrue(figures.matching(NSPredicate(
             format: "label CONTAINS %@ AND label CONTAINS %@", "Easy", "3"
