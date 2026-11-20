@@ -114,6 +114,11 @@ final class StudyUITests: XCTestCase {
     func testStudyAllFinishesOneDeckAndAllowsAnEarlyExitFromTheNext() {
         let studyAll = app.buttons["study-all"]
         XCTAssertTrue(studyAll.waitForExistence(timeout: 60))
+        let counts = app.descendants(matching: .any)["today-counts"]
+        let studied = app.staticTexts["studied-today"]
+        XCTAssertEqual(counts.label, "5 new, 2 learning, 2 due")
+        XCTAssertEqual(studied.label, "0 studied today")
+        attachScreen("Study All starting queues")
         studyAll.tap()
         let reveal = app.buttons["show-answer"]
         let finished = app.staticTexts["All Done for Today"]
@@ -129,13 +134,22 @@ final class StudyUITests: XCTestCase {
             reviews += 1
             XCTAssertLessThanOrEqual(reviews, 3, "Geography has three Cards in the fixture")
         }
-        XCTAssertGreaterThan(reviews, 0)
+        XCTAssertEqual(reviews, 3)
+        let figures = app.descendants(matching: .any)
+        XCTAssertTrue(figures.matching(NSPredicate(
+            format: "label BEGINSWITH %@ AND label CONTAINS %@", "3", "Reviewed"
+        )).firstMatch.exists)
+        XCTAssertTrue(figures.matching(NSPredicate(
+            format: "label CONTAINS %@ AND label CONTAINS %@", "Easy", "3"
+        )).firstMatch.exists)
         attachScreen("Study All first Deck finished")
         app.buttons["Done"].tap()
         XCTAssertTrue(reveal.waitForExistence(timeout: 20), "Study All continues to the next eligible Deck")
         app.navigationBars.buttons["Close"].tap()
         XCTAssertTrue(studyAll.waitForExistence(timeout: 10), "Leaving the second Deck returns to Decks")
         XCTAssertTrue(studyAll.isHittable)
+        XCTAssertEqual(counts.label, "3 new, 2 learning, 1 due")
+        XCTAssertEqual(studied.label, "3 studied today")
         XCTAssertTrue(deckRow("Geography").label.contains("0 new, 0 learning, 0 due"))
         attachScreen("Study All exited with work remaining")
     }
