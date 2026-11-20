@@ -59,7 +59,8 @@
             "value" : "Hayaki"
           }
         }
-      }
+      },
+      "shouldTranslate" : false
     },
     "CFBundleName" : {
       "comment" : "Bundle name",
@@ -71,7 +72,8 @@
             "value" : "Hayaki"
           }
         }
-      }
+      },
+      "shouldTranslate" : false
     },
     "NSMicrophoneUsageDescription" : {
       "localizations" : {

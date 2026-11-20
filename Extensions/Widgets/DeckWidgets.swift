@@ -1,5 +1,6 @@
 import AppIntents
 import ExtensionBridge
+import HayakiAppearance
 import SwiftUI
 import WidgetKit
 
@@ -100,8 +101,10 @@ struct DeckWidgetEntry: TimelineEntry {
 }
 
 extension ExtensionAccent {
-    /// The default Hayaki teal, until the app publishes the selected theme.
-    static let hayaki = ExtensionAccent(lightRGB: 0x2C776E, darkRGB: 0x7ED6CA)
+    /// The default theme's accent, until the app publishes the selected theme.
+    static let hayaki = ExtensionAccent(
+        lightRGB: Theme.default.palette.lightAccentRGB, darkRGB: Theme.default.palette.darkAccentRGB
+    )
 
     func color(for scheme: ColorScheme) -> Color {
         let rgb = scheme == .dark ? darkRGB : lightRGB

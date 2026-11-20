@@ -172,10 +172,12 @@ struct CalendarSection: View {
         )
     }
 
-    /// Days without reviews are a faint gray; others are the accent, darker
-    /// with more reviews.
-    private func fill(count: Int, maxCount: Int) -> Color {
-        count == 0 ? Color.gray.opacity(0.2) : theme.accent.opacity(0.3 + 0.7 * sqrt(Double(count) / Double(maxCount)))
+    /// Days without reviews use the system's faint fill; others are the
+    /// accent, darker with more reviews.
+    private func fill(count: Int, maxCount: Int) -> AnyShapeStyle {
+        count == 0
+            ? AnyShapeStyle(.fill.quaternary)
+            : AnyShapeStyle(theme.accent.opacity(0.3 + 0.7 * sqrt(Double(count) / Double(maxCount))))
     }
 
     private func reviewCount(_ count: Int) -> Text {
