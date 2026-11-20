@@ -1,4 +1,5 @@
 import CollectionStore
+import HayakiAppearance
 import SwiftUI
 
 /// The Settings row that leads to sync. It shows the server when the learner
@@ -224,6 +225,7 @@ private struct SignInSections: View {
                         .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.borderedProminent)
+                .hayakiProminentLabel()
                 .controlSize(.large)
                 .disabled(!model.canSignIn)
                 .listRowInsets(EdgeInsets())

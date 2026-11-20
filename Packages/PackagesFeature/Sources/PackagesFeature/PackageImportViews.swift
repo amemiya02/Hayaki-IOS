@@ -1,3 +1,4 @@
+import HayakiAppearance
 import SwiftUI
 import UniformTypeIdentifiers
 
@@ -223,6 +224,7 @@ private struct ReplaceConfirmation: View {
                     .frame(maxWidth: .infinity)
             }
             .buttonStyle(.borderedProminent)
+            .hayakiProminentLabel()
             .tint(.red)
             .controlSize(.large)
         }

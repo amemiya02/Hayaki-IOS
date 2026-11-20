@@ -1,4 +1,5 @@
 import CollectionStore
+import HayakiAppearance
 import SwiftUI
 
 /// A button that opens the export screen for the whole collection.
@@ -299,6 +300,7 @@ private struct ExportFinished: View {
                 .frame(maxWidth: .infinity)
             }
             .buttonStyle(.borderedProminent)
+            .hayakiProminentLabel()
             .controlSize(.large)
         }
         .navigationTitle(Text("Export Complete", bundle: .module))
