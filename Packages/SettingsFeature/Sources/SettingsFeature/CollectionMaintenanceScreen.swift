@@ -100,6 +100,9 @@ struct CollectionMaintenanceScreen: View {
         }
         .disabled(model.isRunning || sync.isBusy)
         .navigationTitle(Text("Manage Space", bundle: .module))
+        #if os(iOS)
+        .navigationBarTitleDisplayMode(.inline)
+        #endif
         .task { await model.loadStorageUsage() }
         .alert(Text("Check Collection", bundle: .module), isPresented: $confirmDatabaseCheck) {
             Button {

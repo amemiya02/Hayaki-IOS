@@ -80,6 +80,9 @@ public struct DeckReminderScreen: View {
             }
         }
         .navigationTitle(Text("Deck Review Reminders", bundle: .module))
+        #if os(iOS)
+        .navigationBarTitleDisplayMode(.inline)
+        #endif
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 Button {
@@ -171,6 +174,9 @@ private struct DeckReminderEditor: View {
                 }
             }
             .navigationTitle(Text("Review Reminder", bundle: .module))
+            #if os(iOS)
+            .navigationBarTitleDisplayMode(.inline)
+            #endif
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button(role: .cancel) { dismiss() } label: { Text("Cancel", bundle: .module) }

@@ -3,6 +3,7 @@ import SwiftUI
 
 public struct TextExportButton: View {
     private let store: CollectionStore
+    @Environment(\.showPackageSheet) private var showPackageSheet
     @State private var presented = false
 
     public init(store: CollectionStore) {
@@ -11,7 +12,11 @@ public struct TextExportButton: View {
 
     public var body: some View {
         Button {
-            presented = true
+            if let showPackageSheet {
+                showPackageSheet(.exportText)
+            } else {
+                presented = true
+            }
         } label: {
             Label {
                 Text("Export Text File", bundle: .module)
@@ -97,6 +102,9 @@ private struct TextExportForm: View {
             }
         }
         .navigationTitle(Text("Export Text File", bundle: .module))
+        #if os(iOS)
+        .navigationBarTitleDisplayMode(.inline)
+        #endif
         .interactiveDismissDisabled(model.isExporting)
         .toolbar {
             ToolbarItem(placement: .cancellationAction) {
