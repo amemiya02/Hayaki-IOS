@@ -13,6 +13,8 @@ struct FinishedView: View {
     let onDone: () -> Void
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @State private var appeared = false
 
     var body: some View {
@@ -73,25 +75,49 @@ struct FinishedView: View {
                     }
                 }
             }
+
+            // At accessibility text sizes a pinned button would cover most
+            // of the screen, so Done ends the list instead.
+            if !pinsDone {
+                Section {
+                    doneButton
+                }
+                .listRowBackground(Color.clear)
+                .listRowInsets(EdgeInsets())
+            }
         }
         #if os(iOS)
         .listStyle(.insetGrouped)
         #endif
-        .hayakiScrollBackground()
+        .scrollContentBackground(.hidden)
         .safeAreaInset(edge: .bottom) {
-            Button(action: onDone) {
-                Text("Done", bundle: .module)
-                    .frame(maxWidth: .infinity)
+            if pinsDone {
+                doneButton
+                    .padding(.horizontal)
+                    .padding(.bottom, 8)
             }
-            .buttonStyle(.glassProminent)
-            .hayakiProminentLabel()
-            .controlSize(.large)
-            .keyboardShortcut(.defaultAction)
-            .padding(.horizontal)
-            .padding(.bottom, 8)
         }
+        // On iPad, the same centered readable column as the study card.
+        .frame(maxWidth: horizontalSizeClass == .regular ? StudyScreen.readableCardWidth : .infinity)
+        .frame(maxWidth: .infinity)
+        .hayakiBackground(.grouped)
         .sensoryFeedback(.success, trigger: appeared)
         .onAppear { appeared = true }
+    }
+
+    private var pinsDone: Bool {
+        !dynamicTypeSize.isAccessibilitySize
+    }
+
+    private var doneButton: some View {
+        Button(action: onDone) {
+            Text("Done", bundle: .module)
+                .frame(maxWidth: .infinity)
+        }
+        .buttonStyle(.glassProminent)
+        .hayakiProminentLabel()
+        .controlSize(.large)
+        .keyboardShortcut(.defaultAction)
     }
 
     private var header: some View {
