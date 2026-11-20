@@ -606,7 +606,6 @@ public struct StudyScreen: View {
                     }
                 }
                 #endif
-            Divider()
             #if os(iOS)
             if deckTools.recorderShown {
                 HStack {
@@ -845,124 +844,6 @@ private struct StudyCountsView: View {
     }
 }
 
-/// Show Answer, or once the answer shows, the four ratings with the interval
-/// each would give. Both fill the same strip at the bottom, so the learner's
-/// thumb stays in one place.
-private struct AnswerBar: View {
-    let card: StudyCard
-    let showingAnswer: Bool
-    let isAnswering: Bool
-    let minimumPress: Double
-    let cooldown: Duration
-    let buttonHeight: Double
-    let hideHardAndEasy: Bool
-    let showsIntervals: Bool
-    let onShowAnswer: () -> Void
-    let onShortPress: () -> Void
-    let onRate: (Rating) -> Void
-    @State private var lastPress: ContinuousClock.Instant?
-    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
-
-    var body: some View {
-        Group {
-            if showingAnswer {
-                Group {
-                    if dynamicTypeSize.isAccessibilitySize {
-                        LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 8) {
-                            ratingButtons
-                        }
-                    } else {
-                        HStack(spacing: 8) { ratingButtons }
-                    }
-                }
-                .disabled(isAnswering)
-            } else {
-                ReviewerPressButton(
-                    minimumPress: minimumPress,
-                    action: { guarded(onShowAnswer) },
-                    onShortPress: onShortPress
-                ) {
-                    Text("Show Answer", bundle: .module)
-                        .font(.headline)
-                        .frame(maxWidth: .infinity, minHeight: buttonHeight)
-                }
-                .buttonStyle(.borderedProminent)
-                .disabled(isAnswering)
-                .accessibilityIdentifier("show-answer")
-            }
-        }
-        .frame(minHeight: 60)
-    }
-
-    private var ratingButtons: some View {
-        ForEach(hideHardAndEasy ? [.again, .good] : Rating.allCases, id: \.self) { rating in
-            RatingButton(
-                rating: rating, interval: showsIntervals ? card.intervals[rating] : nil, buttonHeight: buttonHeight
-            ) {
-                guarded { onRate(rating) }
-            }
-        }
-    }
-
-    private func guarded(_ action: () -> Void) {
-        let now = ContinuousClock.now
-        guard lastPress.map({ now - $0 >= cooldown }) != false else { return }
-        lastPress = now
-        action()
-    }
-}
-
-private struct RatingButton: View {
-    let rating: Rating
-    let interval: String?
-    let buttonHeight: Double
-    let action: () -> Void
-
-    var body: some View {
-        Button(action: action) {
-            VStack(spacing: 2) {
-                if let interval {
-                    Text(interval).font(.caption.weight(.medium)).hayakiNumeric()
-                }
-                rating.title
-                    .font(.subheadline.weight(.semibold))
-            }
-            .lineLimit(1)
-            .minimumScaleFactor(0.7)
-            .frame(maxWidth: .infinity, minHeight: buttonHeight)
-        }
-        .buttonStyle(.bordered)
-        .tint(rating.semanticColor.color)
-        .accessibilityLabel(rating.title)
-        .accessibilityValue(Text(interval ?? ""))
-        .accessibilityIdentifier("rating-\(rating)")
-    }
-}
-
-private struct ReviewerPressButton<Label: View>: View {
-    let minimumPress: Double
-    let action: () -> Void
-    let onShortPress: () -> Void
-    @ViewBuilder let label: () -> Label
-    @State private var held = false
-
-    var body: some View {
-        if minimumPress == 0 {
-            Button(action: action, label: label)
-        } else {
-            Button {
-                if held { held = false } else { onShortPress() }
-            } label: {
-                label()
-            }
-            .simultaneousGesture(LongPressGesture(minimumDuration: minimumPress).onEnded { _ in
-                held = true
-                action()
-            })
-                .accessibilityAction { action() }
-        }
-    }
-}
 
 extension Rating {
     var title: Text {

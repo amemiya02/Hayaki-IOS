@@ -77,6 +77,19 @@
     .reviewer-hide-audio .replay-button {
         display: none;
     }
+    /* The answer fades in below the question; with Reduce Motion it appears at once. */
+    @keyframes hayaki-answer-in {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+    .hayaki-answer-side > #answer, .hayaki-answer-side > #answer ~ * {
+        animation: hayaki-answer-in 0.25s ease-out;
+    }
+    @media (prefers-reduced-motion: reduce) {
+        .hayaki-answer-side > #answer, .hayaki-answer-side > #answer ~ * {
+            animation: none;
+        }
+    }
     .reviewer-reduced-motion *, .reviewer-reduced-motion *::before, .reviewer-reduced-motion *::after {
         animation-duration: 0s !important;
         transition-duration: 0s !important;
@@ -283,6 +296,7 @@
         const hasMaths = mathPattern.test(side.html);
         // Hidden until the maths is drawn, so raw TeX never flashes up.
         qa.style.opacity = hasMaths ? "0" : "1";
+        qa.classList.toggle("hayaki-answer-side", side.isAnswer);
         qa.innerHTML = side.html;
         post({ rendered: token });
         window.hayakiTemplate?.begin(token);
