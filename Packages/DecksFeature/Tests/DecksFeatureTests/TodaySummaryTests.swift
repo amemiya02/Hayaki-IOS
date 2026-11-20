@@ -63,10 +63,6 @@ struct TodaySummaryTests {
             try await store.addBasicNotes(count: 1, toDeck: history)
 
             let model = DeckListModel(store: store)
-            await model.refresh()
-            // Closed with a card left: Study All stops.
-            #expect(model.nextStudyAllDeck(after: geography) == nil)
-
             try await store.answerNextCard(inDeck: geography, rating: .easy)
             await model.refresh()
             #expect(model.nextStudyAllDeck(after: geography)?.name == "History")

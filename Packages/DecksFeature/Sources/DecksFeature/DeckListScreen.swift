@@ -25,6 +25,7 @@ public struct DeckListScreen<SyncControl: View>: View {
     /// Whether the session was started by Study All, which goes on to the
     /// next deck with cards left when a finished deck is closed.
     @State private var studyingAll = false
+    @State private var completedDeckID: DeckNode.ID?
     @State private var optionsDeck: DeckNode?
     @Binding private var presentation: DeckPresentation?
     @State private var selectedDeckID: DeckNode.ID?
@@ -83,11 +84,6 @@ public struct DeckListScreen<SyncControl: View>: View {
         }
         .onChange(of: presentation, initial: true) { _, _ in openRequestedDeck() }
         .onChange(of: model.state) { _, _ in openRequestedDeck() }
-        .onChange(of: studying) { closed, now in
-            if let closed, now == nil {
-                Task { await continueStudyAll(after: closed) }
-            }
-        }
         .sheet(item: $optionsDeck) { deck in
             if deck.isFiltered {
                 FilteredDeckScreen(store: store, deckID: deck.id)
@@ -95,7 +91,9 @@ public struct DeckListScreen<SyncControl: View>: View {
                 DeckOptionsScreen(store: store, deckID: deck.id)
             }
         }
-        .studySession(of: $studying, store: store)
+        .studySession(of: $studying, store: store, onDismiss: studySessionDismissed) { deckID in
+            if studyingAll, studying?.id == deckID { completedDeckID = deckID }
+        }
     }
 
     /// The `⋯` menu: importing and exporting, and creating decks.
@@ -239,17 +237,21 @@ public struct DeckListScreen<SyncControl: View>: View {
         studying = StudyDeck(id: first.id, name: first.name)
     }
 
-    private func continueStudyAll(after closed: StudyDeck) async {
-        guard studyingAll else { return }
-        await model.refresh()
-        guard studyingAll, let next = model.nextStudyAllDeck(after: closed.id) else {
+    private func studySessionDismissed() {
+        guard studyingAll, let completed = completedDeckID else {
             studyingAll = false
             return
         }
-        // Let the closed session's cover finish dismissing first.
-        try? await Task.sleep(for: .milliseconds(500))
-        guard studyingAll, studying == nil else { return }
-        studying = StudyDeck(id: next.id, name: next.name)
+        completedDeckID = nil
+        Task {
+            await model.refresh()
+            guard studyingAll, studying == nil else { return }
+            guard let next = model.nextStudyAllDeck(after: completed) else {
+                studyingAll = false
+                return
+            }
+            studying = StudyDeck(id: next.id, name: next.name)
+        }
     }
 }
 
