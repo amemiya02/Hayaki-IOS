@@ -108,7 +108,7 @@ jobs:
             ARCHS=arm64 CODE_SIGNING_ALLOWED=NO
 
       - name: Run the iPhone and iPad user-interface tests
-        if: github.ref == 'refs/heads/main'
+        if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
         timeout-minutes: 65
         shell: bash
         run: |

@@ -111,6 +111,35 @@ final class StudyUITests: XCTestCase {
         attachScreen("6 nothing left")
     }
 
+    func testStudyAllFinishesOneDeckAndAllowsAnEarlyExitFromTheNext() {
+        let studyAll = app.buttons["study-all"]
+        XCTAssertTrue(studyAll.waitForExistence(timeout: 60))
+        studyAll.tap()
+        let reveal = app.buttons["show-answer"]
+        let finished = app.staticTexts["All Done for Today"]
+        var reviews = 0
+        while !finished.waitForExistence(timeout: 2) {
+            guard reveal.waitForExistence(timeout: 15) else {
+                return XCTFail("Expected the next question or the finished Deck")
+            }
+            reveal.tap()
+            let easy = app.buttons["rating-easy"]
+            XCTAssertTrue(easy.waitForExistence(timeout: 10))
+            easy.tap()
+            reviews += 1
+            XCTAssertLessThanOrEqual(reviews, 3, "Geography has three Cards in the fixture")
+        }
+        XCTAssertGreaterThan(reviews, 0)
+        attachScreen("Study All first Deck finished")
+        app.buttons["Done"].tap()
+        XCTAssertTrue(reveal.waitForExistence(timeout: 20), "Study All continues to the next eligible Deck")
+        app.navigationBars.buttons["Close"].tap()
+        XCTAssertTrue(studyAll.waitForExistence(timeout: 10), "Leaving the second Deck returns to Decks")
+        XCTAssertTrue(studyAll.isHittable)
+        XCTAssertTrue(deckRow("Geography").label.contains("0 new, 0 learning, 0 due"))
+        attachScreen("Study All exited with work remaining")
+    }
+
     func testEditingFromReviewerReturnsToTheSameAnswer() {
         openDeck("Geography")
         let counts = app.descendants(matching: .any)["study-counts"]
