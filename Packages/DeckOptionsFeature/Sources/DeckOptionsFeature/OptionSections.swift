@@ -1,3 +1,4 @@
+import HayakiAppearance
 import SwiftUI
 
 /// Shared preset limits and two levels of overrides for the deck.
@@ -244,7 +245,8 @@ struct NumberRow<Label: View>: View {
             TextField(text: $text, prompt: Text(value, format: .number)) { label }
                 .multilineTextAlignment(.trailing)
                 .accessibilityIdentifier(identifier, isEnabled: !identifier.isEmpty)
-                .monospacedDigit()
+                // Rounded readouts for limits, intervals and other numbers.
+                .hayakiNumeric()
                 // Room for four digits, leaving the rest to the label.
                 .frame(maxWidth: 80)
                 .focused($isFocused)
@@ -280,6 +282,8 @@ private struct StepsRow<Label: View>: View {
             TextField(text: $text, prompt: Text(verbatim: "1m 10m")) { label }
                 .multilineTextAlignment(.trailing)
                 .accessibilityIdentifier(identifier)
+                // Steps are digits with ASCII unit letters (1m 10m 1d).
+                .hayakiNumeric()
                 .autocorrectionDisabled()
                 .foregroundStyle(isInvalid ? Color.red : Color.primary)
                 #if os(iOS)

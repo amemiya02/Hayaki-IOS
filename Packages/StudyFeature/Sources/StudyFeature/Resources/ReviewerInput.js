@@ -55,6 +55,18 @@
         post({ dx, dy, time });
     }, { passive: true });
 
+    // Tell the reviewer while a text field has focus, so keys that type text
+    // (Space, Return, digits, letters) reach the field instead of the
+    // reviewer's keyboard shortcuts.
+    // The reviewer clears its copy when the card changes, since a removed
+    // field does not report losing focus, so every change is posted.
+    const reportEditing = () => {
+        const active = document.activeElement;
+        post({ editing: active instanceof Element && active !== document.body && !!active.closest(editable) });
+    };
+    document.addEventListener("focusin", reportEditing, true);
+    document.addEventListener("focusout", () => setTimeout(reportEditing, 0), true);
+
     window.hayakiReviewerKeys = [];
     document.addEventListener("keydown", event => {
         if (!event.isTrusted || event.repeat || event.isComposing || event.defaultPrevented

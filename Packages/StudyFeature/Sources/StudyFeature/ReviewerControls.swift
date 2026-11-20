@@ -159,7 +159,7 @@ public struct ReviewerPreferences: Equatable, Codable, Sendable {
     var showFeedback = true
     var hideStatusBar = false
     var hideHomeIndicator = false
-    var cardFrame = true
+    var cardFrame = false
     var reducedMotion = false
 
     func visibility(of action: ReviewerToolbarAction) -> ReviewerToolbarVisibility {

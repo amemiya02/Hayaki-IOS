@@ -46,13 +46,13 @@ public struct AddNoteButton: View {
 extension FocusedValues {
     /// Adds a note from the app's File menu (Command-N). The tab view sets it,
     /// and the study screen replaces it while it is on screen.
-    @Entry public var addNote: AddNoteAction?
+    @Entry public var focusedAddNote: AddNoteAction?
 }
 
 /// Add Note in the File menu with Command-N, so it appears in the system
 /// shortcut overlay and the iPad menu bar. Add it to the app's scene.
 public struct AddNoteCommands: Commands {
-    @FocusedValue(\.addNote) private var addNote
+    @FocusedValue(\.focusedAddNote) private var addNote
 
     public init() {}
 

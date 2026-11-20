@@ -23,7 +23,7 @@ private struct AddNoteActionModifier: ViewModifier {
         content
             .environment(\.addNote, AddNoteAction { isAdding = true })
             // Command-N from any section, through the app's File menu.
-            .focusedSceneValue(\.addNote, AddNoteAction { isAdding = true })
+            .focusedSceneValue(\.focusedAddNote, AddNoteAction { isAdding = true })
             .sheet(isPresented: $isAdding) {
                 NoteEditorScreen(store: store)
             }

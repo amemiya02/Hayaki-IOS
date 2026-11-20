@@ -7,6 +7,36 @@ public extension View {
     func syncProgressAccessory(_ model: SyncModel) -> some View {
         modifier(SyncAccessoryModifier(model: model))
     }
+
+    /// On iOS 26.0, where the tab view's bottom accessory cannot be hidden,
+    /// shows the sync strip as glass at the bottom of this tab's content
+    /// instead. Apply it to each tab's content inside `syncProgressAccessory`.
+    func syncProgressInset() -> some View {
+        modifier(SyncProgressInsetModifier())
+    }
+}
+
+private struct SyncStripFallbackKey: EnvironmentKey {
+    static var defaultValue: AnyView? { nil }
+}
+
+extension EnvironmentValues {
+    /// The sync strip for tab content to show itself, when the system
+    /// accessory is unavailable (iOS 26.0 on iPhone).
+    var syncStripFallback: AnyView? {
+        get { self[SyncStripFallbackKey.self] }
+        set { self[SyncStripFallbackKey.self] = newValue }
+    }
+}
+
+private struct SyncProgressInsetModifier: ViewModifier {
+    @Environment(\.syncStripFallback) private var strip
+
+    func body(content: Content) -> some View {
+        content.safeAreaInset(edge: .bottom, spacing: 0) {
+            if let strip { strip }
+        }
+    }
 }
 
 private struct SyncAccessoryModifier: ViewModifier {
@@ -32,6 +62,7 @@ private struct SyncAccessoryModifier: ViewModifier {
     func body(content: Content) -> some View {
         content
             .bottomAccessory(isEnabled: accessory != nil && !inSidebar) { strip }
+            .environment(\.syncStripFallback, fallbackStrip)
             .tabViewSidebarBottomBar {
                 if accessory != nil, inSidebar {
                     strip
@@ -81,6 +112,25 @@ private struct SyncAccessoryModifier: ViewModifier {
                 dismiss: { withAnimation(reduceMotion ? nil : .smooth) { self.accessory = nil } }
             )
         }
+    }
+
+    /// The strip as a floating glass capsule over the tab content, on iOS
+    /// 26.0 where the bottom accessory is not used.
+    private var fallbackStrip: AnyView? {
+        #if os(iOS)
+        if #available(iOS 26.1, *) { return nil }
+        guard accessory != nil, !inSidebar else { return nil }
+        return AnyView(
+            strip
+                .padding(.vertical, 10)
+                .glassEffect(.regular, in: .capsule)
+                .padding(.horizontal, 16)
+                .padding(.bottom, 8)
+                .transition(reduceMotion ? .opacity : .move(edge: .bottom).combined(with: .opacity))
+        )
+        #else
+        return nil
+        #endif
     }
 
     private func retry(_ accessory: SyncAccessory) {

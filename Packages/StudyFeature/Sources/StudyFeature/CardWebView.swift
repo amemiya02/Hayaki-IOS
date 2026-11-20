@@ -70,6 +70,9 @@ struct CardWebView: UIViewRepresentable {
     let mediaFolder: URL
     /// The page zoom that follows the learner's text size.
     let zoom: CGFloat
+    /// The height of controls floating over the bottom of the card, which the
+    /// card's content can scroll beneath but must be able to scroll above.
+    var bottomInset: CGFloat = 0
     var reviewer: ReviewerWebOptions? = nil
     /// Called for what the learner does on the card.
     var onTemplateRequest: ((TemplateRequest, CardTemplateContext) async -> TemplateReply)? = nil
@@ -80,7 +83,8 @@ struct CardWebView: UIViewRepresentable {
     @AppStorage(CardGlyphStyle.preferenceKey) private var glyphStyle = CardGlyphStyle.default
 
     init(
-        display: CardDisplay, mediaFolder: URL, zoom: CGFloat, reviewer: ReviewerWebOptions? = nil,
+        display: CardDisplay, mediaFolder: URL, zoom: CGFloat, bottomInset: CGFloat = 0,
+        reviewer: ReviewerWebOptions? = nil,
         onTemplateRequest: ((TemplateRequest, CardTemplateContext) async -> TemplateReply)? = nil,
         customScheduling: CustomSchedulingRequest? = nil,
         onCustomSchedule: @escaping (UUID, String?) -> Void = { _, _ in },
@@ -89,6 +93,7 @@ struct CardWebView: UIViewRepresentable {
         self.display = display
         self.mediaFolder = mediaFolder
         self.zoom = zoom
+        self.bottomInset = bottomInset
         self.reviewer = reviewer
         self.onTemplateRequest = onTemplateRequest
         self.onEvent = onEvent
@@ -149,6 +154,10 @@ struct CardWebView: UIViewRepresentable {
         context.coordinator.allowsExternalApps = allowsExternalApps
         if webView.pageZoom != zoom {
             webView.pageZoom = zoom
+        }
+        if webView.scrollView.contentInset.bottom != bottomInset {
+            webView.scrollView.contentInset.bottom = bottomInset
+            webView.scrollView.verticalScrollIndicatorInsets.bottom = bottomInset
         }
         #if DEBUG
         webView.isInspectable = inspectCardContent
@@ -567,6 +576,9 @@ enum ReviewerWebInput: Equatable {
     case tap(Double, Double)
     case swipe(Double, Double, Double)
     case input(ReviewerInput)
+    /// Whether a text field on the card (an input, text area, select or
+    /// editable element) has focus.
+    case editing(Bool)
 
     init?(_ body: Any) {
         guard let values = body as? [String: Any] else { return nil }
@@ -577,6 +589,8 @@ enum ReviewerWebInput: Equatable {
             self = .swipe(dx, dy, time)
         } else if let key = values["key"] as? String, let modifiers = values["modifiers"] as? [String] {
             self = .input(.key(key, modifiers: Set(modifiers.compactMap(ReviewerKey.Modifier.init(rawValue:)))))
+        } else if let editing = values["editing"] as? Bool {
+            self = .editing(editing)
         } else if let count = values["fingers"] as? Int, (2...4).contains(count) {
             self = .input(.gesture([.twoFingerTap, .threeFingerTap, .fourFingerTap][count - 2]))
         } else {

@@ -19,6 +19,9 @@ struct ReviewerDestinationView: View {
         case .browse(let search, let cardID):
             closable {
                 BrowseScreen(store: store, initialSearch: search, initialCardID: cardID)
+                    // The tab view's Add Note sheet cannot open over the
+                    // study session, so Browse presents its own here.
+                    .environment(\.addNote, nil)
             }
         case .statistics:
             closable {

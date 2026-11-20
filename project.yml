@@ -134,6 +134,7 @@ targets:
       - Extensions/Widgets
     dependencies:
       - package: ExtensionBridge
+      - package: HayakiAppearance
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: io.github.amemiya02.hayaki.widgets

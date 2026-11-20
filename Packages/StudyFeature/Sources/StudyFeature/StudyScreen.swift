@@ -50,6 +50,9 @@ public struct StudyScreen: View {
     @State private var preferences = ReviewerPreferences.load()
     @State private var webCommand: ReviewerWebCommand?
     @State private var pendingTap: Task<Void, Never>?
+    /// Whether a text field on the card has focus; keys that type text then
+    /// go to the field instead of the Study menu's shortcuts.
+    @State private var editingCardText = false
     @FocusState private var reviewerFocused: Bool
     @State private var showingSettings = false
     @State private var requestedAction: ReviewerCommand?
@@ -59,6 +62,8 @@ public struct StudyScreen: View {
     @State private var cardHostUnavailable = false
     @State private var cardHostRevision = 0
     #endif
+    /// The height of the answer bar (and recorder) floating over the card.
+    @State private var bottomControlsHeight: CGFloat = 0
     @State private var autoAdvance = false
     @State private var timebox: StudyTimebox?
     @State private var feedback: ReviewFeedback?
@@ -178,10 +183,11 @@ public struct StudyScreen: View {
         }
         .focusedSceneValue(\.reviewerShortcutMenu, side.map { side in
             ReviewerShortcutMenu(
-                shortcuts: preferences.keyboardShortcuts(on: side), isEnabled: acceptsInput
+                shortcuts: preferences.keyboardShortcuts(on: side), isEnabled: acceptsInput,
+                isEditingText: editingCardText
             ) { _ = dispatchInput(.keyboard($0)) }
         })
-        .focusedSceneValue(\.addNote, acceptsInput ? AddNoteAction { dispatch(.addNote) } : nil)
+        .focusedSceneValue(\.focusedAddNote, acceptsInput ? AddNoteAction { dispatch(.addNote) } : nil)
         #if os(iOS)
         .task(id: model.customSchedulingRequest?.id) {
             guard let work = model.customSchedulingRequest else { return }
@@ -393,6 +399,7 @@ public struct StudyScreen: View {
         guard let side, let cardID = model.state.card?.id else { return }
         switch input {
         case .input(let input): _ = dispatchInput(input)
+        case .editing(let editing): editingCardText = editing
         case .swipe(let dx, let dy, let time):
             let scale = 100 / Double(max(preferences.swipeSensitivity, 1))
             guard hypot(dx, dy) >= 44 * scale, hypot(dx, dy) / max(1, time) >= 0.2 * scale else { return }
@@ -592,35 +599,59 @@ public struct StudyScreen: View {
     /// and the larger split-view sizes); narrower windows use their full width.
     private static let readableCardWidth: CGFloat = 820
 
+    /// Whether the answer bar or the recorder floats over the bottom of the card.
+    private var showsBottomControls: Bool {
+        #if os(iOS)
+        if deckTools.recorderShown { return true }
+        #endif
+        return preferences.showAnswerButtons && templateFullscreen.showsAnswer
+    }
+
+    /// How far the card's content must be able to scroll above the bottom controls.
+    private var cardBottomInset: CGFloat {
+        showsBottomControls ? bottomControlsHeight : 0
+    }
+
     private func studying(_ card: StudyCard, showingAnswer: Bool) -> some View {
+        cardView(CardDisplay(card, isAnswer: showingAnswer, presentation: model.presentationNumber))
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .padding(preferences.cardFrame ? 8 : 0)
+            .background(preferences.cardFrame ? theme.surface : Color.clear)
+            .clipShape(.rect(cornerRadius: preferences.cardFrame ? 18 : 0))
+            .overlay {
+                if preferences.cardFrame {
+                    RoundedRectangle(cornerRadius: 18).strokeBorder(.secondary.opacity(0.2))
+                        .allowsHitTesting(false)
+                }
+            }
+            #if os(iOS)
+            .overlay {
+                if deckTools.whiteboardEnabled && deckTools.drawingShown {
+                    ReviewerWhiteboard(drawing: drawing, tools: deckTools, isErasing: isErasing)
+                }
+            }
+            .overlay(alignment: whiteboardAlignment) {
+                if deckTools.whiteboardEnabled {
+                    ReviewerWhiteboardTools(drawing: drawing, options: $deckTools, isErasing: $isErasing)
+                        .padding(8)
+                        .padding(.bottom, whiteboardAlignment == .bottom ? cardBottomInset : 0)
+                }
+            }
+            #endif
+            // On an iPad, the whole card is a centered readable column.
+            .frame(maxWidth: horizontalSizeClass == .regular ? Self.readableCardWidth : .infinity)
+            .frame(maxWidth: .infinity)
+            // The answer bar floats over the card in its glass container;
+            // the card's content scrolls beneath it.
+            .overlay(alignment: .bottom) {
+                bottomControls(card, showingAnswer: showingAnswer)
+                    .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { bottomControlsHeight = $0 }
+            }
+    }
+
+    @ViewBuilder
+    private func bottomControls(_ card: StudyCard, showingAnswer: Bool) -> some View {
         VStack(spacing: 0) {
-            cardView(CardDisplay(card, isAnswer: showingAnswer, presentation: model.presentationNumber))
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .padding(preferences.cardFrame ? 8 : 0)
-                .background(preferences.cardFrame ? theme.surface : Color.clear)
-                .clipShape(.rect(cornerRadius: preferences.cardFrame ? 18 : 0))
-                .overlay {
-                    if preferences.cardFrame {
-                        RoundedRectangle(cornerRadius: 18).strokeBorder(.secondary.opacity(0.2))
-                            .allowsHitTesting(false)
-                    }
-                }
-                #if os(iOS)
-                .overlay {
-                    if deckTools.whiteboardEnabled && deckTools.drawingShown {
-                        ReviewerWhiteboard(drawing: drawing, tools: deckTools, isErasing: isErasing)
-                    }
-                }
-                .overlay(alignment: whiteboardAlignment) {
-                    if deckTools.whiteboardEnabled {
-                        ReviewerWhiteboardTools(drawing: drawing, options: $deckTools, isErasing: $isErasing)
-                            .padding(8)
-                    }
-                }
-                #endif
-                // On an iPad, the whole card is a centered readable column.
-                .frame(maxWidth: horizontalSizeClass == .regular ? Self.readableCardWidth : .infinity)
-                .frame(maxWidth: .infinity)
             #if os(iOS)
             if deckTools.recorderShown {
                 HStack {
@@ -634,6 +665,11 @@ public struct StudyScreen: View {
                     .labelStyle(.iconOnly)
                     .padding(.trailing, 12)
                 }
+                .padding(.vertical, 6)
+                // Floating over the card, so it needs its own backing.
+                .background(.regularMaterial, in: Capsule())
+                .frame(maxWidth: 640)
+                .padding(.horizontal, 16)
             }
             #endif
             if preferences.showAnswerButtons, templateFullscreen.showsAnswer {
@@ -674,6 +710,7 @@ public struct StudyScreen: View {
         CardWebView(
             display: display, mediaFolder: model.mediaFolder,
             zoom: dynamicTypeSize.cardZoom * Double(preferences.cardZoom) / 100,
+            bottomInset: cardBottomInset,
             reviewer: ReviewerWebOptions(
                 keySignatures: keySignatures, imageZoom: Double(preferences.imageZoom) / 100,
                 centerVertically: preferences.centerVertically, hidesAudioButtons: model.hidesAudioButtons,
@@ -716,6 +753,8 @@ public struct StudyScreen: View {
             recorder.stopPlayback()
             pendingTap?.cancel()
             pendingTap = nil
+            // A field removed with the old side never reports losing focus.
+            editingCardText = false
             typedAnswer = display.isAnswer ? typedAnswer : ""
             templateRecognition.stop()
             audio.play(
