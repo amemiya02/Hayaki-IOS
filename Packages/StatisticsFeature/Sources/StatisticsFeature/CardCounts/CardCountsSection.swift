@@ -1,4 +1,5 @@
 import Charts
+import HayakiAppearance
 import SwiftUI
 
 /// A ring chart of how the cards divide between states, with each state's
@@ -121,16 +122,18 @@ struct CardCountsSection: View {
 }
 
 extension CardState {
-    /// The state's colour, close to the colours Anki's own statistics use.
+    /// The state's colour from the design tokens' count meanings: New blue,
+    /// Learning red and Due green, with the lighter shade for relearning and
+    /// young cards. Inactive cards are gray.
     var color: Color {
         switch self {
-        case .new: .blue
-        case .learning: .orange
-        case .relearning: .red
-        case .young: .mint
-        case .mature: .green
-        case .suspended: .yellow
-        case .buried: .gray
+        case .new: SemanticColor.new.color
+        case .learning: SemanticColor.learning.color
+        case .relearning: SemanticColor.learning.color.opacity(0.5)
+        case .young: SemanticColor.due.color.opacity(0.5)
+        case .mature: SemanticColor.due.color
+        case .suspended: .gray
+        case .buried: .gray.opacity(0.5)
         }
     }
 }

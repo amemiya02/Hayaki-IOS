@@ -1,12 +1,21 @@
+import Charts
+import HayakiAppearance
 import SwiftUI
 
+/// A year of review activity as a Swift Charts heat map: a column per week,
+/// a row per weekday, shaded in the theme accent by the number of reviews.
 struct CalendarSection: View {
     let graphs: StatisticsGraphs
     @Environment(\.statisticsReportPeriod) private var reportPeriod
+    @Environment(\.hayakiTheme) private var theme
     @Environment(\.locale) private var locale
     @Binding var firstWeekday: StatisticsWeekday
     @State private var selectedYear: Int?
-    @State private var selectedDay: Date?
+    @State private var selectedWeek: Double?
+    @State private var selectedRow: Double?
+
+    /// Weeks shown at once before the map scrolls sideways.
+    private static let visibleWeeks = 26
 
     private var calendar: Calendar {
         var calendar = Calendar.statisticsCalendar
@@ -14,18 +23,14 @@ struct CalendarSection: View {
         return calendar
     }
     private var latestYear: Int { calendar.component(.year, from: graphs.studyDate) }
-    private var earliestDate: Date {
-        if graphs.period == .allTime {
-            return calendar.date(from: DateComponents(year: 2000, month: 1, day: 1)) ?? graphs.studyDate
-        }
-        return calendar.date(byAdding: .day, value: graphs.period.earliestReviewDay, to: graphs.studyDate)
-            ?? graphs.studyDate
+    private var earliestYear: Int {
+        min(calendar.component(.year, from: graphs.earliestCalendarDate(calendar: calendar)), latestYear)
     }
-    private var earliestYear: Int { min(calendar.component(.year, from: earliestDate), latestYear) }
     private var year: Int { min(max(selectedYear ?? latestYear, earliestYear), latestYear) }
 
     var body: some View {
-        let counts = Dictionary(uniqueKeysWithValues: graphs.activityDays().map { ($0.date, $0.count) })
+        let hasActivity = !graphs.activityDays(calendar: calendar).isEmpty
+        let map = graphs.calendarHeatMap(year: year, firstWeekday: firstWeekday, calendar: calendar)
         Section {
             if reportPeriod != nil {
                 Text(year.formatted(.number.grouping(.never))).monospacedDigit()
@@ -64,99 +69,113 @@ struct CalendarSection: View {
                 }
             }
 
-            if counts.isEmpty {
+            if hasActivity {
+                heatMap(map)
+            } else {
                 Text("There are no reviews in this period.", bundle: .module)
                     .foregroundStyle(.secondary)
-            } else {
-                heatmap(counts: counts)
-                if let selection = selectedDay {
-                    LabeledContent {
-                        reviewCount(counts[selection] ?? 0)
-                    } label: {
-                        Text(selection, format: .dateTime.weekday(.wide).month(.abbreviated).day())
-                    }
-                }
             }
         } header: {
             StatisticsCardHeader(
                 title: Text("Calendar", bundle: .module),
-                reading: counts.isEmpty ? nil : Text(
-                    "You studied on \(calendarDays.count { (counts[$0] ?? 0) > 0 }, format: .number) days in \(Text(year.formatted(.number.grouping(.never))))",
+                reading: hasActivity ? Text(
+                    "You studied on \(map.daysStudied, format: .number) days in \(Text(year.formatted(.number.grouping(.never))))",
                     bundle: .module,
                     comment: "Calendar card reading: the number of days with reviews in the year shown, e.g. \"You studied on 120 days in 2026\"."
-                )
+                ) : nil
             )
         }
-        .onChange(of: year) { selectedDay = nil }
-        .onChange(of: graphs.period) { selectedDay = nil }
+        .onChange(of: year) { clearSelection() }
+        .onChange(of: graphs.period) { clearSelection() }
+        .onChange(of: firstWeekday) { clearSelection() }
     }
 
-    private func heatmap(counts: [Date: Int]) -> some View {
+    private func clearSelection() {
+        selectedWeek = nil
+        selectedRow = nil
+    }
+
+    private func selectedCell(in map: CalendarHeatMap) -> CalendarHeatMap.Cell? {
+        guard let selectedWeek, let selectedRow else { return nil }
+        return map.cell(week: Int(selectedWeek.rounded(.down)), weekday: 6 - Int(selectedRow.rounded(.down)))
+    }
+
+    private func heatMap(_ map: CalendarHeatMap) -> some View {
         let exporting = reportPeriod != nil
-        let size: CGFloat = exporting ? 7 : 15
-        let spacing: CGFloat = exporting ? 2 : 3
-        let rows = Array(repeating: GridItem(.fixed(size), spacing: spacing), count: 7)
-        let days = calendarDays
-        let offset = days.first.map { (calendar.component(.weekday, from: $0) - firstWeekday.rawValue + 7) % 7 } ?? 0
-        let maxCount = max(1, counts.values.max() ?? 0)
-        let grid = LazyHGrid(rows: rows, spacing: spacing) {
-            ForEach(0..<offset, id: \.self) { _ in
-                Color.clear.frame(width: size, height: size).accessibilityHidden(true)
+        let weeks = max(map.weekCount, 1)
+        let maxCount = max(map.maxCount, 1)
+        let selected = exporting ? nil : selectedCell(in: map)
+        let monthStarts = map.cells.filter { calendar.component(.day, from: $0.date) == 1 || $0.date == map.cells.first?.date }
+        let chart = Chart {
+            ForEach(map.cells) { cell in
+                cellMark(cell, inset: 0.1)
+                    .foregroundStyle(fill(count: cell.count, maxCount: maxCount))
+                    .accessibilityLabel(Text(cell.date, format: .dateTime.weekday(.wide).month(.wide).day().year()))
+                    .accessibilityValue(reviewCount(cell.count))
             }
-            ForEach(days, id: \.self) { date in
-                let count = counts[date] ?? 0
-                let cell = RoundedRectangle(cornerRadius: 2)
-                    .fill(count == 0 ? Color.secondary.opacity(0.22) :
-                        Color.blue.opacity(0.35 + 0.65 * sqrt(Double(count) / Double(maxCount))))
-                    .frame(width: size, height: size)
-                if exporting {
-                    cell
-                } else {
-                    Button {
-                        selectedDay = date
-                    } label: {
-                        cell.overlay {
-                            if selectedDay == date {
-                                RoundedRectangle(cornerRadius: 2).strokeBorder(.primary, lineWidth: 1)
-                            }
-                        }
+            if let selected {
+                cellMark(selected, inset: 0)
+                    .foregroundStyle(Color.primary.opacity(0.35))
+                    .accessibilityHidden(true)
+                    .annotation(position: .top, spacing: 4, overflowResolution: calloutOverflow) {
+                        ChartCallout(
+                            title: Text(selected.date, format: .dateTime.weekday(.wide).month(.abbreviated).day()),
+                            value: reviewCount(selected.count)
+                        )
                     }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel(Text(date, format: .dateTime.weekday(.wide).month(.wide).day().year()))
-                    .accessibilityValue(reviewCount(count))
+            }
+        }
+        .chartXScale(domain: 0...Double(weeks))
+        .chartYScale(domain: 0...7)
+        .chartXAxis {
+            AxisMarks(values: monthStarts.map { Double($0.week) }) { value in
+                if let week = value.as(Double.self),
+                   let start = monthStarts.first(where: { Double($0.week) == week }) {
+                    AxisValueLabel(anchor: .topLeading) {
+                        Text(start.date, format: .dateTime.month(.abbreviated))
+                    }
                 }
             }
         }
-        return HStack(alignment: .top, spacing: 8) {
-            if exporting {
-                grid
+        .chartYAxis {
+            AxisMarks(position: .leading, values: (0..<7).map { 6.5 - Double($0) }) { value in
+                if let position = value.as(Double.self) {
+                    AxisValueLabel {
+                        Text(calendar.shortWeekdaySymbols[(firstWeekday.rawValue - 1 + Int(6.5 - position)) % 7])
+                    }
+                }
+            }
+        }
+        .chartLegend(.hidden)
+        .frame(height: exporting ? 90 : 160)
+
+        return Group {
+            if exporting || weeks <= Self.visibleWeeks {
+                chart
             } else {
-                VStack(alignment: .trailing, spacing: spacing) {
-                    ForEach(0..<7) { index in
-                        Text(calendar.shortWeekdaySymbols[(firstWeekday.rawValue - 1 + index) % 7])
-                            .font(.caption2)
-                            .frame(height: size)
-                    }
-                }
-                .accessibilityHidden(true)
-                ScrollView(.horizontal) {
-                    grid
-                }
-                .defaultScrollAnchor(.trailing)
+                chart
+                    .chartScrollableAxes(.horizontal)
+                    .chartXVisibleDomain(length: Double(Self.visibleWeeks))
+                    .chartScrollPosition(initialX: Double(weeks - Self.visibleWeeks))
             }
         }
+        .chartXSelection(value: $selectedWeek)
+        .chartYSelection(value: $selectedRow)
     }
 
-    private var calendarDays: [Date] {
-        guard let january = calendar.date(from: DateComponents(year: year, month: 1, day: 1)),
-              let followingYear = calendar.date(byAdding: .year, value: 1, to: january) else { return [] }
-        let first = max(january, calendar.startOfDay(for: earliestDate))
-        let last = min(followingYear, calendar.startOfDay(for: graphs.studyDate))
-        return (0...366).compactMap { offset in
-            calendar.date(byAdding: .day, value: offset, to: first).flatMap {
-                $0 <= last && $0 < followingYear ? $0 : nil
-            }
-        }
+    private func cellMark(_ cell: CalendarHeatMap.Cell, inset: Double) -> RectangleMark {
+        RectangleMark(
+            xStart: .value("Week", Double(cell.week) + inset),
+            xEnd: .value("Week", Double(cell.week + 1) - inset),
+            yStart: .value("Weekday", Double(6 - cell.weekday) + inset),
+            yEnd: .value("Weekday", Double(7 - cell.weekday) - inset)
+        )
+    }
+
+    /// Days without reviews are a faint gray; others are the accent, darker
+    /// with more reviews.
+    private func fill(count: Int, maxCount: Int) -> Color {
+        count == 0 ? Color.gray.opacity(0.2) : theme.accent.opacity(0.3 + 0.7 * sqrt(Double(count) / Double(maxCount)))
     }
 
     private func reviewCount(_ count: Int) -> Text {

@@ -1,9 +1,11 @@
 import Charts
+import HayakiAppearance
 import SwiftUI
 
 struct DistributionSection: View {
     let data: CardDistribution
     @Environment(\.statisticsReportPeriod) private var reportPeriod
+    @Environment(\.hayakiTheme) private var theme
     @State private var range: DistributionRange?
     @State private var showCumulative = false
     @State private var position: Double?
@@ -108,9 +110,6 @@ struct DistributionSection: View {
                 }
                 chart(shown)
                 summary
-                if let position {
-                    selectionRow(shown, value: Int(position.rounded()))
-                }
             }
         } header: {
             StatisticsCardHeader(title: Text(data.kind.title), reading: data.buckets.isEmpty ? nil : reading)
@@ -157,6 +156,9 @@ struct DistributionSection: View {
                 RuleMark(x: .value("Range", position))
                     .foregroundStyle(.secondary)
                     .accessibilityHidden(true)
+                    .annotation(position: .top, spacing: 4, overflowResolution: calloutOverflow) {
+                        callout(shown, runningTotals: runningTotals, total: total, value: Int(position.rounded()))
+                    }
             }
         }
         .chartXScale(domain: (Double(bounds.lowerBound) - 0.5)...(Double(bounds.upperBound) + 0.5))
@@ -193,7 +195,7 @@ struct DistributionSection: View {
             yStart: .value("Cards", 0.0),
             yEnd: .value("Cards", Double(bin.count))
         )
-        .foregroundStyle(.blue)
+        .foregroundStyle(theme.accent)
         .accessibilityLabel(bucketLabel(bin.bounds))
         .accessibilityValue(Text(bin.count, format: .number))
     }
@@ -201,10 +203,10 @@ struct DistributionSection: View {
     @ChartContentBuilder
     private func cumulativeMark(_ bin: Bin, fraction: Double) -> some ChartContent {
         LineMark(x: .value("Range", bin.center), y: .value("Share", fraction))
-            .foregroundStyle(.blue)
+            .foregroundStyle(theme.accent)
             .accessibilityHidden(true)
         PointMark(x: .value("Range", bin.center), y: .value("Share", fraction))
-            .foregroundStyle(.blue)
+            .foregroundStyle(theme.accent)
             .accessibilityLabel(bucketLabel(bin.bounds))
             .accessibilityValue(Text(fraction, format: .percent.precision(.fractionLength(1))))
     }
@@ -238,13 +240,20 @@ struct DistributionSection: View {
         }
     }
 
-    private func selectionRow(_ shown: [Bin], value: Int) -> some View {
-        let bin = shown.first { $0.bounds.contains(value) }
-        return LabeledContent {
-            Text(bin?.count ?? 0, format: .number)
-        } label: {
-            bucketLabel(bin?.bounds ?? (value...value))
-        }
+    private func callout(_ shown: [Bin], runningTotals: [Int], total: Int, value: Int) -> some View {
+        let index = shown.firstIndex { $0.bounds.contains(value) }
+        let bin = index.map { shown[$0] }
+        let share = Double(index.map { runningTotals[$0] } ?? shown.lazy.filter { $0.bounds.upperBound < value }
+            .reduce(0) { $0 + $1.count }) / Double(max(total, 1))
+        return ChartCallout(
+            title: bucketLabel(bin?.bounds ?? (value...value)),
+            value: showCumulative
+                ? Text(share, format: .percent.precision(.fractionLength(1)))
+                : Text("\(bin?.count ?? 0) cards", bundle: .module),
+            details: showCumulative ? [] : [
+                (Text("Running Total", bundle: .module), Text(share, format: .percent.precision(.fractionLength(1)))),
+            ]
+        )
     }
 
     private func bucketLabel(_ range: ClosedRange<Int>) -> Text {

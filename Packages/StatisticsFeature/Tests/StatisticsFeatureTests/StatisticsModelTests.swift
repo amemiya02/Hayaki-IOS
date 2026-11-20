@@ -111,6 +111,11 @@ struct StatisticsModelTests {
             let expectedEarlier = calendar.date(byAdding: .day, value: -3, to: calendar.startOfDay(for: cutoff))
             #expect(month.activityDays().map(\.date) == [expectedEarlier, expectedToday].compactMap { $0 })
             #expect(month.activityDays().map(\.count) == [1, 1])
+            let years = Set(month.activityDays().map { calendar.component(.year, from: $0.date) })
+            let heatMapReviews = years.reduce(0) { total, year in
+                total + month.calendarHeatMap(year: year, firstWeekday: .monday).totalReviews
+            }
+            #expect(heatMapReviews == month.reviewDays.reduce(0) { $0 + $1.count })
 
             model.period = .threeMonths
             await model.refresh()
