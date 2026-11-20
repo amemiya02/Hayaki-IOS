@@ -593,23 +593,6 @@
         }
       }
     },
-    "%@ of %@" : {
-      "comment" : "Upload or download progress: bytes transferred of the total, such as “1.2 MB of 3.4 MB”.",
-      "localizations" : {
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%1$@ / %2$@"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%1$@ / %2$@"
-          }
-        }
-      }
-    },
     "AnkiWeb" : {
       "comment" : "The hosted sync destination operated by Anki.",
       "localizations" : {
@@ -657,74 +640,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "选择要保留的集合"
-          }
-        }
-      }
-    },
-    "Collection download complete." : {
-      "comment" : "Status shown after the collection has downloaded.",
-      "localizations" : {
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "コレクションのダウンロードが完了しました。"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "集合下载完成。"
-          }
-        }
-      }
-    },
-    "Collection sync complete." : {
-      "comment" : "Status shown when collection changes have been exchanged.",
-      "localizations" : {
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "コレクションの同期が完了しました。"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "集合同步完成。"
-          }
-        }
-      }
-    },
-    "Collection upload complete." : {
-      "comment" : "Status shown after the collection has uploaded.",
-      "localizations" : {
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "コレクションのアップロードが完了しました。"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "集合上传完成。"
-          }
-        }
-      }
-    },
-    "Connecting…" : {
-      "comment" : "Shown while a sync connects to the server.",
-      "localizations" : {
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "接続中…"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "正在连接…"
           }
         }
       }
@@ -797,23 +712,6 @@
         }
       }
     },
-    "Downloading…" : {
-      "comment" : "Shown while the collection is downloaded from the server.",
-      "localizations" : {
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "ダウンロード中…"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "正在下载…"
-          }
-        }
-      }
-    },
     "Email Address" : {
       "comment" : "The email address used to sign in to AnkiWeb.",
       "localizations" : {
@@ -861,91 +759,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Hayaki 将登录密钥存储在此设备的钥匙串中。"
-          }
-        }
-      }
-    },
-    "Media Sync" : {
-      "comment" : "Heading for the media stage of sync.",
-      "localizations" : {
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "メディアの同期"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "媒体同步"
-          }
-        }
-      }
-    },
-    "Media sync cancelled." : {
-      "comment" : "Status shown after the learner cancelled syncing media.",
-      "localizations" : {
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "メディアの同期をキャンセルしました。"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "媒体同步已取消。"
-          }
-        }
-      }
-    },
-    "Media sync complete." : {
-      "comment" : "Status shown after the media stage finishes.",
-      "localizations" : {
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "メディアの同期が完了しました。"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "媒体同步完成。"
-          }
-        }
-      }
-    },
-    "Media sync failed." : {
-      "comment" : "Status shown if the collection synced but the media stage failed.",
-      "localizations" : {
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "メディアの同期に失敗しました。"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "媒体同步失败。"
-          }
-        }
-      }
-    },
-    "Media sync was interrupted." : {
-      "comment" : "Status shown on relaunch after the app closed while syncing media.",
-      "localizations" : {
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "メディアの同期が中断されました。"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "媒体同步已中断。"
           }
         }
       }
@@ -1494,23 +1307,6 @@
         }
       }
     },
-    "Uploading…" : {
-      "comment" : "Shown while the collection is uploaded to the server.",
-      "localizations" : {
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "アップロード中…"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "正在上传…"
-          }
-        }
-      }
-    },
     "User Name" : {
       "comment" : "Label of the field for the user name on the sync server.",
       "localizations" : {
@@ -1541,6 +1337,329 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "你的同步服务器"
+          }
+        }
+      }
+    },
+    "Not Synced Yet" : {
+      "comment" : "Status of a sync row before the first sync with this sign-in.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "未同期"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "尚未同步"
+          }
+        }
+      }
+    },
+    "Synced" : {
+      "comment" : "Status of a collection or media sync row after it finished.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "同期済み"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已同步"
+          }
+        }
+      }
+    },
+    "Cancelled" : {
+      "comment" : "Status of a sync row after the learner cancelled.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "キャンセル済み"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已取消"
+          }
+        }
+      }
+    },
+    "Interrupted" : {
+      "comment" : "Status of the media row when the app quit before media finished.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "中断"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已中断"
+          }
+        }
+      }
+    },
+    "Failed" : {
+      "comment" : "Status of a sync row after the sync failed.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "失敗"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "失败"
+          }
+        }
+      }
+    },
+    "One-Way Sync Needed" : {
+      "comment" : "Status of the collection row when an upload or download must be chosen.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "一方向の同期が必要"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "需要单向同步"
+          }
+        }
+      }
+    },
+    "Cancel Sync" : {
+      "comment" : "Button that stops the collection or media sync under way.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "同期をキャンセル"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "取消同步"
+          }
+        }
+      }
+    },
+    "Status" : {
+      "comment" : "Section header above the collection and media sync rows.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "状態"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "状态"
+          }
+        }
+      }
+    },
+    "Collection" : {
+      "comment" : "Label of the row showing the collection's sync status.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "コレクション"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "集合"
+          }
+        }
+      }
+    },
+    "Media" : {
+      "comment" : "Label of the row showing the media sync status.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "メディア"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "媒体"
+          }
+        }
+      }
+    },
+    "Retry" : {
+      "comment" : "Row button that retries a failed collection sync.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "再試行"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "重试"
+          }
+        }
+      }
+    },
+    "Last synced %@" : {
+      "comment" : "When the last sync finished; the argument is relative, such as '5 minutes ago'.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "最終同期：%@"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "上次同步：%@"
+          }
+        }
+      }
+    },
+    "Connecting…" : {
+      "comment" : "Status line in the sync progress strip while connecting to the sync server.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "接続中…"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正在连接…"
+          }
+        }
+      }
+    },
+    "Syncing Collection" : {
+      "comment" : "Status line in the sync progress strip while collection changes are exchanged.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "コレクションを同期中"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正在同步集合"
+          }
+        }
+      }
+    },
+    "Uploading Collection" : {
+      "comment" : "Status line in the sync progress strip during a one-way upload.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "コレクションをアップロード中"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正在上传集合"
+          }
+        }
+      }
+    },
+    "Downloading Collection" : {
+      "comment" : "Status line in the sync progress strip during a one-way download.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "コレクションをダウンロード中"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正在下载集合"
+          }
+        }
+      }
+    },
+    "Syncing Media" : {
+      "comment" : "Status line in the sync progress strip while media files transfer; followed by the counts.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "メディアを同期中"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正在同步媒体"
+          }
+        }
+      }
+    },
+    "Dismiss" : {
+      "comment" : "Button that hides the sync failure strip.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "閉じる"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "关闭"
+          }
+        }
+      }
+    },
+    "Sync Progress" : {
+      "comment" : "Accessibility label of the sync progress strip above the tab bar.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "同期の進行状況"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "同步进度"
           }
         }
       }

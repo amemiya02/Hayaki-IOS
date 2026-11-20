@@ -1,5 +1,6 @@
 import AppIntents
 import ExtensionBridge
+import HayakiAppearance
 import SwiftUI
 import WidgetKit
 
@@ -81,6 +82,7 @@ struct DeckWidgetEntry: TimelineEntry {
     let decks: [ExtensionDeck]
     let emptyMessage: LocalizedStringKey
     var totalDue: Int?
+    var accent = ExtensionBridge.appGroup?.accent()
 
     static var placeholder: Self {
         DeckWidgetEntry(
@@ -96,6 +98,19 @@ struct DeckWidgetEntry: TimelineEntry {
     }
 
     var deckListDestination: URL { DeckLink.decks(profileID: profileID).url }
+}
+
+extension ExtensionAccent {
+    /// The default theme's accent, until the app publishes the selected theme.
+    static let hayaki = ExtensionAccent(
+        lightRGB: Theme.default.palette.lightAccentRGB, darkRGB: Theme.default.palette.darkAccentRGB
+    )
+
+    func color(for scheme: ColorScheme) -> Color {
+        let rgb = scheme == .dark ? darkRGB : lightRGB
+        return Color(.sRGB, red: Double(rgb >> 16) / 255, green: Double((rgb >> 8) & 255) / 255,
+                     blue: Double(rgb & 255) / 255)
+    }
 }
 
 struct DeckWidgetProvider<Intent: DeckWidgetIntent>: AppIntentTimelineProvider {
@@ -160,6 +175,7 @@ struct SingleDeckWidget: Widget {
 private struct DeckListWidgetView: View {
     let entry: DeckWidgetEntry
     @Environment(\.widgetFamily) private var family
+    @Environment(\.colorScheme) private var colorScheme
 
     private let countWidth: CGFloat = 37
 
@@ -167,7 +183,7 @@ private struct DeckListWidgetView: View {
         VStack(alignment: .leading, spacing: 5) {
             Link(destination: entry.deckListDestination) {
                 HStack {
-                    Text("Decks").font(.headline)
+                    Text("Decks").font(.headline).foregroundStyle(accent)
                     Spacer(minLength: 2)
                     if let total = entry.totalDue {
                         Text("\(total) due today")
@@ -203,9 +219,12 @@ private struct DeckListWidgetView: View {
             Spacer(minLength: 0)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+        .tint(accent)
         .containerBackground(.background, for: .widget)
         .widgetURL(entry.deckListDestination)
     }
+
+    private var accent: Color { (entry.accent ?? .hayaki).color(for: colorScheme) }
 
     private var countHeaders: some View {
         Group {
@@ -231,27 +250,32 @@ private struct DeckListWidgetView: View {
 
 private struct SingleDeckWidgetView: View {
     let entry: DeckWidgetEntry
+    @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             if let deck = entry.decks.first {
                 Text(verbatim: deck.name.replacingOccurrences(of: "::", with: " › "))
                     .font(.headline)
+                    .foregroundStyle(accent)
                     .lineLimit(2)
                 Spacer(minLength: 0)
                 metric("New", deck.new)
                 metric("Learning", deck.learning)
                 metric("Due", deck.review)
             } else {
-                Text("One Deck").font(.headline)
+                Text("One Deck").font(.headline).foregroundStyle(accent)
                 Text(entry.emptyMessage).font(.footnote).foregroundStyle(.secondary)
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .privacySensitive()
+        .tint(accent)
         .containerBackground(.background, for: .widget)
         .widgetURL(entry.decks.first.map(entry.destination) ?? entry.deckListDestination)
     }
+
+    private var accent: Color { (entry.accent ?? .hayaki).color(for: colorScheme) }
 
     private func metric(_ label: LocalizedStringKey, _ value: Int) -> some View {
         HStack {

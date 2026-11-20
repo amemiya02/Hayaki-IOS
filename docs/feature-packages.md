@@ -6,7 +6,12 @@ Nearly all of Hayaki's code lives in local Swift packages under `Packages/`. The
 Packages/
   AnkiCore/           Core Client (typed async calls into Anki's core)
   CollectionStore/    CollectionStore library; CollectionTesting library for tests only
-  AppShell/           AppModel (opens the collection at launch), RootView, SectionsView (tabs / sidebar)
+  HayakiAppearance/   Themes and tokens (HayakiTheme, hayakiBackground, hayakiNumeric); StatusViews:
+                      inlineErrorBanner(_:) with InlineErrorBanner, and loadingPlaceholder()
+  AppShell/           AppModel (opens the collection at launch), RootView, SectionsView (tabs / sidebar),
+                      WelcomeScreen; HayakiCommands (the app's menu commands: AddNoteCommands and
+                      StudyCommands); AddNoteOpener (the Home Screen quick action and App Shortcut open
+                      Add Note through the shared addNote action)
   DecksFeature/       DeckListModel, DeckListScreen, DecksSection
   DeckOptionsFeature/ DeckOptionsModel (edits the core's own deck options messages in place), DeckOptionsScreen
                       (a sheet, opened from a deck's Options menu item)
@@ -16,13 +21,19 @@ Packages/
   SettingsFeature/    SettingsScreen: one row per area
   PackagesFeature/    PackageImportModel, the import sheets (packageImport(_:)), ImportPackageButton;
                       PackageExportModel, PackageExportScreen (a sheet), ExportPackageButton
-  NoteEditorFeature/  NoteEditorModel, NoteEditorScreen; addNoteAction(store:), the shell's Add Note button
+  NoteEditorFeature/  NoteEditorModel, NoteEditorScreen; addNoteAction(store:), which sets the shared
+                      addNote action (and the focusedAddNote value for Command-N) and shows the editor
   StudyFeature/       StudySessionModel, StudyScreen (presented from Decks with studySession(of:store:)),
                       CardWebView and the card host page Resources/CardHost.html, served with the
                       media folder and the bundled MathJax (WebAssets/) through the
-                      hayaki-card:// scheme (CardResources); CardAudioPlayer plays card audio
+                      hayaki-card:// scheme (CardResources); CardAudioPlayer plays card audio;
+                      AddNoteButton.swift: AddNoteAction (the addNote environment action and the
+                      focusedAddNote focused value), AddNoteButton (the + button) and AddNoteCommands;
+                      ReviewerShortcuts.swift: StudyCommands (the Study menu)
   SyncFeature/        SyncModel, SyncScreen and SyncSettingsRow (shown in Settings); SyncAccountStorage
-                      (the Keychain); tests sync against a real sync server, see below
+                      (the Keychain); SyncAccessory and SyncAccessoryView: the sync strip
+                      (syncProgressAccessory(_:) on the tab view, syncProgressInset() on each tab's
+                      content for iOS 26.0); tests sync against a real sync server, see below
 UITests/              UI tests of the assembled app (HayakiUITests target); see UITestLaunch in AppShell
 ```
 

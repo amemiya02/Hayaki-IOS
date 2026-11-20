@@ -147,6 +147,8 @@ public struct CardPreviewView: View {
         switch event {
         case .input(let input):
             send(input)
+        case .editing:
+            break
         case .swipe(let dx, let dy, let time):
             let scale = 100 / Double(max(gestureSettings().swipeSensitivity, 1))
             let distance = hypot(dx, dy)

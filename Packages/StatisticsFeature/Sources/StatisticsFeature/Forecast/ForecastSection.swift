@@ -1,20 +1,17 @@
+import HayakiAppearance
 import SwiftUI
 
 struct ForecastSection: View {
     let graphs: StatisticsGraphs
     @Environment(\.statisticsReportPeriod) private var reportPeriod
-    private var displayedPeriod: StatisticsPeriod { reportPeriod ?? period }
+    private var displayedPeriod: StatisticsPeriod { reportPeriod ?? graphs.period }
     @Binding var includeBacklog: Bool
-    @State private var period: StatisticsPeriod = .month
     @State private var showCumulative = false
     @State private var position: Double?
 
     var body: some View {
         let forecast = graphs.displaying(displayedPeriod).forecast(includeBacklog: includeBacklog)
         Section {
-            if reportPeriod == nil {
-                StatisticsPeriodPicker(selection: $period, label: Text("Forecast Period", bundle: .module))
-            }
             if forecast.hasBacklog {
                 if reportPeriod == nil {
                     Toggle(isOn: $includeBacklog) { Text("Show Backlog", bundle: .module) }
@@ -29,14 +26,16 @@ struct ForecastSection: View {
                 }
                 DailyCardCountChart(
                     days: forecast.days, range: chartRange(for: forecast),
-                    cumulative: showCumulative, title: Text("Cards Due", bundle: .module), position: $position
+                    cumulative: showCumulative, title: Text("Cards Due", bundle: .module),
+                    color: SemanticColor.due.color, initialDay: chartRange(for: forecast).lowerBound,
+                    position: $position
                 )
                 summary(forecast)
             }
         } header: {
-            Text("Future Due", bundle: .module)
+            StatisticsCardHeader(title: Text("Future Due", bundle: .module), reading: reading(forecast))
         }
-        .onChange(of: period) { position = nil }
+        .onChange(of: graphs.period) { position = nil }
         .onChange(of: includeBacklog) { position = nil }
     }
 
@@ -48,12 +47,32 @@ struct ForecastSection: View {
         return earliest...latest
     }
 
-    @ViewBuilder
-    private func summary(_ forecast: DueForecast) -> some View {
+    /// The first and last day the forecast covers.
+    private func span(_ forecast: DueForecast) -> (earliest: Int, latest: Int) {
         let earliest = includeBacklog ? forecast.days.first?.offset ?? 0 : 0
         let maximum = displayedPeriod.latestForecastDay
         let latest = maximum == .max ? forecast.days.last?.offset ?? 0 : maximum
-        let average = Double(forecast.total) / Double(max(1, latest - earliest))
+        return (earliest, latest)
+    }
+
+    private func average(_ forecast: DueForecast) -> Double {
+        let (earliest, latest) = span(forecast)
+        return Double(forecast.total) / Double(max(1, latest - earliest))
+    }
+
+    private func reading(_ forecast: DueForecast) -> Text? {
+        guard !forecast.days.isEmpty else { return nil }
+        let days = max(1, span(forecast).latest)
+        return Text(
+            "About \(Int(average(forecast).rounded()), format: .number) cards due per day over the next \(days, format: .number) days",
+            bundle: .module,
+            comment: "Future Due card reading: the average number of cards due each day, and the number of days ahead."
+        )
+    }
+
+    @ViewBuilder
+    private func summary(_ forecast: DueForecast) -> some View {
+        let average = average(forecast)
         LabeledContent {
             Text(forecast.total, format: .number)
         } label: {
@@ -73,19 +92,6 @@ struct ForecastSection: View {
             Text(forecast.dailyLoad, format: .number)
         } label: {
             Text("Daily Load", bundle: .module)
-        }
-        if let position {
-            let selected = Int(position.rounded())
-            LabeledContent {
-                Text(forecast.days.first { $0.offset == selected }?.count ?? 0, format: .number)
-            } label: {
-                relativeDay(selected)
-            }
-            LabeledContent {
-                Text(forecast.days.lazy.filter { $0.offset <= selected }.reduce(0) { $0 + $1.count }, format: .number)
-            } label: {
-                Text("Running Total", bundle: .module)
-            }
         }
     }
 }

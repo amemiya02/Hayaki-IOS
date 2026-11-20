@@ -3,6 +3,7 @@ import HayakiAppearance
 import DecksFeature
 import NoteEditorFeature
 import PackagesFeature
+import StudyFeature
 import SwiftUI
 
 /// How the Browse section appears in the tab bar and sidebar.
@@ -29,6 +30,14 @@ public struct BrowseScreen: View {
     /// for confirmation.
     @State private var deletion: DeletionSummary?
     @Environment(\.accessibilityVoiceOverEnabled) private var voiceOverEnabled
+    /// The row shown beside the list on iPad.
+    @State private var focusedRow: Int64?
+    #if os(iOS)
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    #endif
+    /// The app's shared Add Note action; without one (Browse opened from the
+    /// reviewer), Browse shows the note editor itself.
+    @Environment(\.addNote) private var addNote
 
     public init(store: CollectionStore, initialSearch: String = "", initialCardID: Int64? = nil) {
         self.store = store
@@ -39,12 +48,41 @@ public struct BrowseScreen: View {
     }
 
     public var body: some View {
-        NavigationStack {
-            browseLayout
+        Group {
+            if showsDetailColumn {
+                // iPad: the list, and the selected card's preview beside it.
+                NavigationSplitView {
+                    browseColumn
+                        .navigationSplitViewColumnWidth(min: 320, ideal: 400, max: 520)
+                        #if os(iOS)
+                        // A large title like the other tabs; in the split
+                        // view's list column it would otherwise stay inline.
+                        .navigationBarTitleDisplayMode(.large)
+                        #endif
+                } detail: {
+                    BrowseDetailPane(store: store, model: model, rowID: focusedRow)
+                }
+                .navigationSplitViewStyle(.balanced)
+            } else {
+                NavigationStack {
+                    browseColumn
+                }
+            }
+        }
+        .task { await model.run() }
+    }
+
+    private var showsDetailColumn: Bool {
+        #if os(iOS)
+        horizontalSizeClass == .regular
+        #else
+        false
+        #endif
+    }
+
+    private var browseColumn: some View {
+        browseLayout
                 .navigationTitle(title)
-                #if os(iOS)
-                .navigationBarTitleDisplayMode(.inline)
-                #endif
                 .navigationDestination(for: CardLink.self) { link in
                     CardInfoScreen(store: store, cardID: link.cardID)
                 }
@@ -95,19 +133,12 @@ public struct BrowseScreen: View {
                 } message: { summary in
                     Text("Deleting a card deletes its note, with the note's other cards: \(summary.cardCount) cards in all.", bundle: .module)
                 }
-                .alert(
-                    Text("Could Not Change Cards", bundle: .module),
-                    isPresented: hasFailure
-                ) {
-                    Button {} label: { Text("OK", bundle: .module) }
-                } message: {
-                    Text(model.failure ?? "")
-                }
                 .onChange(of: model.rowIDs.isEmpty) { _, isEmpty in
                     if isEmpty { isSelecting = false }
                 }
-        }
-        .task { await model.run() }
+                .onChange(of: model.rowIDs) { _, rowIDs in
+                    if let focusedRow, !rowIDs.contains(focusedRow) { self.focusedRow = nil }
+                }
     }
 
     private var browseLayout: some View {
@@ -116,14 +147,15 @@ public struct BrowseScreen: View {
             content
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .clipped()
+                .inlineErrorBanner(failure)
             if let completed = model.completedAction {
                 UndoBanner(model: model, completed: completed)
                     .transition(.move(edge: .bottom).combined(with: .opacity))
             }
         }
+        // The system's default placement for a tab root.
         .searchable(
             text: $model.searchText,
-            placement: searchPlacement,
             prompt: Text("Anki search, such as deck:Spanish", bundle: .module)
         )
         .autocorrectionDisabled()
@@ -139,14 +171,6 @@ public struct BrowseScreen: View {
             // Clearing the field shows every card again.
             if text.isEmpty { Task { await model.search() } }
         }
-    }
-
-    private var searchPlacement: SearchFieldPlacement {
-        #if os(iOS)
-        .navigationBarDrawer(displayMode: .always)
-        #else
-        .automatic
-        #endif
     }
 
     private var title: Text {
@@ -194,23 +218,14 @@ public struct BrowseScreen: View {
                 .disabled(model.selection.isEmpty || model.isPerformingAction)
             }
         } else {
+            // One glass capsule: Add Note and a menu with the rest.
             ToolbarItemGroup(placement: .primaryAction) {
-                Button {
-                    sheet = .filters
-                } label: {
-                    Label {
-                        Text("Filters", bundle: .module)
-                    } icon: { Image(systemName: "line.3.horizontal.decrease") }
+                if addNote != nil {
+                    AddNoteButton()
+                } else {
+                    AddNoteButton { sheet = .addNote }
                 }
                 configurationMenu
-            }
-            ToolbarItem(placement: .primaryAction) {
-                Button {
-                    isSelecting = true
-                } label: {
-                    Text("Select", bundle: .module)
-                }
-                .disabled(model.rowIDs.isEmpty)
             }
         }
     }
@@ -261,7 +276,23 @@ public struct BrowseScreen: View {
 
     private var configurationMenu: some View {
         Menu {
+            Button {
+                isSelecting = true
+            } label: {
+                Label {
+                    Text("Select", bundle: .module)
+                } icon: { Image(systemName: "checkmark.circle") }
+            }
+            .disabled(model.rowIDs.isEmpty)
             BrowserUndoMenuAction(model: model)
+            Divider()
+            Button {
+                sheet = .filters
+            } label: {
+                Label {
+                    Text("Filters", bundle: .module)
+                } icon: { Image(systemName: "line.3.horizontal.decrease") }
+            }
             SortMenu(model: model)
             Button {
                 sheet = .columns
@@ -313,7 +344,7 @@ public struct BrowseScreen: View {
         } label: {
             Label {
                 Text("Browse Options", bundle: .module)
-            } icon: { Image(systemName: "ellipsis.circle") }
+            } icon: { Image(systemName: "ellipsis") }
         }
     }
 
@@ -326,6 +357,7 @@ public struct BrowseScreen: View {
         case .flags: BrowserFlagLabelsSheet(model: model)
         case .filteredDeck(let search): FilteredDeckScreen(store: store, initialSearch: search)
         case .editing(let cardID): NoteEditorScreen(store: store, editingCardID: cardID)
+        case .addNote: NoteEditorScreen(store: store)
         case .preview(let cardIDs): BrowserPreviewScreen(store: store, cardIDs: cardIDs)
         case .textExport(let selection): TextExportScreen(store: store, selection: selection)
         case .packageExport(let selection): PackageExportScreen(store: store, selection: selection)
@@ -378,11 +410,12 @@ public struct BrowseScreen: View {
         }
     }
 
-    private var hasFailure: Binding<Bool> {
+    /// A bulk action that failed, shown as a banner above the results.
+    private var failure: Binding<InlineError?> {
         Binding {
-            model.failure != nil
-        } set: { isShown in
-            if !isShown { model.failure = nil }
+            model.failure.map { InlineError(title: Text("Could Not Change Cards", bundle: .module), message: $0) }
+        } set: { error in
+            if error == nil { model.failure = nil }
         }
     }
 
@@ -390,7 +423,14 @@ public struct BrowseScreen: View {
     private var content: some View {
         switch model.state {
         case .loading:
-            ProgressView()
+            // The shape of the results while the search runs.
+            List(0..<12, id: \.self) { _ in
+                CardRowContent(row: nil, columns: model.visibleColumns, truncates: true, flagLabel: nil)
+            }
+            .hayakiScrollBackground()
+            .listStyle(.plain)
+            .scrollDisabled(true)
+            .loadingPlaceholder()
         case .invalidSearch(let message):
             ContentUnavailableView {
                 Label {
@@ -441,10 +481,7 @@ public struct BrowseScreen: View {
             }
         case .loaded:
             ScrollViewReader { scrolling in
-                List(model.rowIDs, id: \.self, selection: isSelecting ? $model.selection : nil) { rowID in
-                    row(rowID)
-                        .accessibilityIdentifier(rowID == model.rowIDs.last ? "browse-last-result" : "browse-result")
-                }
+                resultList
                 .hayakiScrollBackground()
                 .listStyle(.plain)
                 .accessibilityIdentifier("browse-results")
@@ -459,11 +496,34 @@ public struct BrowseScreen: View {
             }
         }
     }
+    /// One list throughout, so entering or leaving selection keeps its scroll
+    /// position. While selecting it selects many rows; beside a detail column
+    /// (iPad) it selects the one row shown there; otherwise rows open.
+    private var resultList: some View {
+        List(model.rowIDs, id: \.self, selection: listSelection) { rowID in
+            row(rowID)
+                .accessibilityIdentifier(rowID == model.rowIDs.last ? "browse-last-result" : "browse-result")
+        }
+    }
+
+    private var listSelection: Binding<Set<Int64>>? {
+        if isSelecting { return $model.selection }
+        guard showsDetailColumn else { return nil }
+        return Binding {
+            focusedRow.map { [$0] } ?? []
+        } set: { rows in
+            focusedRow = rows.first { $0 != focusedRow } ?? rows.first
+        }
+    }
+
     @ViewBuilder
     private func row(_ rowID: Int64) -> some View {
         let row = CardRowView(model: model, cardID: rowID, truncates: truncatesRows)
         if isSelecting {
             row.tag(rowID)
+        } else if showsDetailColumn {
+            row.tag(rowID)
+                .contextMenu { rowMenu(rowID) }
         } else {
             Group {
                 if model.mode == .cards {
@@ -475,26 +535,29 @@ public struct BrowseScreen: View {
                     .buttonStyle(.plain)
                 }
             }
-            .contextMenu {
-                Button { open(rowID, asInfo: false) } label: {
-                    Text("Edit Note", bundle: .module)
-                }
-                Button { open(rowID, asInfo: true) } label: {
-                    Text("Card Info", bundle: .module)
-                }
-                Button {
-                    model.selection = [rowID]
-                    isSelecting = true
-                } label: {
-                    Text("Select", bundle: .module)
-                }
-            }
+            .contextMenu { rowMenu(rowID) }
+        }
+    }
+
+    @ViewBuilder
+    private func rowMenu(_ rowID: Int64) -> some View {
+        Button { open(rowID, asInfo: false) } label: {
+            Text("Edit Note", bundle: .module)
+        }
+        Button { open(rowID, asInfo: true) } label: {
+            Text("Card Info", bundle: .module)
+        }
+        Button {
+            model.selection = [rowID]
+            isSelecting = true
+        } label: {
+            Text("Select", bundle: .module)
         }
     }
 }
 
 private enum BrowseSheet: Identifiable {
-    case filters, columns, savedSearches, flags, editing(Int64), preview([Int64])
+    case filters, columns, savedSearches, flags, editing(Int64), preview([Int64]), addNote
     case textExport(ExportSelection), packageExport(ExportSelection), filteredDeck(String)
 
     var id: Int {
@@ -508,6 +571,7 @@ private enum BrowseSheet: Identifiable {
         case .packageExport: 6
         case .flags: 7
         case .filteredDeck: 8
+        case .addNote: 9
         }
     }
 }
@@ -598,7 +662,9 @@ private struct CardRowView: View {
     }
 
     private func flagLabel(_ row: CardRow?) -> Text? {
-        if case .flag(let flag)? = row?.mark { model.flagName(flag) } else { nil }
+        // The learner's name for the flag, or "Red flag" and so on.
+        guard let flag = row?.flag else { return nil }
+        return model.flagNames[flag].map { Text(verbatim: $0) } ?? flag.label
     }
 
     private struct RowVersion: Hashable {
@@ -607,6 +673,9 @@ private struct CardRowView: View {
     }
 }
 
+/// A row: the sort field, then the deck and due date, then any other shown
+/// columns. A flagged card has a bar of its flag's color along the leading
+/// edge, and a suspended card is dimmed.
 private struct CardRowContent: View {
     let row: CardRow?
     let columns: [BrowserColumn]
@@ -615,72 +684,132 @@ private struct CardRowContent: View {
     @AppStorage(AppearanceSettings.browseMediaFilenamesKey) private var showsMediaFilenames = false
     @AppStorage(AppearanceSettings.browseTextScaleKey) private var textScale = 1.0
     @ScaledMetric(relativeTo: .body) private var primarySize = 17.0
-    @ScaledMetric(relativeTo: .subheadline) private var detailSize = 15.0
+    @ScaledMetric(relativeTo: .subheadline) private var secondarySize = 15.0
+    @ScaledMetric(relativeTo: .footnote) private var detailSize = 13.0
+    @ScaledMetric(relativeTo: .body) private var barWidth = 4.0
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack(alignment: .firstTextBaseline) {
-                if let first = columns.first {
-                    Text(verbatim: value(first))
-                        .font(.system(size: primarySize * textScale))
-                        .lineLimit(truncates ? 2 : nil)
-                        .accessibilityLabel(Text(verbatim: "\(first.label), \(value(first))"))
+        HStack(alignment: .top, spacing: 10) {
+            flagBar
+            VStack(alignment: .leading, spacing: 3) {
+                Text(verbatim: primaryText)
+                    .font(.system(size: primarySize * textScale))
+                    .lineLimit(truncates ? 2 : nil)
+                if let secondaryText {
+                    Text(verbatim: secondaryText)
+                        .font(.system(size: secondarySize * textScale))
+                        .foregroundStyle(.secondary)
+                        .lineLimit(truncates ? 1 : nil)
                 }
-                Spacer(minLength: 0)
-                if let row, let mark = MarkBadge(mark: row.mark, flagLabel: flagLabel) {
-                    mark
+                if !details.isEmpty {
+                    Text(verbatim: details.joined(separator: "  ·  "))
+                        .font(.system(size: detailSize * textScale))
+                        .foregroundStyle(.tertiary)
+                        .lineLimit(truncates ? 1 : nil)
                 }
             }
-            if columns.count > 1 {
-                LazyVGrid(columns: [GridItem(.adaptive(minimum: 92), alignment: .leading)], alignment: .leading) {
-                    ForEach(Array(columns.dropFirst())) { column in
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(verbatim: column.label)
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                                .lineLimit(truncates ? 1 : nil)
-                            Text(verbatim: value(column))
-                                .font(.system(size: detailSize * textScale))
-                                .lineLimit(truncates ? 1 : nil)
-                        }
-                    }
-                }
+            Spacer(minLength: 0)
+            if let row, let badge = MarkBadge(mark: row.mark) {
+                badge
             }
         }
         .padding(.vertical, 4)
+        .opacity(row?.isDimmed == true ? 0.45 : 1)
         .contentShape(Rectangle())
         .accessibilityElement(children: .combine)
+        .accessibilityValue(stateLabel ?? Text(verbatim: ""))
     }
 
-    private func value(_ column: BrowserColumn) -> String {
-        guard let row else { return column.label }
-        let value = row.displayText(for: column.id, showsMediaFilenames: showsMediaFilenames)
-        return value.isEmpty ? "–" : value
+    /// A rounded bar of the flag's color, or an empty space of the same width
+    /// so every row's text lines up.
+    private var flagBar: some View {
+        RoundedRectangle(cornerRadius: barWidth / 2)
+            .fill(row?.flag?.color ?? .clear)
+            .frame(width: barWidth)
+            .frame(maxHeight: .infinity)
+            .accessibilityHidden(true)
+    }
+
+    /// The flag or suspension, which the bar and dimming show, for VoiceOver.
+    private var stateLabel: Text? {
+        if let flagLabel { return flagLabel }
+        if row?.isDimmed == true { return Text("Suspended", bundle: .module) }
+        return nil
+    }
+
+    private var primaryText: String {
+        // Placeholder text while the row loads, redacted by the caller.
+        guard let row else { return "Loading card" }
+        let text = row.displayText(for: CardRow.sortFieldColumn, showsMediaFilenames: showsMediaFilenames)
+        return text.isEmpty ? (row.question.isEmpty ? "–" : row.question) : text
+    }
+
+    private var secondaryText: String? {
+        guard let row else { return "Deck · due" }
+        let parts = [row.deck, row.due].filter { !$0.isEmpty }
+        return parts.isEmpty ? nil : parts.joined(separator: " · ")
+    }
+
+    private var details: [String] {
+        guard let row else { return [] }
+        return row.detailColumns(columns).compactMap { column in
+            let value = row.displayText(for: column.id, showsMediaFilenames: showsMediaFilenames)
+            return value.isEmpty ? nil : "\(column.label): \(value)"
+        }
     }
 }
 
-/// A small symbol for a flagged, marked, suspended or buried card.
+/// Beside the list on iPad: a preview of the selected card, from which the
+/// learner can also edit its note.
+private struct BrowseDetailPane: View {
+    let store: CollectionStore
+    let model: CardBrowserModel
+    let rowID: Int64?
+    @State private var cardID: Int64?
+
+    var body: some View {
+        Group {
+            if let cardID {
+                BrowserPreviewScreen(store: store, cardIDs: [cardID], isEmbedded: true)
+                    .id(cardID)
+            } else {
+                ContentUnavailableView {
+                    Label {
+                        Text("No Card Selected", bundle: .module)
+                    } icon: {
+                        Image(systemName: "rectangle.on.rectangle")
+                    }
+                } description: {
+                    Text("Select a card to preview it here.", bundle: .module)
+                }
+            }
+        }
+        .task(id: rowID) {
+            guard let rowID else {
+                cardID = nil
+                return
+            }
+            let resolved = await model.cardID(forRow: rowID)
+            if !Task.isCancelled { cardID = resolved }
+        }
+    }
+}
+
+/// A small symbol for a marked or buried card. (A row shows a flag as a
+/// colored bar and a suspended card dimmed instead.)
 struct MarkBadge: View {
     let symbol: String
     let color: Color
     let label: Text
 
-    init?(mark: CardRow.Mark, flagLabel: Text? = nil) {
+    init?(mark: CardRow.Mark) {
         switch mark {
-        case .none:
+        case .none, .flag, .suspended:
             return nil
-        case .flag(let flag):
-            symbol = "flag.fill"
-            color = flag.color
-            label = flagLabel ?? flag.label
         case .marked:
             symbol = "star.fill"
             color = .purple
             label = Text("Marked", bundle: .module)
-        case .suspended:
-            symbol = "pause.circle.fill"
-            color = .yellow
-            label = Text("Suspended", bundle: .module)
         case .buried:
             symbol = "moon.zzz.fill"
             color = .brown

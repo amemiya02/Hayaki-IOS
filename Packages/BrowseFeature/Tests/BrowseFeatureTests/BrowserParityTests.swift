@@ -52,7 +52,11 @@ extension BrowserParityTests {
             await model.setSort(CardSort(column: "noteFld", reverse: true))
             let first = try #require(model.rowIDs.first)
             await model.loadRow(first)
-            #expect(model.row(for: first)?.cells == ["answer": "Second answer", "noteFld": "beta"])
+            let row = try #require(model.row(for: first))
+            #expect(row.cells["answer"] == "Second answer")
+            #expect(row.cells["noteFld"] == "beta")
+            // The row also carries the deck and due date it always shows.
+            #expect(row.deck == "Languages")
 
             await model.setMode(.notes)
             #expect(model.visibleColumnIDs == ["noteFld", "note", "template", "noteTags"])

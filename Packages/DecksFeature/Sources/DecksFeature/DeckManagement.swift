@@ -1,13 +1,14 @@
 import AnkiCore
 import DeckOptionsFeature
+import HayakiAppearance
 import PackagesFeature
 import ReminderFeature
 import StudyFeature
 import SwiftUI
 
 extension View {
-    /// Lets the learner organise the decks of `model`: a toolbar button to
-    /// create a deck, and the sheets and alerts behind each deck row's
+    /// Lets the learner organise the decks of `model`: the sheets and alerts
+    /// behind `NewDeckButton`, `NewFilteredDeckButton` and each deck row's
     /// actions (see `deckActions(for:)`).
     func deckManagement(
         _ model: DeckListModel, profileID: UUID?, onStudy: @escaping (StudyDeck) -> Void
@@ -24,12 +25,8 @@ private struct DeckManagement: ViewModifier {
     @State private var renaming: DeckNode?
     @State private var newName = ""
     @State private var deleting: (deck: DeckNode, deletion: DeckDeletion)?
-    @State private var failure: Failure?
-
-    struct Failure {
-        let title: Text
-        let message: String
-    }
+    /// A deck action that failed, shown as a banner above the decks.
+    @State private var failure: InlineError?
 
     init(model: DeckListModel, profileID: UUID?, onStudy: @escaping (StudyDeck) -> Void) {
         self.model = model
@@ -40,32 +37,15 @@ private struct DeckManagement: ViewModifier {
     func body(content: Content) -> some View {
         content
             .environment(request)
-            .toolbar {
-                ToolbarItem(placement: .primaryAction) {
-                    NewDeckButton()
-                        .environment(request)
-                }
-                ToolbarItem(placement: .secondaryAction) {
-                    Button {
-                        request.pending = .filteredOptions(nil)
-                    } label: {
-                        Label {
-                            Text("New Filtered Deck", bundle: .module)
-                        } icon: {
-                            Image(systemName: "line.3.horizontal.decrease")
-                        }
-                    }
-                }
-            }
             .sheet(item: sheet, onDismiss: startPendingStudy) { action in
                 switch action {
                 case .create(let parentID):
                     NewDeckSheet(model: model, parentID: parentID) { error in
-                        failure = Failure(title: Text("Could Not Create Deck", bundle: .module), message: error.message)
+                        failure = InlineError(title: Text("Could Not Create Deck", bundle: .module), message: error.message)
                     }
                 case .move(let deck):
                     MoveDeckSheet(model: model, deck: deck) { error in
-                        failure = Failure(title: Text("Could Not Move Deck", bundle: .module), message: error.message)
+                        failure = InlineError(title: Text("Could Not Move Deck", bundle: .module), message: error.message)
                     }
                 case .options(let deck):
                     DeckOptionsScreen(store: model.store, deckID: deck.id)
@@ -142,17 +122,7 @@ private struct DeckManagement: ViewModifier {
             } message: { pending in
                 Self.statement(of: pending.deletion)
             }
-            .alert(
-                failure?.title ?? Text(verbatim: ""),
-                isPresented: isPresented($failure),
-                presenting: failure
-            ) { _ in
-                Button(role: .cancel) {} label: {
-                    Text("OK", bundle: .module)
-                }
-            } message: { failure in
-                Text(failure.message)
-            }
+            .inlineErrorBanner($failure)
     }
 
     /// The pending action when it is shown as a sheet.
@@ -200,7 +170,7 @@ private struct DeckManagement: ViewModifier {
                 await editor.rebuild()
             }
             if let error = editor.error {
-                failure = Failure(title: Text("Could Not Update Filtered Deck", bundle: .module), message: error)
+                failure = InlineError(title: Text("Could Not Update Filtered Deck", bundle: .module), message: error)
             }
         }
     }
@@ -211,7 +181,7 @@ private struct DeckManagement: ViewModifier {
             do throws(CoreError) {
                 deleting = (deck, try await model.deletion(of: deck.id))
             } catch {
-                failure = Failure(title: Text("Could Not Delete Deck", bundle: .module), message: error.message)
+                failure = InlineError(title: Text("Could Not Delete Deck", bundle: .module), message: error.message)
             }
         }
     }
@@ -222,7 +192,7 @@ private struct DeckManagement: ViewModifier {
             do throws(CoreError) {
                 try await model.renameDeck(deck.id, to: name)
             } catch {
-                failure = Failure(title: Text("Could Not Rename Deck", bundle: .module), message: error.message)
+                failure = InlineError(title: Text("Could Not Rename Deck", bundle: .module), message: error.message)
             }
         }
     }
@@ -232,7 +202,7 @@ private struct DeckManagement: ViewModifier {
             do throws(CoreError) {
                 try await model.deleteDeck(deck.id)
             } catch {
-                failure = Failure(title: Text("Could Not Delete Deck", bundle: .module), message: error.message)
+                failure = InlineError(title: Text("Could Not Delete Deck", bundle: .module), message: error.message)
             }
         }
     }
@@ -249,6 +219,22 @@ struct NewDeckButton: View {
                 Text("New Deck", bundle: .module)
             } icon: {
                 Image(systemName: "rectangle.stack.badge.plus")
+            }
+        }
+    }
+}
+
+struct NewFilteredDeckButton: View {
+    @Environment(DeckActionRequest.self) private var request: DeckActionRequest
+
+    var body: some View {
+        Button {
+            request.pending = .filteredOptions(nil)
+        } label: {
+            Label {
+                Text("New Filtered Deck", bundle: .module)
+            } icon: {
+                Image(systemName: "line.3.horizontal.decrease")
             }
         }
     }

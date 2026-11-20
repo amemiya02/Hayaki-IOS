@@ -59,7 +59,8 @@
             "value" : "Hayaki"
           }
         }
-      }
+      },
+      "shouldTranslate" : false
     },
     "CFBundleName" : {
       "comment" : "Bundle name",
@@ -71,7 +72,8 @@
             "value" : "Hayaki"
           }
         }
-      }
+      },
+      "shouldTranslate" : false
     },
     "NSMicrophoneUsageDescription" : {
       "localizations" : {
@@ -101,6 +103,29 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "经你允许后，Hayaki 会在本机为卡片模板进行语音识别。"
+          }
+        }
+      }
+    },
+    "Add Note" : {
+      "comment" : "The Home Screen quick action that opens the note editor.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ノートを追加"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "添加笔记"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add Note"
           }
         }
       }

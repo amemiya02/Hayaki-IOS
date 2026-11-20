@@ -50,6 +50,9 @@ struct BrowserFlagLabelsSheet: View {
                 }
             }
             .navigationTitle(Text("Rename Flags", bundle: .module))
+            #if os(iOS)
+            .navigationBarTitleDisplayMode(.inline)
+            #endif
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button(role: .cancel) { dismiss() } label: { Text("Cancel", bundle: .module) }

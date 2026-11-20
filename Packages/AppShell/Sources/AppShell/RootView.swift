@@ -15,6 +15,7 @@ import UIKit
 /// sections.
 public struct RootView: View {
     private let model: AppModel
+    private var appearance = AppearanceSettings()
     @State private var choosingRecoveryPackage = false
     @State private var recoveryPackage: URL?
     @State private var recoveryPickerError: String?
@@ -37,6 +38,9 @@ public struct RootView: View {
         // Opening a reminder that launched the app is only noticed if the
         // notification delegate is in place by then.
         ReminderOpener.shared.install()
+        #if DEBUG
+        UITestLaunch.openQuickActionIfAsked()
+        #endif
     }
 
     /// The app passes its aggregate phase so that one window never starts
@@ -125,6 +129,11 @@ public struct RootView: View {
             }
         }
         .hayakiAppearance()
+        .onChange(of: appearance.theme, initial: true) { _, theme in
+            model.appExtensions?.publish(
+                ExtensionAccent(lightRGB: theme.palette.lightAccentRGB, darkRGB: theme.palette.darkAccentRGB)
+            )
+        }
         .task {
             await model.open()
             await model.routeWaitingDeckLink()

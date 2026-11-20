@@ -53,6 +53,9 @@ struct ProfilesScreen: View {
             }
         }
         .navigationTitle(Text("Profiles", bundle: .module))
+        #if os(iOS)
+        .navigationBarTitleDisplayMode(.inline)
+        #endif
         .toolbar {
             ToolbarItem {
                 Button {
@@ -189,6 +192,9 @@ private struct ProfileNameSheet: View {
                 }
             }
             .navigationTitle(editor.title)
+            #if os(iOS)
+            .navigationBarTitleDisplayMode(.inline)
+            #endif
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button { dismiss() } label: { Text("Cancel", bundle: .module) }

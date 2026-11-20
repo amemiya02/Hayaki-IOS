@@ -60,6 +60,9 @@ struct BackupsScreen: View {
             }
         }
         .navigationTitle(Text("Backups", bundle: .module))
+        #if os(iOS)
+        .navigationBarTitleDisplayMode(.inline)
+        #endif
         .task { model.loadBackups() }
     }
 }
@@ -111,6 +114,9 @@ private struct BackupRetentionScreen: View {
         }
         .disabled(isSaving || sync.isBusy)
         .navigationTitle(Text("Backup Retention", bundle: .module))
+        #if os(iOS)
+        .navigationBarTitleDisplayMode(.inline)
+        #endif
         .task { draft = await model.loadRetention() }
     }
 }

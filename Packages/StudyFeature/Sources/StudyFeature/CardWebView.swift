@@ -68,8 +68,11 @@ struct CardWebView: UIViewRepresentable {
     /// The collection's media folder, which the card's images, sounds and
     /// fonts come from.
     let mediaFolder: URL
-    /// The page zoom that follows the learner's text size.
+    /// The card's zoom, which follows the learner's text size.
     let zoom: CGFloat
+    /// The height of controls floating over the bottom of the card, which the
+    /// card's content can scroll beneath but must be able to scroll above.
+    var bottomInset: CGFloat = 0
     var reviewer: ReviewerWebOptions? = nil
     /// Called for what the learner does on the card.
     var onTemplateRequest: ((TemplateRequest, CardTemplateContext) async -> TemplateReply)? = nil
@@ -77,9 +80,11 @@ struct CardWebView: UIViewRepresentable {
     let customScheduling: CustomSchedulingRequest?
     let onCustomSchedule: (UUID, String?) -> Void
     @AppStorage(CardTemplatePreference.externalApps) private var allowsExternalApps = false
+    @AppStorage(CardGlyphStyle.preferenceKey) private var glyphStyle = CardGlyphStyle.default
 
     init(
-        display: CardDisplay, mediaFolder: URL, zoom: CGFloat, reviewer: ReviewerWebOptions? = nil,
+        display: CardDisplay, mediaFolder: URL, zoom: CGFloat, bottomInset: CGFloat = 0,
+        reviewer: ReviewerWebOptions? = nil,
         onTemplateRequest: ((TemplateRequest, CardTemplateContext) async -> TemplateReply)? = nil,
         customScheduling: CustomSchedulingRequest? = nil,
         onCustomSchedule: @escaping (UUID, String?) -> Void = { _, _ in },
@@ -88,6 +93,7 @@ struct CardWebView: UIViewRepresentable {
         self.display = display
         self.mediaFolder = mediaFolder
         self.zoom = zoom
+        self.bottomInset = bottomInset
         self.reviewer = reviewer
         self.onTemplateRequest = onTemplateRequest
         self.onEvent = onEvent
@@ -134,7 +140,9 @@ struct CardWebView: UIViewRepresentable {
         webView.isInspectable = inspectCardContent
         #endif
         context.coordinator.webView = webView
+        context.coordinator.updateZoom(zoom)
         context.coordinator.updateAppearance(theme)
+        context.coordinator.updateLanguage(glyphStyle.cardLanguage(appLanguage: CardGlyphStyle.appLanguage))
         context.coordinator.loadHostPage()
         return webView
     }
@@ -142,10 +150,15 @@ struct CardWebView: UIViewRepresentable {
     func updateUIView(_ webView: WKWebView, context: Context) {
         context.coordinator.onEvent = onEvent
         context.coordinator.updateAppearance(theme)
+        context.coordinator.updateLanguage(glyphStyle.cardLanguage(appLanguage: CardGlyphStyle.appLanguage))
         context.coordinator.onTemplateRequest = onTemplateRequest
         context.coordinator.allowsExternalApps = allowsExternalApps
-        if webView.pageZoom != zoom {
-            webView.pageZoom = zoom
+        context.coordinator.updateZoom(zoom)
+        // The page adds the room below the card itself, so a card that fits
+        // above the controls does not scroll into blank space.
+        context.coordinator.updateBottomInset(bottomInset)
+        if webView.scrollView.verticalScrollIndicatorInsets.bottom != bottomInset {
+            webView.scrollView.verticalScrollIndicatorInsets.bottom = bottomInset
         }
         #if DEBUG
         webView.isInspectable = inspectCardContent
@@ -195,6 +208,12 @@ struct CardWebView: UIViewRepresentable {
         private var retries = 0
         private var hostFailed = false
         private var theme: HayakiTheme?
+        /// The card page's `<html lang>` (Card Kanji/Hanzi Style).
+        private var language: String?
+        /// The card's zoom, which follows the learner's text size.
+        private var zoom: CGFloat?
+        /// The height of the controls floating over the bottom of the card.
+        private var bottomInset: CGFloat?
 
         func loadHostPage() {
             pageLoaded = false
@@ -278,18 +297,64 @@ struct CardWebView: UIViewRepresentable {
         func updateAppearance(_ theme: HayakiTheme) {
             guard self.theme != theme else { return }
             self.theme = theme
-            webView?.overrideUserInterfaceStyle = theme == .light ? .light : .dark
+            webView?.overrideUserInterfaceStyle = theme.appearance == .light ? .light : .dark
             sendAppearance()
         }
 
         private func sendAppearance() {
             guard pageLoaded, let theme, let webView else { return }
-            let canvas = String(format: "#%06X", theme.backgroundRGB)
+            let canvas = String(format: "#%06X", theme.canvasRGB)
+            let accent = String(format: "#%06X", theme.accentRGB)
             // The template's own styling can supply --canvas or style .nightMode.
             webView.callAsyncJavaScript(
-                "window.hayaki.appearance(canvas, legacyDark)",
-                arguments: ["canvas": canvas, "legacyDark": theme == .dark],
+                "window.hayaki.appearance(canvas, legacyDark, accent)",
+                arguments: ["canvas": canvas, "legacyDark": theme.appearance == .dark, "accent": accent],
                 in: nil, in: .page, completionHandler: nil
+            )
+        }
+
+        /// Scales the card with CSS `zoom` on the page rather than
+        /// `WKWebView.pageZoom`: on iOS, page zoom keeps the layout width of
+        /// `width=device-width`, so at large text sizes lines ran off the
+        /// right edge instead of wrapping, and the page was drawn at up to
+        /// nine times the screen scale.
+        func updateZoom(_ zoom: CGFloat) {
+            guard self.zoom != zoom else { return }
+            self.zoom = zoom
+            sendZoom()
+        }
+
+        private func sendZoom() {
+            guard pageLoaded, let zoom, let webView else { return }
+            webView.callAsyncJavaScript(
+                "window.hayaki.zoom(zoom)", arguments: ["zoom": Double(zoom)], in: nil, in: .page, completionHandler: nil
+            )
+        }
+
+        func updateBottomInset(_ inset: CGFloat) {
+            guard bottomInset != inset else { return }
+            bottomInset = inset
+            sendBottomInset()
+        }
+
+        private func sendBottomInset() {
+            guard pageLoaded, let bottomInset, let webView else { return }
+            webView.callAsyncJavaScript(
+                "window.hayaki.bottomInset(points)", arguments: ["points": Double(bottomInset)], in: nil, in: .page,
+                completionHandler: nil
+            )
+        }
+
+        func updateLanguage(_ language: String) {
+            guard self.language != language else { return }
+            self.language = language
+            sendLanguage()
+        }
+
+        private func sendLanguage() {
+            guard pageLoaded, let language, let webView else { return }
+            webView.callAsyncJavaScript(
+                "window.hayaki.language(lang)", arguments: ["lang": language], in: nil, in: .page, completionHandler: nil
             )
         }
 
@@ -333,6 +398,9 @@ struct CardWebView: UIViewRepresentable {
             guard self.navigation === navigation, !hostFailed else { return }
             pageLoaded = true
             sendAppearance()
+            sendLanguage()
+            sendZoom()
+            sendBottomInset()
             if wanted == nil {
                 renderDeadline?.cancel()
                 renderDeadline = nil
@@ -521,6 +589,9 @@ enum CardPageEvent: Equatable {
     case typed(String)
     /// Return pressed in a typed-answer field.
     case submitTypedAnswer
+    /// The page's own opaque background after a side or the colour scheme
+    /// changed, or nil when it has none and the screen's background shows.
+    case background(CardCanvasColor?)
 
     /// The event a message the page posted stands for.
     init?(message: Any) {
@@ -533,6 +604,8 @@ enum CardPageEvent: Equatable {
                 self = .typed(text)
             } else if message["submit"] != nil {
                 self = .submitTypedAnswer
+            } else if let css = message["background"] as? String {
+                self = .background(CardCanvasColor(css: css))
             } else {
                 return nil
             }
@@ -542,11 +615,46 @@ enum CardPageEvent: Equatable {
     }
 }
 
+/// The card page's background, so the study screen around the card (beside
+/// the readable column on iPad, under the answer bar) matches it.
+struct CardCanvasColor: Equatable {
+    let red: Double
+    let green: Double
+    let blue: Double
+
+    init(red: Double, green: Double, blue: Double) {
+        self.red = red
+        self.green = green
+        self.blue = blue
+    }
+
+    /// A computed CSS colour such as `rgb(255, 255, 255)`; nil unless it is
+    /// fully opaque.
+    init?(css: String) {
+        let text = css.trimmingCharacters(in: .whitespaces).lowercased()
+        guard let open = text.firstIndex(of: "("), text.hasSuffix(")"),
+              ["rgb", "rgba"].contains(text[..<open]) else { return nil }
+        let inner = text[text.index(after: open)..<text.index(before: text.endIndex)]
+        let parts = inner.split(whereSeparator: { ", /".contains($0) }).compactMap { Double($0) }
+        guard parts.count == 3 || parts.count == 4,
+              parts.count == inner.split(whereSeparator: { ", /".contains($0) }).count,
+              parts.count == 3 || parts[3] >= 1 else { return nil }
+        self.init(red: parts[0] / 255, green: parts[1] / 255, blue: parts[2] / 255)
+    }
+
+    var color: Color {
+        Color(.sRGB, red: red, green: green, blue: blue)
+    }
+}
+
 /// Physical input crosses the web boundary from an isolated WebKit content world.
 enum ReviewerWebInput: Equatable {
     case tap(Double, Double)
     case swipe(Double, Double, Double)
     case input(ReviewerInput)
+    /// Whether a text field on the card (an input, text area, select or
+    /// editable element) has focus.
+    case editing(Bool)
 
     init?(_ body: Any) {
         guard let values = body as? [String: Any] else { return nil }
@@ -557,6 +665,8 @@ enum ReviewerWebInput: Equatable {
             self = .swipe(dx, dy, time)
         } else if let key = values["key"] as? String, let modifiers = values["modifiers"] as? [String] {
             self = .input(.key(key, modifiers: Set(modifiers.compactMap(ReviewerKey.Modifier.init(rawValue:)))))
+        } else if let editing = values["editing"] as? Bool {
+            self = .editing(editing)
         } else if let count = values["fingers"] as? Int, (2...4).contains(count) {
             self = .input(.gesture([.twoFingerTap, .threeFingerTap, .fourFingerTap][count - 2]))
         } else {

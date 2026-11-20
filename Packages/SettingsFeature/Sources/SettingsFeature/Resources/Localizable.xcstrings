@@ -919,22 +919,6 @@
         }
       }
     },
-    "Help & About" : {
-      "localizations" : {
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "ヘルプとアプリ情報"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "帮助与应用信息"
-          }
-        }
-      }
-    },
     "In Hayaki on Android or in AnkiDroid, choose Export from the Decks menu for the whole collection. For one deck, touch and hold the deck, then choose Export." : {
       "localizations" : {
         "ja" : {
@@ -1395,35 +1379,205 @@
       },
       "extractionState" : "manual"
     },
-    "System Night Theme" : {
+    "Night Appearance" : {
       "localizations" : {
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "システムの夜間テーマ"
+            "value" : "夜間の外観"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "系统夜间主题"
+            "value" : "夜间外观"
           }
         }
       },
       "extractionState" : "manual"
     },
-    "System uses Light when the device uses Light Mode and your night theme in Dark Mode." : {
+    "System uses Light when the device uses Light Mode and your night appearance in Dark Mode." : {
       "localizations" : {
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "システムを選ぶと、端末の外観がライトのときはライトテーマ、ダークのときは選択した夜間テーマを使います。"
+            "value" : "システムを選ぶと、端末の外観がライトのときはライト、ダークのときは選択した夜間の外観を使います。"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "跟随系统时，设备使用浅色外观时应用浅色主题，开启深色模式时应用所选的夜间主题。"
+            "value" : "跟随系统时，设备使用浅色外观时应用浅色，开启深色模式时应用所选的夜间外观。"
+          }
+        }
+      },
+      "extractionState" : "manual"
+    },
+    "Hayaki" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "速"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "速"
+          }
+        }
+      },
+      "extractionState" : "manual"
+    },
+    "Sakura" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "桜"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "樱"
+          }
+        }
+      },
+      "extractionState" : "manual"
+    },
+    "Matcha" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "抹茶"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "抹茶"
+          }
+        }
+      },
+      "extractionState" : "manual"
+    },
+    "Ocean" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "海"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "海"
+          }
+        }
+      },
+      "extractionState" : "manual"
+    },
+    "Indigo" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "藍"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "靛"
+          }
+        }
+      },
+      "extractionState" : "manual"
+    },
+    "Wisteria" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "藤"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "藤"
+          }
+        }
+      },
+      "extractionState" : "manual"
+    },
+    "Amber" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "琥珀"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "琥珀"
+          }
+        }
+      },
+      "extractionState" : "manual"
+    },
+    "Sumi" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "墨"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "墨"
+          }
+        }
+      },
+      "extractionState" : "manual"
+    },
+    "Paper" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "和紙"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "纸"
+          }
+        }
+      },
+      "extractionState" : "manual"
+    },
+    "Midnight" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "夜空"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "夜空"
           }
         }
       },

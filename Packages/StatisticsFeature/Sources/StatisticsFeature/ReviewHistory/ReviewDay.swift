@@ -1,5 +1,6 @@
 import AnkiProto
 import Foundation
+import HayakiAppearance
 import SwiftUI
 
 public enum StatisticsReviewKind: CaseIterable, Sendable {
@@ -15,13 +16,17 @@ public enum StatisticsReviewKind: CaseIterable, Sendable {
         }
     }
 
+    /// The count colors from the design tokens: learning reviews in the
+    /// Learning red, reviews of graduated cards in the Due green, with the
+    /// lighter shade for relearning and young cards. Filtered-deck reviews
+    /// carry no count meaning, so they are gray.
     var color: Color {
         switch self {
-        case .learning: .orange
-        case .relearning: .red
-        case .young: .mint
-        case .mature: .green
-        case .filtered: .purple
+        case .learning: SemanticColor.learning.color
+        case .relearning: SemanticColor.learning.color.opacity(0.5)
+        case .young: SemanticColor.due.color.opacity(0.5)
+        case .mature: SemanticColor.due.color
+        case .filtered: .gray
         }
     }
 

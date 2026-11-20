@@ -35,3 +35,17 @@ func widgetLinks() throws {
     #expect(DeckLink(url: emptyLink.url) == emptyLink)
     #expect(DeckLink(url: try #require(URL(string: "hayaki://decks/\(profile)/146"))) == nil)
 }
+
+@Test("Widgets read the accent the app last published, in light and dark")
+func sharingTheAccent() throws {
+    let directory = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
+    defer { try? FileManager.default.removeItem(at: directory) }
+    let bridge = ExtensionBridge(directory: directory)
+    #expect(bridge.accent() == nil)
+
+    let accent = ExtensionAccent(lightRGB: 0xB04663, darkRGB: 0xFF9DB7)
+    #expect(try bridge.publish(accent))
+    #expect(ExtensionBridge(directory: directory).accent() == accent)
+    // Publishing the same accent again changes nothing, so widgets need no reload.
+    #expect(try bridge.publish(accent) == false)
+}

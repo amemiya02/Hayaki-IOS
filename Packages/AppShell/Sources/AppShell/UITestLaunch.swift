@@ -35,6 +35,16 @@ enum UITestLaunch {
         )
     }
 
+    /// `HAYAKI_UI_TEST_QUICK_ACTION` stands in for launching from a Home
+    /// Screen quick action of that type, which a UI test cannot reliably
+    /// trigger from SpringBoard.
+    @MainActor
+    static func openQuickActionIfAsked() {
+        if let type = ProcessInfo.processInfo.environment["HAYAKI_UI_TEST_QUICK_ACTION"] {
+            AddNoteOpener.shared.open(quickActionType: type)
+        }
+    }
+
     static var collectionPackage: URL? {
         ProcessInfo.processInfo.environment["HAYAKI_UI_TEST_COLLECTION_PACKAGE"].map {
             URL(fileURLWithPath: $0)

@@ -11,6 +11,13 @@ public struct StatisticsScreen: View {
     @State private var exportingReport = false
     @State private var reportError: String?
     @Environment(\.locale) private var locale
+    #if os(iOS)
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    private var isWide: Bool { horizontalSizeClass == .regular }
+    #else
+    private let isWide = true
+    #endif
+    @Environment(\.hayakiTheme) private var theme
 
     public init(store: CollectionStore) {
         let model = StatisticsModel(store: store, selectCurrentDeckOnFirstLoad: true)
@@ -20,26 +27,39 @@ public struct StatisticsScreen: View {
 
     public var body: some View {
         NavigationStack {
-            List {
-                selectionSection
-                switch model.state {
-                case .loading:
-                    ProgressView()
-                case .failed(let message):
-                    failure(message)
-                case .loaded:
-                    if let graphs = model.graphs {
-                        charts(graphs)
+            ScrollView {
+                VStack(alignment: .leading, spacing: 16) {
+                    errorBanners
+                    periodPicker
+                    if case .search = model.scope {
+                        searchField
+                    }
+                    switch model.state {
+                    case .loading:
+                        StatisticsPlaceholder()
+                    case .failed(let message):
+                        failure(message)
+                    case .loaded:
+                        if let graphs = model.graphs {
+                            charts(graphs)
+                        }
                     }
                 }
+                .padding(.vertical, 8)
             }
-            .hayakiScrollBackground()
+            .contentMargins(.horizontal, 16, for: .scrollContent)
+            // Cards scrolling under the tab bar fade out instead of showing through it.
+            .scrollEdgeEffectStyle(.soft, for: .bottom)
+            .hayakiBackground(.grouped)
             .navigationTitle(StatisticsSection.title)
+            .navigationSubtitle(scopeName)
             .toolbar {
                 ToolbarItem(placement: .primaryAction) {
-                    if case .loaded = model.state, model.loadedSelection == model.selection, let graphs = model.graphs {
+                    Menu {
+                        scopePicker
+                        Divider()
                         Button {
-                            exportPDF(graphs)
+                            if let graphs = exportableGraphs { exportPDF(graphs) }
                         } label: {
                             Label {
                                 Text("Export Statistics PDF", bundle: .module)
@@ -47,7 +67,15 @@ public struct StatisticsScreen: View {
                                 Image(systemName: "square.and.arrow.up")
                             }
                         }
+                        .disabled(exportableGraphs == nil)
+                    } label: {
+                        Label {
+                            Text("Statistics Options", bundle: .module)
+                        } icon: {
+                            Image(systemName: "ellipsis")
+                        }
                     }
+                    .accessibilityIdentifier("statistics-options")
                 }
             }
             .refreshable { await model.refresh() }
@@ -61,25 +89,28 @@ public struct StatisticsScreen: View {
         } onCancellation: {
             report = nil
         }
-        .alert(Text("Could Not Export Statistics", bundle: .module), isPresented: Binding {
-            reportError != nil
-        } set: { visible in
-            if !visible { reportError = nil }
-        }) {
-            Button(role: .cancel) { reportError = nil } label: { Text("OK", bundle: .module) }
-        } message: {
-            Text(reportError ?? "")
-        }
         .task(id: model.selection) { await model.run() }
-        .alert(Text("Could Not Save Statistics Preference", bundle: .module), isPresented: Binding {
-            model.preferenceError != nil
-        } set: { visible in
-            if !visible { model.preferenceError = nil }
-        }) {
-            Button(role: .cancel) { model.preferenceError = nil } label: { Text("OK", bundle: .module) }
-        } message: {
-            Text(model.preferenceError ?? "")
+    }
+
+    /// Problems that leave the statistics usable, above the period picker.
+    @ViewBuilder
+    private var errorBanners: some View {
+        if let reportError {
+            InlineErrorBanner(title: Text("Could Not Export Statistics", bundle: .module), message: reportError) {
+                self.reportError = nil
+            }
         }
+        if let preferenceError = model.preferenceError {
+            InlineErrorBanner(title: Text("Could Not Save Statistics Preference", bundle: .module), message: preferenceError) {
+                model.preferenceError = nil
+            }
+        }
+    }
+
+    /// The graphs a PDF can be made from: loaded, and for the current selection.
+    private var exportableGraphs: StatisticsGraphs? {
+        guard case .loaded = model.state, model.loadedSelection == model.selection else { return nil }
+        return model.graphs
     }
 
     private func exportPDF(_ graphs: StatisticsGraphs) {
@@ -100,36 +131,67 @@ public struct StatisticsScreen: View {
         }
     }
 
-    private var selectionSection: some View {
-        Section {
-            Picker(selection: $model.scope) {
-                Text("Whole Collection", bundle: .module)
-                    .tag(StatisticsScope.collection)
-                ForEach(model.decks) { deck in
-                    Text(deck.displayName).tag(StatisticsScope.deck(id: deck.id))
-                }
-                Text("Custom Search", bundle: .module).tag(StatisticsScope.search(appliedSearch))
-            } label: {
-                Text("Scope", bundle: .module)
+    /// The deck, the whole collection or a custom search, chosen from the `⋯` menu.
+    private var scopePicker: some View {
+        Picker(selection: $model.scope) {
+            Text("Whole Collection", bundle: .module)
+                .tag(StatisticsScope.collection)
+            ForEach(model.decks) { deck in
+                Text(deck.displayName).tag(StatisticsScope.deck(id: deck.id))
             }
-            if case .search = model.scope {
-                TextField(text: $draftSearch, prompt: Text("Anki search expression", bundle: .module)) {
-                    Text("Search", bundle: .module)
-                }
-                .autocorrectionDisabled()
-                .onSubmit(applySearch)
-                Button(action: applySearch) {
-                    Text("Apply Search", bundle: .module)
-                }
+            Text("Custom Search", bundle: .module).tag(StatisticsScope.search(appliedSearch))
+        } label: {
+            Label {
+                Text("Deck or Search", bundle: .module, comment: "Statistics menu: chooses which cards the statistics cover.")
+            } icon: {
+                Image(systemName: "rectangle.stack")
             }
-            Picker(selection: $model.period) {
-                Text("1 Year", bundle: .module).tag(StatisticsPeriod.year)
-                Text("All History", bundle: .module).tag(StatisticsPeriod.allTime)
-            } label: {
-                Text("Review History", bundle: .module)
-            }
-            .pickerStyle(.segmented)
         }
+        .pickerStyle(.menu)
+        .accessibilityIdentifier("statistics-scope")
+    }
+
+    /// What the statistics cover, shown under the title.
+    private var scopeName: Text {
+        switch model.scope {
+        case .collection:
+            Text("Whole Collection", bundle: .module)
+        case .deck(let id):
+            Text(verbatim: model.decks.first { $0.id == id }?.displayName ?? "")
+        case .search(let query):
+            query.isEmpty ? Text("Custom Search", bundle: .module) : Text(verbatim: query)
+        }
+    }
+
+    private var periodPicker: some View {
+        Picker(selection: $model.period) {
+            ForEach(StatisticsPeriod.allCases, id: \.self) { period in
+                Text(period.title).tag(period)
+            }
+        } label: {
+            Text("Period", bundle: .module, comment: "Statistics: how far back the charts look.")
+        }
+        .pickerStyle(.segmented)
+        .accessibilityIdentifier("statistics-period")
+    }
+
+    private var searchField: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "magnifyingglass")
+                .foregroundStyle(.secondary)
+                .accessibilityHidden(true)
+            TextField(text: $draftSearch, prompt: Text("Anki search expression", bundle: .module)) {
+                Text("Search", bundle: .module)
+            }
+            .autocorrectionDisabled()
+            .onSubmit(applySearch)
+            Button(action: applySearch) {
+                Text("Apply Search", bundle: .module)
+            }
+            .buttonStyle(.borderless)
+        }
+        .padding(12)
+        .background(theme.surface, in: .rect(cornerRadius: 20, style: .continuous))
     }
 
     private func applySearch() {
@@ -161,38 +223,54 @@ public struct StatisticsScreen: View {
         let cardCounts = graphs.cardCounts(separateInactive: model.preferences.separateInactive)
         let reviews = graphs.reviewDays
         if today.isEmpty && cardCounts.isEmpty && reviews.isEmpty && graphs.ratings.isEmpty {
-            Section {
-                ContentUnavailableView {
-                    Label {
-                        Text("No Statistics Yet", bundle: .module)
-                    } icon: {
-                        Image(systemName: StatisticsSection.systemImage)
-                    }
-                } description: {
-                    switch model.scope {
-                    case .collection:
-                        Text("Add cards and study them to see statistics here.", bundle: .module)
-                    case .deck:
-                        Text("This deck has no cards and no reviews yet.", bundle: .module)
-                    case .search:
-                        Text("No cards or reviews match this search.", bundle: .module)
-                    }
+            ContentUnavailableView {
+                Label {
+                    Text("No Statistics Yet", bundle: .module)
+                } icon: {
+                    Image(systemName: StatisticsSection.systemImage)
+                }
+            } description: {
+                switch model.scope {
+                case .collection:
+                    Text("Add cards and study them to see statistics here.", bundle: .module)
+                case .deck:
+                    Text("This deck has no cards and no reviews yet.", bundle: .module)
+                case .search:
+                    Text("No cards or reviews match this search.", bundle: .module)
                 }
             }
         } else {
-            TodaySection(today: today)
-            ForecastSection(graphs: graphs, includeBacklog: preference(\.includeBacklog, StatisticsPreferences.Change.includeBacklog))
-            CalendarSection(graphs: graphs, firstWeekday: preference(\.firstWeekday, StatisticsPreferences.Change.firstWeekday))
-            ReviewHistorySection(graphs: graphs)
-            CardCountsSection(counts: cardCounts, separateInactive: preference(\.separateInactive, StatisticsPreferences.Change.separateInactive))
-            ForEach(graphs.distributions, id: \.kind) { distribution in
-                DistributionSection(data: distribution)
+            ForEach(sections: TodaySection(graphs: graphs)) { section in
+                StatisticsCard(section: section)
             }
-            TrueRetentionSection(retention: graphs.trueRetention)
-            HourlySection(graphs: graphs)
-            RatingsSection(graphs: graphs)
-            AddedSection(graphs: graphs)
+            LazyVGrid(columns: columns, alignment: .leading, spacing: 16) {
+                ForEach(sections: graphCards(graphs, cardCounts: cardCounts)) { section in
+                    StatisticsCard(section: section)
+                        .frame(maxHeight: .infinity, alignment: .top)
+                }
+            }
         }
+    }
+
+    @ViewBuilder
+    private func graphCards(_ graphs: StatisticsGraphs, cardCounts: CardCounts) -> some View {
+        ForecastSection(graphs: graphs, includeBacklog: preference(\.includeBacklog, StatisticsPreferences.Change.includeBacklog))
+        CalendarSection(graphs: graphs, firstWeekday: preference(\.firstWeekday, StatisticsPreferences.Change.firstWeekday))
+        ReviewHistorySection(graphs: graphs)
+        CardCountsSection(counts: cardCounts, separateInactive: preference(\.separateInactive, StatisticsPreferences.Change.separateInactive))
+        ForEach(graphs.distributions, id: \.kind) { distribution in
+            DistributionSection(data: distribution)
+        }
+        TrueRetentionSection(retention: graphs.trueRetention)
+        HourlySection(graphs: graphs)
+        RatingsSection(graphs: graphs)
+        AddedSection(graphs: graphs)
+    }
+
+    /// One column of cards on iPhone, two on iPad.
+    private var columns: [GridItem] {
+        let count = isWide ? 2 : 1
+        return Array(repeating: GridItem(.flexible(), spacing: 16, alignment: .top), count: count)
     }
 
     private func preference<Value>(
@@ -204,6 +282,35 @@ public struct StatisticsScreen: View {
         } set: { value in
             let update = change(value)
             Task { await model.setPreference(update) }
+        }
+    }
+}
+
+/// The shape of the statistics while the core computes them: a few titled
+/// chart sections, as placeholder bars and blocks.
+private struct StatisticsPlaceholder: View {
+    private static let chartHeights: [CGFloat] = [72, 180, 140]
+    @Environment(\.hayakiTheme) private var theme
+
+    var body: some View {
+        ForEach(Self.chartHeights.indices, id: \.self) { index in
+            VStack(alignment: .leading, spacing: 12) {
+                // Never shown: redaction draws these as bars.
+                Text(verbatim: "Statistics section title")
+                    .font(.headline)
+                Text(verbatim: "A short summary of the chart")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(.quaternary)
+                    .frame(height: Self.chartHeights[index])
+            }
+            .padding(16)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(theme.surface, in: .rect(cornerRadius: 20, style: .continuous))
+            .loadingPlaceholder()
+            // VoiceOver hears one "in progress" element, not three.
+            .accessibilityHidden(index > 0)
         }
     }
 }

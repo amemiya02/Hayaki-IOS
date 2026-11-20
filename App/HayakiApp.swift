@@ -4,6 +4,7 @@ import SwiftUI
 @main
 struct HayakiApp: App {
     @Environment(\.scenePhase) private var scenePhase
+    @UIApplicationDelegateAdaptor(HayakiAppDelegate.self) private var appDelegate
     init() {
         RootView.prepareForLaunch()
     }
@@ -12,6 +13,7 @@ struct HayakiApp: App {
         WindowGroup {
             RootView()
         }
+        .commands { HayakiCommands() }
         .onChange(of: scenePhase) { _, phase in
             RootView.handleAppPhase(phase)
         }

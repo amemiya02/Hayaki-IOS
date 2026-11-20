@@ -1,3 +1,4 @@
+import HayakiAppearance
 import StudyFeature
 import SwiftUI
 
@@ -43,6 +44,7 @@ struct NotePreviewScreen: View {
                         }
                     }
                     .buttonStyle(.borderedProminent)
+                    .hayakiProminentLabel()
                     .controlSize(.large)
                     .padding()
                     .accessibilityIdentifier("flip-note-preview")
@@ -54,6 +56,9 @@ struct NotePreviewScreen: View {
             }
         }
         .navigationTitle(Text("Preview", bundle: .module))
+        #if os(iOS)
+        .navigationBarTitleDisplayMode(.inline)
+        #endif
     }
 
     private var templates: some View {

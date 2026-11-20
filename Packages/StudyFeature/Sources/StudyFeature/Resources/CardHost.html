@@ -6,7 +6,7 @@
   MathJax under /_hayaki/. Nothing is loaded from the network.
 
   Native code shows a card side with hayaki.show({html, css, bodyClass,
-  isAnswer}). The page posts to the "hayaki" message handler:
+  isAnswer}). hayaki.language(lang) sets <html lang>. The page posts to the "hayaki" message handler:
     "tap"               a tap on the card, not on a link or control
     {play: "q:0"}       a tap on a replay button
     {typed: "…"}        the text typed into a typed-answer field, as it changes
@@ -31,6 +31,11 @@
         --replay-fill: #ffffff;
         --replay-ink: #414141;
         -webkit-text-size-adjust: 100%;
+        /* Cards whose template names no font use the system font. Set on
+           the root, not on .card, so any font the template sets wins. Han
+           characters follow <html lang> (the Card Kanji/Hanzi Style
+           setting): Hiragino Sans for ja, PingFang for zh. */
+        font-family: system-ui, -apple-system, sans-serif;
     }
     :root.night-mode {
         --canvas: var(--hayaki-night-canvas, #000000);
@@ -39,11 +44,20 @@
         --replay-fill: #2c2c2e;
         --replay-ink: #e5e5ea;
     }
+    /* Room below the card for the controls floating over the bottom of the
+       screen (hayaki.bottomInset), so its last line can scroll above them.
+       A card that fits above them does not scroll at all. */
+    html {
+        padding-bottom: calc(var(--hayaki-bottom-inset, 0px) / var(--hayaki-zoom, 1));
+    }
     /* No background of our own: the card's (or, in dark mode, the canvas
        colour below) fills the page, and without one the native background
-       shows through the transparent web view. */
+       shows through the transparent web view.
+       The root's CSS zoom (hayaki.zoom) follows the learner's text size.
+       It also enlarges viewport units and margins, so the host's own
+       measurements divide by it to keep their size on screen. */
     body {
-        margin: 20px;
+        margin: calc(20px / var(--hayaki-zoom, 1));
         overflow-wrap: break-word;
         color: var(--fg);
         -webkit-tap-highlight-color: transparent;
@@ -63,7 +77,7 @@
        limits keeps the picture's proportions. */
     img {
         max-width: 100%;
-        max-height: 95vh;
+        max-height: calc(95vh / var(--hayaki-zoom, 1));
         object-fit: contain;
     }
     .reviewer-input {
@@ -72,13 +86,26 @@
     .reviewer-hide-audio .replay-button {
         display: none;
     }
+    /* The answer fades in below the question; with Reduce Motion it appears at once. */
+    @keyframes hayaki-answer-in {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+    .hayaki-answer-side > #answer, .hayaki-answer-side > #answer ~ * {
+        animation: hayaki-answer-in 0.25s ease-out;
+    }
+    @media (prefers-reduced-motion: reduce) {
+        .hayaki-answer-side > #answer, .hayaki-answer-side > #answer ~ * {
+            animation: none;
+        }
+    }
     .reviewer-reduced-motion *, .reviewer-reduced-motion *::before, .reviewer-reduced-motion *::after {
         animation-duration: 0s !important;
         transition-duration: 0s !important;
         scroll-behavior: auto !important;
     }
     .reviewer-centered {
-        min-height: calc(100vh - 40px);
+        min-height: calc((100vh - 40px - var(--hayaki-bottom-inset, 0px)) / var(--hayaki-zoom, 1));
         display: flex;
         flex-direction: column;
         justify-content: center;
@@ -101,7 +128,7 @@
     #image-occlusion-container {
         position: relative;
         margin-inline: auto;
-        max-height: calc(95vh - 40px);
+        max-height: calc((95vh - 40px) / var(--hayaki-zoom, 1));
     }
     #image-occlusion-container img, #image-occlusion-canvas {
         position: absolute;
@@ -124,6 +151,12 @@
         border-radius: 8px;
         color: var(--fg);
         background: transparent;
+        caret-color: var(--hayaki-accent, auto);
+    }
+    /* The focus ring uses the theme accent rather than system blue. */
+    input#typeans:focus {
+        outline: 2px solid var(--hayaki-accent, -webkit-focus-ring-color);
+        outline-offset: -1px;
     }
     code#typeans {
         white-space: pre-wrap;
@@ -193,11 +226,49 @@
         document.body.className = shownBodyClass + (night ? " nightMode night_mode" : "");
         document.body.classList.toggle("ankidroid_dark_mode", night && legacyDark);
         document.body.classList.add(...settings);
+        reportBackground();
     }
 
-    function appearance(canvas, isLegacyDark) {
+    // The study screen fills the space around the card (beside the readable
+    // column on iPad, under the answer bar) with the page's own background.
+    let reportedBackground = null;
+
+    function reportBackground() {
+        const transparent = color => !color || color === "transparent" || color === "rgba(0, 0, 0, 0)";
+        let color = getComputedStyle(document.body).backgroundColor;
+        if (transparent(color)) color = getComputedStyle(document.documentElement).backgroundColor;
+        if (transparent(color)) color = "";
+        if (color === reportedBackground) return;
+        reportedBackground = color;
+        post({ background: color });
+    }
+
+    // The page language picks Japanese or Chinese glyph forms for Han
+    // characters; an empty string leaves it unset.
+    function language(lang) {
+        if (lang) {
+            document.documentElement.lang = lang;
+        } else {
+            document.documentElement.removeAttribute("lang");
+        }
+    }
+
+    // The card follows the learner's text size with CSS zoom on the root, so
+    // lines wrap at the screen's width however large the text is.
+    function zoom(factor) {
+        document.documentElement.style.zoom = factor === 1 ? "" : String(factor);
+        document.documentElement.style.setProperty("--hayaki-zoom", String(factor));
+    }
+
+    // The height of the controls floating over the bottom of the card, in points.
+    function bottomInset(points) {
+        document.documentElement.style.setProperty("--hayaki-bottom-inset", points + "px");
+    }
+
+    function appearance(canvas, isLegacyDark, accent) {
         legacyDark = isLegacyDark;
         document.documentElement.style.setProperty("--hayaki-night-canvas", canvas);
+        if (accent) document.documentElement.style.setProperty("--hayaki-accent", accent);
         applyColorScheme();
     }
 
@@ -261,6 +332,7 @@
         const hasMaths = mathPattern.test(side.html);
         // Hidden until the maths is drawn, so raw TeX never flashes up.
         qa.style.opacity = hasMaths ? "0" : "1";
+        qa.classList.toggle("hayaki-answer-side", side.isAnswer);
         qa.innerHTML = side.html;
         post({ rendered: token });
         window.hayakiTemplate?.begin(token);
@@ -323,7 +395,7 @@
         post("tap");
     });
 
-    window.hayaki = { show, appearance };
+    window.hayaki = { show, appearance, language, zoom, bottomInset };
 })();
 </script>
 </body>

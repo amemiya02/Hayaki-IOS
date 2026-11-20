@@ -6,6 +6,9 @@ import SwiftUI
 
 struct BrowserPreviewScreen: View {
     let store: CollectionStore
+    /// Whether the preview sits beside the Browse list (iPad) rather than in
+    /// a sheet: it then has no Done button and never dismisses itself.
+    let isEmbedded: Bool
     @State private var cardIDs: [Int64]
     @State private var index = 0
     @State private var preview: CardPreviewContent?
@@ -23,8 +26,9 @@ struct BrowserPreviewScreen: View {
     @State private var actionFailure: String?
     @Environment(\.dismiss) private var dismiss
 
-    init(store: CollectionStore, cardIDs: [Int64]) {
+    init(store: CollectionStore, cardIDs: [Int64], isEmbedded: Bool = false) {
         self.store = store
+        self.isEmbedded = isEmbedded
         _cardIDs = State(initialValue: cardIDs)
     }
 
@@ -52,9 +56,14 @@ struct BrowserPreviewScreen: View {
                 }
             }
             .navigationTitle(Text("Preview", bundle: .module))
+            #if os(iOS)
+            .navigationBarTitleDisplayMode(.inline)
+            #endif
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button { dismiss() } label: { Text("Done", bundle: .module) }
+                if !isEmbedded {
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button { dismiss() } label: { Text("Done", bundle: .module) }
+                    }
                 }
                 ToolbarItem(placement: .primaryAction) {
                     actions.disabled(preview == nil || !inputEnabled)
@@ -96,7 +105,7 @@ struct BrowserPreviewScreen: View {
                     cardIDs.removeAll { card.siblingIDs.contains($0) }
                     if cardIDs.isEmpty {
                         preview = nil
-                        dismiss()
+                        if !isEmbedded { dismiss() }
                     } else {
                         move(to: min(index, cardIDs.count - 1))
                     }

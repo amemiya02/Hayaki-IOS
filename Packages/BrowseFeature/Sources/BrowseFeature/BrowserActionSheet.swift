@@ -114,6 +114,9 @@ struct BrowserActionSheet: View {
                 }
             }
             .navigationTitle(prompt.title)
+            #if os(iOS)
+            .navigationBarTitleDisplayMode(.inline)
+            #endif
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button(role: .cancel) { dismiss() } label: { Text("Cancel", bundle: .module) }

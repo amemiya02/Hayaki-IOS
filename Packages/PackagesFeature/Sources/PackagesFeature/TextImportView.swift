@@ -69,6 +69,9 @@ private struct TextImportSheet: View {
                 }
             }
             .navigationTitle(Text("Import Text File", bundle: .module))
+            #if os(iOS)
+            .navigationBarTitleDisplayMode(.inline)
+            #endif
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button(role: .cancel) {

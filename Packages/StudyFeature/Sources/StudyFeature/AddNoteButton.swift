@@ -1,0 +1,70 @@
+import SwiftUI
+
+/// Opens the note editor for adding a note. The app sets it on its tab view
+/// (see `addNoteAction(store:)` in NoteEditorFeature), so screens that cannot
+/// depend on the note editor can still offer Add Note.
+public struct AddNoteAction: Sendable {
+    let action: @MainActor @Sendable () -> Void
+
+    public init(_ action: @escaping @MainActor @Sendable () -> Void) {
+        self.action = action
+    }
+
+    @MainActor
+    public func callAsFunction() { action() }
+}
+
+extension EnvironmentValues {
+    @Entry public var addNote: AddNoteAction?
+}
+
+/// The `+` toolbar button that adds a note. Without an explicit action it
+/// uses the environment's `addNote`, and is disabled when there is none.
+public struct AddNoteButton: View {
+    @Environment(\.addNote) private var environmentAction
+    private let action: (@MainActor () -> Void)?
+
+    public init(action: (@MainActor () -> Void)? = nil) {
+        self.action = action
+    }
+
+    public var body: some View {
+        Button {
+            if let action { action() } else { environmentAction?() }
+        } label: {
+            Label {
+                Text("Add Note", bundle: .module)
+            } icon: {
+                Image(systemName: "plus")
+            }
+        }
+        .disabled(action == nil && environmentAction == nil)
+        .accessibilityIdentifier("add-note")
+    }
+}
+
+extension FocusedValues {
+    /// Adds a note from the app's File menu (Command-N). The tab view sets it,
+    /// and the study screen replaces it while it is on screen.
+    @Entry public var focusedAddNote: AddNoteAction?
+}
+
+/// Add Note in the File menu with Command-N, so it appears in the system
+/// shortcut overlay and the iPad menu bar. Add it to the app's scene.
+public struct AddNoteCommands: Commands {
+    @FocusedValue(\.focusedAddNote) private var addNote
+
+    public init() {}
+
+    public var body: some Commands {
+        CommandGroup(replacing: .newItem) {
+            Button {
+                addNote?()
+            } label: {
+                Text("Add Note", bundle: .module)
+            }
+            .keyboardShortcut("n", modifiers: .command)
+            .disabled(addNote == nil)
+        }
+    }
+}

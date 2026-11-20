@@ -1,9 +1,11 @@
 import CollectionStore
+import HayakiAppearance
 import SwiftUI
 
 /// A button that opens the export screen for the whole collection.
 public struct ExportPackageButton: View {
     private let store: CollectionStore
+    @Environment(\.showPackageSheet) private var showPackageSheet
     @State private var isExporting = false
 
     public init(store: CollectionStore) {
@@ -12,7 +14,11 @@ public struct ExportPackageButton: View {
 
     public var body: some View {
         Button {
-            isExporting = true
+            if let showPackageSheet {
+                showPackageSheet(.exportPackage)
+            } else {
+                isExporting = true
+            }
         } label: {
             Label {
                 Text("Export…", bundle: .module)
@@ -294,6 +300,7 @@ private struct ExportFinished: View {
                 .frame(maxWidth: .infinity)
             }
             .buttonStyle(.borderedProminent)
+            .hayakiProminentLabel()
             .controlSize(.large)
         }
         .navigationTitle(Text("Export Complete", bundle: .module))

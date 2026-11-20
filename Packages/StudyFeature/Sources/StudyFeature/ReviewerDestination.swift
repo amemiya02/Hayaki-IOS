@@ -25,13 +25,19 @@ public extension View {
             ReviewerDestination, @escaping @MainActor (StudyDeck) -> Void
         ) -> Destination
     ) -> some View {
-        environment(\.reviewerDestination) { route, study in AnyView(destination(route, study)) }
+        environment(\.reviewerDestination, ReviewerDestinationFactory { route, study in AnyView(destination(route, study)) })
     }
 }
 
-typealias ReviewerDestinationFactory = @MainActor @Sendable (
-    ReviewerDestination, @escaping @MainActor (StudyDeck) -> Void
-) -> AnyView
+/// Makes the screen for a destination. Equal to itself only, so passing the
+/// environment down again (as every trait change does) does not count as a
+/// change and re-render the study screen; a closure never compares equal.
+struct ReviewerDestinationFactory: Equatable {
+    let id = UUID()
+    let make: @MainActor @Sendable (ReviewerDestination, @escaping @MainActor (StudyDeck) -> Void) -> AnyView
+
+    static func == (lhs: Self, rhs: Self) -> Bool { lhs.id == rhs.id }
+}
 
 private struct ReviewerDestinationKey: EnvironmentKey {
     static let defaultValue: ReviewerDestinationFactory? = nil

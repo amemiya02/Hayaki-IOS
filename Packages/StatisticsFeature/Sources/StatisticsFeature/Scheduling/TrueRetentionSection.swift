@@ -40,8 +40,20 @@ struct TrueRetentionSection: View {
                 retentionRow(row)
             }
         } header: {
-            Text("True Retention", bundle: .module)
+            StatisticsCardHeader(title: Text("True Retention", bundle: .module), reading: reading)
         }
+    }
+
+    /// The retention over the last month, or the longest window with reviews.
+    private var reading: Text? {
+        let withReviews = retention.filter { $0.combined.rate != nil }
+        guard let row = withReviews.first(where: { $0.window == .month }) ?? withReviews.last,
+              let rate = row.combined.rate else { return nil }
+        return Text(
+            "\(rate, format: .percent.precision(.fractionLength(0))) of reviews passed (\(row.window.title))",
+            bundle: .module,
+            comment: "True Retention card reading: the share of passed reviews and the window, e.g. \"90% of reviews passed (Last Month)\"."
+        )
     }
 
     private func retentionRow(_ row: TrueRetention) -> some View {

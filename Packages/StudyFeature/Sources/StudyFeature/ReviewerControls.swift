@@ -144,7 +144,7 @@ public struct ReviewerPreferences: Equatable, Codable, Sendable {
     public var doubleTapMilliseconds = 200
     public var minimumPressMilliseconds = 0
     public var swipeSensitivity = 100
-    var toolbarPosition: ReviewerToolbarPosition = .top
+    var toolbarStyle: ReviewerToolbarStyle = .buttonsInBar
     var toolbarOrder = ReviewerToolbarAction.allCases
     var toolbarVisibility: [ReviewerToolbarAction: ReviewerToolbarVisibility] = [:]
     var showAnswerButtons = true
@@ -159,7 +159,7 @@ public struct ReviewerPreferences: Equatable, Codable, Sendable {
     var showFeedback = true
     var hideStatusBar = false
     var hideHomeIndicator = false
-    var cardFrame = true
+    var cardFrame = false
     var reducedMotion = false
 
     func visibility(of action: ReviewerToolbarAction) -> ReviewerToolbarVisibility {
@@ -176,7 +176,12 @@ public struct ReviewerPreferences: Equatable, Codable, Sendable {
         doubleTapMilliseconds = try values.decodeIfPresent(Int.self, forKey: .doubleTapMilliseconds) ?? doubleTapMilliseconds
         minimumPressMilliseconds = try values.decodeIfPresent(Int.self, forKey: .minimumPressMilliseconds) ?? minimumPressMilliseconds
         swipeSensitivity = try values.decodeIfPresent(Int.self, forKey: .swipeSensitivity) ?? swipeSensitivity
-        toolbarPosition = try values.decodeIfPresent(ReviewerToolbarPosition.self, forKey: .toolbarPosition) ?? toolbarPosition
+        if let style = try values.decodeIfPresent(ReviewerToolbarStyle.self, forKey: .toolbarStyle) {
+            toolbarStyle = style
+        } else if let position = try decoder.container(keyedBy: LegacyKeys.self)
+            .decodeIfPresent(String.self, forKey: .toolbarPosition) {
+            toolbarStyle = ReviewerToolbarStyle(legacyPosition: position)
+        }
         toolbarOrder = try values.decodeIfPresent([ReviewerToolbarAction].self, forKey: .toolbarOrder) ?? toolbarOrder
         toolbarVisibility = try values.decodeIfPresent([ReviewerToolbarAction: ReviewerToolbarVisibility].self, forKey: .toolbarVisibility)
             ?? toolbarVisibility
@@ -196,6 +201,12 @@ public struct ReviewerPreferences: Equatable, Codable, Sendable {
         reducedMotion = try values.decodeIfPresent(Bool.self, forKey: .reducedMotion) ?? reducedMotion
     }
 
+
+    /// Keys earlier versions saved and later replaced.
+    private enum LegacyKeys: String, CodingKey {
+        /// The toolbar's place: top, bottom or hidden.
+        case toolbarPosition
+    }
 
     public static func load(from defaults: UserDefaults = .standard) -> Self {
         guard let data = defaults.data(forKey: key),

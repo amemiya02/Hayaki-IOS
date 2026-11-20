@@ -28,7 +28,7 @@ struct StatisticsPDF: FileDocument {
         else { throw CocoaError(.fileWriteUnknown) }
 
         let sections: [AnyView] = [
-            AnyView(TodaySection(today: graphs.today)),
+            AnyView(TodaySection(graphs: graphs)),
             AnyView(ForecastSection(graphs: graphs, includeBacklog: .constant(preferences.includeBacklog))),
             AnyView(CalendarSection(graphs: graphs, firstWeekday: .constant(preferences.firstWeekday))),
             AnyView(ReviewHistorySection(graphs: graphs)),

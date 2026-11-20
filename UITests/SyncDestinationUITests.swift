@@ -8,6 +8,8 @@ final class SyncDestinationUITests: XCTestCase {
             Bundle(for: SyncDestinationUITests.self).url(forResource: "collection", withExtension: "colpkg")
         )
         let app = XCUIApplication()
+        // English labels below, whatever the simulator's language.
+        app.launchArguments += ["-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
         app.launchEnvironment["HAYAKI_UI_TEST_COLLECTION_PACKAGE"] = package.path
         app.launch()
 
@@ -25,6 +27,11 @@ final class SyncDestinationUITests: XCTestCase {
         XCTAssertTrue(destination.exists)
         let destinationText = [destination.label, destination.value as? String ?? ""].joined(separator: " ")
         XCTAssertTrue(destinationText.contains("AnkiWeb") || app.staticTexts["AnkiWeb"].exists)
+
+        // Without credentials, Sign In is a disabled button, not a field.
+        let signIn = app.buttons["sign-in"]
+        XCTAssertTrue(signIn.exists)
+        XCTAssertFalse(signIn.isEnabled)
 
         let address = app.textFields["server-address"]
         XCTAssertFalse(address.exists)

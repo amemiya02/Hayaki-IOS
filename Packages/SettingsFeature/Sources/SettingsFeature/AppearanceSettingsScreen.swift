@@ -18,16 +18,23 @@ struct AppearanceSettingsScreen: View {
                     ForEach(AppearanceMode.allCases, id: \.self) { mode in
                         title(for: mode).tag(mode)
                     }
-                } label: { Text("Theme", bundle: .module) }
-                .accessibilityIdentifier("appearance-theme")
+                } label: { Text("Appearance", bundle: .module) }
+                .accessibilityIdentifier("appearance-mode")
 
                 Picker(selection: Binding(get: { settings.systemNightMode }, set: { settings.systemNightMode = $0 })) {
                     Text("Dark", bundle: .module).tag(SystemNightMode.dark)
                     Text("Black", bundle: .module).tag(SystemNightMode.black)
-                } label: { Text("System Night Theme", bundle: .module) }
+                } label: { Text("Night Appearance", bundle: .module) }
                 .disabled(settings.mode != .system)
             } footer: {
-                Text("System uses Light when the device uses Light Mode and your night theme in Dark Mode.", bundle: .module)
+                Text("System uses Light when the device uses Light Mode and your night appearance in Dark Mode.", bundle: .module)
+            }
+
+            Section {
+                ThemePicker(selection: Binding(get: { settings.theme }, set: { settings.theme = $0 }))
+                    .listRowInsets(EdgeInsets(top: 12, leading: 12, bottom: 12, trailing: 12))
+            } header: {
+                Text("Theme", bundle: .module)
             }
 
             Section {
@@ -52,6 +59,9 @@ struct AppearanceSettingsScreen: View {
         }
         .hayakiScrollBackground()
         .navigationTitle(Text("Appearance", bundle: .module))
+        #if os(iOS)
+        .navigationBarTitleDisplayMode(.inline)
+        #endif
         .fileImporter(isPresented: $choosingImage, allowedContentTypes: [.image]) { result in
             updatingImage = true
             Task {

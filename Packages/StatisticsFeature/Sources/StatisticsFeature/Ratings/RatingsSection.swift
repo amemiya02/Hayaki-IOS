@@ -6,19 +6,12 @@ import SwiftUI
 struct RatingsSection: View {
     let graphs: StatisticsGraphs
     @Environment(\.statisticsReportPeriod) private var reportPeriod
-    private var displayedPeriod: StatisticsPeriod { reportPeriod ?? period }
-    @State private var period: StatisticsPeriod = .year
+    private var displayedPeriod: StatisticsPeriod { reportPeriod ?? graphs.period }
     @State private var selectedRating: String?
     private var ratings: RatingCounts { graphs.displaying(displayedPeriod).ratings }
 
     var body: some View {
         Section {
-            if reportPeriod == nil {
-                StatisticsPeriodPicker(
-                    selection: $period, label: Text("Ratings Period", bundle: .module),
-                    allowsAllTime: graphs.period == .allTime
-                )
-            }
             if ratings.isEmpty {
                 Text("No reviews in this period.", bundle: .module)
                     .foregroundStyle(.secondary)
@@ -26,24 +19,39 @@ struct RatingsSection: View {
                 results
             }
         } header: {
-            Text("Ratings", bundle: .module)
+            StatisticsCardHeader(
+                title: Text("Ratings", bundle: .module),
+                reading: ratings.isEmpty ? nil : Text(
+                    "\(1 - ratings.fraction(.again), format: .percent.precision(.fractionLength(0))) of your answers were correct",
+                    bundle: .module,
+                    comment: "Ratings card reading: the share of reviews not rated Again (correct answers)."
+                )
+            )
         }
-        .onChange(of: period) { selectedRating = nil }
-        .onChange(of: graphs.period) {
-            if graphs.period == .year && period == .allTime { period = .year }
-        }
+        .onChange(of: graphs.period) { selectedRating = nil }
     }
 
     @ViewBuilder
     private var results: some View {
-        Chart(ratings.entries.filter { $0.count > 0 }) { entry in
-            BarMark(
-                x: .value(Text("Rating", bundle: .module), entry.rating.title),
-                y: .value(Text("Reviews", bundle: .module), entry.count)
-            )
-            .foregroundStyle(by: .value(Text("Card", bundle: .module), entry.kind.title))
-            .accessibilityLabel(Text("\(entry.rating.title), \(entry.kind.title)", bundle: .module))
-            .accessibilityValue(Text(reviewsText(entry.count)))
+        Chart {
+            ForEach(ratings.entries.filter { $0.count > 0 }) { entry in
+                BarMark(
+                    x: .value(Text("Rating", bundle: .module), entry.rating.title),
+                    y: .value(Text("Reviews", bundle: .module), entry.count)
+                )
+                .foregroundStyle(by: .value(Text("Card", bundle: .module), entry.kind.title))
+                .accessibilityLabel(Text("\(entry.rating.title), \(entry.kind.title)", bundle: .module))
+                .accessibilityValue(Text(reviewsText(entry.count)))
+            }
+            if let selectedRating, let rating = Rating.allCases.first(where: { $0.title == selectedRating }) {
+                RuleMark(x: .value(Text("Rating", bundle: .module), selectedRating))
+                    .foregroundStyle(.secondary.opacity(0.3))
+                    .lineStyle(StrokeStyle(lineWidth: 1))
+                    .accessibilityHidden(true)
+                    .annotation(position: .top, spacing: 4, overflowResolution: calloutOverflow) {
+                        callout(rating)
+                    }
+            }
         }
         .chartXScale(domain: Rating.allCases.map(\.title))
         .chartForegroundStyleScale(
@@ -76,15 +84,17 @@ struct RatingsSection: View {
                 }
             }
         }
-        if let selectedRating, let rating = Rating.allCases.first(where: { $0.title == selectedRating }) {
-            ForEach(ReviewedCardKind.allCases, id: \.self) { kind in
-                LabeledContent {
-                    Text(ratings.count(rating, for: kind), format: .number)
-                } label: {
-                    Text("\(selectedRating), \(kind.title)", bundle: .module)
-                }
+    }
+
+    private func callout(_ rating: Rating) -> some View {
+        ChartCallout(
+            title: Text(rating.title),
+            value: Text("\(ratings.count(rating)) reviews", bundle: .module),
+            details: ReviewedCardKind.allCases.compactMap { kind in
+                let count = ratings.count(rating, for: kind)
+                return count > 0 ? (Text(kind.title), Text(count, format: .number)) : nil
             }
-        }
+        )
     }
 
     private func reviewsText(_ count: Int) -> String {

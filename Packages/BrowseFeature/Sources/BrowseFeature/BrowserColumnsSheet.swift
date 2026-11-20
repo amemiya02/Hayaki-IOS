@@ -45,6 +45,9 @@ struct BrowserColumnsSheet: View {
                 }
             }
             .navigationTitle(Text("Columns", bundle: .module))
+            #if os(iOS)
+            .navigationBarTitleDisplayMode(.inline)
+            #endif
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button(role: .cancel) { dismiss() } label: { Text("Cancel", bundle: .module) }

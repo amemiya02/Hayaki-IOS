@@ -69,28 +69,28 @@ Any theme can be combined with any appearance mode. The settings screen shows ea
 
 | Theme | 中文 / 日本語 | Accent (light) | Accent (dark) | Canvas override |
 |---|---|---|---|---|
-| Shu (default) | 朱 / 朱 | `#A63D25` | `#FF8E70` | none |
-| Sakura | 樱 / 桜 | `#D9567A` | `#FF9DB7` | none |
-| Matcha | 抹茶 / 抹茶 | `#5F8A4B` | `#A8CF8E` | none |
+| Hayaki (default) | 速 / 速 | `#2C776E` | `#7ED6CA` | none |
+| Sakura | 樱 / 桜 | `#B04663` | `#FF9DB7` | none |
+| Matcha | 抹茶 / 抹茶 | `#50743F` | `#A8CF8E` | none |
 | Ocean | 海 / 海 | `#0A6E9E` | `#5EC4F0` | none |
 | Indigo | 靛 / 藍 | `#3A5BD9` | `#8FA8FF` | none |
-| Wisteria | 藤 / 藤 | `#7E62C9` | `#B9A3F5` | none |
-| Amber | 琥珀 / 琥珀 | `#B7791F` | `#F5C451` | none |
+| Wisteria | 藤 / 藤 | `#745AB9` | `#B9A3F5` | none |
+| Amber | 琥珀 / 琥珀 | `#916019` | `#F5C451` | none |
 | Sumi | 墨 / 墨 | `#4A4A4F` | `#C7C7CC` | none |
 | Paper | 纸 / 和紙 | `#8A5A2B` | `#D9A86C` | `#F6F1E7` light, `#1E1A15` dark |
-| Midnight | 夜空 / 夜空 | `#1F8A96` | `#5EE6EE` | `#EEF3FA` light, `#0B1426` dark |
+| Midnight | 夜空 / 夜空 | `#1A757F` | `#5EE6EE` | `#EEF3FA` light, `#0B1426` dark |
 
-- **Contrast:** every accent must reach 4.5:1 against its background for text-on-background use. Check this when finalising the values; the table values are starting points.
+- **Contrast:** every accent must reach 4.5:1 against its background for text-on-background use (checked by `HayakiAppearanceTests`). The light accents of Sakura, Matcha, Wisteria, Amber and Midnight were darkened from their first values to reach it; Paper and Midnight are also checked against their canvas. Black mode keeps a pure black canvas in every theme.
 - **Adding a theme** means adding one entry of tokens, with no structural code change.
 - **Widgets** follow the selected theme accent.
-- **Shu** uses the app icon's brick red, so the icon and the app read as one brand. The icon is redrawn to match (see #43).
+- **Hayaki** is the default. Its teal comes from the app icon's background, so the icon and the app read as one brand. The light accent is `#2C776E`, darkened slightly from the icon's `#2E7D74` so it reaches 4.5:1 on the tinted grouped background.
 
 ## Navigation rules (all tabs)
 
 - **Titles:** Every tab root uses a large title (`.navigationBarTitleDisplayMode(.automatic)`), Browse included. Search uses the system default placement for the tab.
 - **Pushed screens and sheets use inline titles** (`.navigationBarTitleDisplayMode(.inline)`), so the title sits on the same row as the system back button or the sheet's Cancel and Done, as in iOS Settings. This covers every screen under More, Deck Options, Card Info, Note Types and the rest.
 - **Leading side:** nothing, except an Edit-style mode toggle where a screen has one.
-- **Trailing side:** at most two items: one primary action and one `ellipsis` menu, combined with `ToolbarItemGroup` so they share one glass capsule. Everything else goes in the menu.
+- **Trailing side:** at most one trailing group of primary actions plus one `ellipsis` menu, combined with `ToolbarItemGroup` so they share one glass capsule (Decks' Sync and `+` share one glass group). Everything else goes in the menu.
 - **Sheets:** use `presentationDetents`. A sheet's Cancel or Close goes on the leading side and Done or Save on the trailing side.
 - **Tab bar:** Decks, Browse, Stats and More, unchanged. iPad keeps the sidebar.
 
@@ -120,7 +120,7 @@ Remove the permanent bottom accessory. Add Note can be reached from:
   - a status line, for example «正在同步媒体 · 已检查 120 · 新增 8»
   - a cancel button
 
-  When the sync succeeds, the strip shows a checkmark (`symbolEffect(.bounce)`) for about 2 seconds and then hides. When it fails, the strip stays and shows the reason with a Retry button. On iPad, the strip sits at the foot of the sidebar.
+  When the sync succeeds, the strip shows a checkmark (`symbolEffect(.bounce)`) for about 2 seconds and then hides. When it fails, the strip stays and shows the reason with a Retry button. On iPad, the strip sits at the foot of the sidebar. iOS 26.0 cannot hide the bottom accessory, so there the same strip floats as glass at the bottom of each tab's content (`safeAreaInset`) instead.
 - **Sync button in Decks.** It rotates while syncing (`symbolEffect(.rotate)`) and shows a badge dot when there are local changes. A conflict needing a full upload or download still uses the existing confirmation dialog.
 - **More → Sync screen.** Collection status and media status become two labeled rows. Each row has a status icon (synced, syncing, failed or interrupted), the last sync time as relative text, and an inline progress bar while running. Failure details go in a row under the status row, with Retry as a row button.
 
@@ -130,8 +130,7 @@ Remove the permanent bottom accessory. Add Note can be reached from:
 
 - **Navigation bar.** The study screen sits in a `NavigationStack` with a glass toolbar:
   - Leading: Close (`xmark`).
-  - Title: the deck name.
-  - Subtitle (`navigationSubtitle`): the counts, for example `12 · 3 · 40`, in blue, red and green, using SF Rounded and `monospacedDigit`. The time left and the answer timer appear here when they are turned on.
+  - Title: a custom `.title` toolbar item with the deck name over the counts, for example `12 · 3 · 40`, in blue, red and green, using SF Rounded and `monospacedDigit`. The time left and the answer timer appear under the name when they are turned on. (`navigationSubtitle` cannot keep a color per number, so the counts are not a system subtitle.)
   - Trailing: Undo, then the `⋯` menu with all other reviewer actions.
 - **Toolbar setting.** It has two choices: "Buttons in bar" or "Menu only". The current top/bottom/hidden setting maps to these when the setting is migrated, and the Bottom option is removed.
 - **Progress.** When turned on, a thin progress line sits on the bottom edge of the navigation bar.
@@ -168,7 +167,7 @@ This replaces the stacked buttons. From top to bottom, it shows:
 
 ## Decks screen
 
-- **Summary card.** A "Today" card at the top shows total new, learning and due cards, with a Study All button. Tapping it studies the whole collection, or the default deck when the collection is the default.
+- **Summary card.** A "Today" card at the top shows total new, learning and due cards, with a Study All button, plus "Study Now · <deck>" for the current deck and a line with what was studied today. The core studies one deck tree per session, so Study All runs each top-level deck with cards due, in list order, and continues to the next one automatically when a deck finishes.
 - **Deck rows:**
   - The deck name on the left.
   - Count pills on the right, in SF Rounded and the count colors, hiding any count of 0.
@@ -179,6 +178,7 @@ This replaces the stacked buttons. From top to bottom, it shows:
 ## Statistics screen
 
 - **Period.** A segmented picker at the top: 1 month, 3 months, 1 year, all.
+- **Scope.** The chosen deck or search shows as the navigation subtitle.
 - **Today card.** Reviews today, time, correct rate and current streak, as large SF Rounded numbers.
 - **Graph cards.** Each graph is its own rounded card: a title, a one-line plain-language reading (for example «未来 7 天平均每天 85 张»), and the chart. All charts:
   - support finger scrubbing with `chartXSelection` and a value callout
@@ -207,16 +207,16 @@ These are smaller follow-on passes under the same rules:
   - The formatting toolbar as a keyboard accessory in a glass capsule.
   - The note type and deck pickers as menu rows.
 - **Deck options:** keep the native form, and use rounded number readouts for limits and steps.
-- **Welcome screen:** a large title, a short value line, and two glass buttons, Import or Sync.
+- **Welcome screen:** the mascot app icon as the brand mark (not an illustration), a large title, a short value line, and two glass buttons, Import or Sync. Text Import, Shared Decks and Start Empty stay as secondary links.
 - **Loading:** `redacted(reason: .placeholder)` placeholders on lists and charts instead of a lone spinner.
 - **Errors:** inline banner rows instead of alerts wherever the user can keep working.
-- **App icon:** provide iOS 26 light, dark, clear and tinted variants.
+- **App icon:** light, dark and tinted variants ship in the asset catalog. The Clear mode needs an Icon Composer icon and is tracked in #59.
 - **Keyboard (iPad and hardware keyboards):** every shortcut appears in the system shortcut overlay.
 
 ## Acceptance
 
 - No use of the Material palette remains, and all colors come from system semantic colors or theme tokens.
-- Every tab root follows the navigation rules: large title, nothing on the leading side, and at most two trailing items.
+- Every tab root follows the navigation rules: large title, nothing on the leading side, and at most one trailing group of primary actions plus one `⋯` menu.
 - All ten themes work in light, dark and black, and every accent passes the contrast check.
 - The study and finished screens match this spec at default text size and at AX5, in Chinese, Japanese and English, on iPhone and iPad.
 - UI tests keep their existing accessibility identifiers, or are updated in the same change.

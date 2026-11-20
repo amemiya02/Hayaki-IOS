@@ -20,7 +20,7 @@ extension View {
     public func studyNoteEditor<Editor: View>(
         @ViewBuilder _ editor: @escaping @MainActor @Sendable (Int64) -> Editor
     ) -> some View {
-        environment(\.studyNoteEditor) { cardID in AnyView(editor(cardID)) }
+        environment(\.studyNoteEditor, StudyNoteEditor { cardID in AnyView(editor(cardID)) })
     }
 
     /// Presents a full-screen study session over `deck` while it is set,
@@ -38,8 +38,9 @@ extension View {
     }
 }
 
-/// The study screen: the card fills the screen, with the counts above it and
-/// Show Answer or the four rating buttons at the bottom, within thumb reach.
+/// The study screen: the card fills the screen under a navigation bar with the
+/// deck and its counts, and Show Answer or the four rating buttons sit at the
+/// bottom, within thumb reach.
 public struct StudyScreen: View {
     @State private var model: StudySessionModel
     /// What the learner typed on a card that asks for typing.
@@ -49,15 +50,22 @@ public struct StudyScreen: View {
     @State private var preferences = ReviewerPreferences.load()
     @State private var webCommand: ReviewerWebCommand?
     @State private var pendingTap: Task<Void, Never>?
+    /// Whether a text field on the card has focus; keys that type text then
+    /// go to the field instead of the Study menu's shortcuts.
+    @State private var editingCardText = false
     @FocusState private var reviewerFocused: Bool
     @State private var showingSettings = false
     @State private var requestedAction: ReviewerCommand?
     @State private var route: ReviewerDestination?
     @State private var nextStudy: StudyDeck?
+    /// The card page's own background, once it reports one.
+    @State private var cardCanvas: CardCanvasColor?
     #if os(iOS)
     @State private var cardHostUnavailable = false
     @State private var cardHostRevision = 0
     #endif
+    /// The height of the answer bar (and recorder) floating over the card.
+    @State private var bottomControlsHeight: CGFloat = 0
     @State private var autoAdvance = false
     @State private var timebox: StudyTimebox?
     @State private var feedback: ReviewFeedback?
@@ -97,16 +105,24 @@ public struct StudyScreen: View {
     }
 
     public var body: some View {
-        VStack(spacing: 0) {
-            if templateFullscreen.showsTopBar || model.state.card == nil {
-                topBar
+        NavigationStack {
+            VStack(spacing: 0) {
+                content
+                // A card's template can hide the navigation bar but keep the
+                // reviewer's actions, which then sit below the card.
+                if templateFullscreen.showsActions, !showsNavigationBar {
+                    reviewerActions
+                }
             }
-            content
-            if templateFullscreen.showsActions, preferences.toolbarPosition == .bottom || !templateFullscreen.showsTopBar {
-                reviewerActions
-            }
+            .overlay(alignment: .top) { progressLine }
+            .hayakiBackground(.plain)
+            .navigationTitle(title)
+            .toolbar { navigationBarItems }
+            #if os(iOS)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar(showsNavigationBar ? .automatic : .hidden, for: .navigationBar)
+            #endif
         }
-        .background(theme.background.ignoresSafeArea())
         .task(id: ObjectIdentifier(model)) { await model.run() }
         .task(id: autoAdvanceTask) { await runAutoAdvance() }
         .task(id: feedback) {
@@ -144,7 +160,7 @@ public struct StudyScreen: View {
         }
         .modifier(ReviewerActionDialogs(model: model, requestedAction: $requestedAction))
         .sheet(item: $route, onDismiss: returnFromDestination) { route in
-            destinations?(route) { nextStudy = $0 }
+            destinations?.make(route) { nextStudy = $0 }
         }
         .alert(reviewerLocalized("Timebox Reached"), isPresented: Binding(
             get: { timebox != nil },
@@ -167,6 +183,13 @@ public struct StudyScreen: View {
             guard press.phase == .down else { return .ignored }
             return dispatchInput(.keyboard(ReviewerKey(press))) ? .handled : .ignored
         }
+        .focusedSceneValue(\.reviewerShortcutMenu, side.map { side in
+            ReviewerShortcutMenu(
+                shortcuts: preferences.keyboardShortcuts(on: side), isEnabled: acceptsInput,
+                isEditingText: editingCardText
+            ) { _ = dispatchInput(.keyboard($0)) }
+        })
+        .focusedSceneValue(\.focusedAddNote, acceptsInput ? AddNoteAction { dispatch(.addNote) } : nil)
         #if os(iOS)
         .task(id: model.customSchedulingRequest?.id) {
             guard let work = model.customSchedulingRequest else { return }
@@ -225,7 +248,7 @@ public struct StudyScreen: View {
             ReviewerTagsSheet(model: model, noteID: note.id)
         }
         .sheet(item: $editedCard) { card in
-            noteEditor?(card.id)
+            noteEditor?.make(card.id)
         }
         .alert(
             Text("Study Action Failed", bundle: .module),
@@ -273,10 +296,14 @@ public struct StudyScreen: View {
         }
     }
 
+    /// Whether a key, gesture or controller input reaches the reviewer now.
+    private var acceptsInput: Bool {
+        editedCard == nil && editedNoteTags == nil && !showingSettings && requestedAction == nil
+            && route == nil && timebox == nil && !model.isBusy
+    }
+
     private func dispatchInput(_ input: ReviewerInput) -> Bool {
-        guard editedCard == nil, editedNoteTags == nil, !showingSettings, requestedAction == nil,
-              route == nil, timebox == nil, !model.isBusy, let side,
-              let command = preferences.command(for: input, on: side) else { return false }
+        guard acceptsInput, let side, let command = preferences.command(for: input, on: side) else { return false }
         dispatch(command)
         return true
     }
@@ -374,6 +401,7 @@ public struct StudyScreen: View {
         guard let side, let cardID = model.state.card?.id else { return }
         switch input {
         case .input(let input): _ = dispatchInput(input)
+        case .editing(let editing): editingCardText = editing
         case .swipe(let dx, let dy, let time):
             let scale = 100 / Double(max(preferences.swipeSensitivity, 1))
             guard hypot(dx, dy) >= 44 * scale, hypot(dx, dy) / max(1, time) >= 0.2 * scale else { return }
@@ -434,67 +462,93 @@ public struct StudyScreen: View {
         }
     }
 
-    private var topBar: some View {
-        ZStack {
-            VStack(spacing: 2) {
-                Text(preferences.showDeckTitle && !model.currentDeckName.isEmpty ? model.currentDeckName : deckName)
-                    .font(.subheadline.weight(.semibold))
-                    .lineLimit(1)
-                if model.state.card != nil {
-                    HStack {
-                        if model.showsRemainingCounts {
-                            StudyCountsView(counts: model.counts)
-                            if let minutes = model.minutesRemaining {
-                                let duration = Duration.seconds(max(1, minutes) * 60)
-                                let units: Set<Duration.UnitsFormatStyle.Unit> =
-                                    minutes >= 24 * 60 ? [.days, .hours] : [.hours, .minutes]
-                                Text("\(duration.formatted(.units(allowed: units))) left", bundle: .module)
-                                    .font(.caption)
-                                    .monospacedDigit()
-                            }
+    private var showsNavigationBar: Bool {
+        templateFullscreen.showsTopBar || model.state.card == nil
+    }
+
+    private var title: String {
+        preferences.showDeckTitle && !model.currentDeckName.isEmpty ? model.currentDeckName : deckName
+    }
+
+    /// The system navigation bar: Close, the deck with the counts below it,
+    /// and the reviewer's actions.
+    @ToolbarContentBuilder
+    private var navigationBarItems: some ToolbarContent {
+        ToolbarItem(placement: .cancellationAction) {
+            Button {
+                dismiss()
+            } label: {
+                Label {
+                    Text("Close", bundle: .module)
+                } icon: {
+                    Image(systemName: "xmark")
+                }
+            }
+            .keyboardShortcut(.cancelAction)
+        }
+        #if os(iOS)
+        ToolbarItem(placement: .title) { titleView }
+        #else
+        ToolbarItem(placement: .principal) { titleView }
+        #endif
+        if model.state.card != nil {
+            ToolbarItemGroup(placement: .primaryAction) {
+                reviewerToolbar.barButtons
+            }
+            ToolbarItem(placement: .primaryAction) {
+                reviewerToolbar.menu
+            }
+        } else {
+            // With no card to act on, only the settings remain.
+            ToolbarItem(placement: .primaryAction) {
+                Button(reviewerLocalized("Reviewer Settings"), systemImage: "gear") { showingSettings = true }
+            }
+        }
+    }
+
+    /// The deck's name, and below it the counts left, the time left and the
+    /// answer timer, each when turned on.
+    private var titleView: some View {
+        VStack(spacing: 1) {
+            Text(title)
+                .font(.headline)
+                .lineLimit(1)
+            if model.state.card != nil {
+                HStack(spacing: 8) {
+                    if model.showsRemainingCounts {
+                        StudyCountsView(counts: model.counts)
+                        if let minutes = model.minutesRemaining {
+                            let duration = Duration.seconds(max(1, minutes) * 60)
+                            let units: Set<Duration.UnitsFormatStyle.Unit> =
+                                minutes >= 24 * 60 ? [.days, .hours] : [.hours, .minutes]
+                            Text("\(duration.formatted(.units(allowed: units))) left", bundle: .module)
+                                .foregroundStyle(.secondary)
                         }
-                        if model.showsAnswerTimer {
-                            TimelineView(.periodic(from: .now, by: 1)) { _ in
-                                Text(model.answerTimer().formatted(.time(pattern: .minuteSecond)))
-                                    .monospacedDigit()
-                                    .accessibilityLabel(reviewerLocalized("Answer Timer"))
-                            }
+                    }
+                    if model.showsAnswerTimer {
+                        TimelineView(.periodic(from: .now, by: 1)) { _ in
+                            Text(model.answerTimer().formatted(.time(pattern: .minuteSecond)))
+                                .foregroundStyle(.secondary)
+                                .accessibilityLabel(reviewerLocalized("Answer Timer"))
                         }
                     }
                 }
-            }
-            .padding(.horizontal, 64)
-            HStack {
-                Button {
-                    dismiss()
-                } label: {
-                    Image(systemName: "xmark")
-                        .font(.body.weight(.semibold))
-                        .frame(width: 44, height: 44)
-                }
-                .buttonStyle(.plain)
-                .contentShape(.rect)
-                .accessibilityLabel(Text("Close", bundle: .module))
-                .keyboardShortcut(.cancelAction)
-                Spacer()
-                if preferences.toolbarPosition == .hidden {
-                    Button(reviewerLocalized("Reviewer Settings"), systemImage: "gear") { showingSettings = true }
-                        .labelStyle(.iconOnly)
-                        .frame(width: 44, height: 44)
-                } else if preferences.toolbarPosition == .top {
-                    reviewerActions
-                        .frame(maxWidth: 188, alignment: .trailing)
-                }
+                .font(.footnote.weight(.semibold))
+                .hayakiNumeric()
+                .lineLimit(1)
             }
         }
-        .padding(.horizontal, 8)
-        .padding(.top, 4)
-        .overlay(alignment: .bottom) {
-            if preferences.showProgress, model.showsRemainingCounts, model.hasStudyProgress {
-                ProgressView(value: model.progress)
-                    .labelsHidden()
-                    .accessibilityLabel(reviewerLocalized("Study Progress"))
-            }
+    }
+
+    /// A thin line along the bottom edge of the navigation bar.
+    @ViewBuilder
+    private var progressLine: some View {
+        if showsNavigationBar, preferences.showProgress, model.showsRemainingCounts, model.hasStudyProgress {
+            ProgressView(value: model.progress)
+                .progressViewStyle(.linear)
+                .labelsHidden()
+                .scaleEffect(x: 1, y: 0.5, anchor: .top)
+                .accessibilityLabel(reviewerLocalized("Study Progress"))
         }
     }
 
@@ -543,35 +597,70 @@ public struct StudyScreen: View {
         }
     }
 
+    /// The widest the card grows in a regular-width window (iPad full screen
+    /// and the larger split-view sizes); narrower windows use their full width.
+    static let readableCardWidth: CGFloat = 820
+
+    /// Whether the answer bar or the recorder floats over the bottom of the card.
+    private var showsBottomControls: Bool {
+        #if os(iOS)
+        if deckTools.recorderShown { return true }
+        #endif
+        return preferences.showAnswerButtons && templateFullscreen.showsAnswer
+    }
+
+    /// How far the card's content must be able to scroll above the bottom controls.
+    private var cardBottomInset: CGFloat {
+        showsBottomControls ? bottomControlsHeight : 0
+    }
+
     private func studying(_ card: StudyCard, showingAnswer: Bool) -> some View {
+        cardView(CardDisplay(card, isAnswer: showingAnswer, presentation: model.presentationNumber))
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .padding(preferences.cardFrame ? 8 : 0)
+            .background(preferences.cardFrame ? theme.surface : Color.clear)
+            .clipShape(.rect(cornerRadius: preferences.cardFrame ? 18 : 0))
+            .overlay {
+                if preferences.cardFrame {
+                    RoundedRectangle(cornerRadius: 18).strokeBorder(.secondary.opacity(0.2))
+                        .allowsHitTesting(false)
+                }
+            }
+            #if os(iOS)
+            .overlay {
+                if deckTools.whiteboardEnabled && deckTools.drawingShown {
+                    ReviewerWhiteboard(drawing: drawing, tools: deckTools, isErasing: isErasing)
+                }
+            }
+            .overlay(alignment: whiteboardAlignment) {
+                if deckTools.whiteboardEnabled {
+                    ReviewerWhiteboardTools(drawing: drawing, options: $deckTools, isErasing: $isErasing)
+                        .padding(8)
+                        .padding(.bottom, whiteboardAlignment == .bottom ? cardBottomInset : 0)
+                }
+            }
+            #endif
+            // On an iPad, the whole card is a centered readable column.
+            .frame(maxWidth: horizontalSizeClass == .regular ? Self.readableCardWidth : .infinity)
+            .frame(maxWidth: .infinity)
+            // The card's own background fills the screen around that column
+            // and below the answer bar, so there is no seam where the page ends.
+            .background {
+                if let cardCanvas, !preferences.cardFrame {
+                    cardCanvas.color.ignoresSafeArea(edges: [.horizontal, .bottom])
+                }
+            }
+            // The answer bar floats over the card in its glass container;
+            // the card's content scrolls beneath it.
+            .overlay(alignment: .bottom) {
+                bottomControls(card, showingAnswer: showingAnswer)
+                    .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { bottomControlsHeight = $0 }
+            }
+    }
+
+    @ViewBuilder
+    private func bottomControls(_ card: StudyCard, showingAnswer: Bool) -> some View {
         VStack(spacing: 0) {
-            cardView(CardDisplay(card, isAnswer: showingAnswer, presentation: model.presentationNumber))
-                // On an iPad, a readable column rather than a stretched line.
-                .frame(maxWidth: horizontalSizeClass == .regular ? 820 : .infinity)
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .padding(preferences.cardFrame ? 8 : 0)
-                .background(preferences.cardFrame ? theme.surface : Color.clear)
-                .clipShape(.rect(cornerRadius: preferences.cardFrame ? 18 : 0))
-                .overlay {
-                    if preferences.cardFrame {
-                        RoundedRectangle(cornerRadius: 18).strokeBorder(.secondary.opacity(0.2))
-                            .allowsHitTesting(false)
-                    }
-                }
-                #if os(iOS)
-                .overlay {
-                    if deckTools.whiteboardEnabled && deckTools.drawingShown {
-                        ReviewerWhiteboard(drawing: drawing, tools: deckTools, isErasing: isErasing)
-                    }
-                }
-                .overlay(alignment: whiteboardAlignment) {
-                    if deckTools.whiteboardEnabled {
-                        ReviewerWhiteboardTools(drawing: drawing, options: $deckTools, isErasing: $isErasing)
-                            .padding(8)
-                    }
-                }
-                #endif
-            Divider()
             #if os(iOS)
             if deckTools.recorderShown {
                 HStack {
@@ -585,6 +674,11 @@ public struct StudyScreen: View {
                     .labelStyle(.iconOnly)
                     .padding(.trailing, 12)
                 }
+                .padding(.vertical, 6)
+                // Floating over the card, so it needs its own backing.
+                .background(.regularMaterial, in: Capsule())
+                .frame(maxWidth: 640)
+                .padding(.horizontal, 16)
             }
             #endif
             if preferences.showAnswerButtons, templateFullscreen.showsAnswer {
@@ -625,6 +719,7 @@ public struct StudyScreen: View {
         CardWebView(
             display: display, mediaFolder: model.mediaFolder,
             zoom: dynamicTypeSize.cardZoom * Double(preferences.cardZoom) / 100,
+            bottomInset: cardBottomInset,
             reviewer: ReviewerWebOptions(
                 keySignatures: keySignatures, imageZoom: Double(preferences.imageZoom) / 100,
                 centerVertically: preferences.centerVertically, hidesAudioButtons: model.hidesAudioButtons,
@@ -638,6 +733,7 @@ public struct StudyScreen: View {
         ) { event in
             switch event {
             case .tap: break
+            case .background(let canvas): cardCanvas = canvas
             case .rendered: cardHostUnavailable = false
             case .unavailable: cardHostUnavailable = true
             case .submitTypedAnswer: dispatch(.showAnswer)
@@ -667,6 +763,8 @@ public struct StudyScreen: View {
             recorder.stopPlayback()
             pendingTap?.cancel()
             pendingTap = nil
+            // A field removed with the old side never reports losing focus.
+            editingCardText = false
             typedAnswer = display.isAnswer ? typedAnswer : ""
             templateRecognition.stop()
             audio.play(
@@ -689,7 +787,7 @@ public struct StudyScreen: View {
         guard context.isCurrent(), store.allowsNewProfileWork, timebox == nil,
               model.state.card?.id == context.cardID else { return .unavailable }
         switch request.command {
-        case "isInNightMode": return .value(.boolean(theme != .light))
+        case "isInNightMode": return .value(.boolean(theme.appearance != .light))
         case "isInFullscreen": return .value(.boolean(!templateFullscreen.showsTopBar))
         case "isTopbarShown": return .value(.boolean(templateFullscreen.showsTopBar))
         case "setFullscreenButtonsAndMenu": templateFullscreen = .buttonsAndMenu
@@ -738,11 +836,16 @@ public struct StudyScreen: View {
     }
     #endif
 
-    private var reviewerActions: some View {
+    private var reviewerToolbar: ReviewerToolbar {
         ReviewerToolbar(
             model: model, preferences: preferences, showsEditNote: noteEditor != nil,
             onSettings: { showingSettings = true }, dispatch: dispatch
         )
+    }
+
+    private var reviewerActions: some View {
+        reviewerToolbar
+            .padding(.horizontal, 8)
     }
 }
 
@@ -754,12 +857,22 @@ private struct EditedCard: Identifiable {
     let id: Int64
 }
 
+/// The note editor the reviewer opens. Equal to itself only, so passing the
+/// environment down again (as every trait change does) does not count as a
+/// change and re-render the study screen; a closure never compares equal.
+private struct StudyNoteEditor: Equatable {
+    let id = UUID()
+    let make: @MainActor @Sendable (Int64) -> AnyView
+
+    static func == (lhs: Self, rhs: Self) -> Bool { lhs.id == rhs.id }
+}
+
 private struct StudyNoteEditorKey: EnvironmentKey {
-    static let defaultValue: (@MainActor @Sendable (Int64) -> AnyView)? = nil
+    static let defaultValue: StudyNoteEditor? = nil
 }
 
 private extension EnvironmentValues {
-    var studyNoteEditor: (@MainActor @Sendable (Int64) -> AnyView)? {
+    var studyNoteEditor: StudyNoteEditor? {
         get { self[StudyNoteEditorKey.self] }
         set { self[StudyNoteEditorKey.self] = newValue }
     }
@@ -778,18 +891,20 @@ private struct SideShown: Equatable {
     }
 }
 
-/// The new, learning and due counts left today, in Anki's blue, red and green.
+/// The new, learning and due counts left today, as `12 · 3 · 40` in Anki's
+/// blue, red and green.
 private struct StudyCountsView: View {
     let counts: StudyCounts
-    @Environment(\.hayakiTheme) private var theme
 
     var body: some View {
-        HStack(spacing: 14) {
-            Text(counts.new, format: .number).foregroundStyle(theme.color(for: .new))
-            Text(counts.learning, format: .number).foregroundStyle(theme.color(for: .learning))
-            Text(counts.due, format: .number).foregroundStyle(theme.color(for: .due))
+        HStack(spacing: 4) {
+            Text(counts.new, format: .number).foregroundStyle(SemanticColor.new.color)
+            separator
+            Text(counts.learning, format: .number).foregroundStyle(SemanticColor.learning.color)
+            separator
+            Text(counts.due, format: .number).foregroundStyle(SemanticColor.due.color)
         }
-        .font(.subheadline.monospacedDigit().weight(.medium))
+        .hayakiNumeric()
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(Text(
             "\(counts.new) new, \(counts.learning) learning, \(counts.due) due left",
@@ -797,207 +912,12 @@ private struct StudyCountsView: View {
         ))
         .accessibilityIdentifier("study-counts")
     }
-}
 
-/// Show Answer, or once the answer shows, the four ratings with the interval
-/// each would give. Both fill the same strip at the bottom, so the learner's
-/// thumb stays in one place.
-private struct AnswerBar: View {
-    let card: StudyCard
-    let showingAnswer: Bool
-    let isAnswering: Bool
-    let minimumPress: Double
-    let cooldown: Duration
-    let buttonHeight: Double
-    let hideHardAndEasy: Bool
-    let showsIntervals: Bool
-    let onShowAnswer: () -> Void
-    let onShortPress: () -> Void
-    let onRate: (Rating) -> Void
-    @State private var lastPress: ContinuousClock.Instant?
-    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
-
-    var body: some View {
-        Group {
-            if showingAnswer {
-                Group {
-                    if dynamicTypeSize.isAccessibilitySize {
-                        LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 8) {
-                            ratingButtons
-                        }
-                    } else {
-                        HStack(spacing: 8) { ratingButtons }
-                    }
-                }
-                .disabled(isAnswering)
-            } else {
-                ReviewerPressButton(
-                    minimumPress: minimumPress,
-                    action: { guarded(onShowAnswer) },
-                    onShortPress: onShortPress
-                ) {
-                    Text("Show Answer", bundle: .module)
-                        .font(.headline)
-                        .frame(maxWidth: .infinity, minHeight: buttonHeight)
-                }
-                .buttonStyle(.borderedProminent)
-                .disabled(isAnswering)
-                .accessibilityIdentifier("show-answer")
-            }
-        }
-        .frame(minHeight: 60)
-    }
-
-    private var ratingButtons: some View {
-        ForEach(hideHardAndEasy ? [.again, .good] : Rating.allCases, id: \.self) { rating in
-            RatingButton(
-                rating: rating, interval: showsIntervals ? card.intervals[rating] : nil, buttonHeight: buttonHeight
-            ) {
-                guarded { onRate(rating) }
-            }
-        }
-    }
-
-    private func guarded(_ action: () -> Void) {
-        let now = ContinuousClock.now
-        guard lastPress.map({ now - $0 >= cooldown }) != false else { return }
-        lastPress = now
-        action()
+    private var separator: some View {
+        Text(verbatim: "·").foregroundStyle(.tertiary)
     }
 }
 
-private struct RatingButton: View {
-    let rating: Rating
-    let interval: String?
-    let buttonHeight: Double
-    let action: () -> Void
-    @Environment(\.hayakiTheme) private var theme
-
-    var body: some View {
-        Button(action: action) {
-            VStack(spacing: 2) {
-                if let interval {
-                    Text(interval).font(.caption.monospacedDigit().weight(.medium))
-                }
-                rating.title
-                    .font(.subheadline.weight(.semibold))
-            }
-            .lineLimit(1)
-            .minimumScaleFactor(0.7)
-            .frame(maxWidth: .infinity, minHeight: buttonHeight)
-        }
-        .buttonStyle(.bordered)
-        .tint(theme.color(for: rating.semanticColor))
-        .accessibilityLabel(rating.title)
-        .accessibilityValue(Text(interval ?? ""))
-        .accessibilityIdentifier("rating-\(rating)")
-    }
-}
-
-private struct ReviewerPressButton<Label: View>: View {
-    let minimumPress: Double
-    let action: () -> Void
-    let onShortPress: () -> Void
-    @ViewBuilder let label: () -> Label
-    @State private var held = false
-
-    var body: some View {
-        if minimumPress == 0 {
-            Button(action: action, label: label)
-        } else {
-            Button {
-                if held { held = false } else { onShortPress() }
-            } label: {
-                label()
-            }
-            .simultaneousGesture(LongPressGesture(minimumDuration: minimumPress).onEnded { _ in
-                held = true
-                action()
-            })
-                .accessibilityAction { action() }
-        }
-    }
-}
-
-/// The end of the session, or a deck with nothing left today.
-private struct FinishedView: View {
-    let summary: SessionSummary
-    let onUnbury: () -> Void
-    let onRebuild: () -> Void
-    let onOptions: (() -> Void)?
-    let onCustomStudy: (() -> Void)?
-    let onDone: () -> Void
-
-    var body: some View {
-        ContentUnavailableView {
-            Label {
-                switch summary.reason {
-                case .dailyLimit: Text("Daily Limit Reached", bundle: .module)
-                case .learningLater: Text("More Cards Later Today", bundle: .module)
-                case .buried: Text("Cards Buried for Today", bundle: .module)
-                case .done: Text("All Done for Today", bundle: .module)
-                }
-            } icon: {
-                Image(systemName: summary.reason == .done ? "checkmark.circle" : "clock")
-                    .foregroundStyle(summary.reason == .done ? Color.green : Color.secondary)
-            }
-        } description: {
-            VStack(spacing: 8) {
-                if summary.reviewed > 0 {
-                    Text("You reviewed \(summary.reviewed) cards in this session.", bundle: .module)
-                } else if summary.reason == .done {
-                    if summary.isFiltered {
-                        Text("This filtered deck is finished. Rebuild it to look for more cards.", bundle: .module)
-                    } else {
-                        Text("This deck has nothing left to study today.", bundle: .module)
-                    }
-                }
-                if let nextLearningAt = summary.nextLearningAt {
-                    let nextTime = nextLearningAt.formatted(date: .omitted, time: .shortened)
-                    Text("\(summary.learningLaterToday) learning cards come due later today.", bundle: .module)
-                    Text("Next learning card at \(nextTime).", bundle: .module)
-                }
-                if summary.dailyLimitReached || summary.hasBuried {
-                    let resetTime = summary.nextDayStartsAt.formatted(date: .abbreviated, time: .shortened)
-                    Text("The next study day starts at \(resetTime).", bundle: .module)
-                }
-                if summary.reviewed > 0, !summary.studiedToday.isEmpty {
-                    Text(summary.studiedToday.replacingOccurrences(of: "\n", with: " "))
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                }
-            }
-        } actions: {
-            if summary.isFiltered {
-                Button(action: onRebuild) {
-                    Text("Rebuild Filtered Deck", bundle: .module)
-                }
-                .buttonStyle(.bordered)
-            }
-            if summary.hasBuried {
-                Button(action: onUnbury) {
-                    Text("Unbury Cards", bundle: .module)
-                }
-                .buttonStyle(.bordered)
-            }
-            if let onOptions {
-                Button(action: onOptions) { Text("Deck Options", bundle: .module) }
-                    .buttonStyle(.bordered)
-            }
-            if let onCustomStudy {
-                Button(action: onCustomStudy) { Text("Custom Study", bundle: .module) }
-                    .buttonStyle(.bordered)
-            }
-            Button(action: onDone) {
-                Text("Done", bundle: .module)
-                    .frame(minWidth: 120)
-            }
-            .buttonStyle(.borderedProminent)
-            .controlSize(.large)
-            .keyboardShortcut(.defaultAction)
-        }
-    }
-}
 
 extension Rating {
     var title: Text {

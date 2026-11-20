@@ -33,9 +33,17 @@ public struct ReviewerSettingsScreen: View {
                 Toggle(reviewerLocalized("Hide Status Bar"), isOn: $preferences.hideStatusBar)
                 Toggle(reviewerLocalized("Prefer Hidden Home Indicator"), isOn: $preferences.hideHomeIndicator)
             }
+            Section {
+                CardGlyphStylePicker()
+            } footer: {
+                Text(
+                    "Sets how Han characters on cards are drawn. Fonts chosen by a card’s template are kept.",
+                    bundle: .module
+                )
+            }
             Section(reviewerLocalized("Toolbar")) {
-                Picker(reviewerLocalized("Position"), selection: $preferences.toolbarPosition) {
-                    ForEach(ReviewerToolbarPosition.allCases, id: \.self) { Text(reviewerLocalized($0.rawValue.capitalized)).tag($0) }
+                Picker(reviewerLocalized("Layout"), selection: $preferences.toolbarStyle) {
+                    ForEach(ReviewerToolbarStyle.allCases, id: \.self) { Text($0.title).tag($0) }
                 }
                 NavigationLink(reviewerLocalized("Toolbar Actions")) { ToolbarActionsSettings(preferences: $preferences) }
             }
@@ -92,6 +100,9 @@ public struct ReviewerSettingsScreen: View {
         }
         .hayakiScrollBackground()
         .navigationTitle(reviewerLocalized("Reviewer"))
+        #if os(iOS)
+        .navigationBarTitleDisplayMode(.inline)
+        #endif
         .onChange(of: preferences) { _, value in value.save() }
         .sheet(isPresented: $selectingInput) {
             NavigationStack {
@@ -132,6 +143,9 @@ private struct ToolbarActionsSettings: View {
             }
         }
         .navigationTitle(reviewerLocalized("Toolbar Actions"))
+        #if os(iOS)
+        .navigationBarTitleDisplayMode(.inline)
+        #endif
         #if os(iOS)
         .toolbar { EditButton() }
         #endif
@@ -295,6 +309,9 @@ private struct PreviewControlSettings: View {
         }
         .hayakiScrollBackground()
         .navigationTitle(Text("Preview Controls", bundle: .module))
+        #if os(iOS)
+        .navigationBarTitleDisplayMode(.inline)
+        #endif
         .onChange(of: controls) { _, controls in controls.save() }
         .sheet(isPresented: $selectingInput) {
             NavigationStack { PhysicalInputSettings(tapZones: tapZones, picker: picker) }
@@ -367,6 +384,9 @@ private struct PhysicalInputSettings<CommandPicker: View>: View {
             }
         }
         .navigationTitle(reviewerLocalized("Add Binding"))
+        #if os(iOS)
+        .navigationBarTitleDisplayMode(.inline)
+        #endif
         .toolbar { ToolbarItem(placement: .confirmationAction) { Button(reviewerLocalized("Done")) { dismiss() } } }
     }
 }
