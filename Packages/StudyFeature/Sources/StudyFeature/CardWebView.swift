@@ -77,6 +77,7 @@ struct CardWebView: UIViewRepresentable {
     let customScheduling: CustomSchedulingRequest?
     let onCustomSchedule: (UUID, String?) -> Void
     @AppStorage(CardTemplatePreference.externalApps) private var allowsExternalApps = false
+    @AppStorage(CardGlyphStyle.preferenceKey) private var glyphStyle = CardGlyphStyle.default
 
     init(
         display: CardDisplay, mediaFolder: URL, zoom: CGFloat, reviewer: ReviewerWebOptions? = nil,
@@ -135,6 +136,7 @@ struct CardWebView: UIViewRepresentable {
         #endif
         context.coordinator.webView = webView
         context.coordinator.updateAppearance(theme)
+        context.coordinator.updateLanguage(glyphStyle.cardLanguage(appLanguage: CardGlyphStyle.appLanguage))
         context.coordinator.loadHostPage()
         return webView
     }
@@ -142,6 +144,7 @@ struct CardWebView: UIViewRepresentable {
     func updateUIView(_ webView: WKWebView, context: Context) {
         context.coordinator.onEvent = onEvent
         context.coordinator.updateAppearance(theme)
+        context.coordinator.updateLanguage(glyphStyle.cardLanguage(appLanguage: CardGlyphStyle.appLanguage))
         context.coordinator.onTemplateRequest = onTemplateRequest
         context.coordinator.allowsExternalApps = allowsExternalApps
         if webView.pageZoom != zoom {
@@ -195,6 +198,8 @@ struct CardWebView: UIViewRepresentable {
         private var retries = 0
         private var hostFailed = false
         private var theme: HayakiTheme?
+        /// The card page's `<html lang>` (Card Kanji/Hanzi Style).
+        private var language: String?
 
         func loadHostPage() {
             pageLoaded = false
@@ -294,6 +299,19 @@ struct CardWebView: UIViewRepresentable {
             )
         }
 
+        func updateLanguage(_ language: String) {
+            guard self.language != language else { return }
+            self.language = language
+            sendLanguage()
+        }
+
+        private func sendLanguage() {
+            guard pageLoaded, let language, let webView else { return }
+            webView.callAsyncJavaScript(
+                "window.hayaki.language(lang)", arguments: ["lang": language], in: nil, in: .page, completionHandler: nil
+            )
+        }
+
         func show(_ display: CardDisplay) {
             let changed = wanted != display
             if changed { reloaded = nil }
@@ -334,6 +352,7 @@ struct CardWebView: UIViewRepresentable {
             guard self.navigation === navigation, !hostFailed else { return }
             pageLoaded = true
             sendAppearance()
+            sendLanguage()
             if wanted == nil {
                 renderDeadline?.cancel()
                 renderDeadline = nil
