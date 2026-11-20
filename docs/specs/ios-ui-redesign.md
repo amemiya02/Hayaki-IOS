@@ -99,7 +99,7 @@ Any theme can be combined with any appearance mode. The settings screen shows ea
 | Stats | `⋯` | Deck or search selection, Export PDF |
 | More | none | none |
 
-- **More tab:** confirm the element that currently appears at its top left from the audit screenshots, and remove it or move it to follow these rules.
+- **More and Stats:** the audit found no item at the top left; what reads as misalignment is an empty toolbar band above More's large title, and on Stats the scroll-edge blur of content behind the inline title. Both disappear once every tab shares the same toolbar treatment and background.
 
 ## Add Note entry points
 
