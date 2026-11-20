@@ -16,9 +16,10 @@ struct HelpAndAboutSection: View {
                     Label {
                         Text("Transfer Guide", bundle: .module)
                     } icon: {
-                        Image(systemName: "arrow.left.arrow.right")
+                        Image(systemName: SettingsIcon.transfer.symbol)
                     }
                 }
+                .settingsIcon(.transfer)
             }
             if shows(.help) {
                 NavigationLink {
@@ -27,9 +28,10 @@ struct HelpAndAboutSection: View {
                     Label {
                         Text("Help", bundle: .module)
                     } icon: {
-                        Image(systemName: "questionmark.circle")
+                        Image(systemName: SettingsIcon.help.symbol)
                     }
                 }
+                .settingsIcon(.help)
             }
             if shows(.about) {
                 NavigationLink {
@@ -38,13 +40,10 @@ struct HelpAndAboutSection: View {
                     Label {
                         Text("About", bundle: .module)
                     } icon: {
-                        Image(systemName: "info.circle")
+                        Image(systemName: SettingsIcon.about.symbol)
                     }
                 }
-            }
-        } header: {
-            if shows(.transfer) || shows(.help) || shows(.about) {
-                Text("Help & About", bundle: .module)
+                .settingsIcon(.about)
             }
         }
     }

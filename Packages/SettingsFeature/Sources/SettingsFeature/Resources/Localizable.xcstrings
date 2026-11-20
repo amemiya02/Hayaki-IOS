@@ -919,22 +919,6 @@
         }
       }
     },
-    "Help & About" : {
-      "localizations" : {
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "ヘルプとアプリ情報"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "帮助与应用信息"
-          }
-        }
-      }
-    },
     "In Hayaki on Android or in AnkiDroid, choose Export from the Decks menu for the whole collection. For one deck, touch and hold the deck, then choose Export." : {
       "localizations" : {
         "ja" : {
