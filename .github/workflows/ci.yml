@@ -107,6 +107,18 @@ jobs:
             -derivedDataPath build/DerivedData \
             ARCHS=arm64 CODE_SIGNING_ALLOWED=NO
 
+      - name: Package the simulator candidate for joint verification
+        if: github.event_name == 'workflow_dispatch'
+        run: ditto -c -k --keepParent build/DerivedData/Build/Products/Debug-iphonesimulator/Hayaki.app build/Hayaki-simulator.zip
+
+      - name: Archive the exact simulator app
+        if: github.event_name == 'workflow_dispatch'
+        uses: actions/upload-artifact@v4
+        with:
+          name: hayaki-simulator-app
+          path: build/Hayaki-simulator.zip
+          if-no-files-found: error
+
       - name: Run the iPhone and iPad user-interface tests
         if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
         timeout-minutes: 65

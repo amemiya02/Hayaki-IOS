@@ -165,6 +165,14 @@ targets:
         buildPhase: resources
     dependencies:
       - target: Hayaki
+    postBuildScripts:
+      - name: Include the tested app's version metadata
+        script: |
+          cp "$SCRIPT_INPUT_FILE_0" "$SCRIPT_OUTPUT_FILE_0"
+        inputFiles:
+          - $(BUILT_PRODUCTS_DIR)/Hayaki.app/Info.plist
+        outputFiles:
+          - $(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/TestedHayaki.plist
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: io.github.amemiya02.hayaki.uitests
