@@ -882,6 +882,23 @@
         }
       }
     },
+    "Resume Media Sync" : {
+      "comment" : "Button that continues an incomplete media sync with the same destination.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "メディアの同期を再開"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "继续媒体同步"
+          }
+        }
+      }
+    },
     "Retry Media Sync" : {
       "comment" : "Button that retries the media stage with the current sync destination.",
       "localizations" : {
@@ -1524,6 +1541,40 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "重试"
+          }
+        }
+      }
+    },
+    "Elapsed: %@" : {
+      "comment" : "Time elapsed in the current media sync attempt.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "今回の経過時間：%@"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "本轮已用时：%@"
+          }
+        }
+      }
+    },
+    "Last progress: %@ ago" : {
+      "comment" : "Time since the media sync counts last changed.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "最終進捗：%@前"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "上次进度更新：%@ 前"
           }
         }
       }

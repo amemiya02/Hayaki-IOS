@@ -355,7 +355,7 @@ private struct SyncStatusSection: View {
                     .foregroundStyle(.secondary)
             }
 
-            StatusRowView(row: media) {
+            StatusRowView(row: media, mediaTiming: model.mediaTiming) {
                 Text("Media", bundle: .module)
             }
             .accessibilityIdentifier("media-sync-status")
@@ -366,7 +366,11 @@ private struct SyncStatusSection: View {
                 Button {
                     Task { await model.retryMediaSync() }
                 } label: {
-                    Text("Retry Media Sync", bundle: .module)
+                    if model.hasResumableMedia {
+                        Text("Resume Media Sync", bundle: .module)
+                    } else {
+                        Text("Retry Media Sync", bundle: .module)
+                    }
                 }
                 .accessibilityIdentifier("retry-media-sync")
             }
@@ -381,6 +385,7 @@ private struct SyncStatusSection: View {
 private struct StatusRowView<Title: View>: View {
     let row: SyncStatusRow
     var message: String?
+    var mediaTiming: MediaSyncTiming?
     @ViewBuilder let title: Title
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -405,6 +410,9 @@ private struct StatusRowView<Title: View>: View {
                         .font(.footnote.monospacedDigit())
                         .foregroundStyle(.secondary)
                 }
+                if let mediaTiming {
+                    mediaActivity(mediaTiming)
+                }
             } else if let lastSynced = row.lastSynced {
                 // Redrawn each minute so "2 minutes ago" stays true.
                 TimelineView(.everyMinute) { _ in
@@ -421,6 +429,23 @@ private struct StatusRowView<Title: View>: View {
         }
         .padding(.vertical, 2)
         .accessibilityElement(children: .combine)
+    }
+
+    private func mediaActivity(_ timing: MediaSyncTiming) -> some View {
+        TimelineView(.periodic(from: timing.startedAt, by: 5)) { context in
+            let elapsed = elapsedTime(since: timing.startedAt, at: context.date)
+            Text("Elapsed: \(elapsed)", bundle: .module)
+            if let lastProgress = timing.lastProgressAt {
+                let age = elapsedTime(since: lastProgress, at: context.date)
+                Text("Last progress: \(age) ago", bundle: .module)
+            }
+        }
+        .font(.footnote.monospacedDigit())
+        .foregroundStyle(.secondary)
+    }
+
+    private func elapsedTime(since start: Date, at end: Date) -> String {
+        Duration.seconds(max(0, end.timeIntervalSince(start))).formatted(.time(pattern: .hourMinuteSecond))
     }
 
     private var heading: some View {

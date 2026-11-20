@@ -124,6 +124,53 @@ struct SyncTests {
         }
     }
 
+    @Test("Interrupted media resumes on foreground entry within the cooldown", arguments: [false, true])
+    func resumesInterruptedMediaOnForeground(connectionLost: Bool) async throws {
+        let server = try await SyncServer(users: [("alice", "correct horse")])
+        try await withTemporaryCollection { phone in
+            try await phone.addBasicNotes(count: 1, toDeck: phone.addDeck(named: "Spanish"))
+            let media = Data("media to resume".utf8)
+            try media.write(to: phone.location.mediaFolder.appendingPathComponent("resume.png"))
+            let storage = MemoryAccountStorage()
+            let model = try await signedIn(phone, to: server, storage: storage, network: { .unmetered })
+            model.policy.automatic = true
+            await model.sync()
+
+            pauseServerWhenMediaStarts(server, model: model)
+            defer { server.resume() }
+            async let uploading: Void = model.upload()
+            try await eventually("media to start before the system interruption") {
+                if case .syncing = model.mediaStatus { true } else { false }
+            }
+            if connectionLost {
+                server.interrupt()
+                await uploading
+                guard case .failed(let failure) = model.mediaStatus else {
+                    Issue.record("Expected a media connection failure, got \(model.mediaStatus)")
+                    return
+                }
+                #expect(failure?.reason == .unreachable)
+                try await server.restart()
+            } else {
+                model.interruptTransfer()
+                await uploading
+                #expect(model.mediaStatus == .interrupted)
+                server.resume()
+            }
+            #expect(SyncModel(store: phone, storage: storage).mediaStatus == .interrupted)
+            #expect(await model.automaticSync(.foreground))
+            #expect(model.mediaStatus == .synced)
+
+            try await withTemporaryCollection { tablet in
+                let other = try await signedIn(tablet, to: server)
+                await other.sync()
+                await other.download()
+                let received = tablet.location.mediaFolder.appendingPathComponent("resume.png")
+                #expect(try Data(contentsOf: received) == media)
+            }
+        }
+    }
+
     @Test("A media-only failure leaves the collection synced and can be retried after reopening")
     func mediaFailureSurvivesRelaunch() async throws {
         let server = try await SyncServer(users: [("alice", "correct horse")])
@@ -564,9 +611,10 @@ struct SyncTests {
         _ store: CollectionStore,
         to server: SyncServer,
         storage: MemoryAccountStorage = MemoryAccountStorage(),
-        password: String = "correct horse"
+        password: String = "correct horse",
+        network: (() -> SyncNetwork)? = nil
     ) async throws -> SyncModel {
-        let model = SyncModel(store: store, storage: storage)
+        let model = SyncModel(store: store, storage: storage, network: network)
         model.selectDestination(.selfHosted)
         model.serverAddress = server.address
         model.userName = "alice"

@@ -7,9 +7,6 @@ import ReminderFeature
 import SwiftUI
 import SyncFeature
 import UniformTypeIdentifiers
-#if os(iOS)
-import UIKit
-#endif
 
 /// The whole app: a short opening state while the collection opens, then the
 /// sections.
@@ -54,7 +51,7 @@ public struct RootView: View {
         case .background:
             guard model.collectionIsIdle else { return }
             #if os(iOS)
-            let time = SyncBackgroundTime { sync.cancel() }
+            let time = SyncBackgroundTime { sync.interruptTransfer() }
             guard time.isValid else { return }
             #endif
             Task {
@@ -267,8 +264,21 @@ private struct ReadyView: View {
         .onChange(of: sync.account?.server) { _, _ in refreshSyncBadge() }
         .onChange(of: sync.policy.showsStatusBadge) { _, _ in refreshSyncBadge() }
         .onChange(of: sync.network) { old, _ in
-            if old != nil { refreshSyncBadge() }
+            guard old != nil else { return }
+            if sync.hasResumableMedia, sync.policy.automatic {
+                resumeMediaOnForeground()
+            } else {
+                refreshSyncBadge()
+            }
         }
+        .onChange(of: sync.mediaStatus == .interrupted) { _, interrupted in
+            if interrupted, sync.policy.automatic { resumeMediaOnForeground() }
+        }
+    }
+
+    private func resumeMediaOnForeground() {
+        guard scenePhase == .active else { return }
+        Task { await RootView.foregroundSync(model, sync: sync) }
     }
 
     private func refreshSyncBadge() {
@@ -276,26 +286,3 @@ private struct ReadyView: View {
         Task { await sync.refreshBadge() }
     }
 }
-
-
-#if os(iOS)
-@MainActor
-private final class SyncBackgroundTime {
-    private var identifier = UIBackgroundTaskIdentifier.invalid
-
-    var isValid: Bool { identifier != .invalid }
-
-    init(onExpiration: @escaping @MainActor () -> Void) {
-        identifier = UIApplication.shared.beginBackgroundTask(withName: "Hayaki Sync") { [weak self] in
-            onExpiration()
-            self?.end()
-        }
-    }
-
-    func end() {
-        guard isValid else { return }
-        UIApplication.shared.endBackgroundTask(identifier)
-        identifier = .invalid
-    }
-}
-#endif

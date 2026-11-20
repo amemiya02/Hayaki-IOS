@@ -70,6 +70,7 @@ public final class SyncModel {
     public private(set) var account: SyncAccount?
     public private(set) var status: Status = .idle
     public private(set) var mediaStatus: MediaSyncStatus = .idle
+    private(set) var mediaTiming: MediaSyncTiming?
 
     public var policy: SyncPolicy {
         didSet {
@@ -112,6 +113,7 @@ public final class SyncModel {
     }
     @ObservationIgnored private var meterPermissionForActiveTransfer: Bool?
     @ObservationIgnored private var requiresUnmeteredMedia = false
+    @ObservationIgnored private var mediaInterrupted = false
 
     private var statusBeforeDestinationChange: Status?
     private var markingFullSync = false
@@ -230,6 +232,15 @@ public final class SyncModel {
         else { return false }
         return switch mediaStatus {
         case .cancelled, .interrupted, .failed: true
+        default: false
+        }
+    }
+
+    /// Media left pending by an interruption or a temporary connection failure.
+    public var hasResumableMedia: Bool {
+        switch mediaStatus {
+        case .interrupted: true
+        case .failed(let failure): failure?.reason == .unreachable
         default: false
         }
     }
@@ -399,8 +410,15 @@ public final class SyncModel {
         guard policy.automatic, networkAllowsAutomaticTransfer, let account,
               canCheckStatus, pendingMeteredAction == nil
         else { return false }
-        if trigger == .foreground, let lastAttempt, now().timeIntervalSince(lastAttempt) <= 600 { return false }
+        let canResumeMedia = hasResumableMedia && policy.media.allows(network)
+        if trigger == .foreground, !canResumeMedia,
+           let lastAttempt, now().timeIntervalSince(lastAttempt) <= 600 { return false }
 
+        #if os(iOS)
+        // AppShell already holds an assertion for sync started on background entry.
+        let time = trigger == .foreground ? SyncBackgroundTime { self.interruptTransfer() } : nil
+        defer { time?.end() }
+        #endif
         meterPermissionForActiveTransfer = policy.allowsMetered
         defer {
             lastAttempt = now()
@@ -508,6 +526,10 @@ public final class SyncModel {
     }
 
     private func perform(_ action: MeteredAction, meteredConsent: Bool) async {
+        #if os(iOS)
+        let time = SyncBackgroundTime { self.interruptTransfer() }
+        defer { time.end() }
+        #endif
         meterPermissionForActiveTransfer = policy.allowsMetered || meteredConsent
         defer {
             lastAttempt = now()
@@ -528,7 +550,9 @@ public final class SyncModel {
     private func networkChanged() {
         guard let meterPermissionForActiveTransfer else { return }
         if network == .metered && (!meterPermissionForActiveTransfer || requiresUnmeteredMedia) {
-            cancel()
+            interruptTransfer()
+        } else if network == .offline, case .syncing = mediaStatus {
+            interruptTransfer()
         }
     }
 
@@ -634,6 +658,13 @@ public final class SyncModel {
         cancelRunning?()
     }
 
+    /// Pauses an active sync when iOS or the network interrupts it.
+    /// An interrupted media transfer is eligible for automatic resumption.
+    public func interruptTransfer() {
+        if case .syncing = mediaStatus { mediaInterrupted = true }
+        cancelRunning?()
+    }
+
     /// Continues a previous media transfer with the same sign-in.
     public func retryMediaSync() async {
         await request(.retryMedia)
@@ -683,7 +714,13 @@ public final class SyncModel {
               network != .metered || meterPermissionForActiveTransfer == true
         else { return }
         requiresUnmeteredMedia = policy.media == .onlyUnmetered
-        defer { requiresUnmeteredMedia = false }
+        mediaInterrupted = false
+        defer {
+            requiresUnmeteredMedia = false
+            mediaInterrupted = false
+            mediaTiming = nil
+        }
+        mediaTiming = MediaSyncTiming(startedAt: now())
         mediaStatus = .syncing(nil)
         func save(_ phase: SavedMediaSync.Phase) throws {
             account.mediaSync = SavedMediaSync(phase: phase, collection: outcome)
@@ -708,11 +745,12 @@ public final class SyncModel {
             result = .synced
         } catch {
             if error.isInterrupted {
-                phase = .cancelled
-                result = .cancelled
+                phase = mediaInterrupted ? .interrupted : .cancelled
+                result = mediaInterrupted ? .interrupted : .cancelled
             } else {
-                phase = .failed
-                result = .failed(SyncFailure(error, server: account.server, signingIn: false))
+                let failure = SyncFailure(error, server: account.server, signingIn: false)
+                phase = failure.reason == .unreachable ? .interrupted : .failed
+                result = .failed(failure)
             }
         }
 
@@ -756,7 +794,8 @@ public final class SyncModel {
         try await withCustomCertificate(certificate) { () async throws(CoreError) in
             let operation = start()
             cancelRunning = { operation.cancel() }
-            // The network may have changed while the certificate was installed.
+            // The app or network may have been interrupted while installing the certificate.
+            if mediaInterrupted { operation.cancel() }
             networkChanged()
             let progress = Task {
                 for await report in operation.progress {
@@ -773,7 +812,12 @@ public final class SyncModel {
 
     private func show(_ report: Anki_Collection_Progress) {
         if case .syncing = mediaStatus, case .mediaSync(let media) = report.value {
-            mediaStatus = .syncing(MediaSyncProgress(checked: media.checked, added: media.added, removed: media.removed))
+            let next = MediaSyncStatus.syncing(
+                MediaSyncProgress(checked: media.checked, added: media.added, removed: media.removed)
+            )
+            guard next != mediaStatus else { return }
+            mediaTiming?.lastProgressAt = now()
+            mediaStatus = next
             return
         }
         guard case .syncing(let current) = status else { return }
