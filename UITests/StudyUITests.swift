@@ -47,8 +47,9 @@ final class StudyUITests: XCTestCase {
         let reviewerSettings = app.buttons["Reviewer Settings"]
         XCTAssertTrue(reviewerSettings.waitForExistence(timeout: 5))
         XCTAssertEqual(addNote.count, addNoteOutsideMenu + 1, "Add Note is in the study menu")
-        // Dismiss the menu without choosing an action.
-        app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
+        // Dismiss the menu without choosing an action: tap beside it, since
+        // the full reviewer menu reaches past the middle of the screen.
+        app.coordinate(withNormalizedOffset: CGVector(dx: 0.06, dy: 0.5)).tap()
         XCTAssertTrue(reviewerSettings.waitForNonExistence(timeout: 5))
         // A Cloze card's question is drawn in the web view, with its deletion
         // hidden. Generous: the web view's first page load can take many
