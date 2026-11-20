@@ -26,7 +26,7 @@ Hayaki 用 SwiftUI 和 Liquid Glass 打造原生 iOS 26 应用，将 [Hayaki 安
   <img src="docs/assets/iphone-decks-zh.webp" width="200" alt="牌组页顶部的今日卡片、全部学习按钮，以及每个牌组的彩色数量标签">
   <img src="docs/assets/iphone-review-zh.webp" width="200" alt="学习页导航栏显示牌组名和数量，下方是 MathJax 卡片和四个玻璃评分按钮">
   <img src="docs/assets/iphone-finished-zh.webp" width="200" alt="完成页显示本次复习的卡片数、用时和评分分布">
-  <img src="docs/assets/iphone-themes.webp" width="200" alt="外观设置中的十个主题卡片">
+  <img src="docs/assets/iphone-statistics.webp" width="200" alt="统计页中的待复习卡片分布和学习日历热力图">
 </p>
 
 ## 主要功能

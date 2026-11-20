@@ -26,7 +26,7 @@ Hayaki brings [Hayaki for Android](https://github.com/amemiya02/Hayaki) to iPhon
   <img src="docs/assets/iphone-decks.webp" width="200" alt="Decks screen with the Today card, Study All, and colored count pills on each deck">
   <img src="docs/assets/iphone-review.webp" width="200" alt="Study screen with deck name and counts in the navigation bar, a MathJax card, and four glass rating buttons">
   <img src="docs/assets/iphone-finished.webp" width="200" alt="Finished screen with a session summary of cards reviewed, time spent, and the rating breakdown">
-  <img src="docs/assets/iphone-themes.webp" width="200" alt="Appearance settings showing the ten theme cards">
+  <img src="docs/assets/iphone-statistics.webp" width="200" alt="Statistics screen showing the due-card distribution and study calendar">
 </p>
 
 ## Features
