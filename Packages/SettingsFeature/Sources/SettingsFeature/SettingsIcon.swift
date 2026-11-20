@@ -62,5 +62,23 @@ extension View {
     /// Shows every label in this row with the given More icon.
     func settingsIcon(_ icon: SettingsIcon) -> some View {
         labelStyle(SettingsIconLabelStyle(icon: icon))
+            .labeledContentStyle(SettingsIconLabeledContentStyle(icon: icon))
+    }
+}
+
+/// Lays out a row that pairs its label with a value (Profiles, Sync, Daily Reminder) the way
+/// the system does, and gives the label the More icon: the system's own style does not pass
+/// the row's label style on to the label.
+struct SettingsIconLabeledContentStyle: LabeledContentStyle {
+    let icon: SettingsIcon
+
+    func makeBody(configuration: Configuration) -> some View {
+        HStack {
+            configuration.label
+                .labelStyle(SettingsIconLabelStyle(icon: icon))
+            Spacer()
+            configuration.content
+                .foregroundStyle(.secondary)
+        }
     }
 }
