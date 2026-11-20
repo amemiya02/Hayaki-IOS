@@ -1,31 +1,50 @@
 import SwiftUI
 
-/// The resolved appearance: system backgrounds plus the default Hayaki theme's
-/// teal accent (taken from the app icon's background) and its faint tint.
-public enum HayakiTheme: Sendable {
-    case light, dark, black
+/// A theme resolved for the appearance on screen: system backgrounds plus the
+/// theme's accent and its faint tint.
+public struct HayakiTheme: Hashable, Sendable {
+    public let theme: Theme
+    public let appearance: ResolvedAppearance
 
-    /// The Hayaki accent in sRGB. Black mode reuses the dark accent.
-    public var accentRGB: UInt32 { self == .light ? 0x2C776E : 0x7ED6CA }
+    public init(_ theme: Theme, _ appearance: ResolvedAppearance) {
+        self.theme = theme
+        self.appearance = appearance
+    }
+
+    /// The accent in sRGB. Black mode reuses the dark accent.
+    public var accentRGB: UInt32 {
+        appearance == .light ? theme.palette.lightAccentRGB : theme.palette.darkAccentRGB
+    }
     public var accent: Color { Color(hayakiRGB: accentRGB) }
 
     /// How strongly the accent tints the screen background. Black mode keeps
     /// a pure black background.
     public var tintOpacity: Double {
-        switch self {
+        switch appearance {
         case .light: 0.04
         case .dark: 0.06
         case .black: 0
         }
     }
 
-    /// The study screen's background in sRGB (`systemBackground` plus the tint),
-    /// for the card page's canvas.
+    /// The theme's own study screen and card canvas, if it sets one.
+    /// Black mode always keeps pure black.
+    public var canvasOverrideRGB: UInt32? {
+        switch appearance {
+        case .light: theme.palette.lightCanvasRGB
+        case .dark: theme.palette.darkCanvasRGB
+        case .black: nil
+        }
+    }
+
+    /// The study screen's background in sRGB (`systemBackground` plus the tint,
+    /// or the theme's canvas), for the card page's canvas.
     public var canvasRGB: UInt32 {
-        switch self {
-        case .light: Self.blend(accentRGB, over: 0xFFFFFF, opacity: tintOpacity)
-        case .dark: Self.blend(accentRGB, over: 0x000000, opacity: tintOpacity)
-        case .black: 0x000000
+        if let canvasOverrideRGB { return canvasOverrideRGB }
+        switch appearance {
+        case .light: return Self.blend(accentRGB, over: 0xFFFFFF, opacity: tintOpacity)
+        case .dark: return Self.blend(accentRGB, over: 0x000000, opacity: tintOpacity)
+        case .black: return 0x000000
         }
     }
 
@@ -74,8 +93,10 @@ public struct HayakiBackground: View {
     }
 
     public var body: some View {
-        if theme == .black {
+        if theme.appearance == .black {
             Color.black
+        } else if style == .plain, let canvas = theme.canvasOverrideRGB {
+            Color(hayakiRGB: canvas)
         } else {
             (style == .grouped ? Color.hayakiGroupedBackground : Color.hayakiPlainBackground)
                 .overlay(theme.accent.opacity(theme.tintOpacity))
@@ -84,7 +105,8 @@ public struct HayakiBackground: View {
 }
 
 extension Color {
-    init(hayakiRGB rgb: UInt32) {
+    /// A color from an sRGB value such as a theme token.
+    public init(hayakiRGB rgb: UInt32) {
         self.init(
             .sRGB,
             red: Double(rgb >> 16) / 255,
@@ -110,7 +132,7 @@ private struct HayakiThemeKey: EnvironmentKey {
 
 public extension EnvironmentValues {
     var hayakiTheme: HayakiTheme {
-        get { self[HayakiThemeKey.self] ?? (colorScheme == .dark ? .dark : .light) }
+        get { self[HayakiThemeKey.self] ?? HayakiTheme(.default, colorScheme == .dark ? .dark : .light) }
         set { self[HayakiThemeKey.self] = newValue }
     }
 }

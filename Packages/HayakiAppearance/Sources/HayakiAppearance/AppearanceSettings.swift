@@ -15,10 +15,20 @@ public struct AppearanceSettings: DynamicProperty {
     public static let browseTextScaleKey = "hayaki.accessibility.browseTextScale"
     public static let browseMediaFilenamesKey = "hayaki.browse.showMediaFilenames"
 
+    public static let themeKey = "hayaki.theme"
+
     @AppStorage private var selection: String
+    @AppStorage private var storedTheme: String
 
     public init(store: UserDefaults? = nil) {
         _selection = AppStorage(wrappedValue: "system/dark", "hayaki.appearance", store: store)
+        _storedTheme = AppStorage(wrappedValue: Theme.default.rawValue, Self.themeKey, store: store)
+    }
+
+    /// Independent of the appearance mode: any theme works in any mode.
+    public var theme: Theme {
+        get { Theme(rawValue: storedTheme) ?? .default }
+        nonmutating set { storedTheme = newValue.rawValue }
     }
 
     public var mode: AppearanceMode {
@@ -48,6 +58,10 @@ public struct AppearanceSettings: DynamicProperty {
     }
 
     public func resolved(for system: ColorScheme) -> HayakiTheme {
+        HayakiTheme(theme, resolvedAppearance(for: system))
+    }
+
+    private func resolvedAppearance(for system: ColorScheme) -> ResolvedAppearance {
         switch mode {
         case .system:
             if system == .light { return .light }

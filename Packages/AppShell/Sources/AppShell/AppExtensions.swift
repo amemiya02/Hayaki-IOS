@@ -60,6 +60,11 @@ final class AppExtensions {
         }
     }
 
+    /// Widgets follow the selected theme's accent.
+    func publish(_ accent: ExtensionAccent) {
+        if (try? bridge.publish(accent)) == true { reloadWidgets() }
+    }
+
     func clearSnapshot() {
         invalidateNoteTypes()
         try? bridge.clearSnapshot()

@@ -70,17 +70,17 @@ Any theme can be combined with any appearance mode. The settings screen shows ea
 | Theme | 中文 / 日本語 | Accent (light) | Accent (dark) | Canvas override |
 |---|---|---|---|---|
 | Hayaki (default) | 速 / 速 | `#2C776E` | `#7ED6CA` | none |
-| Sakura | 樱 / 桜 | `#D9567A` | `#FF9DB7` | none |
-| Matcha | 抹茶 / 抹茶 | `#5F8A4B` | `#A8CF8E` | none |
+| Sakura | 樱 / 桜 | `#B04663` | `#FF9DB7` | none |
+| Matcha | 抹茶 / 抹茶 | `#50743F` | `#A8CF8E` | none |
 | Ocean | 海 / 海 | `#0A6E9E` | `#5EC4F0` | none |
 | Indigo | 靛 / 藍 | `#3A5BD9` | `#8FA8FF` | none |
-| Wisteria | 藤 / 藤 | `#7E62C9` | `#B9A3F5` | none |
-| Amber | 琥珀 / 琥珀 | `#B7791F` | `#F5C451` | none |
+| Wisteria | 藤 / 藤 | `#745AB9` | `#B9A3F5` | none |
+| Amber | 琥珀 / 琥珀 | `#916019` | `#F5C451` | none |
 | Sumi | 墨 / 墨 | `#4A4A4F` | `#C7C7CC` | none |
 | Paper | 纸 / 和紙 | `#8A5A2B` | `#D9A86C` | `#F6F1E7` light, `#1E1A15` dark |
-| Midnight | 夜空 / 夜空 | `#1F8A96` | `#5EE6EE` | `#EEF3FA` light, `#0B1426` dark |
+| Midnight | 夜空 / 夜空 | `#1A757F` | `#5EE6EE` | `#EEF3FA` light, `#0B1426` dark |
 
-- **Contrast:** every accent must reach 4.5:1 against its background for text-on-background use. Check this when finalising the values; the table values are starting points.
+- **Contrast:** every accent must reach 4.5:1 against its background for text-on-background use (checked by `HayakiAppearanceTests`). The light accents of Sakura, Matcha, Wisteria, Amber and Midnight were darkened from their first values to reach it; Paper and Midnight are also checked against their canvas. Black mode keeps a pure black canvas in every theme.
 - **Adding a theme** means adding one entry of tokens, with no structural code change.
 - **Widgets** follow the selected theme accent.
 - **Hayaki** is the default. Its teal comes from the app icon's background, so the icon and the app read as one brand. The light accent is `#2C776E`, darkened slightly from the icon's `#2E7D74` so it reaches 4.5:1 on the tinted grouped background.
