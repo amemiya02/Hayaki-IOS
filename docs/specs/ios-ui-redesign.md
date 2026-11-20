@@ -69,11 +69,11 @@ Any theme can be combined with any appearance mode. The settings screen shows ea
 
 | Theme | 中文 / 日本語 | Accent (light) | Accent (dark) | Canvas override |
 |---|---|---|---|---|
-| Hayaki (default) | 晨 / 暁 | `#3A5BD9` | `#8FA8FF` | none |
+| Shu (default) | 朱 / 朱 | `#A63D25` | `#FF8E70` | none |
 | Sakura | 樱 / 桜 | `#D9567A` | `#FF9DB7` | none |
 | Matcha | 抹茶 / 抹茶 | `#5F8A4B` | `#A8CF8E` | none |
 | Ocean | 海 / 海 | `#0A6E9E` | `#5EC4F0` | none |
-| Sunset | 夕 / 夕焼け | `#E2643A` | `#FF9F7A` | none |
+| Indigo | 靛 / 藍 | `#3A5BD9` | `#8FA8FF` | none |
 | Wisteria | 藤 / 藤 | `#7E62C9` | `#B9A3F5` | none |
 | Amber | 琥珀 / 琥珀 | `#B7791F` | `#F5C451` | none |
 | Sumi | 墨 / 墨 | `#4A4A4F` | `#C7C7CC` | none |
@@ -83,6 +83,7 @@ Any theme can be combined with any appearance mode. The settings screen shows ea
 - **Contrast:** every accent must reach 4.5:1 against its background for text-on-background use. Check this when finalising the values; the table values are starting points.
 - **Adding a theme** means adding one entry of tokens, with no structural code change.
 - **Widgets** follow the selected theme accent.
+- **Shu** uses the app icon's brick red, so the icon and the app read as one brand. The icon is redrawn to match (see #43).
 
 ## Navigation rules (all tabs)
 
