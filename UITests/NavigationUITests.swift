@@ -23,6 +23,7 @@ final class NavigationUITests: XCTestCase {
         XCTAssertTrue(vocabulary.waitForExistence(timeout: 60))
         XCTAssertTrue(app.staticTexts["due-today"].exists)
         XCTAssertTrue(app.staticTexts["studied-today"].exists)
+        XCTAssertTrue(app.buttons["study-all"].exists)
         vocabulary.tap()
 
         let showAnswer = app.buttons["show-answer"]

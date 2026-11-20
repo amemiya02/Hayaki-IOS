@@ -44,7 +44,14 @@ public struct DeckCounts: Equatable, Sendable {
     public let learning: Int
     public let due: Int
 
-    public var isEmpty: Bool { new == 0 && learning == 0 && due == 0 }
+    public init(new: Int, learning: Int, due: Int) {
+        self.new = new
+        self.learning = learning
+        self.due = due
+    }
+
+    public var total: Int { new + learning + due }
+    public var isEmpty: Bool { total == 0 }
 }
 
 /// The deck list: every deck as a nested list with today's counts.
@@ -66,10 +73,32 @@ public final class DeckListModel {
     /// New, learning and due cards left today over all decks. Summing the
     /// top-level decks avoids double-counting subdecks or using the capped
     /// aggregate from the core's root node.
-    public var dueToday: Int {
-        decks.reduce(0) { total, deck in
-            total + deck.counts.new + deck.counts.learning + deck.counts.due
-        }
+    public var dueToday: Int { today.total }
+
+    /// Today's new, learning and due cards over all decks, for the Today
+    /// card. Summing the top-level decks avoids double-counting subdecks.
+    public var today: DeckCounts {
+        DeckCounts(
+            new: decks.reduce(0) { $0 + $1.counts.new },
+            learning: decks.reduce(0) { $0 + $1.counts.learning },
+            due: decks.reduce(0) { $0 + $1.counts.due }
+        )
+    }
+
+    /// The decks Study All goes through, one after another: every top-level
+    /// deck with cards left today, in list order. The core's queue is always
+    /// one deck and its subdecks, so the top-level decks together cover the
+    /// whole collection; a collection of just the Default deck studies it.
+    public var studyAllDecks: [DeckNode] {
+        decks.filter { !$0.counts.isEmpty }
+    }
+
+    /// The deck Study All opens after the learner closes `deckID`: the next
+    /// deck with cards left once `deckID` is finished, or nil when the
+    /// learner closed it early or nothing is left.
+    public func nextStudyAllDeck(after deckID: DeckNode.ID) -> DeckNode? {
+        if let closed = deck(deckID), !closed.counts.isEmpty { return nil }
+        return studyAllDecks.first
     }
 
     /// Whether the collection has no cards at all, as on first launch, so
