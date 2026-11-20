@@ -3,6 +3,11 @@ name: CI
 on:
   push:
   workflow_dispatch:
+    inputs:
+      joint_release_only:
+        description: "Run shared study, About and localization scenarios on iPhone and iPad."
+        type: boolean
+        default: false
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -92,6 +97,7 @@ jobs:
           key: ${{ steps.server-cache.outputs.cache-primary-key }}
 
       - name: Run the tests on the Mac
+        if: ${{ !inputs.joint_release_only }}
         run: scripts/test.sh
 
       - name: Generate the Xcode project
@@ -164,11 +170,24 @@ jobs:
 
           phone=$(select_simulator iPhone "iPhone 18 Pro")
           tablet=$(select_simulator iPad "iPad Pro 11-inch (M5)")
+          tablet_tests=(-only-testing:HayakiUITests/NavigationUITests)
+          phone_tests=()
+          if [[ "${{ inputs.joint_release_only }}" == "true" ]]; then
+            shared_study=-only-testing:HayakiUITests/StudyUITests/testStudyAllFinishesOneDeckAndAllowsAnEarlyExitFromTheNext
+            tablet_tests+=("$shared_study")
+            phone_tests=(
+              "$shared_study"
+              -only-testing:HayakiUITests/StudyUITests/testOpeningADeckRevealingAndRatingACard
+              -only-testing:HayakiUITests/StudyUITests/testStudyingADeckToTheEnd
+              -only-testing:HayakiUITests/HelpAndAboutUITests/testAboutIdentifiesThisBuildAndOpensItsChangelog
+              -only-testing:HayakiUITests/LocalizationUITests
+            )
+          fi
           tablet_result=0
-          run_ui_tests "$tablet" UITests-iPad -only-testing:HayakiUITests/NavigationUITests || tablet_result=$?
+          run_ui_tests "$tablet" UITests-iPad "${tablet_tests[@]}" || tablet_result=$?
           xcrun simctl shutdown "$tablet" || true
           phone_result=0
-          run_ui_tests "$phone" UITests-iPhone || phone_result=$?
+          run_ui_tests "$phone" UITests-iPhone ${phone_tests[@]+"${phone_tests[@]}"} || phone_result=$?
           xcrun simctl shutdown "$phone" || true
 
           # The XCTest service sometimes crashes before any test starts.
@@ -177,7 +196,7 @@ jobs:
              python3 -c 'import sys; from pathlib import Path; log = Path(sys.argv[1]).read_text(); sys.exit(not ("operation never finished bootstrapping" in log and "Test Case " not in log))' build/UITests-iPhone.log &&
              retry=$(select_simulator iPhone "iPhone 17" "$phone"); then
             phone_result=0
-            run_ui_tests "$retry" UITests-iPhone-Retry || phone_result=$?
+            run_ui_tests "$retry" UITests-iPhone-Retry ${phone_tests[@]+"${phone_tests[@]}"} || phone_result=$?
             xcrun simctl shutdown "$retry" || true
           fi
 
@@ -192,3 +211,7 @@ jobs:
           name: hayaki-simulator-results
           path: build/UITests-*.xcresult
           if-no-files-found: ignore
+
+      - name: Verify packages used by the joint release
+        if: inputs.joint_release_only
+        run: scripts/test.sh StudyFeature SettingsFeature AppShell CollectionStore
