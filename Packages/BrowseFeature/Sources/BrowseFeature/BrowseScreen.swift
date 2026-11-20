@@ -3,6 +3,7 @@ import HayakiAppearance
 import DecksFeature
 import NoteEditorFeature
 import PackagesFeature
+import StudyFeature
 import SwiftUI
 
 /// How the Browse section appears in the tab bar and sidebar.
@@ -42,9 +43,6 @@ public struct BrowseScreen: View {
         NavigationStack {
             browseLayout
                 .navigationTitle(title)
-                #if os(iOS)
-                .navigationBarTitleDisplayMode(.inline)
-                #endif
                 .navigationDestination(for: CardLink.self) { link in
                     CardInfoScreen(store: store, cardID: link.cardID)
                 }
@@ -187,23 +185,10 @@ public struct BrowseScreen: View {
                 .disabled(model.selection.isEmpty || model.isPerformingAction)
             }
         } else {
+            // One glass capsule: Add Note and a menu with the rest.
             ToolbarItemGroup(placement: .primaryAction) {
-                Button {
-                    sheet = .filters
-                } label: {
-                    Label {
-                        Text("Filters", bundle: .module)
-                    } icon: { Image(systemName: "line.3.horizontal.decrease") }
-                }
+                AddNoteButton { sheet = .addNote }
                 configurationMenu
-            }
-            ToolbarItem(placement: .primaryAction) {
-                Button {
-                    isSelecting = true
-                } label: {
-                    Text("Select", bundle: .module)
-                }
-                .disabled(model.rowIDs.isEmpty)
             }
         }
     }
@@ -254,7 +239,23 @@ public struct BrowseScreen: View {
 
     private var configurationMenu: some View {
         Menu {
+            Button {
+                isSelecting = true
+            } label: {
+                Label {
+                    Text("Select", bundle: .module)
+                } icon: { Image(systemName: "checkmark.circle") }
+            }
+            .disabled(model.rowIDs.isEmpty)
             BrowserUndoMenuAction(model: model)
+            Divider()
+            Button {
+                sheet = .filters
+            } label: {
+                Label {
+                    Text("Filters", bundle: .module)
+                } icon: { Image(systemName: "line.3.horizontal.decrease") }
+            }
             SortMenu(model: model)
             Button {
                 sheet = .columns
@@ -306,7 +307,7 @@ public struct BrowseScreen: View {
         } label: {
             Label {
                 Text("Browse Options", bundle: .module)
-            } icon: { Image(systemName: "ellipsis.circle") }
+            } icon: { Image(systemName: "ellipsis") }
         }
     }
 
@@ -319,6 +320,7 @@ public struct BrowseScreen: View {
         case .flags: BrowserFlagLabelsSheet(model: model)
         case .filteredDeck(let search): FilteredDeckScreen(store: store, initialSearch: search)
         case .editing(let cardID): NoteEditorScreen(store: store, editingCardID: cardID)
+        case .addNote: NoteEditorScreen(store: store)
         case .preview(let cardIDs): BrowserPreviewScreen(store: store, cardIDs: cardIDs)
         case .textExport(let selection): TextExportScreen(store: store, selection: selection)
         case .packageExport(let selection): PackageExportScreen(store: store, selection: selection)
@@ -495,7 +497,7 @@ public struct BrowseScreen: View {
 }
 
 private enum BrowseSheet: Identifiable {
-    case filters, columns, savedSearches, flags, editing(Int64), preview([Int64])
+    case filters, columns, savedSearches, flags, editing(Int64), preview([Int64]), addNote
     case textExport(ExportSelection), packageExport(ExportSelection), filteredDeck(String)
 
     var id: Int {
@@ -509,6 +511,7 @@ private enum BrowseSheet: Identifiable {
         case .packageExport: 6
         case .flags: 7
         case .filteredDeck: 8
+        case .addNote: 9
         }
     }
 }

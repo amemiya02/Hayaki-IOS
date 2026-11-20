@@ -7,8 +7,8 @@ import StudyFeature
 import SwiftUI
 
 extension View {
-    /// Lets the learner organise the decks of `model`: a toolbar button to
-    /// create a deck, and the sheets and alerts behind each deck row's
+    /// Lets the learner organise the decks of `model`: the sheets and alerts
+    /// behind `NewDeckButton`, `NewFilteredDeckButton` and each deck row's
     /// actions (see `deckActions(for:)`).
     func deckManagement(
         _ model: DeckListModel, profileID: UUID?, onStudy: @escaping (StudyDeck) -> Void
@@ -37,23 +37,6 @@ private struct DeckManagement: ViewModifier {
     func body(content: Content) -> some View {
         content
             .environment(request)
-            .toolbar {
-                ToolbarItem(placement: .primaryAction) {
-                    NewDeckButton()
-                        .environment(request)
-                }
-                ToolbarItem(placement: .secondaryAction) {
-                    Button {
-                        request.pending = .filteredOptions(nil)
-                    } label: {
-                        Label {
-                            Text("New Filtered Deck", bundle: .module)
-                        } icon: {
-                            Image(systemName: "line.3.horizontal.decrease")
-                        }
-                    }
-                }
-            }
             .sheet(item: sheet, onDismiss: startPendingStudy) { action in
                 switch action {
                 case .create(let parentID):
@@ -236,6 +219,22 @@ struct NewDeckButton: View {
                 Text("New Deck", bundle: .module)
             } icon: {
                 Image(systemName: "rectangle.stack.badge.plus")
+            }
+        }
+    }
+}
+
+struct NewFilteredDeckButton: View {
+    @Environment(DeckActionRequest.self) private var request: DeckActionRequest
+
+    var body: some View {
+        Button {
+            request.pending = .filteredOptions(nil)
+        } label: {
+            Label {
+                Text("New Filtered Deck", bundle: .module)
+            } icon: {
+                Image(systemName: "line.3.horizontal.decrease")
             }
         }
     }

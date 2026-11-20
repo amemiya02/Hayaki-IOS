@@ -97,6 +97,9 @@ public struct SyncScreen: View {
             SyncPolicySection(model: model)
         }
         .navigationTitle(Text("Sync", bundle: .module))
+        #if os(iOS)
+        .navigationBarTitleDisplayMode(.inline)
+        #endif
         .onDisappear { model.dismissMeteredConfirmation() }
         .onChange(of: model.needsMeteredConfirmation, initial: true) { _, needed in
             confirmingMetered = needed

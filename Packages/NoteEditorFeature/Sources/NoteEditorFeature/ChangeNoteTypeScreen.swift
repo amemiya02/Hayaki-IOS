@@ -24,6 +24,9 @@ public struct ChangeNoteTypeScreen: View {
         NavigationStack {
             content
                 .navigationTitle(Text("Change Note Type", bundle: .module))
+                #if os(iOS)
+                .navigationBarTitleDisplayMode(.inline)
+                #endif
                 .toolbar {
                     ToolbarItem(placement: .cancellationAction) {
                         Button(role: .cancel) { dismiss() }.disabled(busy)

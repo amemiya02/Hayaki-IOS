@@ -1,7 +1,41 @@
 import SwiftUI
 
-enum ReviewerToolbarPosition: String, Codable, CaseIterable {
-    case top, bottom, hidden
+/// Whether actions marked for the toolbar get their own buttons in the
+/// study screen's navigation bar, or everything sits in its `⋯` menu.
+enum ReviewerToolbarStyle: String, Codable, CaseIterable {
+    case buttonsInBar, menuOnly
+
+    /// The style for a toolbar position saved by an earlier version: the
+    /// top and bottom bars become buttons in the bar, a hidden one the menu.
+    init(legacyPosition: String) {
+        self = legacyPosition == "hidden" ? .menuOnly : .buttonsInBar
+    }
+
+    var title: String {
+        switch self {
+        case .buttonsInBar: reviewerLocalized("Buttons in Bar")
+        case .menuOnly: reviewerLocalized("Menu Only")
+        }
+    }
+}
+
+/// The reviewer actions shown as buttons in the bar and those in its menu.
+struct ReviewerToolbarLayout: Equatable {
+    var bar: [ReviewerToolbarAction]
+    var menu: [ReviewerToolbarAction]
+}
+
+extension ReviewerPreferences {
+    /// Lays out the available actions in the learner's order, leaving out
+    /// those they hid.
+    func toolbarLayout(isAvailable: (ReviewerToolbarAction) -> Bool) -> ReviewerToolbarLayout {
+        let shown = toolbarOrder.filter { visibility(of: $0) != .hidden && isAvailable($0) }
+        if toolbarStyle == .menuOnly { return ReviewerToolbarLayout(bar: [], menu: shown) }
+        return ReviewerToolbarLayout(
+            bar: shown.filter { visibility(of: $0) == .toolbar },
+            menu: shown.filter { visibility(of: $0) == .menu }
+        )
+    }
 }
 
 enum ReviewerToolbarVisibility: String, Codable, CaseIterable {
@@ -72,6 +106,10 @@ enum ReviewerToolbarAction: String, Identifiable, CaseIterable, Codable {
     }
 }
 
+/// The reviewer's actions: buttons for those shown in the bar, and the `⋯`
+/// menu with the rest. The study screen puts both in its navigation bar;
+/// on its own (when a card's template hides the navigation bar) the view
+/// lays them out in a row.
 struct ReviewerToolbar: View {
     let model: StudySessionModel
     let preferences: ReviewerPreferences
@@ -83,35 +121,48 @@ struct ReviewerToolbar: View {
         HStack(spacing: 4) {
             ScrollView(.horizontal) {
                 HStack(spacing: 4) {
-                    ForEach(actions(in: .toolbar)) { action in
-                        item(action)
-                            .labelStyle(.iconOnly)
-                            .frame(minWidth: 40, minHeight: 44)
-                    }
+                    barButtons
+                        .frame(minWidth: 40, minHeight: 44)
                 }
             }
             .scrollIndicators(.hidden)
-            .fixedSize(horizontal: actions(in: .toolbar).count <= 1, vertical: false)
-            Menu {
-                ForEach(actions(in: .menu)) { action in item(action) }
-                Button(reviewerLocalized("Reviewer Settings"), systemImage: "gear", action: onSettings)
-            } label: {
-                let flag = StudyFlag(rawValue: model.state.card?.flag ?? 0) ?? .clear
-                Image(systemName: flag == .clear ? "ellipsis.circle" : "flag.fill")
-                    .foregroundStyle(flag.color)
-                    .font(.title3)
-                    .frame(width: 44, height: 44)
-            }
-            .accessibilityLabel(Text("Study Actions", bundle: .module))
+            .fixedSize(horizontal: layout.bar.count <= 1, vertical: false)
+            menu
+                .font(.title3)
+                .frame(width: 44, height: 44)
         }
         .buttonStyle(.plain)
-        .disabled(model.isBusy)
     }
 
-    private func actions(in visibility: ReviewerToolbarVisibility) -> [ReviewerToolbarAction] {
-        preferences.toolbarOrder.filter {
-            preferences.visibility(of: $0) == visibility && isAvailable($0)
+    /// One icon button for each action shown in the bar.
+    var barButtons: some View {
+        ForEach(layout.bar) { action in
+            item(action)
+                .labelStyle(.iconOnly)
+                .disabled(model.isBusy)
         }
+    }
+
+    /// Every other action, then the reviewer settings. A flagged card tints
+    /// the menu's icon with its flag's colour.
+    var menu: some View {
+        let flag = StudyFlag(rawValue: model.state.card?.flag ?? 0) ?? .clear
+        return Menu {
+            ForEach(layout.menu) { action in item(action) }
+            Divider()
+            Button(reviewerLocalized("Reviewer Settings"), systemImage: "gear", action: onSettings)
+        } label: {
+            Image(systemName: "ellipsis")
+                .foregroundStyle(flag.color)
+        }
+        .tint(flag == .clear ? nil : flag.color)
+        .disabled(model.isBusy)
+        .accessibilityLabel(Text("Study Actions", bundle: .module))
+        .accessibilityValue(flag == .clear ? Text(verbatim: "") : flag.title)
+    }
+
+    private var layout: ReviewerToolbarLayout {
+        preferences.toolbarLayout(isAvailable: isAvailable)
     }
 
     private func isAvailable(_ action: ReviewerToolbarAction) -> Bool {

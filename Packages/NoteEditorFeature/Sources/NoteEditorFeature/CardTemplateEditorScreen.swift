@@ -40,6 +40,9 @@ struct CardTemplateEditorScreen: View {
         NavigationStack {
             content
                 .navigationTitle(Text("Card Templates", bundle: .module))
+                #if os(iOS)
+                .navigationBarTitleDisplayMode(.inline)
+                #endif
                 .toolbar { toolbar }
                 .navigationDestination(isPresented: $showingPreview) {
                     if let preview {
@@ -246,6 +249,9 @@ struct CardTemplateEditorScreen: View {
             }
         }
         .navigationTitle(Text("Deck Override", bundle: .module))
+        #if os(iOS)
+        .navigationBarTitleDisplayMode(.inline)
+        #endif
         .task {
             do {
                 decks = try await model.store.core.getDeckNames(.with { $0.includeFiltered = false }).entries.map {
@@ -366,6 +372,9 @@ private struct BrowserAppearanceScreen: View {
         }
         .disabled(busy)
         .navigationTitle(Text("Browser Appearance", bundle: .module))
+        #if os(iOS)
+        .navigationBarTitleDisplayMode(.inline)
+        #endif
         .toolbar {
             ToolbarItemGroup(placement: .primaryAction) {
                 Button {

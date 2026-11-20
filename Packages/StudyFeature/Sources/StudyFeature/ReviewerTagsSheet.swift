@@ -22,6 +22,9 @@ struct ReviewerTagsSheet: View {
                 }
             }
             .navigationTitle(reviewerLocalized("Edit Tags"))
+            #if os(iOS)
+            .navigationBarTitleDisplayMode(.inline)
+            #endif
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button(reviewerLocalized("Cancel"), role: .cancel) { dismiss() }.disabled(isSaving)

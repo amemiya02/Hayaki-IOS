@@ -52,5 +52,8 @@ private struct CardTemplateSettings: View {
             }
         }
         .navigationTitle(Text("Card Template Permissions", bundle: .module))
+        #if os(iOS)
+        .navigationBarTitleDisplayMode(.inline)
+        #endif
     }
 }

@@ -52,6 +52,9 @@ struct BrowserPreviewScreen: View {
                 }
             }
             .navigationTitle(Text("Preview", bundle: .module))
+            #if os(iOS)
+            .navigationBarTitleDisplayMode(.inline)
+            #endif
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button { dismiss() } label: { Text("Done", bundle: .module) }

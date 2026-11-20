@@ -68,6 +68,9 @@ public struct CustomStudyScreen: View {
             }
             .disabled(model.isWorking)
             .navigationTitle(Text("Custom Study", bundle: .module))
+            #if os(iOS)
+            .navigationBarTitleDisplayMode(.inline)
+            #endif
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button(role: .cancel) { dismiss() } label: { Text("Cancel", bundle: .module) }

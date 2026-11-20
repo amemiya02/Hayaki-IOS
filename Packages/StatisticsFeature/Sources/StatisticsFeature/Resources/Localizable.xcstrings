@@ -2244,6 +2244,23 @@
           }
         }
       }
+    },
+    "Statistics Options" : {
+      "comment" : "Accessibility label of the ⋯ menu in the Statistics toolbar.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "統計のオプション"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "统计选项"
+          }
+        }
+      }
     }
   },
   "version" : "1.0"
