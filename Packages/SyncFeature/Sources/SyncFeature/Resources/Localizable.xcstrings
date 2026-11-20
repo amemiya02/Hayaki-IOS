@@ -1544,6 +1544,125 @@
           }
         }
       }
+    },
+    "Connecting…" : {
+      "comment" : "Status line in the sync progress strip while connecting to the sync server.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "接続中…"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正在连接…"
+          }
+        }
+      }
+    },
+    "Syncing Collection" : {
+      "comment" : "Status line in the sync progress strip while collection changes are exchanged.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "コレクションを同期中"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正在同步集合"
+          }
+        }
+      }
+    },
+    "Uploading Collection" : {
+      "comment" : "Status line in the sync progress strip during a one-way upload.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "コレクションをアップロード中"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正在上传集合"
+          }
+        }
+      }
+    },
+    "Downloading Collection" : {
+      "comment" : "Status line in the sync progress strip during a one-way download.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "コレクションをダウンロード中"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正在下载集合"
+          }
+        }
+      }
+    },
+    "Syncing Media" : {
+      "comment" : "Status line in the sync progress strip while media files transfer; followed by the counts.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "メディアを同期中"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正在同步媒体"
+          }
+        }
+      }
+    },
+    "Dismiss" : {
+      "comment" : "Button that hides the sync failure strip.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "閉じる"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "关闭"
+          }
+        }
+      }
+    },
+    "Sync Progress" : {
+      "comment" : "Accessibility label of the sync progress strip above the tab bar.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "同期の進行状況"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "同步进度"
+          }
+        }
+      }
     }
   },
   "version" : "1.0"

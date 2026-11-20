@@ -65,6 +65,7 @@ struct SectionsView: View {
         }
         .tabViewStyle(.sidebarAdaptable)
         .sidebarOnWideScreens()
+        .syncProgressAccessory(sync)
         .addNoteAction(store: store)
         .reviewerDestination { route, study in
             ReviewerDestinationView(route: route, store: store, study: study)

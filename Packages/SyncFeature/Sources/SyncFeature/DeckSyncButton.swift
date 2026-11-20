@@ -4,6 +4,7 @@ import SwiftUI
 public struct DeckSyncButton: View {
     private let model: SyncModel
     @State private var showsSync = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     public init(model: SyncModel) {
         self.model = model
@@ -16,6 +17,7 @@ public struct DeckSyncButton: View {
             Task { await model.sync() }
         } label: {
             Image(systemName: "arrow.triangle.2.circlepath")
+                .symbolEffect(.rotate, options: .repeat(.continuous), isActive: model.isTransferring && !reduceMotion)
                 .overlay(alignment: .topTrailing) {
                     if let badge = model.badge {
                         Image(systemName: badge == .oneWay ? "exclamationmark.circle.fill" : "circle.fill")
@@ -47,7 +49,8 @@ public struct DeckSyncButton: View {
     }
 
     private var badgeDescription: Text {
-        switch model.badge {
+        if model.isTransferring { return Text("Syncing…", bundle: .module) }
+        return switch model.badge {
         case .signedOut: Text("Signed Out", bundle: .module)
         case .pendingChanges: Text("Changes to Sync", bundle: .module)
         case .oneWay: Text("One-Way Sync Required", bundle: .module)
