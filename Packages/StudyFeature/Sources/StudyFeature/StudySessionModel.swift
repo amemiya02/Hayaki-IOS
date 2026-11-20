@@ -28,6 +28,11 @@ public struct SessionSummary: Equatable, Sendable {
 
     /// Reviews made in this session.
     public let reviewed: Int
+    /// How many of this session's reviews got each rating.
+    public let ratings: RatingBreakdown
+    /// The answer time the core recorded for this session's reviews, as
+    /// Anki counts studying time.
+    public let timeSpent: Duration
     /// The core's own description of today's studying in this collection,
     /// such as "Studied 12 cards in 3.5 minutes today (17.5s/card)", in the
     /// core's language.
@@ -35,6 +40,27 @@ public struct SessionSummary: Equatable, Sendable {
     /// Learning cards of the deck that come due later today, beyond Anki's
     /// learn-ahead limit.
     public let learningLaterToday: Int
+}
+
+/// How many reviews got each rating.
+public struct RatingBreakdown: Equatable, Sendable {
+    private var counts: [Rating: Int] = [:]
+
+    public init() {}
+
+    public subscript(rating: Rating) -> Int {
+        get { counts[rating, default: 0] }
+        set { counts[rating] = newValue }
+    }
+
+    public var total: Int { counts.values.reduce(0, +) }
+}
+
+/// One review answered in this session, kept so undo and redo can take it
+/// out of the session's summary and put it back.
+private struct SessionReview {
+    let rating: Rating
+    let taken: Duration
 }
 
 /// A study session over one deck: the learner sees each card's question,
@@ -124,8 +150,10 @@ public final class StudySessionModel {
 
     // The core assigns a new counter whenever it applies, undoes or redoes
     // a step. Keep only review counters from this session in these sets.
-    @ObservationIgnored private var appliedReviews: Set<UInt32> = []
-    @ObservationIgnored private var revertedReviews: Set<UInt32> = []
+    @ObservationIgnored private var appliedReviews: [UInt32: SessionReview] = [:]
+    @ObservationIgnored private var revertedReviews: [UInt32: SessionReview] = [:]
+    @ObservationIgnored private var sessionRatings = RatingBreakdown()
+    @ObservationIgnored private var sessionTime: Duration = .zero
 
     @ObservationIgnored let store: CollectionStore
     public let deckID: Int64
@@ -349,6 +377,8 @@ public final class StudySessionModel {
         defer { isAnswering = false }
         do {
             let taken = min(ContinuousClock.now - questionShownAt, try await answerTimeCap(for: card))
+            let millisecondsTaken = UInt32(taken.components.seconds * 1000
+                + taken.components.attoseconds / 1_000_000_000_000_000)
             let newState: Anki_Scheduler_SchedulingState = switch rating {
             case .again: card.states.again
             case .hard: card.states.hard
@@ -361,17 +391,18 @@ public final class StudySessionModel {
                 $0.newState = newState
                 $0.rating = rating.proto
                 $0.answeredAtMillis = Int64(Date().timeIntervalSince1970 * 1000)
-                $0.millisecondsTaken = UInt32(taken.components.seconds * 1000
-                    + taken.components.attoseconds / 1_000_000_000_000_000)
+                $0.millisecondsTaken = millisecondsTaken
             }))
+            let review = SessionReview(rating: rating, taken: .milliseconds(millisecondsTaken))
             reviewedCount += 1
+            count(review, sign: 1)
             previousCardID = card.id
             if (try? await store.core.stateIsLeech(newState).val) == true {
                 let updated = try? await store.core.getCard(.with { $0.cid = card.id })
                 leechFeedback = updated?.queue == -1 ? .suspended : .tagged
             }
             if let status = try? await store.core.getUndoStatus(), !status.undo.isEmpty {
-                appliedReviews.insert(status.lastStep)
+                appliedReviews[status.lastStep] = review
             }
             revertedReviews.removeAll()
         } catch {
@@ -424,9 +455,10 @@ public final class StudySessionModel {
         guard canUndo else { return }
         await runAction { () async throws(CoreError) in
             let result = try await store.modify(.undo())
-            if appliedReviews.remove(result.counter) != nil {
+            if let review = appliedReviews.removeValue(forKey: result.counter) {
                 reviewedCount -= 1
-                revertedReviews.insert(result.newStatus.lastStep)
+                count(review, sign: -1)
+                revertedReviews[result.newStatus.lastStep] = review
             }
             await showNextCard()
         }
@@ -436,12 +468,18 @@ public final class StudySessionModel {
         guard canRedo else { return }
         await runAction { () async throws(CoreError) in
             let result = try await store.modify(.redo())
-            if revertedReviews.remove(result.counter) != nil {
+            if let review = revertedReviews.removeValue(forKey: result.counter) {
                 reviewedCount += 1
-                appliedReviews.insert(result.newStatus.lastStep)
+                count(review, sign: 1)
+                appliedReviews[result.newStatus.lastStep] = review
             }
             await showNextCard()
         }
+    }
+
+    private func count(_ review: SessionReview, sign: Int) {
+        sessionRatings[review.rating] += sign
+        sessionTime += review.taken * sign
     }
 
     public func bury(note: Bool) async {
@@ -594,6 +632,8 @@ public final class StudySessionModel {
             nextDayStartsAt: Date(timeIntervalSince1970: Double(nextDay)),
             isFiltered: congrats.isFilteredDeck,
             reviewed: reviewedCount,
+            ratings: sessionRatings,
+            timeSpent: sessionTime,
             studiedToday: try await store.core.studiedToday().val.withoutIsolationMarks,
             learningLaterToday: Int(congrats.learnRemaining)
         )
