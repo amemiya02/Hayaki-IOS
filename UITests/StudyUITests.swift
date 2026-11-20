@@ -22,6 +22,8 @@ final class StudyUITests: XCTestCase {
             XCUIDevice.shared.orientation = .landscapeLeft
         }
         app = XCUIApplication()
+        // English labels below, whatever the simulator's language.
+        app.launchArguments += ["-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
         app.launchEnvironment["HAYAKI_UI_TEST_COLLECTION_PACKAGE"] = package.path
         app.launch()
     }
@@ -37,12 +39,17 @@ final class StudyUITests: XCTestCase {
         XCTAssertTrue(navigationBar.buttons["Close"].exists)
         let studyActions = navigationBar.buttons["Study Actions"]
         XCTAssertTrue(studyActions.exists)
+        // The Decks toolbar's Add Note stays in the hierarchy under the study
+        // screen, so the menu's own Add Note is one more.
+        let addNote = app.buttons.matching(NSPredicate(format: "label == %@", "Add Note"))
+        let addNoteOutsideMenu = addNote.count
         studyActions.tap()
-        XCTAssertTrue(app.buttons["Add Note"].waitForExistence(timeout: 5), "Add Note is in the study menu")
-        XCTAssertTrue(app.buttons["Reviewer Settings"].exists)
+        let reviewerSettings = app.buttons["Reviewer Settings"]
+        XCTAssertTrue(reviewerSettings.waitForExistence(timeout: 5))
+        XCTAssertEqual(addNote.count, addNoteOutsideMenu + 1, "Add Note is in the study menu")
         // Dismiss the menu without choosing an action.
         app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
-        XCTAssertTrue(app.buttons["Add Note"].waitForNonExistence(timeout: 5))
+        XCTAssertTrue(reviewerSettings.waitForNonExistence(timeout: 5))
         // A Cloze card's question is drawn in the web view, with its deletion
         // hidden. Generous: the web view's first page load can take many
         // seconds on a busy machine.
@@ -84,7 +91,10 @@ final class StudyUITests: XCTestCase {
             XCTAssertLessThan(reviews, 6, "The session should end")
         }
         XCTAssertGreaterThan(reviews, 0)
-        let summary = app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH %@", "You reviewed \(reviews) card"))
+        // The session card shows the cards reviewed as a figure over its label.
+        let summary = app.descendants(matching: .any).matching(NSPredicate(
+            format: "label BEGINSWITH %@ AND label CONTAINS %@", "\(reviews)", "Reviewed"
+        ))
         XCTAssertTrue(summary.firstMatch.exists)
         attachScreen("4 summary")
 

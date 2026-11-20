@@ -5,6 +5,8 @@ final class ProfilesUITests: XCTestCase {
     func testAddSwitchAndReopenProfile() {
         continueAfterFailure = false
         let app = XCUIApplication()
+        // English labels below, whatever the simulator's language.
+        app.launchArguments += ["-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
         app.launchEnvironment["HAYAKI_UI_TEST_EMPTY_COLLECTION"] = UUID().uuidString
         app.launch()
 

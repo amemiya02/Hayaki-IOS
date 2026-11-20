@@ -158,7 +158,13 @@ final class CardContentUITests: XCTestCase {
 
     private func openDeck(_ name: String) {
         let row = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", name)).firstMatch
-        XCTAssertTrue(row.waitForExistence(timeout: 60), "The deck list shows \(name)")
+        // At accessibility text sizes the Today card fills the first screen,
+        // so the deck rows sit below it.
+        XCTAssertTrue(app.buttons["study-all"].waitForExistence(timeout: 60), "The deck list is shown")
+        for _ in 0..<6 where !(row.exists && row.isHittable) {
+            app.swipeUp(velocity: .slow)
+        }
+        XCTAssertTrue(row.waitForExistence(timeout: 10), "The deck list shows \(name)")
         row.tap()
     }
 

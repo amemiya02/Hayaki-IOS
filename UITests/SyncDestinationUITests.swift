@@ -8,6 +8,8 @@ final class SyncDestinationUITests: XCTestCase {
             Bundle(for: SyncDestinationUITests.self).url(forResource: "collection", withExtension: "colpkg")
         )
         let app = XCUIApplication()
+        // English labels below, whatever the simulator's language.
+        app.launchArguments += ["-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
         app.launchEnvironment["HAYAKI_UI_TEST_COLLECTION_PACKAGE"] = package.path
         app.launch()
 

@@ -18,6 +18,8 @@ final class DeckOptionsUITests: XCTestCase {
             "The fixture collection package is missing from the UI test bundle"
         )
         app = XCUIApplication()
+        // English labels below, whatever the simulator's language.
+        app.launchArguments += ["-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
         app.launchEnvironment["HAYAKI_UI_TEST_COLLECTION_PACKAGE"] = package.path
         app.launch()
     }
