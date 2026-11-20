@@ -26,6 +26,11 @@ final class SyncDestinationUITests: XCTestCase {
         let destinationText = [destination.label, destination.value as? String ?? ""].joined(separator: " ")
         XCTAssertTrue(destinationText.contains("AnkiWeb") || app.staticTexts["AnkiWeb"].exists)
 
+        // Without credentials, Sign In is a disabled button, not a field.
+        let signIn = app.buttons["sign-in"]
+        XCTAssertTrue(signIn.exists)
+        XCTAssertFalse(signIn.isEnabled)
+
         let address = app.textFields["server-address"]
         XCTAssertFalse(address.exists)
         destination.tap()

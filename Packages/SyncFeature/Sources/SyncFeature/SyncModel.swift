@@ -118,6 +118,11 @@ public final class SyncModel {
 
     public var isChangingDestination: Bool { statusBeforeDestinationChange != nil }
 
+    /// When a collection sync with the current sign-in last finished.
+    public var lastCollectionSync: Date? { account?.lastCollectionSync }
+    /// When a media sync with the current sign-in last finished.
+    public var lastMediaSync: Date? { account?.lastMediaSync }
+
     @ObservationIgnored private let store: CollectionStore
     @ObservationIgnored private let storage: any SyncAccountStorage
     @ObservationIgnored private let onCollectionDownloaded: (() -> Void)?
@@ -200,6 +205,13 @@ public final class SyncModel {
         default:
             if case .syncing = mediaStatus { true } else { false }
         }
+    }
+
+    /// Whether the collection or media is being transferred, which Cancel stops.
+    public var isTransferring: Bool {
+        if case .syncing = status { return true }
+        if case .syncing = mediaStatus { return true }
+        return false
     }
 
     private var canEditSignIn: Bool {
@@ -654,6 +666,13 @@ public final class SyncModel {
         store.signal(.everything)
         requiresFreshCollectionSync = false
         lastKnownBadge = nil
+        if var account {
+            account.lastCollectionSync = now()
+            // The time is only shown, so a Keychain failure must not turn a
+            // finished sync into a failed one; it is kept for this launch.
+            try? storage.save(account)
+            self.account = account
+        }
         status = .synced(outcome)
         if outcome.kind == .downloaded { onCollectionDownloaded?() }
         if syncMedia { await self.syncMedia(after: outcome) }
@@ -668,6 +687,7 @@ public final class SyncModel {
         mediaStatus = .syncing(nil)
         func save(_ phase: SavedMediaSync.Phase) throws {
             account.mediaSync = SavedMediaSync(phase: phase, collection: outcome)
+            if phase == .synced { account.lastMediaSync = now() }
             try storage.save(account)
             self.account = account
         }
