@@ -29,15 +29,14 @@ public struct StatisticsScreen: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
+                    errorBanners
                     periodPicker
                     if case .search = model.scope {
                         searchField
                     }
                     switch model.state {
                     case .loading:
-                        ProgressView()
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 32)
+                        StatisticsPlaceholder()
                     case .failed(let message):
                         failure(message)
                     case .loaded:
@@ -90,24 +89,21 @@ public struct StatisticsScreen: View {
         } onCancellation: {
             report = nil
         }
-        .alert(Text("Could Not Export Statistics", bundle: .module), isPresented: Binding {
-            reportError != nil
-        } set: { visible in
-            if !visible { reportError = nil }
-        }) {
-            Button(role: .cancel) { reportError = nil } label: { Text("OK", bundle: .module) }
-        } message: {
-            Text(reportError ?? "")
-        }
         .task(id: model.selection) { await model.run() }
-        .alert(Text("Could Not Save Statistics Preference", bundle: .module), isPresented: Binding {
-            model.preferenceError != nil
-        } set: { visible in
-            if !visible { model.preferenceError = nil }
-        }) {
-            Button(role: .cancel) { model.preferenceError = nil } label: { Text("OK", bundle: .module) }
-        } message: {
-            Text(model.preferenceError ?? "")
+    }
+
+    /// Problems that leave the statistics usable, above the period picker.
+    @ViewBuilder
+    private var errorBanners: some View {
+        if let reportError {
+            InlineErrorBanner(title: Text("Could Not Export Statistics", bundle: .module), message: reportError) {
+                self.reportError = nil
+            }
+        }
+        if let preferenceError = model.preferenceError {
+            InlineErrorBanner(title: Text("Could Not Save Statistics Preference", bundle: .module), message: preferenceError) {
+                model.preferenceError = nil
+            }
         }
     }
 
@@ -286,6 +282,35 @@ public struct StatisticsScreen: View {
         } set: { value in
             let update = change(value)
             Task { await model.setPreference(update) }
+        }
+    }
+}
+
+/// The shape of the statistics while the core computes them: a few titled
+/// chart sections, as placeholder bars and blocks.
+private struct StatisticsPlaceholder: View {
+    private static let chartHeights: [CGFloat] = [72, 180, 140]
+    @Environment(\.hayakiTheme) private var theme
+
+    var body: some View {
+        ForEach(Self.chartHeights.indices, id: \.self) { index in
+            VStack(alignment: .leading, spacing: 12) {
+                // Never shown: redaction draws these as bars.
+                Text(verbatim: "Statistics section title")
+                    .font(.headline)
+                Text(verbatim: "A short summary of the chart")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(.quaternary)
+                    .frame(height: Self.chartHeights[index])
+            }
+            .padding(16)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(theme.surface, in: .rect(cornerRadius: 20, style: .continuous))
+            .loadingPlaceholder()
+            // VoiceOver hears one "in progress" element, not three.
+            .accessibilityHidden(index > 0)
         }
     }
 }

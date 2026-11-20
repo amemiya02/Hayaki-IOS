@@ -128,7 +128,7 @@ public struct DeckListScreen<SyncControl: View>: View {
     private var content: some View {
         switch model.state {
         case .loading:
-            ProgressView()
+            DeckListPlaceholder()
         case .failed(let message):
             ContentUnavailableView {
                 Label {
@@ -345,6 +345,47 @@ private struct TodayDeckSummary: View {
             .controlSize(.large)
             .accessibilityIdentifier("study-selected-deck")
         }
+    }
+}
+
+/// The shape of the deck list while the core loads it: today's summary and a
+/// few deck rows, as placeholder bars.
+private struct DeckListPlaceholder: View {
+    // Never shown: redaction draws these as bars of about this width.
+    private static let names = ["Japanese Vocabulary", "Kanji", "Grammar", "Spanish", "Geography Capitals"]
+
+    var body: some View {
+        List {
+            Section {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(verbatim: "000 due today")
+                        .font(.headline)
+                    Text(verbatim: "00 studied today")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                    Capsule()
+                        .fill(.quaternary)
+                        .frame(width: 200, height: 44)
+                        .padding(.top, 6)
+                }
+                .padding(.vertical, 6)
+            }
+            ForEach(Self.names, id: \.self) { name in
+                HStack {
+                    Text(verbatim: name)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    HStack(spacing: 12) {
+                        ForEach(0..<3, id: \.self) { _ in
+                            Text(verbatim: "00")
+                                .frame(minWidth: 24, alignment: .trailing)
+                        }
+                    }
+                    .font(.callout)
+                }
+            }
+        }
+        .scrollContentBackground(.hidden)
+        .loadingPlaceholder()
     }
 }
 

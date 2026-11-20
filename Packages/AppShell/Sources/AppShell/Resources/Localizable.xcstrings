@@ -631,6 +631,23 @@
           }
         }
       }
+    },
+    "Flashcards with spaced repetition. Import your decks or sync your collection to begin." : {
+      "comment" : "Value line under the Welcome title.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "間隔反復で覚えるフラッシュカード。デッキをインポートするか、コレクションを同期して始めましょう。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "基于间隔重复的记忆卡片。导入牌组或同步集合即可开始。"
+          }
+        }
+      }
     }
   },
   "version" : "1.0"
