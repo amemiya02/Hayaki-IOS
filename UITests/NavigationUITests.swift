@@ -91,15 +91,22 @@ final class NavigationUITests: XCTestCase {
         select("Browse")
         let navigation = app.navigationBars["Browse"]
         XCTAssertTrue(navigation.waitForExistence(timeout: 10))
-        let search = app.searchFields.firstMatch
-        XCTAssertTrue(search.waitForExistence(timeout: 10))
-        XCTAssertTrue(search.isHittable)
         let mode = app.segmentedControls["browse-mode"]
         XCTAssertTrue(mode.waitForExistence(timeout: 10))
-        XCTAssertLessThanOrEqual(search.frame.maxY, mode.frame.minY + 1)
-
+        XCTAssertTrue(mode.isHittable)
         let results = app.descendants(matching: .any)["browse-results"]
         XCTAssertTrue(results.waitForExistence(timeout: 10))
+
+        // Search uses the system's default placement, which may tuck the
+        // field under the title until the list is pulled down.
+        let search = app.searchFields.firstMatch
+        if !(search.exists && search.isHittable) {
+            results.swipeDown()
+        }
+        XCTAssertTrue(search.waitForExistence(timeout: 10))
+        XCTAssertTrue(search.isHittable)
+        XCTAssertFalse(search.frame.intersects(mode.frame))
+
         results.swipeUp(velocity: .fast)
         results.swipeUp(velocity: .fast)
         let lastResult = results.descendants(matching: .any)["browse-last-result"].firstMatch
@@ -108,6 +115,11 @@ final class NavigationUITests: XCTestCase {
         let tabBar = app.tabBars.firstMatch
         XCTAssertTrue(tabBar.exists)
         XCTAssertLessThanOrEqual(lastResult.frame.maxY, tabBar.frame.minY + 1)
+        // A search field at the bottom of the screen must not cover the
+        // last result either.
+        if search.exists, search.frame.minY > results.frame.midY {
+            XCTAssertLessThanOrEqual(lastResult.frame.maxY, search.frame.minY + 1)
+        }
         attachScreen("Browse search and last result clear of the toolbars")
     }
 

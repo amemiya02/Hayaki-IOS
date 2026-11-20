@@ -55,6 +55,14 @@ public final class CardBrowserModel {
         visibleColumnIDs.compactMap { id in availableColumns.first { $0.id == id } }
     }
 
+    /// The columns fetched for each row: the shown ones, plus the sort
+    /// field, deck and due date every row summarizes.
+    var rowColumnIDs: [String] {
+        let known = Set(availableColumns.map(\.id))
+        let summary = CardRow.summaryColumns.filter { known.contains($0) && !visibleColumnIDs.contains($0) }
+        return visibleColumnIDs + summary
+    }
+
     /// The search in Anki's search syntax. Empty finds every card.
     public var searchText = ""
     var filterSelection: (query: String, filters: [QuickFilter], builtQuery: String)?
@@ -357,7 +365,7 @@ public final class CardBrowserModel {
     private func loadRows(_ ids: [Int64]) async {
         let generation = generation
         let search = searchCount
-        let columns = visibleColumnIDs
+        let columns = rowColumnIDs
         guard !ids.isEmpty,
               let fetched = try? await store.core.browserRows(ids: ids, columns: columns, notesMode: mode == .notes),
               generation == self.generation, search == searchCount else { return }

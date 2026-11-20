@@ -6,8 +6,31 @@ public struct CardRow: Identifiable, Equatable, Sendable {
     /// The display text from the core, keyed by browser column.
     public let cells: [String: String]
     public var question: String { cells["question"] ?? cells["noteFld"] ?? "" }
-    public var deck: String { cells["deck"] ?? "" }
-    public var due: String { cells["cardDue"] ?? "" }
+    /// The note's sort field, the row's primary text.
+    public var sortField: String { cells[Self.sortFieldColumn] ?? question }
+    public var deck: String { cells[Self.deckColumn] ?? "" }
+    public var due: String { cells[Self.dueColumn] ?? "" }
+
+    /// The flag of a flagged card, shown as a colored bar on its row.
+    public var flag: Flag? {
+        if case .flag(let flag) = mark { flag } else { nil }
+    }
+
+    /// Whether the row is dimmed: its card is suspended.
+    public var isDimmed: Bool { mark == .suspended }
+
+    static let sortFieldColumn = "noteFld"
+    static let deckColumn = "deck"
+    static let dueColumn = "cardDue"
+    /// The columns every row shows as its primary and secondary text, fetched
+    /// whatever columns the learner chose.
+    static let summaryColumns = [sortFieldColumn, deckColumn, dueColumn]
+
+    /// The shown columns the row lists as details: those its primary and
+    /// secondary text do not already show.
+    public func detailColumns(_ columns: [BrowserColumn]) -> [BrowserColumn] {
+        columns.filter { !Self.summaryColumns.contains($0.id) }
+    }
 
     /// The engine brackets audio filenames with speaker symbols.
     public func displayText(for column: String, showsMediaFilenames: Bool) -> String {

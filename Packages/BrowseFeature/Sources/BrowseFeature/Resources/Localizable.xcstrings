@@ -3390,6 +3390,38 @@
           }
         }
       }
+    },
+    "No Card Selected" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "カードが選択されていません"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "未选择卡片"
+          }
+        }
+      }
+    },
+    "Select a card to preview it here." : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "カードを選択すると、ここでプレビューできます。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "选择一张卡片，即可在此预览。"
+          }
+        }
+      }
     }
   },
   "version" : "1.0"
