@@ -29,16 +29,19 @@ struct SectionsView: View {
                 DeckListScreen(store: store, profileID: model.activeProfile.id, presentation: $model.deckPresentation) {
                     DeckSyncButton(model: sync)
                 }
+                .syncProgressInset()
             } label: {
                 Label { DecksSection.title } icon: { Image(systemName: DecksSection.systemImage) }
             }
             Tab(value: AppSection.browse) {
                 BrowseScreen(store: store)
+                    .syncProgressInset()
             } label: {
                 Label { BrowseSection.title } icon: { Image(systemName: BrowseSection.systemImage) }
             }
             Tab(value: AppSection.statistics) {
                 StatisticsScreen(store: store)
+                    .syncProgressInset()
             } label: {
                 Label { Text("Stats", bundle: .module) } icon: { Image(systemName: StatisticsSection.systemImage) }
             }
@@ -59,6 +62,7 @@ struct SectionsView: View {
                     }
                     .accessibilityIdentifier("profiles-settings")
                 }
+                .syncProgressInset()
             } label: {
                 Label { SettingsSection.title } icon: { Image(systemName: SettingsSection.systemImage) }
             }
