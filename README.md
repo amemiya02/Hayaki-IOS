@@ -7,7 +7,7 @@
 <p align="center"><strong>Offline-first flashcards for iPhone and iPad.</strong></p>
 
 <p align="center">
-  <a href="https://github.com/amemiya02/Hayaki-IOS/actions/workflows/ci.yml"><img src="https://github.com/amemiya02/Hayaki-IOS/actions/workflows/ci.yml/badge.svg?branch=main" alt="CI on main"></a>
+  <a href="https://github.com/amemiya02/Hayaki-iOS/actions/workflows/ci.yml"><img src="https://github.com/amemiya02/Hayaki-iOS/actions/workflows/ci.yml/badge.svg?branch=main" alt="CI on main"></a>
   <a href="#get-started"><img src="https://img.shields.io/badge/iOS%20%26%20iPadOS-26%2B-24292f" alt="iOS and iPadOS 26 or later"></a>
   <a href="#development"><img src="https://img.shields.io/badge/Swift-6-F05138" alt="Swift 6"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-AGPL--3.0--or--later-14866d" alt="AGPL-3.0-or-later license"></a>
@@ -17,7 +17,7 @@
   <a href="README.zh-CN.md">简体中文</a> ·
   <a href="https://github.com/amemiya02/Hayaki">Hayaki for Android</a> ·
   <a href="#get-started">Get started</a> ·
-  <a href="https://github.com/amemiya02/Hayaki-IOS/issues">Issues</a>
+  <a href="https://github.com/amemiya02/Hayaki-iOS/issues">Issues</a>
 </p>
 
 Hayaki brings [Hayaki for Android](https://github.com/amemiya02/Hayaki) to iPhone and iPad as a native iOS 26 app built in SwiftUI with Liquid Glass. Your collection lives on your device, so you can study, browse, and edit offline. Hayaki embeds upstream Anki’s Rust core for scheduling, search, sync, and file compatibility with desktop Anki and AnkiDroid.
@@ -52,8 +52,8 @@ Use an Apple silicon Mac with **Xcode 27** and [rustup](https://rustup.rs/). Ins
 
 ```sh
 brew install protobuf xcodegen
-git clone https://github.com/amemiya02/Hayaki-IOS.git
-cd Hayaki-IOS
+git clone https://github.com/amemiya02/Hayaki-iOS.git
+cd Hayaki-iOS
 scripts/build-core.sh
 xcodegen generate
 open Hayaki.xcodeproj
@@ -108,10 +108,10 @@ In Xcode, select the same provisioning team for **Hayaki**, **HayakiShare**, and
 
 - [`App/`](App/) contains the SwiftUI entry point. [`Packages/`](Packages/) contains the app shell, collection store, and feature packages. [`core/`](core/) contains the Rust bridge to Anki.
 - Run `scripts/test.sh` for package tests against the real core and disposable collections. To include the local sync-server integration tests, run `scripts/build-sync-server.sh` first. For a focused run, use `scripts/test.sh BrowseFeature`.
-- [CI](https://github.com/amemiya02/Hayaki-IOS/actions/workflows/ci.yml) builds the app and runs package tests and the iPhone and iPad UI suites on `main`.
+- [CI](https://github.com/amemiya02/Hayaki-iOS/actions/workflows/ci.yml) builds the app and runs package tests and the iPhone and iPad UI suites on `main`.
 - Read the [core build guide](docs/building-the-core.md), [feature package conventions](docs/feature-packages.md), and [iOS parity specification](docs/specs/hayaki-v1.md) before changing those parts of the app.
 
-Bug reports are welcome on [GitHub Issues](https://github.com/amemiya02/Hayaki-IOS/issues). Include your iOS version, the Hayaki version from **More → About**, and the shortest steps to reproduce the problem. Use a sample deck if a collection is needed to demonstrate the issue.
+Bug reports are welcome on [GitHub Issues](https://github.com/amemiya02/Hayaki-iOS/issues). Include your iOS version, the Hayaki version from **More → About**, and the shortest steps to reproduce the problem. Use a sample deck if a collection is needed to demonstrate the issue.
 
 ## License and credits
 

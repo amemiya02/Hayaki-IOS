@@ -7,7 +7,7 @@
 <p align="center"><strong>为 iPhone 和 iPad 打造的离线闪卡应用</strong></p>
 
 <p align="center">
-  <a href="https://github.com/amemiya02/Hayaki-IOS/actions/workflows/ci.yml"><img src="https://github.com/amemiya02/Hayaki-IOS/actions/workflows/ci.yml/badge.svg?branch=main" alt="main 分支的 CI 状态"></a>
+  <a href="https://github.com/amemiya02/Hayaki-iOS/actions/workflows/ci.yml"><img src="https://github.com/amemiya02/Hayaki-iOS/actions/workflows/ci.yml/badge.svg?branch=main" alt="main 分支的 CI 状态"></a>
   <a href="#快速开始"><img src="https://img.shields.io/badge/iOS%20%26%20iPadOS-26%2B-24292f" alt="支持 iOS 和 iPadOS 26 及以上版本"></a>
   <a href="#开发与贡献"><img src="https://img.shields.io/badge/Swift-6-F05138" alt="Swift 6"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-AGPL--3.0--or--later-14866d" alt="AGPL-3.0-or-later 许可证"></a>
@@ -17,7 +17,7 @@
   <a href="README.md">English</a> ·
   <a href="https://github.com/amemiya02/Hayaki">Hayaki 安卓版</a> ·
   <a href="#快速开始">快速开始</a> ·
-  <a href="https://github.com/amemiya02/Hayaki-IOS/issues">问题反馈</a>
+  <a href="https://github.com/amemiya02/Hayaki-iOS/issues">问题反馈</a>
 </p>
 
 Hayaki 用 SwiftUI 和 Liquid Glass 打造原生 iOS 26 应用，将 [Hayaki 安卓版](https://github.com/amemiya02/Hayaki) 的学习体验带到 iPhone 和 iPad。集合保存在设备上，离线也能学习、浏览和编辑。应用内嵌上游 Anki 的 Rust 核心，用于复习调度、搜索和同步，并兼容桌面 Anki 和 AnkiDroid 的集合格式。
@@ -52,8 +52,8 @@ Hayaki 支持 **iOS 和 iPadOS 26 及以上版本**。目前可以从源码用 X
 
 ```sh
 brew install protobuf xcodegen
-git clone https://github.com/amemiya02/Hayaki-IOS.git
-cd Hayaki-IOS
+git clone https://github.com/amemiya02/Hayaki-iOS.git
+cd Hayaki-iOS
 scripts/build-core.sh
 xcodegen generate
 open Hayaki.xcodeproj
@@ -108,10 +108,10 @@ open Hayaki.xcodeproj
 
 - [`App/`](App/) 是 SwiftUI 应用入口，[`Packages/`](Packages/) 包含应用框架、集合存储和各项功能，[`core/`](core/) 是连接 Anki 的 Rust 桥接层。
 - 运行 `scripts/test.sh`，用真实核心和临时集合执行包测试。要同时运行本地同步服务器集成测试，先执行 `scripts/build-sync-server.sh`。只测试浏览功能可以运行 `scripts/test.sh BrowseFeature`。
-- [CI](https://github.com/amemiya02/Hayaki-IOS/actions/workflows/ci.yml) 会构建 App，并在 `main` 上运行包测试以及 iPhone 和 iPad 界面测试。
+- [CI](https://github.com/amemiya02/Hayaki-iOS/actions/workflows/ci.yml) 会构建 App，并在 `main` 上运行包测试以及 iPhone 和 iPad 界面测试。
 - 修改相关模块前，可以查阅 [核心构建指南](docs/building-the-core.md)、[功能包开发约定](docs/feature-packages.md) 和 [iOS 功能规格](docs/specs/hayaki-v1.md)。
 
-欢迎在 [GitHub Issues](https://github.com/amemiya02/Hayaki-IOS/issues) 反馈问题。请附上 iOS 版本、Hayaki「更多 → 关于」里的版本，以及最短复现步骤。如果问题需要集合才能复现，请使用示例牌组。
+欢迎在 [GitHub Issues](https://github.com/amemiya02/Hayaki-iOS/issues) 反馈问题。请附上 iOS 版本、Hayaki「更多 → 关于」里的版本，以及最短复现步骤。如果问题需要集合才能复现，请使用示例牌组。
 
 ## 许可与致谢
 

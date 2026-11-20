@@ -8,7 +8,7 @@ import AppKit
 #endif
 
 struct AboutScreen: View {
-    static let repository = URL(string: "https://github.com/amemiya02/Hayaki-IOS")!
+    static let repository = URL(string: "https://github.com/amemiya02/Hayaki-iOS")!
 
     private static let buildInfo: BuildInfo? = {
         guard let url = Bundle.main.url(forResource: "HayakiBuildInfo", withExtension: "plist"),
@@ -67,7 +67,7 @@ struct AboutScreen: View {
 
             Section {
                 Link(destination: Self.repository) {
-                    Text(verbatim: "github.com/amemiya02/Hayaki-IOS")
+                    Text(verbatim: "github.com/amemiya02/Hayaki-iOS")
                 }
                 Link(destination: Self.repository.appending(path: "blob/main/LICENSE")) {
                     Text(verbatim: "AGPL-3.0-or-later")

@@ -6,7 +6,7 @@ The native iPhone and iPad edition of Android Hayaki. Use `docs/specs/hayaki-v1.
 
 ### Issue tracker
 
-Issues and specs live as GitHub issues on `amemiya02/Hayaki-IOS`; writes must run as the `amemiya02` account. See `docs/agents/issue-tracker.md`.
+Issues and specs live as GitHub issues on `amemiya02/Hayaki-iOS`; writes must run as the `amemiya02` account. See `docs/agents/issue-tracker.md`.
 
 ### Triage labels
 

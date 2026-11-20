@@ -31,7 +31,7 @@ final class HelpAndAboutUITests: XCTestCase {
         let copied = app.alerts["Debug Information Copied"]
         XCTAssertTrue(copied.waitForExistence(timeout: 5))
         copied.buttons["OK"].tap()
-        reveal(element("github.com/amemiya02/Hayaki-IOS"))
+        reveal(element("github.com/amemiya02/Hayaki-iOS"))
         reveal(element("AGPL-3.0-or-later"))
         reveal(element("AnkiDroid"))
         XCTAssertTrue(element("Anki").exists)
