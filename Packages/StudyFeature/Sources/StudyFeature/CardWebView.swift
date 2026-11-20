@@ -68,7 +68,7 @@ struct CardWebView: UIViewRepresentable {
     /// The collection's media folder, which the card's images, sounds and
     /// fonts come from.
     let mediaFolder: URL
-    /// The page zoom that follows the learner's text size.
+    /// The card's zoom, which follows the learner's text size.
     let zoom: CGFloat
     /// The height of controls floating over the bottom of the card, which the
     /// card's content can scroll beneath but must be able to scroll above.
@@ -140,6 +140,7 @@ struct CardWebView: UIViewRepresentable {
         webView.isInspectable = inspectCardContent
         #endif
         context.coordinator.webView = webView
+        context.coordinator.updateZoom(zoom)
         context.coordinator.updateAppearance(theme)
         context.coordinator.updateLanguage(glyphStyle.cardLanguage(appLanguage: CardGlyphStyle.appLanguage))
         context.coordinator.loadHostPage()
@@ -152,9 +153,7 @@ struct CardWebView: UIViewRepresentable {
         context.coordinator.updateLanguage(glyphStyle.cardLanguage(appLanguage: CardGlyphStyle.appLanguage))
         context.coordinator.onTemplateRequest = onTemplateRequest
         context.coordinator.allowsExternalApps = allowsExternalApps
-        if webView.pageZoom != zoom {
-            webView.pageZoom = zoom
-        }
+        context.coordinator.updateZoom(zoom)
         if webView.scrollView.contentInset.bottom != bottomInset {
             webView.scrollView.contentInset.bottom = bottomInset
             webView.scrollView.verticalScrollIndicatorInsets.bottom = bottomInset
@@ -209,6 +208,8 @@ struct CardWebView: UIViewRepresentable {
         private var theme: HayakiTheme?
         /// The card page's `<html lang>` (Card Kanji/Hanzi Style).
         private var language: String?
+        /// The card's zoom, which follows the learner's text size.
+        private var zoom: CGFloat?
 
         func loadHostPage() {
             pageLoaded = false
@@ -308,6 +309,24 @@ struct CardWebView: UIViewRepresentable {
             )
         }
 
+        /// Scales the card with CSS `zoom` on the page rather than
+        /// `WKWebView.pageZoom`: on iOS, page zoom keeps the layout width of
+        /// `width=device-width`, so at large text sizes lines ran off the
+        /// right edge instead of wrapping, and the page was drawn at up to
+        /// nine times the screen scale.
+        func updateZoom(_ zoom: CGFloat) {
+            guard self.zoom != zoom else { return }
+            self.zoom = zoom
+            sendZoom()
+        }
+
+        private func sendZoom() {
+            guard pageLoaded, let zoom, let webView else { return }
+            webView.callAsyncJavaScript(
+                "window.hayaki.zoom(zoom)", arguments: ["zoom": Double(zoom)], in: nil, in: .page, completionHandler: nil
+            )
+        }
+
         func updateLanguage(_ language: String) {
             guard self.language != language else { return }
             self.language = language
@@ -362,6 +381,7 @@ struct CardWebView: UIViewRepresentable {
             pageLoaded = true
             sendAppearance()
             sendLanguage()
+            sendZoom()
             if wanted == nil {
                 renderDeadline?.cancel()
                 renderDeadline = nil
@@ -550,6 +570,9 @@ enum CardPageEvent: Equatable {
     case typed(String)
     /// Return pressed in a typed-answer field.
     case submitTypedAnswer
+    /// The page's own opaque background after a side or the colour scheme
+    /// changed, or nil when it has none and the screen's background shows.
+    case background(CardCanvasColor?)
 
     /// The event a message the page posted stands for.
     init?(message: Any) {
@@ -562,12 +585,46 @@ enum CardPageEvent: Equatable {
                 self = .typed(text)
             } else if message["submit"] != nil {
                 self = .submitTypedAnswer
+            } else if let css = message["background"] as? String {
+                self = .background(CardCanvasColor(css: css))
             } else {
                 return nil
             }
         } else {
             return nil
         }
+    }
+}
+
+/// The card page's background, so the study screen around the card (beside
+/// the readable column on iPad, under the answer bar) matches it.
+struct CardCanvasColor: Equatable {
+    let red: Double
+    let green: Double
+    let blue: Double
+
+    init(red: Double, green: Double, blue: Double) {
+        self.red = red
+        self.green = green
+        self.blue = blue
+    }
+
+    /// A computed CSS colour such as `rgb(255, 255, 255)`; nil unless it is
+    /// fully opaque.
+    init?(css: String) {
+        let text = css.trimmingCharacters(in: .whitespaces).lowercased()
+        guard let open = text.firstIndex(of: "("), text.hasSuffix(")"),
+              ["rgb", "rgba"].contains(text[..<open]) else { return nil }
+        let inner = text[text.index(after: open)..<text.index(before: text.endIndex)]
+        let parts = inner.split(whereSeparator: { ", /".contains($0) }).compactMap { Double($0) }
+        guard parts.count == 3 || parts.count == 4,
+              parts.count == inner.split(whereSeparator: { ", /".contains($0) }).count,
+              parts.count == 3 || parts[3] >= 1 else { return nil }
+        self.init(red: parts[0] / 255, green: parts[1] / 255, blue: parts[2] / 255)
+    }
+
+    var color: Color {
+        Color(.sRGB, red: red, green: green, blue: blue)
     }
 }
 

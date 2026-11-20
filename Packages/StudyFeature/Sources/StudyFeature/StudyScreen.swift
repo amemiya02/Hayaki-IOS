@@ -58,6 +58,8 @@ public struct StudyScreen: View {
     @State private var requestedAction: ReviewerCommand?
     @State private var route: ReviewerDestination?
     @State private var nextStudy: StudyDeck?
+    /// The card page's own background, once it reports one.
+    @State private var cardCanvas: CardCanvasColor?
     #if os(iOS)
     @State private var cardHostUnavailable = false
     @State private var cardHostRevision = 0
@@ -597,7 +599,7 @@ public struct StudyScreen: View {
 
     /// The widest the card grows in a regular-width window (iPad full screen
     /// and the larger split-view sizes); narrower windows use their full width.
-    private static let readableCardWidth: CGFloat = 820
+    static let readableCardWidth: CGFloat = 820
 
     /// Whether the answer bar or the recorder floats over the bottom of the card.
     private var showsBottomControls: Bool {
@@ -641,6 +643,13 @@ public struct StudyScreen: View {
             // On an iPad, the whole card is a centered readable column.
             .frame(maxWidth: horizontalSizeClass == .regular ? Self.readableCardWidth : .infinity)
             .frame(maxWidth: .infinity)
+            // The card's own background fills the screen around that column
+            // and below the answer bar, so there is no seam where the page ends.
+            .background {
+                if let cardCanvas, !preferences.cardFrame {
+                    cardCanvas.color.ignoresSafeArea(edges: [.horizontal, .bottom])
+                }
+            }
             // The answer bar floats over the card in its glass container;
             // the card's content scrolls beneath it.
             .overlay(alignment: .bottom) {
@@ -724,6 +733,7 @@ public struct StudyScreen: View {
         ) { event in
             switch event {
             case .tap: break
+            case .background(let canvas): cardCanvas = canvas
             case .rendered: cardHostUnavailable = false
             case .unavailable: cardHostUnavailable = true
             case .submitTypedAnswer: dispatch(.showAnswer)

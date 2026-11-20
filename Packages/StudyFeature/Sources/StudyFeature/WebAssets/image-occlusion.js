@@ -173,8 +173,10 @@
             const width = Math.min(container.parentElement.clientWidth, maxWidth, maxHeight * ratio);
             container.style.width = `${width}px`;
             container.style.aspectRatio = String(ratio);
-            // Safari limits total canvas area to 16 megapixels.
-            const pixels = Math.min(devicePixelRatio, 4096 * Math.sqrt(ratio) / width);
+            // The host zooms the page with the text size; draw at the zoomed
+            // density. Safari limits total canvas area to 16 megapixels.
+            const zoom = parseFloat(getComputedStyle(document.documentElement).zoom) || 1;
+            const pixels = Math.min(devicePixelRatio * zoom, 4096 * Math.sqrt(ratio) / width);
             canvas.width = Math.max(1, Math.floor(width * pixels));
             canvas.height = Math.max(1, Math.floor(width * pixels / ratio));
             const context = canvas.getContext("2d");
