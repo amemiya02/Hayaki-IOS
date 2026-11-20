@@ -87,6 +87,7 @@ Any theme can be combined with any appearance mode. The settings screen shows ea
 ## Navigation rules (all tabs)
 
 - **Titles:** Every tab root uses a large title (`.navigationBarTitleDisplayMode(.automatic)`), Browse included. Search uses the system default placement for the tab.
+- **Pushed screens and sheets use inline titles** (`.navigationBarTitleDisplayMode(.inline)`), so the title sits on the same row as the system back button or the sheet's Cancel and Done, as in iOS Settings. This covers every screen under More, Deck Options, Card Info, Note Types and the rest.
 - **Leading side:** nothing, except an Edit-style mode toggle where a screen has one.
 - **Trailing side:** at most two items: one primary action and one `ellipsis` menu, combined with `ToolbarItemGroup` so they share one glass capsule. Everything else goes in the menu.
 - **Sheets:** use `presentationDetents`. A sheet's Cancel or Close goes on the leading side and Done or Save on the trailing side.
