@@ -37,9 +37,9 @@ public struct StatisticsScreen: View {
             .navigationTitle(StatisticsSection.title)
             .toolbar {
                 ToolbarItem(placement: .primaryAction) {
-                    if case .loaded = model.state, model.loadedSelection == model.selection, let graphs = model.graphs {
+                    Menu {
                         Button {
-                            exportPDF(graphs)
+                            if let graphs = exportableGraphs { exportPDF(graphs) }
                         } label: {
                             Label {
                                 Text("Export Statistics PDF", bundle: .module)
@@ -47,7 +47,15 @@ public struct StatisticsScreen: View {
                                 Image(systemName: "square.and.arrow.up")
                             }
                         }
+                        .disabled(exportableGraphs == nil)
+                    } label: {
+                        Label {
+                            Text("Statistics Options", bundle: .module)
+                        } icon: {
+                            Image(systemName: "ellipsis")
+                        }
                     }
+                    .accessibilityIdentifier("statistics-options")
                 }
             }
             .refreshable { await model.refresh() }
@@ -80,6 +88,12 @@ public struct StatisticsScreen: View {
         } message: {
             Text(model.preferenceError ?? "")
         }
+    }
+
+    /// The graphs a PDF can be made from: loaded, and for the current selection.
+    private var exportableGraphs: StatisticsGraphs? {
+        guard case .loaded = model.state, model.loadedSelection == model.selection else { return nil }
+        return model.graphs
     }
 
     private func exportPDF(_ graphs: StatisticsGraphs) {

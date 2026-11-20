@@ -48,6 +48,9 @@ struct GeneralSettingsScreen: View {
         }
         .hayakiScrollBackground()
         .navigationTitle(Text("General", bundle: .module))
+        #if os(iOS)
+        .navigationBarTitleDisplayMode(.inline)
+        #endif
         .task { await load() }
         .alert(Text("Could Not Update Preferences", bundle: .module), isPresented: Binding(
             get: { error != nil }, set: { if !$0 { error = nil } }
@@ -112,6 +115,9 @@ struct AccessibilitySettingsScreen: View {
         }
         .hayakiScrollBackground()
         .navigationTitle(Text("Accessibility", bundle: .module))
+        #if os(iOS)
+        .navigationBarTitleDisplayMode(.inline)
+        #endif
     }
 }
 
@@ -131,6 +137,9 @@ struct AdvancedSettingsScreen: View {
         }
         .hayakiScrollBackground()
         .navigationTitle(Text("Advanced", bundle: .module))
+        #if os(iOS)
+        .navigationBarTitleDisplayMode(.inline)
+        #endif
     }
 }
 
@@ -146,6 +155,9 @@ struct DeveloperSettingsScreen: View {
         }
         .hayakiScrollBackground()
         .navigationTitle(Text("Developer Options", bundle: .module))
+        #if os(iOS)
+        .navigationBarTitleDisplayMode(.inline)
+        #endif
     }
 }
 #endif

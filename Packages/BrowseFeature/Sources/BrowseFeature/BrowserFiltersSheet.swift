@@ -54,6 +54,9 @@ struct BrowserFiltersSheet: View {
                 .disabled(filters.isEmpty)
             }
             .navigationTitle(Text("Filters", bundle: .module))
+            #if os(iOS)
+            .navigationBarTitleDisplayMode(.inline)
+            #endif
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button(role: .cancel) { dismiss() } label: { Text("Cancel", bundle: .module) }

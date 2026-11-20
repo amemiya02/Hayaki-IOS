@@ -52,6 +52,9 @@ struct AppearanceSettingsScreen: View {
         }
         .hayakiScrollBackground()
         .navigationTitle(Text("Appearance", bundle: .module))
+        #if os(iOS)
+        .navigationBarTitleDisplayMode(.inline)
+        #endif
         .fileImporter(isPresented: $choosingImage, allowedContentTypes: [.image]) { result in
             updatingImage = true
             Task {

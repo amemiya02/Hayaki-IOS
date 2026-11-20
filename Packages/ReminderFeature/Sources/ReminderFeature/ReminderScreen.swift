@@ -101,6 +101,9 @@ public struct ReminderScreen: View {
             }
         }
         .navigationTitle(Text("Daily Reminder", bundle: .module))
+        #if os(iOS)
+        .navigationBarTitleDisplayMode(.inline)
+        #endif
         .task { await model.run() }
         .onChange(of: scenePhase) { _, phase in
             // The learner may have allowed notifications in the Settings app.

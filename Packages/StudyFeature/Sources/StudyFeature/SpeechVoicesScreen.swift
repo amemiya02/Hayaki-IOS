@@ -45,6 +45,9 @@ struct SpeechVoicesScreen: View {
             }
         }
         .navigationTitle(reviewerLocalized("Text-to-Speech Voices"))
+        #if os(iOS)
+        .navigationBarTitleDisplayMode(.inline)
+        #endif
         .searchable(text: $search)
         .task {
             voices = AVSpeechSynthesisVoice.speechVoices().sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
