@@ -1,3 +1,4 @@
+import HayakiAppearance
 import SwiftUI
 
 struct ForecastSection: View {
@@ -25,7 +26,9 @@ struct ForecastSection: View {
                 }
                 DailyCardCountChart(
                     days: forecast.days, range: chartRange(for: forecast),
-                    cumulative: showCumulative, title: Text("Cards Due", bundle: .module), position: $position
+                    cumulative: showCumulative, title: Text("Cards Due", bundle: .module),
+                    color: SemanticColor.due.color, initialDay: chartRange(for: forecast).lowerBound,
+                    position: $position
                 )
                 summary(forecast)
             }
@@ -89,19 +92,6 @@ struct ForecastSection: View {
             Text(forecast.dailyLoad, format: .number)
         } label: {
             Text("Daily Load", bundle: .module)
-        }
-        if let position {
-            let selected = Int(position.rounded())
-            LabeledContent {
-                Text(forecast.days.first { $0.offset == selected }?.count ?? 0, format: .number)
-            } label: {
-                relativeDay(selected)
-            }
-            LabeledContent {
-                Text(forecast.days.lazy.filter { $0.offset <= selected }.reduce(0) { $0 + $1.count }, format: .number)
-            } label: {
-                Text("Running Total", bundle: .module)
-            }
         }
     }
 }

@@ -1,9 +1,11 @@
 import Charts
+import HayakiAppearance
 import SwiftUI
 
 struct HourlySection: View {
     let graphs: StatisticsGraphs
     @Environment(\.statisticsReportPeriod) private var reportPeriod
+    @Environment(\.hayakiTheme) private var theme
     private var displayedPeriod: StatisticsPeriod { reportPeriod ?? graphs.period }
     private var hours: [HourlyReviews] { graphs.displaying(displayedPeriod).hourlyReviews }
     @State private var position: Double?
@@ -12,13 +14,6 @@ struct HourlySection: View {
         Section {
             if hours.contains(where: { $0.count > 0 }) {
                 chart
-                if let selected = position.map({ Int($0.rounded()) }), let hour = hours.first(where: { $0.hour == selected }) {
-                    LabeledContent {
-                        value(for: hour)
-                    } label: {
-                        hourLabel(hour.hour)
-                    }
-                }
             } else {
                 Text("There are no reviews in this period.", bundle: .module)
                     .foregroundStyle(.secondary)
@@ -49,7 +44,7 @@ struct HourlySection: View {
                     yStart: .value("Reviews", 0.0),
                     yEnd: .value("Reviews", Double(hour.count))
                 )
-                .foregroundStyle(.blue.opacity(0.64))
+                .foregroundStyle(theme.accent.opacity(0.7))
                 .accessibilityLabel(hourLabel(hour.hour))
                 .accessibilityValue(value(for: hour))
                 if let rate = hour.successRate {
@@ -57,7 +52,7 @@ struct HourlySection: View {
                         x: .value("Hour", Double(hour.hour)),
                         y: .value("Correct", rate * Double(maximum))
                     )
-                    .foregroundStyle(.orange)
+                    .foregroundStyle(SemanticColor.good.color)
                     .symbol(.circle)
                     .accessibilityHidden(true)
                 }
@@ -66,6 +61,11 @@ struct HourlySection: View {
                 RuleMark(x: .value("Hour", position.rounded()))
                     .foregroundStyle(.secondary)
                     .accessibilityHidden(true)
+                    .annotation(position: .top, spacing: 4, overflowResolution: calloutOverflow) {
+                        if let hour = hours.first(where: { $0.hour == Int(position.rounded()) }) {
+                            callout(hour)
+                        }
+                    }
             }
         }
         .chartXScale(domain: -0.5...23.5)
@@ -90,6 +90,16 @@ struct HourlySection: View {
         .chartYAxisLabel(position: .leading) { Text("Reviews", bundle: .module) }
         .chartYAxisLabel(position: .trailing) { Text("Correct", bundle: .module) }
         .frame(height: 190)
+    }
+
+    private func callout(_ hour: HourlyReviews) -> some View {
+        ChartCallout(
+            title: hourLabel(hour.hour),
+            value: Text("\(hour.count) reviews", bundle: .module),
+            details: hour.successRate.map { rate in
+                [(Text("Correct", bundle: .module), Text(rate, format: .percent.precision(.fractionLength(1))))]
+            } ?? []
+        )
     }
 
     private func hourLabel(_ hour: Int) -> Text {

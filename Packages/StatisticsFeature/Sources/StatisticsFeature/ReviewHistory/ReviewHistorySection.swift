@@ -1,10 +1,12 @@
 import Charts
+import HayakiAppearance
 import SwiftUI
 
 struct ReviewHistorySection: View {
     let graphs: StatisticsGraphs
     @Environment(\.locale) private var locale
     @Environment(\.statisticsReportPeriod) private var reportPeriod
+    @Environment(\.hayakiTheme) private var theme
     private var displayedPeriod: StatisticsPeriod { reportPeriod ?? graphs.period }
 
     var reportReviewTime: Bool? = nil
@@ -54,9 +56,17 @@ struct ReviewHistorySection: View {
                 RuleMark(x: .value("Day", Double(selection)))
                     .foregroundStyle(.secondary)
                     .accessibilityHidden(true)
+                    .annotation(position: .top, spacing: 4, overflowResolution: calloutOverflow) {
+                        callout(days, selection: selection)
+                    }
             }
         }
         .chartXScale(domain: (Double(firstDay) - 0.5)...0.5)
+        .dailyChartScrolling(
+            range: firstDay...0,
+            initialDay: DailyChartScrolling.firstVisibleDay(endingAt: 0),
+            enabled: reportPeriod == nil
+        )
         .chartForegroundStyleScale(
             domain: StatisticsReviewKind.allCases.map(\.title),
             range: StatisticsReviewKind.allCases.map(\.color)
@@ -76,10 +86,10 @@ struct ReviewHistorySection: View {
         ForEach(days.indices, id: \.self) { index in
             let day = days[index]
             LineMark(x: .value("Day", Double(day.offset)), y: .value(metric, chartValue(totals[index])))
-                .foregroundStyle(.blue)
+                .foregroundStyle(theme.accent)
                 .accessibilityHidden(true)
             PointMark(x: .value("Day", Double(day.offset)), y: .value(metric, chartValue(totals[index])))
-                .foregroundStyle(.blue)
+                .foregroundStyle(theme.accent)
                 .accessibilityLabel(relativeDay(day.offset))
                 .accessibilityValue(valueText(totals[index]))
         }
@@ -139,28 +149,19 @@ struct ReviewHistorySection: View {
                 Text("Average Answer Time", bundle: .module)
             }
         }
-        if let selection {
-            let day = days.first { $0.offset == selection }
-            LabeledContent {
-                valueText(day.map { value($0) } ?? 0)
-            } label: {
-                relativeDay(selection)
-            }
-            if let day, !showCumulative {
-                ForEach(day.entries) { entry in
-                    LabeledContent {
-                        valueText(value(entry))
-                    } label: {
-                        Text(entry.kind.title)
-                    }
-                }
-            }
-            LabeledContent {
-                valueText(days.lazy.filter { $0.offset <= selection }.reduce(0) { $0 + value($1) })
-            } label: {
-                Text("Running Total", bundle: .module)
-            }
-        }
+    }
+
+    private func callout(_ days: [ReviewDay], selection: Int) -> some View {
+        let day = days.first { $0.offset == selection }
+        let runningTotal = days.lazy.filter { $0.offset <= selection }.reduce(0) { $0 + value($1) }
+        let breakdown = (day?.entries ?? [])
+            .filter { value($0) > 0 }
+            .map { (label: Text($0.kind.title), value: valueText(value($0))) }
+        return ChartCallout(
+            title: relativeDay(selection),
+            value: showCumulative ? valueText(runningTotal) : valueText(day.map { value($0) } ?? 0),
+            details: showCumulative ? [] : breakdown + [(Text("Running Total", bundle: .module), valueText(runningTotal))]
+        )
     }
 
     private var metric: Text {

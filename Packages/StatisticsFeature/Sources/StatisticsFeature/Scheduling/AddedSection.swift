@@ -1,3 +1,4 @@
+import HayakiAppearance
 import SwiftUI
 
 struct AddedSection: View {
@@ -41,7 +42,9 @@ struct AddedSection: View {
         }
         DailyCardCountChart(
             days: days, range: earliest...1, cumulative: showCumulative,
-            title: Text("Cards Added", bundle: .module), position: $position
+            title: Text("Cards Added", bundle: .module),
+            color: SemanticColor.new.color, initialDay: DailyChartScrolling.firstVisibleDay(endingAt: 1),
+            position: $position
         )
         LabeledContent {
             Text(total, format: .number)
@@ -52,19 +55,6 @@ struct AddedSection: View {
             Text((Double(total) / Double(max(1, -earliest))).rounded(), format: .number)
         } label: {
             Text("Average Added per Day", bundle: .module)
-        }
-        if let position {
-            let offset = Int(position.rounded())
-            LabeledContent {
-                Text(days.first { $0.offset == offset }?.count ?? 0, format: .number)
-            } label: {
-                relativeDay(offset)
-            }
-            LabeledContent {
-                Text(days.lazy.filter { $0.offset <= offset }.reduce(0) { $0 + $1.count }, format: .number)
-            } label: {
-                Text("Running Total", bundle: .module)
-            }
         }
     }
 }

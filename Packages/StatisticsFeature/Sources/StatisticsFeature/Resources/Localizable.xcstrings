@@ -138,6 +138,41 @@
         }
       }
     },
+    "%lld cards" : {
+      "comment" : "Chart callout: the number of cards in the selected bar.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld card"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld cards"
+                }
+              }
+            }
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld枚"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld 张卡片"
+          }
+        }
+      }
+    },
     "%lld reviews" : {
       "comment" : "VoiceOver value of a ratings bar: how many reviews it stands for.",
       "localizations" : {
