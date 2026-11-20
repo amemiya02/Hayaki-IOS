@@ -4,6 +4,12 @@ Android baseline `0f5dc353fb424751d74ba7d315457b62d95348a7` (19 November 2026), 
 
 The walkthrough records iOS routes inspected in source. Each issue number also identifies the fixture, observed results and pending acceptance checks in [Feature evidence](#feature-evidence). Results apply to the revision and environment recorded with each result. Keep pending checks open until the relevant behavior is observed, and record platform decisions under [#1].
 
+## Joint release 0.2.0
+
+The first joint release covers the shared icon, ten themes and appearance choices, Android preference migration, and the daily path from Decks through Study All, reveal, rating and Finished. Use the same [study collection](../../Packages/CollectionStore/Sources/CollectionTesting/Fixtures/collection.colpkg) on both devices. Compare the actions, counts and outcomes. Record large-text layouts, Android TalkBack focus and consecutive-rating performance. Use the [brand manifest](../brand/manifest.json) at the iOS revision recorded by Android.
+
+For publication, record the two tested commit IDs in the joint release notes. Verify the installed apps show `0.2.0`, the iOS extensions match the host version, and Android upgrades over the previous signed build. Preserve independent build numbers. A later single-platform fix identifies its platform and version in the release notes.
+
 ## Integrated build and device evidence
 
 | Revision | Observed result | Acceptance still open |

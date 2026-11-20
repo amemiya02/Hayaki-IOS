@@ -6,3 +6,7 @@
 
 - The Material 3 palette in `HayakiTheme` is replaced, not tuned.
 - A parity review checks that an Android feature exists and can be found on iOS, not that it looks or sits the same.
+
+## Shared Hayaki brand
+
+Starting with joint release `0.2.0`, this repository maintains the [brand manifest](../brand/manifest.json) for both editions. It identifies the icon artwork and the ten theme palettes. Android vendors its platform resources from a recorded iOS revision. The Core Loop is reviewed on both platforms using the same collection. Each platform implements its own controls and input behaviour. See the [joint release checks](../specs/ios-acceptance.md#joint-release-020).
