@@ -19,6 +19,7 @@ struct WelcomeScreen: View {
                     VStack(spacing: 12) {
                         ImportPackageButton()
                             .buttonStyle(.glassProminent)
+                            .hayakiProminentLabel()
                         NavigationLink {
                             syncScreen
                         } label: {

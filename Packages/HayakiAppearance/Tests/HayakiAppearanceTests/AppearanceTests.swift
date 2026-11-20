@@ -135,6 +135,18 @@ extension AppearanceTests {
         }
     }
 
+    @Test func prominentButtonLabelsAreReadableOnEveryAccent() {
+        for theme in Theme.allCases {
+            for appearance in [ResolvedAppearance.light, .dark, .black] {
+                let resolved = HayakiTheme(theme, appearance)
+                #expect(
+                    contrast(resolved.onAccentRGB, resolved.accentRGB) >= 4.5,
+                    "\(theme) \(appearance) label on accent"
+                )
+            }
+        }
+    }
+
     @Test func theCardCanvasMatchesTheTintedStudyBackground() {
         #expect(HayakiTheme(.hayaki, .light).canvasRGB == 0xF7FAF9)
         #expect(HayakiTheme(.hayaki, .dark).canvasRGB == 0x080D0C)

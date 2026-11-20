@@ -158,6 +158,7 @@ public struct DeckListScreen<SyncControl: View>: View {
                 VStack {
                     SharedDecksLink()
                         .buttonStyle(.borderedProminent)
+                        .hayakiProminentLabel()
                     ImportPackageButton()
                     NewDeckButton()
                 }
@@ -329,6 +330,7 @@ private struct TodayDeckSummary: View {
                     .frame(maxWidth: .infinity)
             }
             .buttonStyle(.borderedProminent)
+            .hayakiProminentLabel()
             .controlSize(.large)
             .accessibilityHint(Text("Studies every deck with cards left today.", bundle: .module))
             .accessibilityIdentifier("study-all")

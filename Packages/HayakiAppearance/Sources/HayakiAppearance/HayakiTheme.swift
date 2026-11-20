@@ -17,6 +17,12 @@ public struct HayakiTheme: Hashable, Sendable {
     }
     public var accent: Color { Color(hayakiRGB: accentRGB) }
 
+    /// Text and symbols on an accent fill, such as a prominent button's label:
+    /// white on the deep light-mode accents, black on the light pastel accents
+    /// of dark and black mode.
+    public var onAccentRGB: UInt32 { appearance == .light ? 0xFFFFFF : 0x000000 }
+    public var onAccent: Color { Color(hayakiRGB: onAccentRGB) }
+
     /// How strongly the accent tints the screen background. Black mode keeps
     /// a pure black background.
     public var tintOpacity: Double {
@@ -175,5 +181,27 @@ private struct AppearanceModifier: ViewModifier {
             .environment(\.hayakiTheme, theme)
             .tint(theme.accent)
             .preferredColorScheme(settings.preferredColorScheme)
+    }
+}
+
+public extension View {
+    /// Gives a prominent button's label the theme's `onAccent` color, so it
+    /// stays readable on the light dark-mode accents (the system label is
+    /// always white). Light mode keeps the system label, which also dims
+    /// when the button is disabled.
+    func hayakiProminentLabel() -> some View {
+        modifier(ProminentLabelModifier())
+    }
+}
+
+private struct ProminentLabelModifier: ViewModifier {
+    @Environment(\.hayakiTheme) private var theme
+
+    func body(content: Content) -> some View {
+        if theme.appearance == .light {
+            content
+        } else {
+            content.foregroundStyle(theme.onAccent)
+        }
     }
 }

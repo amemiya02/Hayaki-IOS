@@ -84,6 +84,7 @@ struct FinishedView: View {
                     .frame(maxWidth: .infinity)
             }
             .buttonStyle(.glassProminent)
+            .hayakiProminentLabel()
             .controlSize(.large)
             .keyboardShortcut(.defaultAction)
             .padding(.horizontal)

@@ -134,9 +134,9 @@ private struct AnswerBarButtonStyle: ViewModifier {
 
     func body(content: Content) -> some View {
         switch (prominent, reduceTransparency) {
-        case (true, false): content.buttonStyle(.glassProminent)
+        case (true, false): content.buttonStyle(.glassProminent).hayakiProminentLabel()
         case (false, false): content.buttonStyle(.glass)
-        case (true, true): content.buttonStyle(.borderedProminent)
+        case (true, true): content.buttonStyle(.borderedProminent).hayakiProminentLabel()
         case (false, true): content.buttonStyle(.bordered)
         }
     }
