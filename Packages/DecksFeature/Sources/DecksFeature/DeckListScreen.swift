@@ -52,23 +52,11 @@ public struct DeckListScreen<SyncControl: View>: View {
                 .background { deckBackground }
                 .navigationTitle(Text("Decks", bundle: .module))
                 .toolbar {
-                    ToolbarItem(placement: .primaryAction) {
+                    // One glass capsule: sync, Add Note and a menu with the rest.
+                    ToolbarItemGroup(placement: .primaryAction) {
                         syncControl
-                    }
-                    ToolbarItem(placement: .primaryAction) {
-                        ImportPackageButton()
-                    }
-                    ToolbarItem(placement: .primaryAction) {
-                        ExportPackageButton(store: store)
-                    }
-                    ToolbarItem(placement: .secondaryAction) {
-                        SharedDecksLink()
-                    }
-                    ToolbarItem(placement: .secondaryAction) {
-                        TextImportButton()
-                    }
-                    ToolbarItem(placement: .secondaryAction) {
-                        TextExportButton(store: store)
+                        AddNoteButton()
+                        optionsMenu
                     }
                 }
                 .deckManagement(model, profileID: profileID) { deck in
@@ -76,6 +64,7 @@ public struct DeckListScreen<SyncControl: View>: View {
                     studying = deck
                 }
         }
+        .packageSheets(store: store)
         .task { await model.run() }
         .task(id: backgroundRevision) {
             let image = await DeckBackground(collectionFolder: store.location.folder).image()
@@ -99,6 +88,32 @@ public struct DeckListScreen<SyncControl: View>: View {
             }
         }
         .studySession(of: $studying, store: store)
+    }
+
+    /// The `⋯` menu: importing and exporting, and creating decks.
+    private var optionsMenu: some View {
+        Menu {
+            Section {
+                ImportPackageButton()
+                ExportPackageButton(store: store)
+                SharedDecksLink()
+            }
+            Section {
+                TextImportButton()
+                TextExportButton(store: store)
+            }
+            Section {
+                NewDeckButton()
+                NewFilteredDeckButton()
+            }
+        } label: {
+            Label {
+                Text("Deck List Options", bundle: .module)
+            } icon: {
+                Image(systemName: "ellipsis")
+            }
+        }
+        .accessibilityIdentifier("deck-list-options")
     }
 
     @ViewBuilder

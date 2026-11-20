@@ -40,6 +40,7 @@ public struct ImportPackageButton: View {
 /// Discovers shared decks on AnkiWeb and imports their downloaded packages.
 public struct SharedDecksLink: View {
     @Environment(\.importPackage) private var importPackage
+    @Environment(\.showPackageSheet) private var showPackageSheet
     @State private var showCatalog = false
     @State private var chooseDownload = false
 
@@ -47,7 +48,11 @@ public struct SharedDecksLink: View {
 
     public var body: some View {
         Button {
-            showCatalog = true
+            if let showPackageSheet {
+                showPackageSheet(.sharedDecks)
+            } else {
+                showCatalog = true
+            }
         } label: {
             Label {
                 Text("Get Shared Decks", bundle: .module)
@@ -57,37 +62,11 @@ public struct SharedDecksLink: View {
         }
         .accessibilityIdentifier("shared-decks")
         .sheet(isPresented: $showCatalog, onDismiss: openDownloadedPackage) {
-            NavigationStack {
-                Form {
-                    Link(destination: URL(string: "https://ankiweb.net/shared/decks")!) {
-                        Label {
-                            Text("Browse AnkiWeb", bundle: .module)
-                        } icon: {
-                            Image(systemName: "safari")
-                        }
-                    }
-                    Button {
-                        chooseDownload = true
-                        showCatalog = false
-                    } label: {
-                        Label {
-                            Text("Import Downloaded Deck", bundle: .module)
-                        } icon: {
-                            Image(systemName: "square.and.arrow.down")
-                        }
-                    }
-                    .disabled(importPackage == nil)
-                }
-                .navigationTitle(Text("Get Shared Decks", bundle: .module))
-                .toolbar {
-                    ToolbarItem(placement: .cancellationAction) {
-                        Button {
-                            showCatalog = false
-                        } label: {
-                            Text("Done", bundle: .module)
-                        }
-                    }
-                }
+            SharedDecksCatalog {
+                chooseDownload = true
+                showCatalog = false
+            } onDone: {
+                showCatalog = false
             }
         }
     }
@@ -96,6 +75,51 @@ public struct SharedDecksLink: View {
         guard chooseDownload else { return }
         chooseDownload = false
         importPackage?()
+    }
+}
+
+/// The shared decks sheet: a link to AnkiWeb's catalog, and a button that
+/// closes the sheet so the presenter can import a deck downloaded from it.
+struct SharedDecksCatalog: View {
+    @Environment(\.importPackage) private var importPackage
+    let onImportDownloaded: () -> Void
+    let onDone: () -> Void
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Link(destination: URL(string: "https://ankiweb.net/shared/decks")!) {
+                    Label {
+                        Text("Browse AnkiWeb", bundle: .module)
+                    } icon: {
+                        Image(systemName: "safari")
+                    }
+                }
+                Button {
+                    onImportDownloaded()
+                } label: {
+                    Label {
+                        Text("Import Downloaded Deck", bundle: .module)
+                    } icon: {
+                        Image(systemName: "square.and.arrow.down")
+                    }
+                }
+                .disabled(importPackage == nil)
+            }
+            .navigationTitle(Text("Get Shared Decks", bundle: .module))
+            #if os(iOS)
+            .navigationBarTitleDisplayMode(.inline)
+            #endif
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button {
+                        onDone()
+                    } label: {
+                        Text("Done", bundle: .module)
+                    }
+                }
+            }
+        }
     }
 }
 
