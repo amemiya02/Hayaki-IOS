@@ -265,6 +265,7 @@ public struct NoteEditorScreen: View {
                     } label: {
                         Text("Note Type", bundle: .module)
                     }
+                    .pickerStyle(.menu)
                     Picker(selection: deckSelection) {
                         ForEach(model.decks) { deck in
                             Text(deck.name).tag(deck.id)
@@ -272,7 +273,7 @@ public struct NoteEditorScreen: View {
                     } label: {
                         Text("Deck", bundle: .module)
                     }
-                    .navigationLinkPickerStyle()
+                    .pickerStyle(.menu)
                 }
             }
             #if os(iOS)
@@ -612,8 +613,9 @@ private struct FieldSection: View {
 
     var body: some View {
         Section {
+            // The field name is the section header, so the text field needs no prompt of its own.
             TextField(text: text, selection: $selection, axis: .vertical) {
-                Text(field.name)
+                Text(verbatim: "")
             }
             .lineLimit(1...12)
             .focused($focusedField, equals: index)
@@ -682,8 +684,12 @@ private struct FieldSection: View {
             mediaMenu
             #endif
         } header: {
-            HStack {
+            HStack(alignment: .firstTextBaseline) {
                 Text(field.name)
+                    .font(.headline)
+                    .foregroundStyle(.primary)
+                    .textCase(nil)
+                    .accessibilityAddTraits(.isHeader)
                 Spacer()
                 if !field.requiresMarkup {
                     Button(action: toggleMarkup) {
@@ -977,16 +983,6 @@ private extension View {
     func toolbarTitleDisplayModeInline() -> some View {
         #if os(iOS)
         navigationBarTitleDisplayMode(.inline)
-        #else
-        self
-        #endif
-    }
-
-    /// A long list of decks reads best on its own page.
-    @ViewBuilder
-    func navigationLinkPickerStyle() -> some View {
-        #if os(iOS)
-        pickerStyle(.navigationLink)
         #else
         self
         #endif
