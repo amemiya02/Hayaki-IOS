@@ -1512,6 +1512,91 @@
           }
         }
       }
+    },
+    "New" : {
+      "comment" : "Today card label under the number of new cards left today.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "新規"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "新卡片"
+          }
+        }
+      }
+    },
+    "Learning" : {
+      "comment" : "Today card label under the number of learning cards left today.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "学習中"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "学习中"
+          }
+        }
+      }
+    },
+    "Due" : {
+      "comment" : "Today card label under the number of review cards due today.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "復習"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "待复习"
+          }
+        }
+      }
+    },
+    "Study All" : {
+      "comment" : "Button on the Today card that studies every deck with cards left today.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "すべて学習"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "全部学习"
+          }
+        }
+      }
+    },
+    "Studies every deck with cards left today." : {
+      "comment" : "VoiceOver hint for the Study All button.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "今日学習するカードがあるすべてのデッキを学習します。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "学习今天还有卡片的所有牌组。"
+          }
+        }
+      }
     }
   },
   "version" : "1.0"
