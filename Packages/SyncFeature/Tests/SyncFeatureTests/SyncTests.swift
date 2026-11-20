@@ -49,6 +49,45 @@ struct SyncTests {
         }
     }
 
+    @Test("The last collection and media sync times are kept with the sign-in, and a failure keeps the earlier time")
+    func lastSyncTimes() async throws {
+        let server = try await SyncServer(users: [("alice", "correct horse")])
+        try await withTemporaryCollection { phone in
+            try await phone.addBasicNotes(count: 1, toDeck: phone.addDeck(named: "Spanish"))
+            try Data("media".utf8).write(to: phone.location.mediaFolder.appendingPathComponent("time.png"))
+            let storage = MemoryAccountStorage()
+            var now = Date(timeIntervalSince1970: 50_000)
+            let model = SyncModel(store: phone, storage: storage, network: { .unmetered }, now: { now })
+            model.selectDestination(.selfHosted)
+            model.serverAddress = server.address
+            model.userName = "alice"
+            model.password = "correct horse"
+            await model.signIn()
+            try #require(model.account != nil)
+            #expect(model.lastCollectionSync == nil)
+            #expect(model.lastMediaSync == nil)
+
+            await model.sync()
+            await model.upload()
+            #expect(model.lastCollectionSync == now)
+            #expect(model.lastMediaSync == now)
+
+            let synced = now
+            now = Date(timeIntervalSince1970: 60_000)
+            server.interrupt()
+            await model.sync()
+            #expect(model.status.failure != nil)
+            #expect(model.lastCollectionSync == synced)
+
+            let reopened = SyncModel(store: phone, storage: storage, network: { .unmetered })
+            #expect(reopened.lastCollectionSync == synced)
+            #expect(reopened.lastMediaSync == synced)
+            reopened.signOut()
+            #expect(reopened.lastCollectionSync == nil)
+            #expect(reopened.lastMediaSync == nil)
+        }
+    }
+
     @Test("Media shows progress while the collection is usable, and Cancel lets it resume on retry")
     func cancelAndRetryMedia() async throws {
         let server = try await SyncServer(users: [("alice", "correct horse")])

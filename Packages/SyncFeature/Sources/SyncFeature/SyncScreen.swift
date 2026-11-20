@@ -59,12 +59,11 @@ public struct SyncScreen: View {
         Form {
             if let account = model.account, !model.isChangingDestination {
                 SignedInSections(model: model, account: account)
-                MediaSyncSection(model: model)
             } else {
                 SignInSections(model: model)
-            }
-            if let failure = model.status.failure {
-                FailureSection(failure: failure)
+                if let failure = model.status.failure {
+                    FailureSection(failure: failure)
+                }
             }
             if model.isChangingDestination {
                 Section {
@@ -216,12 +215,20 @@ private struct SignInSections: View {
                     Text("Signing In…", bundle: .module)
                 }
             } else {
+                // A full-width filled button, so it reads as a button even
+                // while disabled rather than as an empty text field.
                 Button {
                     Task { await model.signIn() }
                 } label: {
                     Text("Sign In", bundle: .module)
+                        .frame(maxWidth: .infinity)
                 }
+                .buttonStyle(.borderedProminent)
+                .controlSize(.large)
                 .disabled(!model.canSignIn)
+                .listRowInsets(EdgeInsets())
+                .listRowBackground(Color.clear)
+                .accessibilityIdentifier("sign-in")
             }
         }
     }
@@ -283,15 +290,17 @@ private struct SignedInSections: View {
             Text("Your Sync Server", bundle: .module)
         }
 
+        SyncStatusSection(model: model)
+
         Section {
-            switch model.status {
-            case .syncing(let progress):
-                BusyRow(model: model) {
-                    ProgressDescription(progress: progress)
+            if model.isTransferring {
+                Button(role: .cancel) {
+                    model.cancel()
+                } label: {
+                    Text("Cancel Sync", bundle: .module)
                 }
-            case .choosingDirection(let choice):
-                DirectionChoice(model: model, choice: choice)
-            default:
+                .accessibilityIdentifier("cancel-sync")
+            } else {
                 Button {
                     Task { await model.sync() }
                 } label: {
@@ -301,14 +310,7 @@ private struct SignedInSections: View {
                         Image(systemName: "arrow.triangle.2.circlepath")
                     }
                 }
-                .disabled(model.isBusy)
-                if case .synced(let outcome) = model.status {
-                    OutcomeRow(outcome: outcome)
-                }
-                if model.status == .fullSyncRequested {
-                    Text("A full sync will run next time you sync.", bundle: .module)
-                        .foregroundStyle(.secondary)
-                }
+                .disabled(!model.canStartManualSync)
             }
         } footer: {
             Text("Syncing sends the changes made on this device to the server and brings in the changes made on your other devices.", bundle: .module)
@@ -316,61 +318,149 @@ private struct SignedInSections: View {
     }
 }
 
-private struct MediaSyncSection: View {
+/// The collection and media status rows, each followed by its failure and a
+/// Retry row when it failed.
+private struct SyncStatusSection: View {
     let model: SyncModel
 
+    private var serverMessage: String? {
+        if case .synced(let outcome) = model.status { outcome.serverMessage } else { nil }
+    }
+
     var body: some View {
-        if model.mediaStatus != .idle {
-            Section {
-                switch model.mediaStatus {
-                case .idle:
-                    EmptyView()
-                case .syncing(let progress):
-                    BusyRow(model: model) {
-                        ProgressView {
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text("Syncing Media…", bundle: .module)
-                                if let progress {
-                                    VStack(alignment: .leading, spacing: 2) {
-                                        Text(verbatim: progress.checked)
-                                        Text(verbatim: progress.added)
-                                        Text(verbatim: progress.removed)
-                                    }
-                                    .font(.footnote)
-                                    .foregroundStyle(.secondary)
-                                    .accessibilityElement(children: .combine)
-                                }
-                            }
-                        }
-                    }
-                case .synced:
-                    Text("Media sync complete.", bundle: .module)
-                case .cancelled:
-                    Text("Media sync cancelled.", bundle: .module)
-                case .interrupted:
-                    Text("Media sync was interrupted.", bundle: .module)
-                case .failed(let failure):
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("Media sync failed.", bundle: .module)
-                        if let failure, let detail = failure.reason == .other ? failure.detail : failure.message {
-                            Text(verbatim: detail)
-                                .font(.footnote)
-                                .foregroundStyle(.secondary)
-                        }
-                    }
+        let collection = SyncStatusRow(collection: model.status, lastSynced: model.lastCollectionSync)
+        let media = SyncStatusRow(media: model.mediaStatus, lastSynced: model.lastMediaSync)
+        Section {
+            StatusRowView(row: collection, message: serverMessage) {
+                Text("Collection", bundle: .module)
+            }
+            .accessibilityIdentifier("collection-sync-status")
+            if let failure = collection.failure {
+                FailureRow(failure: failure)
+                Button {
+                    Task { await model.sync() }
+                } label: {
+                    Text("Retry", bundle: .module)
                 }
-                if model.canRetryMediaSync {
-                    Button {
-                        Task { await model.retryMediaSync() }
-                    } label: {
-                        Text("Retry Media Sync", bundle: .module)
-                    }
-                    .accessibilityIdentifier("retry-media-sync")
+                .disabled(!model.canStartManualSync)
+                .accessibilityIdentifier("retry-sync")
+            }
+            if case .choosingDirection(let choice) = model.status {
+                DirectionChoice(model: model, choice: choice)
+            }
+            if model.status == .fullSyncRequested {
+                Text("A full sync will run next time you sync.", bundle: .module)
+                    .foregroundStyle(.secondary)
+            }
+
+            StatusRowView(row: media) {
+                Text("Media", bundle: .module)
+            }
+            .accessibilityIdentifier("media-sync-status")
+            if let failure = media.failure {
+                FailureRow(failure: failure)
+            }
+            if model.canRetryMediaSync {
+                Button {
+                    Task { await model.retryMediaSync() }
+                } label: {
+                    Text("Retry Media Sync", bundle: .module)
                 }
-            } header: {
-                Text("Media Sync", bundle: .module)
+                .accessibilityIdentifier("retry-media-sync")
+            }
+        } header: {
+            Text("Status", bundle: .module)
+        }
+    }
+}
+
+/// One labeled status row: icon, title and status, the last sync time, and
+/// a progress bar with the core's counts while it runs.
+private struct StatusRowView<Title: View>: View {
+    let row: SyncStatusRow
+    var message: String?
+    @ViewBuilder let title: Title
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            ViewThatFits(in: .horizontal) {
+                HStack(alignment: .firstTextBaseline) {
+                    heading
+                    Spacer(minLength: 12)
+                    statusText
+                }
+                VStack(alignment: .leading, spacing: 2) {
+                    heading
+                    statusText
+                }
+            }
+            if row.isRunning {
+                ProgressView(value: row.fraction)
+                    .progressViewStyle(.linear)
+                if let detail = row.progressDetail {
+                    Text(verbatim: detail)
+                        .font(.footnote.monospacedDigit())
+                        .foregroundStyle(.secondary)
+                }
+            } else if let lastSynced = row.lastSynced {
+                // Redrawn each minute so "2 minutes ago" stays true.
+                TimelineView(.everyMinute) { _ in
+                    Text("Last synced \(lastSynced.formatted(.relative(presentation: .named)))", bundle: .module)
+                }
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+            }
+            if let message {
+                Text(verbatim: message)
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
             }
         }
+        .padding(.vertical, 2)
+        .accessibilityElement(children: .combine)
+    }
+
+    private var heading: some View {
+        Label {
+            title
+        } icon: {
+            Image(systemName: row.systemImage)
+                .foregroundStyle(iconStyle)
+                .symbolEffect(.rotate, isActive: row.isRunning && !reduceMotion)
+                .accessibilityHidden(true)
+        }
+    }
+
+    private var statusText: some View {
+        Text(row.status)
+            .foregroundStyle(.secondary)
+    }
+
+    private var iconStyle: Color {
+        switch row.kind {
+        case .synced: .green
+        case .syncing: .accentColor
+        case .failed, .oneWay: .orange
+        case .notSynced, .cancelled, .interrupted: .secondary
+        }
+    }
+}
+
+/// The reason a sync failed, in the row under its status row.
+private struct FailureRow: View {
+    let failure: SyncFailure
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(verbatim: failure.message)
+            if let detail = failure.detail {
+                Text(verbatim: detail)
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .accessibilityElement(children: .combine)
     }
 }
 
@@ -471,87 +561,6 @@ private struct BusyRow<Description: View>: View {
             .buttonStyle(.bordered)
         }
         .padding(.vertical, 4)
-    }
-}
-
-private struct ProgressDescription: View {
-    let progress: SyncProgress
-
-    var body: some View {
-        switch progress {
-        case .connecting:
-            ProgressView {
-                Text("Connecting…", bundle: .module)
-            }
-        case .syncing(let detail):
-            ProgressView {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Syncing…", bundle: .module)
-                    if let detail {
-                        Text(verbatim: detail)
-                            .font(.footnote)
-                            .foregroundStyle(.secondary)
-                    }
-                }
-            }
-        case .uploading(let transferred, let total):
-            TransferProgress(transferred: transferred, total: total) {
-                Text("Uploading…", bundle: .module)
-            }
-        case .downloading(let transferred, let total):
-            TransferProgress(transferred: transferred, total: total) {
-                Text("Downloading…", bundle: .module)
-            }
-        }
-    }
-}
-
-private struct TransferProgress<Title: View>: View {
-    let transferred: Int
-    let total: Int
-    @ViewBuilder let title: Title
-
-    var body: some View {
-        if total > 0 {
-            ProgressView(value: Double(min(transferred, total)), total: Double(total)) {
-                title
-            } currentValueLabel: {
-                Text("\(Self.bytes(transferred)) of \(Self.bytes(total))", bundle: .module)
-            }
-        } else {
-            ProgressView { title }
-        }
-    }
-
-    private static func bytes(_ count: Int) -> String {
-        ByteCountFormatter.string(fromByteCount: Int64(count), countStyle: .file)
-    }
-}
-
-private struct OutcomeRow: View {
-    let outcome: SyncOutcome
-
-    var body: some View {
-        Label {
-            VStack(alignment: .leading, spacing: 2) {
-                switch outcome.kind {
-                case .merged:
-                    Text("Collection sync complete.", bundle: .module)
-                case .uploaded:
-                    Text("Collection upload complete.", bundle: .module)
-                case .downloaded:
-                    Text("Collection download complete.", bundle: .module)
-                }
-                if let message = outcome.serverMessage {
-                    Text(verbatim: message)
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                }
-            }
-        } icon: {
-            Image(systemName: "checkmark.circle.fill")
-                .foregroundStyle(.green)
-        }
     }
 }
 

@@ -6,7 +6,7 @@
   MathJax under /_hayaki/. Nothing is loaded from the network.
 
   Native code shows a card side with hayaki.show({html, css, bodyClass,
-  isAnswer}). The page posts to the "hayaki" message handler:
+  isAnswer}). hayaki.language(lang) sets <html lang>. The page posts to the "hayaki" message handler:
     "tap"               a tap on the card, not on a link or control
     {play: "q:0"}       a tap on a replay button
     {typed: "…"}        the text typed into a typed-answer field, as it changes
@@ -31,6 +31,11 @@
         --replay-fill: #ffffff;
         --replay-ink: #414141;
         -webkit-text-size-adjust: 100%;
+        /* Cards whose template names no font use the system font. Set on
+           the root, not on .card, so any font the template sets wins. Han
+           characters follow <html lang> (the Card Kanji/Hanzi Style
+           setting): Hiragino Sans for ja, PingFang for zh. */
+        font-family: system-ui, -apple-system, sans-serif;
     }
     :root.night-mode {
         --canvas: var(--hayaki-night-canvas, #000000);
@@ -124,6 +129,12 @@
         border-radius: 8px;
         color: var(--fg);
         background: transparent;
+        caret-color: var(--hayaki-accent, auto);
+    }
+    /* The focus ring uses the theme accent rather than system blue. */
+    input#typeans:focus {
+        outline: 2px solid var(--hayaki-accent, -webkit-focus-ring-color);
+        outline-offset: -1px;
     }
     code#typeans {
         white-space: pre-wrap;
@@ -195,9 +206,20 @@
         document.body.classList.add(...settings);
     }
 
-    function appearance(canvas, isLegacyDark) {
+    // The page language picks Japanese or Chinese glyph forms for Han
+    // characters; an empty string leaves it unset.
+    function language(lang) {
+        if (lang) {
+            document.documentElement.lang = lang;
+        } else {
+            document.documentElement.removeAttribute("lang");
+        }
+    }
+
+    function appearance(canvas, isLegacyDark, accent) {
         legacyDark = isLegacyDark;
         document.documentElement.style.setProperty("--hayaki-night-canvas", canvas);
+        if (accent) document.documentElement.style.setProperty("--hayaki-accent", accent);
         applyColorScheme();
     }
 
@@ -323,7 +345,7 @@
         post("tap");
     });
 
-    window.hayaki = { show, appearance };
+    window.hayaki = { show, appearance, language };
 })();
 </script>
 </body>

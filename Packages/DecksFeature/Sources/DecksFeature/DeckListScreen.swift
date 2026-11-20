@@ -25,7 +25,6 @@ public struct DeckListScreen<SyncControl: View>: View {
     @State private var optionsDeck: DeckNode?
     @Binding private var presentation: DeckPresentation?
     @State private var selectedDeckID: DeckNode.ID?
-    @Environment(\.hayakiTheme) private var theme
     @AppStorage(DeckBackground.revisionKey) private var backgroundRevision = ""
     @State private var backgroundImage: CGImage?
     @Environment(\.scenePhase) private var scenePhase
@@ -179,9 +178,9 @@ public struct DeckListScreen<SyncControl: View>: View {
                     .scaledToFill()
                     .frame(width: geometry.size.width, height: geometry.size.height)
                     .clipped()
-                    .overlay(theme.background.opacity(0.65))
+                    .overlay(HayakiBackground(.grouped).opacity(0.65))
             } else {
-                theme.background
+                HayakiBackground(.grouped)
             }
         }
         .ignoresSafeArea()
@@ -331,14 +330,14 @@ private struct DeckRow: View {
 /// Today's new, learning and due counts in Anki's colours: blue, red and green.
 private struct CountsView: View {
     let counts: DeckCounts
-    @Environment(\.hayakiTheme) private var theme
 
     var body: some View {
         ViewThatFits(in: .horizontal) {
             HStack(spacing: 12) { numbers }
             VStack(alignment: .leading, spacing: 4) { numbers }
         }
-        .font(.callout.monospacedDigit())
+        .font(.callout)
+        .hayakiNumeric()
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(Text(
             "\(counts.new) new, \(counts.learning) learning, \(counts.due) due",
@@ -348,9 +347,9 @@ private struct CountsView: View {
 
     private var numbers: some View {
         Group {
-            count(counts.new, color: theme.color(for: .new))
-            count(counts.learning, color: theme.color(for: .learning))
-            count(counts.due, color: theme.color(for: .due))
+            count(counts.new, color: SemanticColor.new.color)
+            count(counts.learning, color: SemanticColor.learning.color)
+            count(counts.due, color: SemanticColor.due.color)
         }
     }
 

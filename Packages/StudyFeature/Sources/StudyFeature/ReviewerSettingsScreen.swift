@@ -33,6 +33,14 @@ public struct ReviewerSettingsScreen: View {
                 Toggle(reviewerLocalized("Hide Status Bar"), isOn: $preferences.hideStatusBar)
                 Toggle(reviewerLocalized("Prefer Hidden Home Indicator"), isOn: $preferences.hideHomeIndicator)
             }
+            Section {
+                CardGlyphStylePicker()
+            } footer: {
+                Text(
+                    "Sets how Han characters on cards are drawn. Fonts chosen by a card’s template are kept.",
+                    bundle: .module
+                )
+            }
             Section(reviewerLocalized("Toolbar")) {
                 Picker(reviewerLocalized("Position"), selection: $preferences.toolbarPosition) {
                     ForEach(ReviewerToolbarPosition.allCases, id: \.self) { Text(reviewerLocalized($0.rawValue.capitalized)).tag($0) }
