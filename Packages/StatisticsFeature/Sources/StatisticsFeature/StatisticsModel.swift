@@ -40,6 +40,11 @@ public final class StatisticsModel {
 
     @ObservationIgnored private let store: CollectionStore
     @ObservationIgnored private var selectCurrentDeckOnFirstLoad: Bool
+    @ObservationIgnored private var loadedRevision: UInt64?
+    @ObservationIgnored private var nextStudyDay = Date.distantPast
+    @ObservationIgnored private var ongoingRefresh: (
+        selection: Selection, revision: UInt64, task: Task<Void, Never>
+    )?
     @ObservationIgnored private var preferenceWrite: Task<Void, Never>?
     @ObservationIgnored private var preferenceVersion = 0
 
@@ -73,7 +78,28 @@ public final class StatisticsModel {
 
     /// Reads the decks and the graphs data for the current selection.
     public func refresh() async {
+        guard !Task.isCancelled else { return }
         let requested = selection
+        let revision = store.changeRevision
+        if let ongoingRefresh, ongoingRefresh.selection == requested, ongoingRefresh.revision == revision {
+            await ongoingRefresh.task.value
+            return
+        }
+
+        // A tab switch cancels the view's task. Keep one calculation for
+        // this selection so a quick return can await the same result.
+        ongoingRefresh?.task.cancel()
+        let task = Task { [weak self] in
+            guard let self else { return }
+            await self.load(requested, revision: revision)
+            if !Task.isCancelled { self.ongoingRefresh = nil }
+        }
+        ongoingRefresh = (requested, revision, task)
+        await task.value
+    }
+
+    private func load(_ requested: Selection, revision: UInt64) async {
+        guard !Task.isCancelled, requested == selection else { return }
         let preferenceVersion = self.preferenceVersion
         do {
             let decks = try await store.core.getDeckNames(.with {
@@ -107,10 +133,12 @@ public final class StatisticsModel {
             case .search(let query):
                 search = query
             }
+            guard !Task.isCancelled, requested == selection else { return }
             let response = try await store.core.graphs(.with {
                 $0.search = search
                 $0.days = requested.period.days
             })
+            guard !Task.isCancelled, requested == selection else { return }
 
             let timing = try await store.core.schedTimingToday()
             let preferences = try await store.core.getGraphPreferences()
@@ -123,10 +151,12 @@ public final class StatisticsModel {
             if preferenceVersion == self.preferenceVersion {
                 self.preferences = StatisticsPreferences(preferences)
             }
-            if scope != self.scope { self.scope = scope }
             graphs = StatisticsGraphs(response: response, period: requested.period, studyDate: today)
-            loadedSelection = selection
+            loadedRevision = revision
+            loadedSelection = Selection(scope: scope, period: requested.period)
+            nextStudyDay = cutoff
             state = .loaded
+            if scope != self.scope { self.scope = scope }
         } catch {
             guard !Task.isCancelled, requested == selection else { return }
             state = .failed(message: error.message)
@@ -140,9 +170,17 @@ public final class StatisticsModel {
     public func run() async {
         // Subscribed before reading, so no change in between is missed.
         let changes = store.changes()
-        await refresh()
+        await refreshIfNeeded()
         for await change in changes where !change.isDisjoint(with: Self.relevantChanges) {
-            await refresh()
+            await refreshIfNeeded()
         }
+    }
+
+    func refreshIfNeeded() async {
+        if state == .loaded, loadedSelection == selection,
+           loadedRevision == store.changeRevision, Date.now < nextStudyDay {
+            return
+        }
+        await refresh()
     }
 }

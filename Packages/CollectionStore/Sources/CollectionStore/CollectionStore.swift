@@ -35,7 +35,14 @@ public final class CollectionStore: Sendable {
     @MainActor public func endPackageExport() {
         isExportingPackage = false
     }
-    private let subscribers = Mutex<[UUID: AsyncStream<CollectionChange>.Continuation]>([:])
+    private struct Changes {
+        var revision: UInt64 = 0
+        var subscribers: [UUID: AsyncStream<CollectionChange>.Continuation] = [:]
+    }
+    private let changeState = Mutex(Changes())
+
+    /// Advances whenever the store signals a change, even with no subscribers.
+    public var changeRevision: UInt64 { changeState.withLock { $0.revision } }
 
     private init(core: CoreClient, location: CollectionLocation) {
         self.core = core
@@ -173,9 +180,9 @@ public final class CollectionStore: Sendable {
         let (stream, continuation) = AsyncStream<CollectionChange>.makeStream()
         let id = UUID()
         continuation.onTermination = { [weak self] _ in
-            self?.subscribers.withLock { _ = $0.removeValue(forKey: id) }
+            self?.changeState.withLock { _ = $0.subscribers.removeValue(forKey: id) }
         }
-        subscribers.withLock { $0[id] = continuation }
+        changeState.withLock { $0.subscribers[id] = continuation }
         return stream
     }
 
@@ -184,7 +191,11 @@ public final class CollectionStore: Sendable {
     /// core makes without a change summary, such as a sync.
     public func signal(_ change: CollectionChange) {
         guard !change.isEmpty else { return }
-        for continuation in subscribers.withLock({ Array($0.values) }) {
+        let subscribers = changeState.withLock { state in
+            state.revision &+= 1
+            return Array(state.subscribers.values)
+        }
+        for continuation in subscribers {
             continuation.yield(change)
         }
     }

@@ -1,7 +1,9 @@
 import CollectionStore
 import CollectionTesting
 import Foundation
-import StatisticsFeature
+import Observation
+@testable import StatisticsFeature
+import Synchronization
 import Testing
 
 @MainActor
@@ -405,6 +407,35 @@ struct StatisticsModelTests {
             model.period = .allTime
             await model.refresh()
             #expect(model.graphs?.studyStreak == StudyStreak(days: 35, isAtLeast: false))
+        }
+    }
+
+    @Test("Returning to statistics reuses the charts until the collection or selection changes")
+    func reusesChartsOnReturn() async throws {
+        try await withTemporaryCollection { store in
+            let deck = try await store.addDeck(named: "Spanish")
+            try await store.addBasicNotes(count: 1, toDeck: deck)
+            let model = StatisticsModel(store: store)
+            await model.refreshIfNeeded()
+            #expect(model.graphs?.cardCounts.total == 1)
+
+            let republished = Mutex(false)
+            withObservationTracking {
+                _ = model.graphs
+            } onChange: {
+                republished.withLock { $0 = true }
+            }
+            await model.refreshIfNeeded()
+            #expect(!republished.withLock { $0 })
+
+            try await store.addBasicNotes(count: 1, toDeck: deck)
+            await model.refreshIfNeeded()
+            #expect(republished.withLock { $0 })
+            #expect(model.graphs?.cardCounts.total == 2)
+
+            model.period = .year
+            await model.refreshIfNeeded()
+            #expect(model.graphs?.period == .year)
         }
     }
 

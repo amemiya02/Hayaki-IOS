@@ -487,9 +487,16 @@ public struct StudyScreen: View {
             .keyboardShortcut(.cancelAction)
         }
         #if os(iOS)
-        ToolbarItem(placement: .title) { titleView }
+        if showsNavigationDetail {
+            ToolbarItem(placement: .subtitle) { navigationDetail }
+        }
         #else
-        ToolbarItem(placement: .principal) { titleView }
+        ToolbarItem(placement: .principal) {
+            VStack(spacing: 1) {
+                Text(title).font(.headline).lineLimit(1)
+                if showsNavigationDetail { navigationDetail }
+            }
+        }
         #endif
         if model.state.card != nil {
             ToolbarItemGroup(placement: .primaryAction) {
@@ -506,30 +513,27 @@ public struct StudyScreen: View {
         }
     }
 
-    /// The deck's name, with remaining counts and the answer timer when enabled.
-    private var titleView: some View {
-        VStack(spacing: 1) {
-            Text(title)
-                .font(.headline)
-                .lineLimit(1)
-            if model.state.card != nil {
-                HStack(spacing: 8) {
-                    if model.showsRemainingCounts {
-                        StudyCountsView(counts: model.counts)
-                    }
-                    if model.showsAnswerTimer {
-                        TimelineView(.periodic(from: .now, by: 1)) { _ in
-                            Text(model.answerTimer().formatted(.time(pattern: .minuteSecond)))
-                                .foregroundStyle(.secondary)
-                                .accessibilityLabel(reviewerLocalized("Answer Timer"))
-                        }
-                    }
+    private var showsNavigationDetail: Bool {
+        model.state.card != nil && (model.showsRemainingCounts || model.showsAnswerTimer)
+    }
+
+    private var navigationDetail: some View {
+        HStack(spacing: 8) {
+            if model.showsRemainingCounts {
+                StudyCountsView(counts: model.counts)
+            }
+            if model.showsAnswerTimer {
+                TimelineView(.periodic(from: .now, by: 1)) { _ in
+                    Text(model.answerTimer().formatted(.time(pattern: .minuteSecond)))
+                        .font(.footnote.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                        .accessibilityLabel(reviewerLocalized("Answer Timer"))
                 }
-                .font(.footnote.weight(.semibold))
-                .hayakiNumeric()
-                .lineLimit(1)
             }
         }
+        .hayakiNumeric()
+        .lineLimit(1)
+        .fixedSize(horizontal: false, vertical: true)
     }
 
     /// A thin line along the bottom edge of the navigation bar.
@@ -894,10 +898,11 @@ private struct StudyCountsView: View {
         let due = Text(counts.due, format: .number).foregroundStyle(SemanticColor.due.color)
         let separator = Text(verbatim: "·").foregroundStyle(.tertiary)
 
-        // Fit the whole count together before optional time labels use any space.
+        // Give the counts room before the optional timer uses spare width.
         Text("\(new) \(separator) \(learning) \(separator) \(due)")
+            .font(.subheadline.weight(.semibold))
             .lineLimit(1)
-            .minimumScaleFactor(0.5)
+            .minimumScaleFactor(0.6)
             .layoutPriority(1)
             .accessibilityLabel(Text(
                 "\(counts.new) new, \(counts.learning) learning, \(counts.due) due left",
