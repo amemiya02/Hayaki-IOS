@@ -35,6 +35,9 @@ public struct BrowseScreen: View {
     #if os(iOS)
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     #endif
+    /// The app's shared Add Note action; without one (Browse opened from the
+    /// reviewer), Browse shows the note editor itself.
+    @Environment(\.addNote) private var addNote
 
     public init(store: CollectionStore, initialSearch: String = "", initialCardID: Int64? = nil) {
         self.store = store
@@ -212,7 +215,11 @@ public struct BrowseScreen: View {
         } else {
             // One glass capsule: Add Note and a menu with the rest.
             ToolbarItemGroup(placement: .primaryAction) {
-                AddNoteButton { sheet = .addNote }
+                if addNote != nil {
+                    AddNoteButton()
+                } else {
+                    AddNoteButton { sheet = .addNote }
+                }
                 configurationMenu
             }
         }
