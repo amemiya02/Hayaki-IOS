@@ -50,14 +50,18 @@ struct CalendarSection: View {
                     .disabled(year >= latestYear)
                 }
                 .buttonStyle(.borderless)
-                Picker(selection: $firstWeekday) {
-                    ForEach(StatisticsWeekday.allCases, id: \.self) { day in
-                        Text(calendar.weekdaySymbols[day.rawValue - 1]).tag(day)
+                LabeledContent {
+                    Picker(selection: $firstWeekday) {
+                        ForEach(StatisticsWeekday.allCases, id: \.self) { day in
+                            Text(calendar.weekdaySymbols[day.rawValue - 1]).tag(day)
+                        }
+                    } label: {
+                        Text("First Day of the Week", bundle: .module)
                     }
+                    .labelsHidden()
                 } label: {
                     Text("First Day of the Week", bundle: .module)
                 }
-
             }
 
             if counts.isEmpty {
@@ -74,7 +78,14 @@ struct CalendarSection: View {
                 }
             }
         } header: {
-            Text("Calendar", bundle: .module)
+            StatisticsCardHeader(
+                title: Text("Calendar", bundle: .module),
+                reading: counts.isEmpty ? nil : Text(
+                    "You studied on \(calendarDays.count { (counts[$0] ?? 0) > 0 }, format: .number) days in \(Text(year.formatted(.number.grouping(.never))))",
+                    bundle: .module,
+                    comment: "Calendar card reading: the number of days with reviews in the year shown, e.g. \"You studied on 120 days in 2026\"."
+                )
+            )
         }
         .onChange(of: year) { selectedDay = nil }
         .onChange(of: graphs.period) { selectedDay = nil }

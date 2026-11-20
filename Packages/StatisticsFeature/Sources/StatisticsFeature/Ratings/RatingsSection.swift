@@ -6,19 +6,12 @@ import SwiftUI
 struct RatingsSection: View {
     let graphs: StatisticsGraphs
     @Environment(\.statisticsReportPeriod) private var reportPeriod
-    private var displayedPeriod: StatisticsPeriod { reportPeriod ?? period }
-    @State private var period: StatisticsPeriod = .year
+    private var displayedPeriod: StatisticsPeriod { reportPeriod ?? graphs.period }
     @State private var selectedRating: String?
     private var ratings: RatingCounts { graphs.displaying(displayedPeriod).ratings }
 
     var body: some View {
         Section {
-            if reportPeriod == nil {
-                StatisticsPeriodPicker(
-                    selection: $period, label: Text("Ratings Period", bundle: .module),
-                    allowsAllTime: graphs.period == .allTime
-                )
-            }
             if ratings.isEmpty {
                 Text("No reviews in this period.", bundle: .module)
                     .foregroundStyle(.secondary)
@@ -26,12 +19,16 @@ struct RatingsSection: View {
                 results
             }
         } header: {
-            Text("Ratings", bundle: .module)
+            StatisticsCardHeader(
+                title: Text("Ratings", bundle: .module),
+                reading: ratings.isEmpty ? nil : Text(
+                    "\(1 - ratings.fraction(.again), format: .percent.precision(.fractionLength(0))) of your answers were correct",
+                    bundle: .module,
+                    comment: "Ratings card reading: the share of reviews not rated Again (correct answers)."
+                )
+            )
         }
-        .onChange(of: period) { selectedRating = nil }
-        .onChange(of: graphs.period) {
-            if graphs.period == .year && period == .allTime { period = .year }
-        }
+        .onChange(of: graphs.period) { selectedRating = nil }
     }
 
     @ViewBuilder

@@ -86,10 +86,15 @@ struct DistributionSection: View {
         let shown = bins(in: bounds)
         Section {
             if reportPeriod == nil, !availableRanges.isEmpty {
-                Picker(selection: selectedRange) {
-                    ForEach(availableRanges, id: \.self) { range in
-                        range.title(for: data.kind).tag(range)
+                LabeledContent {
+                    Picker(selection: selectedRange) {
+                        ForEach(availableRanges, id: \.self) { range in
+                            range.title(for: data.kind).tag(range)
+                        }
+                    } label: {
+                        Text("Range", bundle: .module)
                     }
+                    .labelsHidden()
                 } label: {
                     Text("Range", bundle: .module)
                 }
@@ -108,7 +113,29 @@ struct DistributionSection: View {
                 }
             }
         } header: {
-            Text(data.kind.title)
+            StatisticsCardHeader(title: Text(data.kind.title), reading: data.buckets.isEmpty ? nil : reading)
+        }
+    }
+
+    private var reading: Text {
+        if data.kind.usesDays {
+            Text(
+                "Half of these cards are at \(Int(data.typicalValue.rounded()), format: .number) days or less",
+                bundle: .module,
+                comment: "Review Intervals and Card Stability card reading: the median in days."
+            )
+        } else if data.kind == .retrievability {
+            Text(
+                "Average retrievability is \(data.typicalValue / 100, format: .percent.precision(.fractionLength(0)))",
+                bundle: .module,
+                comment: "Card Retrievability card reading: the average chance of recalling a card."
+            )
+        } else {
+            Text(
+                "The average is \(data.typicalValue / 100, format: .percent.precision(.fractionLength(0)))",
+                bundle: .module,
+                comment: "Card Ease and Card Difficulty card reading: the average value."
+            )
         }
     }
 

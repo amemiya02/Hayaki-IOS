@@ -5,8 +5,7 @@ struct ReviewHistorySection: View {
     let graphs: StatisticsGraphs
     @Environment(\.locale) private var locale
     @Environment(\.statisticsReportPeriod) private var reportPeriod
-    private var displayedPeriod: StatisticsPeriod { reportPeriod ?? period }
-    @State private var period: StatisticsPeriod = .month
+    private var displayedPeriod: StatisticsPeriod { reportPeriod ?? graphs.period }
 
     var reportReviewTime: Bool? = nil
     @State private var showTime = false
@@ -19,12 +18,6 @@ struct ReviewHistorySection: View {
         let days = graphs.displaying(displayedPeriod).reviewDays
         let firstDay = displayedPeriod == .allTime ? days.first?.offset ?? 0 : displayedPeriod.earliestReviewDay
         Section {
-            if reportPeriod == nil {
-                StatisticsPeriodPicker(
-                    selection: $period, label: Text("Review Period", bundle: .module),
-                    allowsAllTime: graphs.period == .allTime
-                )
-            }
             if reportPeriod == nil {
                 Toggle(isOn: $showTime) { Text("Review Time", bundle: .module) }
             }
@@ -39,18 +32,14 @@ struct ReviewHistorySection: View {
                 summary(days, firstDay: firstDay)
             }
         } header: {
-            if reportReviewTime == true {
-                Text("Review Time", bundle: .module)
-            } else {
-                Text("Reviews", bundle: .module)
-            }
-        }
-        .onChange(of: graphs.period, initial: true) {
-            if graphs.period == .allTime {
-                period = .allTime
-            } else if period == .allTime {
-                period = .year
-            }
+            StatisticsCardHeader(
+                title: reportReviewTime == true ? Text("Review Time", bundle: .module) : Text("Reviews", bundle: .module),
+                reading: days.isEmpty ? nil : Text(
+                    "You studied on \(days.count, format: .number) of the last \(1 - firstDay, format: .number) days",
+                    bundle: .module,
+                    comment: "Reviews card reading: days with reviews, out of the days in the period."
+                )
+            )
         }
     }
 
@@ -76,7 +65,7 @@ struct ReviewHistorySection: View {
         .chartXSelection(value: $position)
         .chartYAxisLabel { metric }
         .frame(height: 210)
-        .onChange(of: period) { position = nil }
+        .onChange(of: graphs.period) { position = nil }
     }
 
     @ChartContentBuilder
