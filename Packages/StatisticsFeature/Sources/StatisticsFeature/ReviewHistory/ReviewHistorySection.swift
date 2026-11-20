@@ -37,7 +37,7 @@ struct ReviewHistorySection: View {
             StatisticsCardHeader(
                 title: reportReviewTime == true ? Text("Review Time", bundle: .module) : Text("Reviews", bundle: .module),
                 reading: days.isEmpty ? nil : Text(
-                    "You studied on \(days.count, format: .number) of the last \(1 - firstDay, format: .number) days",
+                    "You studied on \(days.count) of the last \(1 - firstDay) days",
                     bundle: .module,
                     comment: "Reviews card reading: days with reviews, out of the days in the period."
                 )

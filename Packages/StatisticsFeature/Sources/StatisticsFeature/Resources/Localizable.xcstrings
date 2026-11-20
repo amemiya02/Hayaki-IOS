@@ -2431,25 +2431,79 @@
         }
       }
     },
-    "You studied on %@ of the last %@ days" : {
+    "You studied on %lld of the last %lld days" : {
       "comment" : "Reviews card reading: days with reviews, out of the days in the period.",
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
-            "value" : "You studied on %1$@ of the last %2$@ days"
+            "state" : "translated",
+            "value" : "You studied on %1$lld of the last %#@days@"
+          },
+          "substitutions" : {
+            "days" : {
+              "argNum" : 2,
+              "formatSpecifier" : "lld",
+              "variations" : {
+                "plural" : {
+                  "one" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg day"
+                    }
+                  },
+                  "other" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg days"
+                    }
+                  }
+                }
+              }
+            }
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "過去%2$@日のうち%1$@日学習"
+            "value" : "過去%#@days@のうち%1$lld日学習"
+          },
+          "substitutions" : {
+            "days" : {
+              "argNum" : 2,
+              "formatSpecifier" : "lld",
+              "variations" : {
+                "plural" : {
+                  "other" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg日"
+                    }
+                  }
+                }
+              }
+            }
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "过去 %2$@ 天中学习了 %1$@ 天"
+            "value" : "过去 %#@days@中学习了 %1$lld 天"
+          },
+          "substitutions" : {
+            "days" : {
+              "argNum" : 2,
+              "formatSpecifier" : "lld",
+              "variations" : {
+                "plural" : {
+                  "other" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg 天"
+                    }
+                  }
+                }
+              }
+            }
           }
         }
       }
