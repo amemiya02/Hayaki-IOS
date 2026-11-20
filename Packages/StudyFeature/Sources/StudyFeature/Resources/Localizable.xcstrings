@@ -1,6 +1,54 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "Card Kanji/Hanzi Style" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "カードの漢字字形"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "卡片汉字字形"
+          }
+        }
+      }
+    },
+    "Follow App Language" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "アプリの言語に従う"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "跟随应用语言"
+          }
+        }
+      }
+    },
+    "Sets how Han characters on cards are drawn. Fonts chosen by a card’s template are kept." : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "カード上の漢字の字形を選びます。カードのテンプレートで指定されたフォントはそのまま使われます。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "设置卡片上汉字的字形。卡片模板指定的字体保持不变。"
+          }
+        }
+      }
+    },
     "Card was a leech." : {
       "localizations" : {
         "ja" : {
