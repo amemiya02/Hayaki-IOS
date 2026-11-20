@@ -95,14 +95,6 @@ public struct BrowseScreen: View {
                 } message: { summary in
                     Text("Deleting a card deletes its note, with the note's other cards: \(summary.cardCount) cards in all.", bundle: .module)
                 }
-                .alert(
-                    Text("Could Not Change Cards", bundle: .module),
-                    isPresented: hasFailure
-                ) {
-                    Button {} label: { Text("OK", bundle: .module) }
-                } message: {
-                    Text(model.failure ?? "")
-                }
                 .onChange(of: model.rowIDs.isEmpty) { _, isEmpty in
                     if isEmpty { isSelecting = false }
                 }
@@ -116,6 +108,7 @@ public struct BrowseScreen: View {
             content
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .clipped()
+                .inlineErrorBanner(failure)
             if let completed = model.completedAction {
                 UndoBanner(model: model, completed: completed)
                     .transition(.move(edge: .bottom).combined(with: .opacity))
@@ -378,11 +371,12 @@ public struct BrowseScreen: View {
         }
     }
 
-    private var hasFailure: Binding<Bool> {
+    /// A bulk action that failed, shown as a banner above the results.
+    private var failure: Binding<InlineError?> {
         Binding {
-            model.failure != nil
-        } set: { isShown in
-            if !isShown { model.failure = nil }
+            model.failure.map { InlineError(title: Text("Could Not Change Cards", bundle: .module), message: $0) }
+        } set: { error in
+            if error == nil { model.failure = nil }
         }
     }
 
@@ -390,7 +384,14 @@ public struct BrowseScreen: View {
     private var content: some View {
         switch model.state {
         case .loading:
-            ProgressView()
+            // The shape of the results while the search runs.
+            List(0..<12, id: \.self) { _ in
+                CardRowContent(row: nil, columns: model.visibleColumns, truncates: true, flagLabel: nil)
+            }
+            .hayakiScrollBackground()
+            .listStyle(.plain)
+            .scrollDisabled(true)
+            .loadingPlaceholder()
         case .invalidSearch(let message):
             ContentUnavailableView {
                 Label {

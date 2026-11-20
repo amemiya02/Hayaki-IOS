@@ -1,5 +1,6 @@
 import AnkiCore
 import DeckOptionsFeature
+import HayakiAppearance
 import PackagesFeature
 import ReminderFeature
 import StudyFeature
@@ -24,12 +25,8 @@ private struct DeckManagement: ViewModifier {
     @State private var renaming: DeckNode?
     @State private var newName = ""
     @State private var deleting: (deck: DeckNode, deletion: DeckDeletion)?
-    @State private var failure: Failure?
-
-    struct Failure {
-        let title: Text
-        let message: String
-    }
+    /// A deck action that failed, shown as a banner above the decks.
+    @State private var failure: InlineError?
 
     init(model: DeckListModel, profileID: UUID?, onStudy: @escaping (StudyDeck) -> Void) {
         self.model = model
@@ -61,11 +58,11 @@ private struct DeckManagement: ViewModifier {
                 switch action {
                 case .create(let parentID):
                     NewDeckSheet(model: model, parentID: parentID) { error in
-                        failure = Failure(title: Text("Could Not Create Deck", bundle: .module), message: error.message)
+                        failure = InlineError(title: Text("Could Not Create Deck", bundle: .module), message: error.message)
                     }
                 case .move(let deck):
                     MoveDeckSheet(model: model, deck: deck) { error in
-                        failure = Failure(title: Text("Could Not Move Deck", bundle: .module), message: error.message)
+                        failure = InlineError(title: Text("Could Not Move Deck", bundle: .module), message: error.message)
                     }
                 case .options(let deck):
                     DeckOptionsScreen(store: model.store, deckID: deck.id)
@@ -142,17 +139,7 @@ private struct DeckManagement: ViewModifier {
             } message: { pending in
                 Self.statement(of: pending.deletion)
             }
-            .alert(
-                failure?.title ?? Text(verbatim: ""),
-                isPresented: isPresented($failure),
-                presenting: failure
-            ) { _ in
-                Button(role: .cancel) {} label: {
-                    Text("OK", bundle: .module)
-                }
-            } message: { failure in
-                Text(failure.message)
-            }
+            .inlineErrorBanner($failure)
     }
 
     /// The pending action when it is shown as a sheet.
@@ -200,7 +187,7 @@ private struct DeckManagement: ViewModifier {
                 await editor.rebuild()
             }
             if let error = editor.error {
-                failure = Failure(title: Text("Could Not Update Filtered Deck", bundle: .module), message: error)
+                failure = InlineError(title: Text("Could Not Update Filtered Deck", bundle: .module), message: error)
             }
         }
     }
@@ -211,7 +198,7 @@ private struct DeckManagement: ViewModifier {
             do throws(CoreError) {
                 deleting = (deck, try await model.deletion(of: deck.id))
             } catch {
-                failure = Failure(title: Text("Could Not Delete Deck", bundle: .module), message: error.message)
+                failure = InlineError(title: Text("Could Not Delete Deck", bundle: .module), message: error.message)
             }
         }
     }
@@ -222,7 +209,7 @@ private struct DeckManagement: ViewModifier {
             do throws(CoreError) {
                 try await model.renameDeck(deck.id, to: name)
             } catch {
-                failure = Failure(title: Text("Could Not Rename Deck", bundle: .module), message: error.message)
+                failure = InlineError(title: Text("Could Not Rename Deck", bundle: .module), message: error.message)
             }
         }
     }
@@ -232,7 +219,7 @@ private struct DeckManagement: ViewModifier {
             do throws(CoreError) {
                 try await model.deleteDeck(deck.id)
             } catch {
-                failure = Failure(title: Text("Could Not Delete Deck", bundle: .module), message: error.message)
+                failure = InlineError(title: Text("Could Not Delete Deck", bundle: .module), message: error.message)
             }
         }
     }
