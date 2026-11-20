@@ -54,6 +54,11 @@ public struct BrowseScreen: View {
                 NavigationSplitView {
                     browseColumn
                         .navigationSplitViewColumnWidth(min: 320, ideal: 400, max: 520)
+                        #if os(iOS)
+                        // A large title like the other tabs; in the split
+                        // view's list column it would otherwise stay inline.
+                        .navigationBarTitleDisplayMode(.large)
+                        #endif
                 } detail: {
                     BrowseDetailPane(store: store, model: model, rowID: focusedRow)
                 }
