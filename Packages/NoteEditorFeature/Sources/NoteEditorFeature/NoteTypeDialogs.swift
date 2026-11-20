@@ -39,6 +39,9 @@ struct NoteTypeTextSheet: View {
             }
             .disabled(busy)
             .navigationTitle(Text(edit.title, bundle: .module))
+            #if os(iOS)
+            .navigationBarTitleDisplayMode(.inline)
+            #endif
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button(role: .cancel) { dismiss() }.disabled(busy)

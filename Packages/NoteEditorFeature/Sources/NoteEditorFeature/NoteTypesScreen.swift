@@ -49,6 +49,9 @@ public struct NoteTypesScreen: View {
             }
         }
         .navigationTitle(Text("Note Types", bundle: .module))
+        #if os(iOS)
+        .navigationBarTitleDisplayMode(.inline)
+        #endif
         .searchable(text: $search, prompt: Text("Search Note Types", bundle: .module))
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
@@ -112,6 +115,9 @@ private struct AddNoteTypeSheet: View {
             }
             .disabled(busy)
             .navigationTitle(Text("Add Note Type", bundle: .module))
+            #if os(iOS)
+            .navigationBarTitleDisplayMode(.inline)
+            #endif
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button(role: .cancel) { dismiss() }.disabled(busy)
@@ -202,6 +208,9 @@ private struct NoteTypeDetailScreen: View {
             }
         }
         .navigationTitle(type?.name ?? entry.name)
+        #if os(iOS)
+        .navigationBarTitleDisplayMode(.inline)
+        #endif
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 Menu {

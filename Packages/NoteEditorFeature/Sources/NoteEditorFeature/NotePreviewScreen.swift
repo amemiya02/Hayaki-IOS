@@ -54,6 +54,9 @@ struct NotePreviewScreen: View {
             }
         }
         .navigationTitle(Text("Preview", bundle: .module))
+        #if os(iOS)
+        .navigationBarTitleDisplayMode(.inline)
+        #endif
     }
 
     private var templates: some View {

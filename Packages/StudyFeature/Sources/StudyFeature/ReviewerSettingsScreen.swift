@@ -100,6 +100,9 @@ public struct ReviewerSettingsScreen: View {
         }
         .hayakiScrollBackground()
         .navigationTitle(reviewerLocalized("Reviewer"))
+        #if os(iOS)
+        .navigationBarTitleDisplayMode(.inline)
+        #endif
         .onChange(of: preferences) { _, value in value.save() }
         .sheet(isPresented: $selectingInput) {
             NavigationStack {
@@ -140,6 +143,9 @@ private struct ToolbarActionsSettings: View {
             }
         }
         .navigationTitle(reviewerLocalized("Toolbar Actions"))
+        #if os(iOS)
+        .navigationBarTitleDisplayMode(.inline)
+        #endif
         #if os(iOS)
         .toolbar { EditButton() }
         #endif
@@ -303,6 +309,9 @@ private struct PreviewControlSettings: View {
         }
         .hayakiScrollBackground()
         .navigationTitle(Text("Preview Controls", bundle: .module))
+        #if os(iOS)
+        .navigationBarTitleDisplayMode(.inline)
+        #endif
         .onChange(of: controls) { _, controls in controls.save() }
         .sheet(isPresented: $selectingInput) {
             NavigationStack { PhysicalInputSettings(tapZones: tapZones, picker: picker) }
@@ -375,6 +384,9 @@ private struct PhysicalInputSettings<CommandPicker: View>: View {
             }
         }
         .navigationTitle(reviewerLocalized("Add Binding"))
+        #if os(iOS)
+        .navigationBarTitleDisplayMode(.inline)
+        #endif
         .toolbar { ToolbarItem(placement: .confirmationAction) { Button(reviewerLocalized("Done")) { dismiss() } } }
     }
 }

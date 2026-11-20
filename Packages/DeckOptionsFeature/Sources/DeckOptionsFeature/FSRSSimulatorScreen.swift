@@ -57,6 +57,9 @@ struct FSRSSimulatorScreen: View {
             .navigationTitle(workload
                 ? Text("Compare Desired Retention", bundle: .module)
                 : Text("FSRS Simulator", bundle: .module))
+            #if os(iOS)
+            .navigationBarTitleDisplayMode(.inline)
+            #endif
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
                     Button {

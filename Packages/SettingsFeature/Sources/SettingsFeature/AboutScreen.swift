@@ -97,6 +97,9 @@ struct AboutScreen: View {
         }
         .hayakiScrollBackground()
         .navigationTitle(Text("About", bundle: .module))
+        #if os(iOS)
+        .navigationBarTitleDisplayMode(.inline)
+        #endif
         .alert(Text("Debug Information Copied", bundle: .module), isPresented: $didCopy) {
             Button(role: .cancel) {} label: { Text("OK", bundle: .module) }
         }
@@ -155,5 +158,8 @@ private struct ChangelogScreen: View {
             }
         }
         .navigationTitle(Text("Changelog", bundle: .module))
+        #if os(iOS)
+        .navigationBarTitleDisplayMode(.inline)
+        #endif
     }
 }
