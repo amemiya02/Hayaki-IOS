@@ -82,7 +82,7 @@ targets:
         # Fixed permanently, even if the display name ever changes.
         PRODUCT_BUNDLE_IDENTIFIER: io.github.amemiya02.hayaki
         MARKETING_VERSION: "0.2.0"
-        CURRENT_PROJECT_VERSION: "6"
+        CURRENT_PROJECT_VERSION: "7"
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         TARGETED_DEVICE_FAMILY: "1,2"
         # The core's simulator slice is arm64 only (Apple silicon), so never
@@ -116,7 +116,7 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: io.github.amemiya02.hayaki.share
         MARKETING_VERSION: "0.2.0"
-        CURRENT_PROJECT_VERSION: "6"
+        CURRENT_PROJECT_VERSION: "7"
         TARGETED_DEVICE_FAMILY: "1,2"
         "EXCLUDED_ARCHS[sdk=iphonesimulator*]": x86_64
         GENERATE_INFOPLIST_FILE: YES
@@ -139,7 +139,7 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: io.github.amemiya02.hayaki.widgets
         MARKETING_VERSION: "0.2.0"
-        CURRENT_PROJECT_VERSION: "6"
+        CURRENT_PROJECT_VERSION: "7"
         TARGETED_DEVICE_FAMILY: "1,2"
         "EXCLUDED_ARCHS[sdk=iphonesimulator*]": x86_64
         GENERATE_INFOPLIST_FILE: YES

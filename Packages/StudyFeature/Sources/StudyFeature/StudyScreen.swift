@@ -506,8 +506,7 @@ public struct StudyScreen: View {
         }
     }
 
-    /// The deck's name, and below it the counts left, the time left and the
-    /// answer timer, each when turned on.
+    /// The deck's name, with remaining counts and the answer timer when enabled.
     private var titleView: some View {
         VStack(spacing: 1) {
             Text(title)
@@ -517,13 +516,6 @@ public struct StudyScreen: View {
                 HStack(spacing: 8) {
                     if model.showsRemainingCounts {
                         StudyCountsView(counts: model.counts)
-                        if let minutes = model.minutesRemaining {
-                            let duration = Duration.seconds(max(1, minutes) * 60)
-                            let units: Set<Duration.UnitsFormatStyle.Unit> =
-                                minutes >= 24 * 60 ? [.days, .hours] : [.hours, .minutes]
-                            Text("\(duration.formatted(.units(allowed: units))) left", bundle: .module)
-                                .foregroundStyle(.secondary)
-                        }
                     }
                     if model.showsAnswerTimer {
                         TimelineView(.periodic(from: .now, by: 1)) { _ in

@@ -8,14 +8,13 @@ import Testing
 @Suite("Reviewer timing")
 struct ReviewerTimingTests {
     @Test("Study progress tracks the remaining queue through Again, a completed card and Undo")
-    func queueProgressAndEstimate() async throws {
+    func queueProgress() async throws {
         try await withTemporaryCollection { store in
             let deck = try await store.addDeck(named: "Queue")
             try await store.addBasicNotes(count: 4, toDeck: deck)
             let session = StudySessionModel(store: store, deckID: deck)
             await session.start()
             #expect(session.progress == 0)
-            #expect(session.minutesRemaining == 1)
 
             session.showAnswer()
             await session.answer(.again)

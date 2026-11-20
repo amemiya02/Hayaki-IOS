@@ -181,22 +181,6 @@
         }
       }
     },
-    "%@ left" : {
-      "localizations" : {
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "残り%@"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "剩余 %@"
-          }
-        }
-      }
-    },
     "Could Not Display Card": {
       "localizations": {
         "ja": {
