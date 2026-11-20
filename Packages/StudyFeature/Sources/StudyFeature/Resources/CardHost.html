@@ -44,6 +44,12 @@
         --replay-fill: #2c2c2e;
         --replay-ink: #e5e5ea;
     }
+    /* Room below the card for the controls floating over the bottom of the
+       screen (hayaki.bottomInset), so its last line can scroll above them.
+       A card that fits above them does not scroll at all. */
+    html {
+        padding-bottom: calc(var(--hayaki-bottom-inset, 0px) / var(--hayaki-zoom, 1));
+    }
     /* No background of our own: the card's (or, in dark mode, the canvas
        colour below) fills the page, and without one the native background
        shows through the transparent web view.
@@ -99,7 +105,7 @@
         scroll-behavior: auto !important;
     }
     .reviewer-centered {
-        min-height: calc((100vh - 40px) / var(--hayaki-zoom, 1));
+        min-height: calc((100vh - 40px - var(--hayaki-bottom-inset, 0px)) / var(--hayaki-zoom, 1));
         display: flex;
         flex-direction: column;
         justify-content: center;
@@ -254,6 +260,11 @@
         document.documentElement.style.setProperty("--hayaki-zoom", String(factor));
     }
 
+    // The height of the controls floating over the bottom of the card, in points.
+    function bottomInset(points) {
+        document.documentElement.style.setProperty("--hayaki-bottom-inset", points + "px");
+    }
+
     function appearance(canvas, isLegacyDark, accent) {
         legacyDark = isLegacyDark;
         document.documentElement.style.setProperty("--hayaki-night-canvas", canvas);
@@ -384,7 +395,7 @@
         post("tap");
     });
 
-    window.hayaki = { show, appearance, language, zoom };
+    window.hayaki = { show, appearance, language, zoom, bottomInset };
 })();
 </script>
 </body>

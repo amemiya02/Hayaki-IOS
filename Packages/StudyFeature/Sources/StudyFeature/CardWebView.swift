@@ -154,8 +154,10 @@ struct CardWebView: UIViewRepresentable {
         context.coordinator.onTemplateRequest = onTemplateRequest
         context.coordinator.allowsExternalApps = allowsExternalApps
         context.coordinator.updateZoom(zoom)
-        if webView.scrollView.contentInset.bottom != bottomInset {
-            webView.scrollView.contentInset.bottom = bottomInset
+        // The page adds the room below the card itself, so a card that fits
+        // above the controls does not scroll into blank space.
+        context.coordinator.updateBottomInset(bottomInset)
+        if webView.scrollView.verticalScrollIndicatorInsets.bottom != bottomInset {
             webView.scrollView.verticalScrollIndicatorInsets.bottom = bottomInset
         }
         #if DEBUG
@@ -210,6 +212,8 @@ struct CardWebView: UIViewRepresentable {
         private var language: String?
         /// The card's zoom, which follows the learner's text size.
         private var zoom: CGFloat?
+        /// The height of the controls floating over the bottom of the card.
+        private var bottomInset: CGFloat?
 
         func loadHostPage() {
             pageLoaded = false
@@ -327,6 +331,20 @@ struct CardWebView: UIViewRepresentable {
             )
         }
 
+        func updateBottomInset(_ inset: CGFloat) {
+            guard bottomInset != inset else { return }
+            bottomInset = inset
+            sendBottomInset()
+        }
+
+        private func sendBottomInset() {
+            guard pageLoaded, let bottomInset, let webView else { return }
+            webView.callAsyncJavaScript(
+                "window.hayaki.bottomInset(points)", arguments: ["points": Double(bottomInset)], in: nil, in: .page,
+                completionHandler: nil
+            )
+        }
+
         func updateLanguage(_ language: String) {
             guard self.language != language else { return }
             self.language = language
@@ -382,6 +400,7 @@ struct CardWebView: UIViewRepresentable {
             sendAppearance()
             sendLanguage()
             sendZoom()
+            sendBottomInset()
             if wanted == nil {
                 renderDeadline?.cancel()
                 renderDeadline = nil

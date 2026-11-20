@@ -123,6 +123,27 @@ final class CardContentUITests: XCTestCase {
         XCTAssertLessThanOrEqual(image.frame.maxY, app.buttons["rating-good"].frame.minY + 1)
     }
 
+    func testAShortCardDoesNotScrollUnderTheAnswerBar() throws {
+        app.launch()
+        openDeck("Languages")
+        // A card without the image fits above the answer bar.
+        var answer = spanishAnswer
+        for _ in 0..<4 {
+            showAnswer()
+            answer = spanishAnswer
+            XCTAssertTrue(answer.waitForExistence(timeout: 30), "The answer is drawn")
+            if !webText(containing: "the sun").exists { break }
+            rate("easy")
+            _ = answer.waitForNonExistence(timeout: 30)
+        }
+        XCTAssertFalse(webText(containing: "the sun").exists)
+        let top = answer.frame.minY
+        app.webViews.firstMatch.swipeUp(velocity: .slow)
+        // Allow a rubber-band settle before measuring.
+        sleep(1)
+        XCTAssertEqual(answer.frame.minY, top, accuracy: 1, "A card that fits does not scroll")
+    }
+
     // MARK: Helpers
 
     /// The back of any of the fixture's Spanish cards.
