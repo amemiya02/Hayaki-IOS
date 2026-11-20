@@ -1,4 +1,4 @@
-import StudyFeature
+@testable import StudyFeature
 import SwiftUI
 import Testing
 
@@ -48,5 +48,32 @@ struct ReviewerShortcutTests {
         #expect(ReviewerKey("e").keyEquivalent == KeyEquivalent("e"))
         #expect(ReviewerKey("f13").keyEquivalent == nil)
         #expect(ReviewerKey("z", modifiers: [.shift, .command]).eventModifiers == [.shift, .command])
+    }
+
+    @Test("While a card's text field has focus, only Command and Control shortcuts stay enabled")
+    func typingGatesBareKeys() {
+        let shortcuts = ReviewerPreferences().keyboardShortcuts(on: .answer)
+        let typing = ReviewerShortcutMenu(shortcuts: shortcuts, isEnabled: true, isEditingText: true) { _ in }
+        let rateGood = ReviewerShortcut(command: .rateGood, key: ReviewerKey("3"))
+        let showAnswer = ReviewerShortcut(command: .showAnswer, key: ReviewerKey("space"))
+        let shiftedMark = ReviewerShortcut(command: .mark, key: ReviewerKey("8", modifiers: [.shift]))
+        let undo = ReviewerShortcut(command: .undo, key: ReviewerKey("z", modifiers: [.command]))
+        let flag = ReviewerShortcut(command: .toggleRedFlag, key: ReviewerKey("1", modifiers: [.control]))
+        #expect(!typing.isEnabled(rateGood))
+        #expect(!typing.isEnabled(showAnswer))
+        #expect(!typing.isEnabled(shiftedMark))
+        #expect(typing.isEnabled(undo))
+        #expect(typing.isEnabled(flag))
+
+        let reviewing = ReviewerShortcutMenu(shortcuts: shortcuts, isEnabled: true, isEditingText: false) { _ in }
+        #expect(reviewing.isEnabled(rateGood))
+        let busy = ReviewerShortcutMenu(shortcuts: shortcuts, isEnabled: false, isEditingText: false) { _ in }
+        #expect(!busy.isEnabled(undo))
+    }
+
+    @Test("The card page reports when a text field gains or loses focus")
+    func editingMessages() {
+        #expect(ReviewerWebInput(["editing": true]) == .editing(true))
+        #expect(ReviewerWebInput(["editing": false]) == .editing(false))
     }
 }

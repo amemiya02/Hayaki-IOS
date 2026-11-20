@@ -6,17 +6,21 @@ import Testing
 @MainActor
 @Suite("Reviewer controls")
 struct ReviewerControlsTests {
-    @Test("New reviewer preferences frame cards and preserve an explicit edge-to-edge choice")
+    @Test("New reviewer preferences show cards edge to edge and preserve an explicit frame choice")
     func defaultCardFrame() throws {
         let missingFrame = try JSONDecoder().decode(ReviewerPreferences.self, from: Data("{}".utf8))
+        let explicitFrame = try JSONDecoder().decode(
+            ReviewerPreferences.self, from: Data(#"{"cardFrame":true}"#.utf8)
+        )
         let explicitEdgeToEdge = try JSONDecoder().decode(
             ReviewerPreferences.self, from: Data(#"{"cardFrame":false}"#.utf8)
         )
         func savedFrame(_ preferences: ReviewerPreferences) throws -> Bool? {
             (try JSONSerialization.jsonObject(with: JSONEncoder().encode(preferences)) as? [String: Any])?["cardFrame"] as? Bool
         }
-        #expect(try savedFrame(ReviewerPreferences()) == true)
-        #expect(try savedFrame(missingFrame) == true)
+        #expect(try savedFrame(ReviewerPreferences()) == false)
+        #expect(try savedFrame(missingFrame) == false)
+        #expect(try savedFrame(explicitFrame) == true)
         #expect(try savedFrame(explicitEdgeToEdge) == false)
     }
 

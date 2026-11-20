@@ -64,11 +64,28 @@ extension ReviewerKey {
     }
 }
 
+extension ReviewerKey {
+    /// Whether pressing this key in a text field types or edits text, so it
+    /// belongs to the field rather than the reviewer: every key without
+    /// Command or Control (Shift and Option produce characters too).
+    var editsText: Bool {
+        !modifiers.contains(.command) && !modifiers.contains(.control)
+    }
+}
+
 /// What the study screen offers the app's Study menu while it is on screen.
 public struct ReviewerShortcutMenu {
     let shortcuts: [ReviewerShortcut]
     let isEnabled: Bool
+    /// Whether a text field on the card (such as the typed-answer field) has
+    /// focus, so keys that type text go to the field instead of the menu.
+    var isEditingText = false
     let perform: @MainActor (ReviewerKey) -> Void
+
+    /// Whether the menu offers `shortcut` now.
+    func isEnabled(_ shortcut: ReviewerShortcut) -> Bool {
+        isEnabled && !(isEditingText && shortcut.key.editsText)
+    }
 }
 
 extension FocusedValues {
@@ -90,7 +107,7 @@ public struct StudyCommands: Commands {
                     if let key = shortcut.key.keyEquivalent {
                         Button(shortcut.command.title) { menu.perform(shortcut.key) }
                             .keyboardShortcut(key, modifiers: shortcut.key.eventModifiers)
-                            .disabled(!menu.isEnabled)
+                            .disabled(!menu.isEnabled(shortcut))
                     }
                 }
             }
