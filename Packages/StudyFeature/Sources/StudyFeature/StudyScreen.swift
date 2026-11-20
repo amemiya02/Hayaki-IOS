@@ -24,15 +24,20 @@ extension View {
     }
 
     /// Presents a full-screen study session over `deck` while it is set,
-    /// and sets it back to nil when the learner closes the session.
-    public func studySession(of deck: Binding<StudyDeck?>, store: CollectionStore) -> some View {
+    /// and sets it back to nil when the learner closes the session. When the
+    /// presented deck was finished, its ID is available to `onDismiss`.
+    public func studySession(
+        of deck: Binding<StudyDeck?>, store: CollectionStore,
+        completedDeckID: Binding<StudyDeck.ID?> = .constant(nil),
+        onDismiss: @escaping () -> Void = {}
+    ) -> some View {
         #if os(iOS)
-        fullScreenCover(item: deck) { deck in
-            StudyScreen(store: store, deck: deck)
+        fullScreenCover(item: deck, onDismiss: onDismiss) { deck in
+            StudyScreen(store: store, deck: deck, completedDeckID: completedDeckID)
         }
         #else
-        sheet(item: deck) { deck in
-            StudyScreen(store: store, deck: deck)
+        sheet(item: deck, onDismiss: onDismiss) { deck in
+            StudyScreen(store: store, deck: deck, completedDeckID: completedDeckID)
         }
         #endif
     }
@@ -87,6 +92,8 @@ public struct StudyScreen: View {
     @State private var deckTools: ReviewerDeckTools
     #endif
     private let store: CollectionStore
+    private let presentedDeckID: StudyDeck.ID
+    @Binding private var completedDeckID: StudyDeck.ID?
     @State private var deckName: String
     private let profileFolder: URL
     @Environment(\.dismiss) private var dismiss
@@ -94,8 +101,12 @@ public struct StudyScreen: View {
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 
-    public init(store: CollectionStore, deck: StudyDeck) {
+    public init(
+        store: CollectionStore, deck: StudyDeck, completedDeckID: Binding<StudyDeck.ID?> = .constant(nil)
+    ) {
         self.store = store
+        presentedDeckID = deck.id
+        _completedDeckID = completedDeckID
         _model = State(initialValue: StudySessionModel(store: store, deckID: deck.id))
         _deckName = State(initialValue: deck.name)
         profileFolder = store.location.folder
@@ -470,14 +481,19 @@ public struct StudyScreen: View {
         preferences.showDeckTitle && !model.currentDeckName.isEmpty ? model.currentDeckName : deckName
     }
 
+    private func closeSession() {
+        if model.deckID == presentedDeckID, model.state.finished != nil {
+            completedDeckID = presentedDeckID
+        }
+        dismiss()
+    }
+
     /// The system navigation bar: Close, the deck with the counts below it,
     /// and the reviewer's actions.
     @ToolbarContentBuilder
     private var navigationBarItems: some ToolbarContent {
         ToolbarItem(placement: .cancellationAction) {
-            Button {
-                dismiss()
-            } label: {
+            Button(action: closeSession) {
                 Label {
                     Text("Close", bundle: .module)
                 } icon: {
@@ -568,7 +584,7 @@ public struct StudyScreen: View {
                 onRebuild: { Task { await model.rebuildFinishedFilteredDeck() } },
                 onOptions: destinations == nil || summary.isFiltered ? nil : { route = .deckOptions(deckID: model.deckID) },
                 onCustomStudy: destinations == nil || summary.isFiltered ? nil : { route = .customStudy(deckID: model.deckID) },
-                onDone: { dismiss() }
+                onDone: closeSession
             )
         case .failed(let message):
             ContentUnavailableView {

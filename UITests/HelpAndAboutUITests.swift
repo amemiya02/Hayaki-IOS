@@ -19,9 +19,16 @@ final class HelpAndAboutUITests: XCTestCase {
         helpTab.tap()
     }
 
-    func testAboutIdentifiesThisBuildAndOpensItsChangelog() {
+    func testAboutIdentifiesThisBuildAndOpensItsChangelog() throws {
         openMoreLink("About")
-        XCTAssertTrue(app.staticTexts["0.1.0"].exists)
+        let plist = try XCTUnwrap(Bundle(for: Self.self).url(forResource: "TestedHayaki", withExtension: "plist"))
+        let metadata = try XCTUnwrap(
+            PropertyListSerialization.propertyList(from: Data(contentsOf: plist), format: nil) as? [String: Any]
+        )
+        let version = try XCTUnwrap(metadata["CFBundleShortVersionString"] as? String)
+        let build = try XCTUnwrap(metadata["CFBundleVersion"] as? String)
+        XCTAssertTrue(app.staticTexts[version].exists)
+        XCTAssertTrue(app.staticTexts[build].exists)
         XCTAssertTrue(app.staticTexts["26.09.4"].exists)
         XCTAssertTrue(app.staticTexts["6.6.2"].exists)
         XCTAssertTrue(app.staticTexts["Build Date"].exists)
@@ -41,7 +48,7 @@ final class HelpAndAboutUITests: XCTestCase {
         for _ in 0..<3 where !changelog.isHittable { app.swipeDown() }
         changelog.tap()
         XCTAssertTrue(app.navigationBars["Changelog"].exists)
-        XCTAssertTrue(app.staticTexts["0.1.0"].exists)
+        XCTAssertTrue(app.staticTexts["0.2.0"].exists)
         screenshot("Changelog")
     }
 

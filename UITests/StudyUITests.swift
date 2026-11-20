@@ -111,6 +111,45 @@ final class StudyUITests: XCTestCase {
         attachScreen("6 nothing left")
     }
 
+    func testStudyAllFinishesOneDeckAndAllowsAnEarlyExitFromTheNext() {
+        let studyAll = app.buttons["study-all"]
+        XCTAssertTrue(studyAll.waitForExistence(timeout: 60))
+        let counts = app.descendants(matching: .any)["today-counts"]
+        let studied = app.staticTexts["studied-today"]
+        XCTAssertEqual(counts.label, "5 new, 2 learning, 2 due")
+        XCTAssertEqual(studied.label, "0 studied today")
+        attachScreen("Study All starting queues")
+        studyAll.tap()
+        let reveal = app.buttons["show-answer"]
+        let finished = app.staticTexts["All Done for Today"]
+        let reviews = 3
+        for _ in 0..<reviews {
+            XCTAssertTrue(reveal.waitForExistence(timeout: 20), "Study All loads the next Geography card")
+            reveal.tap()
+            let easy = app.buttons["rating-easy"]
+            XCTAssertTrue(easy.waitForExistence(timeout: 10))
+            easy.tap()
+        }
+        XCTAssertTrue(finished.waitForExistence(timeout: 10), "Geography finishes after three ratings")
+        let figures = app.descendants(matching: .any)
+        XCTAssertTrue(figures.matching(NSPredicate(
+            format: "label BEGINSWITH %@ AND label CONTAINS %@", "\(reviews)", "Reviewed"
+        )).firstMatch.exists)
+        XCTAssertTrue(figures.matching(NSPredicate(
+            format: "label CONTAINS %@ AND label CONTAINS %@", "Easy", "3"
+        )).firstMatch.exists)
+        attachScreen("Study All first Deck finished")
+        app.buttons["Done"].tap()
+        XCTAssertTrue(reveal.waitForExistence(timeout: 20), "Study All continues to the next eligible Deck")
+        app.navigationBars.buttons["Close"].tap()
+        XCTAssertTrue(studyAll.waitForExistence(timeout: 10), "Leaving the second Deck returns to Decks")
+        XCTAssertTrue(studyAll.isHittable)
+        XCTAssertEqual(counts.label, "3 new, 2 learning, 1 due")
+        XCTAssertEqual(studied.label, "3 studied today")
+        XCTAssertTrue(deckRow("Geography").label.contains("0 new, 0 learning, 0 due"))
+        attachScreen("Study All exited with work remaining")
+    }
+
     func testEditingFromReviewerReturnsToTheSameAnswer() {
         openDeck("Geography")
         let counts = app.descendants(matching: .any)["study-counts"]

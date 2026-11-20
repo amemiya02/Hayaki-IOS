@@ -1,0 +1,25 @@
+{
+  "product": "Hayaki",
+  "icon": {
+    "master": "docs/assets/app-icon/master.png",
+    "foreground": "docs/assets/app-icon/foreground.png",
+    "iosVariants": "App/Resources/Assets.xcassets/AppIcon.appiconset/Contents.json"
+  },
+  "themes": {
+    "paletteSource": "Packages/HayakiAppearance/Sources/HayakiAppearance/Theme.swift",
+    "appearanceRules": "Packages/HayakiAppearance/Sources/HayakiAppearance/HayakiTheme.swift",
+    "default": "hayaki",
+    "ids": [
+      "hayaki",
+      "sakura",
+      "matcha",
+      "ocean",
+      "indigo",
+      "wisteria",
+      "amber",
+      "sumi",
+      "paper",
+      "midnight"
+    ]
+  }
+}

@@ -93,12 +93,12 @@ public final class DeckListModel {
         decks.filter { !$0.counts.isEmpty }
     }
 
-    /// The deck Study All opens after the learner closes `deckID`: the next
-    /// deck with cards left once `deckID` is finished, or nil when the
-    /// learner closed it early or nothing is left.
+    /// After closing Finished, prefer another eligible deck before returning
+    /// to the completed deck if it gained work in the meantime.
     public func nextStudyAllDeck(after deckID: DeckNode.ID) -> DeckNode? {
-        if let closed = deck(deckID), !closed.counts.isEmpty { return nil }
-        return studyAllDecks.first
+        guard state == .loaded else { return nil }
+        let eligible = studyAllDecks
+        return eligible.first { $0.id != deckID } ?? eligible.first
     }
 
     /// Whether the collection has no cards at all, as on first launch, so
