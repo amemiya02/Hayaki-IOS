@@ -130,7 +130,7 @@ Impactor 在电脑上为 `Hayaki.ipa` 签名，再通过 USB 安装到设备。�
 
 - [`App/`](App/) 是 SwiftUI 应用入口，[`Packages/`](Packages/) 包含应用框架、集合存储和各项功能，[`core/`](core/) 是连接 Anki 的 Rust 桥接层。
 - 运行 `scripts/test.sh`，用真实核心和临时集合执行包测试。要同时运行本地同步服务器集成测试，先执行 `scripts/build-sync-server.sh`。只测试浏览功能可以运行 `scripts/test.sh BrowseFeature`。
-- [CI](https://github.com/amemiya02/Hayaki-iOS/actions/workflows/ci.yml) 会构建 App，并在 `main` 上运行包测试以及 iPhone 和 iPad 界面测试。
+- [CI](https://github.com/amemiya02/Hayaki-iOS/actions/workflows/ci.yml) 会在每个 Pull Request 和 `main` 上运行包测试并构建 App。iPhone 和 iPad 界面测试请在本地运行。
 - 修改相关模块前，可以查阅 [核心构建指南](docs/building-the-core.md)、[功能包开发约定](docs/feature-packages.md) 和 [iOS 功能规格](docs/specs/hayaki-v1.md)。
 
 欢迎在 [GitHub Issues](https://github.com/amemiya02/Hayaki-iOS/issues) 反馈问题。请附上 iOS 版本、Hayaki「更多 → 关于」里的版本，以及最短复现步骤。如果问题需要集合才能复现，请使用示例牌组。

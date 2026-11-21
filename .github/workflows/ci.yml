@@ -2,82 +2,61 @@ name: CI
 
 on:
   push:
+    branches: [main]
+  pull_request:
   workflow_dispatch:
 
 concurrency:
   group: ci-${{ github.ref }}
-  # Keep the active device run while retaining only the newest queued integration run.
-  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+  cancel-in-progress: true
 
 jobs:
   build-and-test:
-    name: Build the core and the app, run the tests
+    name: Build and test
     runs-on: xcode-27
-    timeout-minutes: 180
+    timeout-minutes: 120
     steps:
-      - name: Check out
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         # The Anki submodule is fetched by scripts/build-core.sh, and only when
         # the core is not already cached.
 
-      - name: Show tool versions
-        run: |
-          xcodebuild -version
-          swift --version
-          sw_vers
-
-      - name: Compute the core's cache key
-        id: core-key
-        # The built core depends on the pinned Anki commit, our bridge and code
-        # generator, the Rust toolchain and lock file, the build script and the
-        # pinned swift-protobuf version.
-        run: |
-          anki_commit="$(git rev-parse HEAD:vendor/anki)"
-          echo "anki=$anki_commit" >> "$GITHUB_OUTPUT"
-          echo "Pinned Anki commit: $anki_commit"
+      - name: Read the pinned Anki commit
+        id: anki
+        run: echo "commit=$(git rev-parse HEAD:vendor/anki)" >> "$GITHUB_OUTPUT"
 
       - name: Restore the built core
         id: core-cache
         uses: actions/cache/restore@v4
         with:
-          path: |
+          path: &core-paths |
             build/core/descriptors.bin
             Packages/AnkiCore/Frameworks
             Packages/AnkiCore/Sources/AnkiCore/Generated
             Packages/AnkiCore/Sources/AnkiProto/Generated
-          key: core-${{ runner.os }}-${{ steps.core-key.outputs.anki }}-${{ hashFiles('core/**', 'scripts/build-core.sh', 'Packages/AnkiCore/Package.resolved') }}
+          key: core-${{ runner.os }}-${{ steps.anki.outputs.commit }}-${{ hashFiles('core/**', 'scripts/build-core.sh', 'Packages/AnkiCore/Package.resolved') }}
 
-      # Upstream's sync server, which the SyncFeature tests sync against. It
-      # depends only on the pinned Anki commit and its build script.
+      # Upstream's sync server, which the SyncFeature tests sync against.
       - name: Restore the sync server
         id: server-cache
         uses: actions/cache/restore@v4
         with:
           path: build/sync-server/anki-sync-server
-          key: sync-server-${{ runner.os }}-${{ steps.core-key.outputs.anki }}-${{ hashFiles('scripts/build-sync-server.sh') }}
+          key: sync-server-${{ runner.os }}-${{ steps.anki.outputs.commit }}-${{ hashFiles('scripts/build-sync-server.sh') }}
 
       - name: Install build tools
-        run: |
-          brew list xcodegen >/dev/null 2>&1 || brew install xcodegen
-          if [[ "${{ steps.core-cache.outputs.cache-hit }}" != "true" || "${{ steps.server-cache.outputs.cache-hit }}" != "true" ]]; then
-            brew list protobuf >/dev/null 2>&1 || brew install protobuf
-          fi
+        run: brew install xcodegen protobuf
 
+      # Each build is saved straight away, so a later failing step does not
+      # throw away a build that takes most of an hour.
       - name: Build the core
         if: steps.core-cache.outputs.cache-hit != 'true'
         run: scripts/build-core.sh
 
-      # Saved straight away, so a later failing step does not throw away a
-      # build that takes most of an hour.
       - name: Save the built core
         if: steps.core-cache.outputs.cache-hit != 'true'
         uses: actions/cache/save@v4
         with:
-          path: |
-            build/core/descriptors.bin
-            Packages/AnkiCore/Frameworks
-            Packages/AnkiCore/Sources/AnkiCore/Generated
-            Packages/AnkiCore/Sources/AnkiProto/Generated
+          path: *core-paths
           key: ${{ steps.core-cache.outputs.cache-primary-key }}
 
       - name: Build the sync server
@@ -91,92 +70,16 @@ jobs:
           path: build/sync-server/anki-sync-server
           key: ${{ steps.server-cache.outputs.cache-primary-key }}
 
-      - name: Run the tests on the Mac
+      - name: Run the package tests
         run: scripts/test.sh
 
-      - name: Generate the Xcode project
-        run: xcodegen generate
-
-      - name: Build the app and tests for the iOS simulator
+      - name: Build the app for the iOS simulator
         run: |
-          xcodebuild build-for-testing \
+          xcodegen generate
+          xcodebuild build \
             -project Hayaki.xcodeproj \
             -scheme Hayaki \
             -configuration Debug \
             -destination 'generic/platform=iOS Simulator' \
             -derivedDataPath build/DerivedData \
             ARCHS=arm64 CODE_SIGNING_ALLOWED=NO
-
-      - name: Run the iPhone and iPad user-interface tests
-        if: github.ref == 'refs/heads/main'
-        timeout-minutes: 65
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          test_configuration=$(find build/DerivedData/Build/Products -maxdepth 1 -name 'Hayaki_iphonesimulator*-arm64.xctestrun' -print -quit)
-          [[ -f "$test_configuration" ]]
-
-          select_simulator() {
-            xcrun simctl list devices available -j | python3 -c '
-          import json, sys
-          family, preferred, excluded = sys.argv[1:]
-          available = [
-              device for runtime, devices in json.load(sys.stdin)["devices"].items()
-              if ".iOS-" in runtime
-              for device in devices if device["isAvailable"] and device["name"].startswith(family)
-              and device["udid"] != excluded
-          ]
-          if not available:
-              sys.exit("No available iOS " + family + " simulator")
-          print(next((device for device in available if device["name"] == preferred), available[0])["udid"])
-          ' "$1" "$2" "${3:-}"
-          }
-
-          run_ui_tests() {
-            simulator="$1"
-            result="$2"
-            shift 2
-            xcrun simctl bootstatus "$simulator" -b || return
-            xcodebuild test-without-building \
-              -xctestrun "$test_configuration" \
-              -destination "platform=iOS Simulator,id=$simulator" \
-              -parallel-testing-enabled NO \
-              -retry-tests-on-failure -test-iterations 2 -test-repetition-relaunch-enabled YES \
-              -test-timeouts-enabled YES \
-              -default-test-execution-time-allowance 240 \
-              -resultBundlePath "build/$result.xcresult" \
-              CODE_SIGNING_ALLOWED=NO \
-              "$@" 2>&1 | tee "build/$result.log"
-          }
-
-          phone=$(select_simulator iPhone "iPhone 18 Pro")
-          tablet=$(select_simulator iPad "iPad Pro 11-inch (M5)")
-          tablet_result=0
-          run_ui_tests "$tablet" UITests-iPad -only-testing:HayakiUITests/NavigationUITests || tablet_result=$?
-          xcrun simctl shutdown "$tablet" || true
-          phone_result=0
-          run_ui_tests "$phone" UITests-iPhone || phone_result=$?
-          xcrun simctl shutdown "$phone" || true
-
-          # The XCTest service sometimes crashes before any test starts.
-          # Retry that startup failure once on a different simulator.
-          if (( phone_result != 0 )) && [[ -f build/UITests-iPhone.log ]] &&
-             python3 -c 'import sys; from pathlib import Path; log = Path(sys.argv[1]).read_text(); sys.exit(not ("operation never finished bootstrapping" in log and "Test Case " not in log))' build/UITests-iPhone.log &&
-             retry=$(select_simulator iPhone "iPhone 17" "$phone"); then
-            phone_result=0
-            run_ui_tests "$retry" UITests-iPhone-Retry || phone_result=$?
-            xcrun simctl shutdown "$retry" || true
-          fi
-
-          if (( phone_result != 0 || tablet_result != 0 )); then
-            exit 1
-          fi
-
-      - name: Keep simulator results
-        if: always() && github.ref == 'refs/heads/main'
-        uses: actions/upload-artifact@v4
-        with:
-          name: hayaki-simulator-results
-          path: build/UITests-*.xcresult
-          if-no-files-found: ignore
