@@ -68,7 +68,12 @@ public struct DeckListScreen<SyncControl: View>: View {
                 }
         }
         .packageSheets(store: store)
-        .task { await model.run() }
+        // The study session covers the deck list, so the list does not follow
+        // each answer meanwhile; it catches up when the session closes.
+        .task(id: studying == nil) {
+            guard studying == nil else { return }
+            await model.run()
+        }
         .task(id: backgroundRevision) {
             let image = await DeckBackground(collectionFolder: store.location.folder).image()
             if !Task.isCancelled { backgroundImage = image }

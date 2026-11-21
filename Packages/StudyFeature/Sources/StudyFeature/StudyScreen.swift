@@ -373,7 +373,7 @@ public struct StudyScreen: View {
             #if os(iOS)
             if recorder.file != nil {
                 deckTools.recorderShown = true
-                audio.stop()
+                audio.stopAndReleaseSession()
                 recorder.play()
             }
             #endif
@@ -661,7 +661,7 @@ public struct StudyScreen: View {
             if deckTools.recorderShown {
                 HStack {
                     Spacer()
-                    ReviewerVoiceControls(recorder: recorder, stopCardAudio: audio.stop)
+                    ReviewerVoiceControls(recorder: recorder, stopCardAudio: audio.stopAndReleaseSession)
                     Spacer()
                     Button(reviewerLocalized("Hide Recorder"), systemImage: "xmark.circle") {
                         recorder.discard()
@@ -805,7 +805,7 @@ public struct StudyScreen: View {
             return .value(.boolean(await templateNetwork.isMetered()))
         default:
             if let response = templateSpeech.handle(request, prepareAudio: {
-                audio.stop()
+                audio.stopAndReleaseSession()
                 templateRecognition.stop()
                 if recorder.state == .recording || recorder.state == .paused { recorder.stopRecording() }
                 recorder.stopPlayback()
@@ -815,7 +815,7 @@ public struct StudyScreen: View {
             if let response = await templateRecognition.handle(
                 request, context: context, allowed: allowsTemplateMicrophone,
                 prepareAudio: {
-                    audio.stop()
+                    audio.stopAndReleaseSession()
                     templateSpeech.stop()
                     if recorder.state == .recording || recorder.state == .paused { recorder.stopRecording() }
                     recorder.stopPlayback()

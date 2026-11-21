@@ -16,15 +16,28 @@ final class CardAudioPlayer {
     private var currentEnd: PlaybackEnd?
     private let synthesizer = AVSpeechSynthesizer()
     private let speechDelegate = SpeechDelegate()
+    /// Whether this player activated the audio session and has not released it.
+    private var holdsSession = false
+    /// Where the audio session is activated and released, in order, off the
+    /// main thread: releasing it right after stopping a sound blocks until
+    /// the audio hardware has stopped, which takes more than half a second.
+    nonisolated private static let sessionQueue = DispatchQueue(label: "io.github.amemiya02.hayaki.card-audio-session")
 
     init() {
         synthesizer.delegate = speechDelegate
     }
 
     /// Plays the sounds in order, optionally after sounds already queued for the question.
+    ///
+    /// Moving on to new sounds keeps the audio session active, so turning the
+    /// card over or going to the next card while a sound plays does not wait
+    /// for the session to be released.
     func play(_ sounds: [CardSound], afterCurrent: Bool = false) {
-        if !afterCurrent { stop() }
-        guard !sounds.isEmpty else { return }
+        if !afterCurrent { stopPlaying() }
+        guard !sounds.isEmpty else {
+            if queue == nil { releaseSession() }
+            return
+        }
         pending.append(contentsOf: sounds)
         guard queue == nil else { return }
         queue = Task { [weak self] in
@@ -38,7 +51,7 @@ final class CardAudioPlayer {
             queue = nil
             currentEnd = nil
             player = nil
-            deactivateSession()
+            releaseSession()
         }
     }
 
@@ -46,8 +59,20 @@ final class CardAudioPlayer {
         await queue?.value
     }
 
+    /// Stops the audio and releases the audio session in the background.
     func stop() {
-        let hadQueue = queue != nil
+        stopPlaying()
+        releaseSession()
+    }
+
+    /// Stops the audio and releases the audio session before returning, for
+    /// a recorder or recognizer that sets up the session itself next.
+    func stopAndReleaseSession() {
+        stopPlaying()
+        releaseSession(waiting: true)
+    }
+
+    private func stopPlaying() {
         queue?.cancel()
         queue = nil
         pending.removeAll()
@@ -58,7 +83,6 @@ final class CardAudioPlayer {
         }
         currentEnd?.signal()
         currentEnd = nil
-        if hadQueue { deactivateSession() }
     }
 
     private func playOne(_ sound: CardSound) async {
@@ -103,16 +127,29 @@ final class CardAudioPlayer {
     /// learner asked for it by studying, and lowers other apps' audio while
     /// it plays.
     private func activateSession() {
+        holdsSession = true
         do {
-            try AVAudioSession.sharedInstance().setCategory(.playback, mode: .spokenAudio, options: [.duckOthers])
-            try AVAudioSession.sharedInstance().setActive(true)
+            try Self.sessionQueue.sync {
+                let session = AVAudioSession.sharedInstance()
+                try session.setCategory(.playback, mode: .spokenAudio, options: [.duckOthers])
+                try session.setActive(true)
+            }
         } catch {
             Self.log.error("The audio session could not start: \(error, privacy: .public)")
         }
     }
 
-    private func deactivateSession() {
-        try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
+    private func releaseSession(waiting: Bool = false) {
+        guard holdsSession else { return }
+        holdsSession = false
+        let release: @Sendable () -> Void = {
+            try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
+        }
+        if waiting {
+            Self.sessionQueue.sync(execute: release)
+        } else {
+            Self.sessionQueue.async(execute: release)
+        }
     }
 
     nonisolated private static let log = Logger(subsystem: "io.github.amemiya02.hayaki", category: "CardAudioPlayer")
