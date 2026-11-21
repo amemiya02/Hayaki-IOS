@@ -4,6 +4,8 @@
 
 <h1 align="center">Hayaki for iOS</h1>
 
+<p align="center"><strong>Hayaki=Hayaku+Anki</strong></p>
+
 <p align="center"><strong>为 iPhone 和 iPad 打造的离线闪卡应用</strong></p>
 
 <p align="center">
@@ -44,7 +46,7 @@ Hayaki 用 SwiftUI 和 Liquid Glass 打造原生 iOS 26 应用，将 [Hayaki 安
 
 ## 快速开始
 
-Hayaki 支持 **iOS 和 iPadOS 26 及以上版本**。目前可以从源码用 Xcode 安装，或通过 AltStore Classic 侧载 IPA。
+Hayaki 支持 **iOS 和 iPadOS 26 及以上版本**。可以从源码用 Xcode 安装，也可以通过 AltStore Classic 或 Impactor 侧载 IPA。
 
 ### 从源码构建
 
@@ -64,9 +66,9 @@ open Hayaki.xcodeproj
 如果想用 Personal Team 安装到自己的设备，先运行 `xcodegen generate --spec project-personal.yml` 生成纯主应用项目。在 Xcode 的 **Hayaki → Signing & Capabilities** 中选择自己的开发团队，再选中已连接的设备运行。免费 Apple 账号的描述文件有效期为七天。 [Apple Personal Team 文档](https://developer.apple.com/help/account/basics/about-your-developer-account#enable-a-personal-team-in-xcode)
 
 <details>
-<summary>打包适用于 AltStore Classic 的 IPA</summary>
+<summary>打包和分发用于侧载的 IPA</summary>
 
-构建核心后，在仓库根目录运行以下命令。这个 IPA 包含主应用和本地提醒。需要分享扩展和小组件时，请使用下一节的 App Groups 配置。
+构建核心后，在仓库根目录运行以下命令。这个 IPA 包含主应用和本地提醒。需要分享扩展和小组件时，请使用下方的 App Groups 配置。
 
 ```sh
 (
@@ -80,6 +82,7 @@ open Hayaki.xcodeproj
   mkdir "$ipa_dir/Payload"
   app="$ipa_dir/Payload/Hayaki.app"
   ditto build/AltStoreDerivedData/Build/Products/Release-iphoneos/Hayaki.app "$app"
+  codesign --force --sign - --timestamp=none "$app/Frameworks/HayakiBridge.framework"
   codesign --force --sign - --timestamp=none "$app"
   codesign --verify --deep --strict "$app"
   ditto -c -k --norsrc --keepParent "$ipa_dir/Payload" "$ipa_dir/Hayaki.ipa"
@@ -87,7 +90,23 @@ open Hayaki.xcodeproj
 )
 ```
 
-把 `Hayaki.ipa` 复制到 iPhone 或 iPad 的「文件」App。在 AltStore Classic 进入 **My Apps → +** 并选中 IPA，AltStore 会用你的 Apple 账号重新签名。使用免费账号时，请通过 AltServer 在七天有效期内刷新签名。 [AltStore Classic 安装](https://faq.altstore.io/altstore-classic/how-to-install-altstore-macos) · [使用 AltServer 刷新](https://faq.altstore.io/altstore-classic/altserver)
+要分发构建，可以把生成的 `Hayaki.ipa` 附在 GitHub Release 中，或分享下载链接。
+
+如果使用 AltStore Classic 安装，把 `Hayaki.ipa` 复制到 iPhone 或 iPad 的「文件」App。在 AltStore 进入 **My Apps → +** 并选中 IPA，AltStore 会用你的 Apple 账号重新签名。使用免费账号时，请通过 AltServer 在七天有效期内刷新签名。 [AltStore Classic 安装](https://faq.altstore.io/altstore-classic/how-to-install-altstore-macos) · [使用 AltServer 刷新](https://faq.altstore.io/altstore-classic/altserver)
+
+</details>
+
+<details>
+<summary>用 Impactor 安装 IPA</summary>
+
+Impactor 在电脑上为 `Hayaki.ipa` 签名，再通过 USB 安装到设备。下载适用于 [macOS、Windows 或 Linux 的 Impactor](https://github.com/claration/impactor/releases/latest)。Windows 需要安装 iTunes 提供设备驱动，Linux 需要安装 `usbmuxd`。 [Impactor 安装说明](https://github.com/claration/impactor#download)
+
+1. 下载随版本发布的 `Hayaki.ipa`，或按上方步骤自行打包。
+2. 用 USB 连接 iPhone 或 iPad 并解锁。如果设备询问是否信任此电脑，轻点「信任」。在 Impactor 中选中设备。
+3. 在 Impactor 打开 **Settings → Add Account**，登录 Apple 账号。返回主窗口，把 `Hayaki.ipa` 拖进去，再点 **Install**。
+4. 如有提示，在设备上打开「设置 → 隐私与安全性 → 开发者模式」。如果系统提示开发者不受信任，前往「设置 → 通用 → VPN 与设备管理」，信任对应 Apple 账号的开发者描述文件。随后打开 Hayaki。 [Apple 开发者模式说明](https://developer.apple.com/documentation/xcode/enabling-developer-mode-on-a-device)
+
+免费 Apple 账号的签名有效期为七天。续签或更新时，在 Impactor 中使用同一个 Apple 账号和 Bundle ID 再安装一次 IPA。
 
 </details>
 

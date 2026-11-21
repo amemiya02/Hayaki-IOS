@@ -4,6 +4,8 @@
 
 <h1 align="center">Hayaki for iOS</h1>
 
+<p align="center"><strong>Hayaki=Hayaku+Anki</strong></p>
+
 <p align="center"><strong>Offline-first flashcards for iPhone and iPad.</strong></p>
 
 <p align="center">
@@ -44,7 +46,7 @@ See the [acceptance inventory](docs/specs/ios-acceptance.md) for verified workfl
 
 ## Get started
 
-Hayaki runs on **iOS and iPadOS 26 or later**. It is currently installed from source with Xcode or by sideloading an IPA with AltStore Classic.
+Hayaki runs on **iOS and iPadOS 26 or later**. You can install it from source with Xcode or sideload an IPA with AltStore Classic or Impactor.
 
 ### Build from source
 
@@ -64,7 +66,7 @@ Run the **Hayaki** scheme on an iPhone or iPad simulator. The first core build f
 To run on your own device with a Personal Team, generate the app-only project with `xcodegen generate --spec project-personal.yml`. In Xcode, choose your team under **Hayaki → Signing & Capabilities**, select your connected device, and run. A free Apple Account’s provisioning profile lasts seven days. [Apple’s Personal Team documentation](https://developer.apple.com/help/account/basics/about-your-developer-account#enable-a-personal-team-in-xcode)
 
 <details>
-<summary>Build an IPA for AltStore Classic</summary>
+<summary>Build and share an IPA for sideloading</summary>
 
 Run this from the repository root after building the core. The IPA contains the main app and local reminders. Use the App Groups configuration below for Share and widgets.
 
@@ -80,6 +82,7 @@ Run this from the repository root after building the core. The IPA contains the 
   mkdir "$ipa_dir/Payload"
   app="$ipa_dir/Payload/Hayaki.app"
   ditto build/AltStoreDerivedData/Build/Products/Release-iphoneos/Hayaki.app "$app"
+  codesign --force --sign - --timestamp=none "$app/Frameworks/HayakiBridge.framework"
   codesign --force --sign - --timestamp=none "$app"
   codesign --verify --deep --strict "$app"
   ditto -c -k --norsrc --keepParent "$ipa_dir/Payload" "$ipa_dir/Hayaki.ipa"
@@ -87,7 +90,23 @@ Run this from the repository root after building the core. The IPA contains the 
 )
 ```
 
-Copy `Hayaki.ipa` to Files on your device. In AltStore Classic, open **My Apps → +** and select the IPA. AltStore re-signs it with your Apple Account. With a free account, refresh the app through AltServer before the seven-day signing period expires. [AltStore Classic setup](https://faq.altstore.io/altstore-classic/how-to-install-altstore-macos) · [Refreshing apps with AltServer](https://faq.altstore.io/altstore-classic/altserver)
+To distribute a build, attach the resulting `Hayaki.ipa` to a GitHub release or share a download link.
+
+To install with AltStore Classic, copy `Hayaki.ipa` to Files on your device, then open **My Apps → +** in AltStore and select the IPA. AltStore re-signs it with your Apple Account. With a free account, refresh the app through AltServer before the seven-day signing period expires. [AltStore Classic setup](https://faq.altstore.io/altstore-classic/how-to-install-altstore-macos) · [Refreshing apps with AltServer](https://faq.altstore.io/altstore-classic/altserver)
+
+</details>
+
+<details>
+<summary>Install an IPA with Impactor</summary>
+
+Impactor signs `Hayaki.ipa` on your computer and installs it over USB. Download [Impactor for macOS, Windows, or Linux](https://github.com/claration/impactor/releases/latest). On Windows, install iTunes for the device drivers. On Linux, install `usbmuxd`. [Impactor setup](https://github.com/claration/impactor#download)
+
+1. Get the `Hayaki.ipa` shared with the release, or build it using the steps above.
+2. Connect your iPhone or iPad over USB, unlock it, and tap **Trust** if asked. Select your device in Impactor.
+3. In Impactor, open **Settings → Add Account** and sign in with your Apple Account. Return to the main window, drag in `Hayaki.ipa`, and click **Install**.
+4. If prompted, turn on **Settings → Privacy & Security → Developer Mode** on your device. If you see an untrusted developer message, go to **Settings → General → VPN & Device Management** and trust the developer profile for your account. Then open Hayaki. [Apple’s Developer Mode instructions](https://developer.apple.com/documentation/xcode/enabling-developer-mode-on-a-device)
+
+Free Apple Accounts have a seven-day signing period. To renew it or install an update, install the IPA again with the same Apple Account and bundle ID.
 
 </details>
 
