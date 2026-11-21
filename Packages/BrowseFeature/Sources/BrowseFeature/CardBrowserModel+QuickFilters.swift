@@ -58,8 +58,10 @@ extension CardBrowserModel {
     public func loadFlagNames() async {
         do {
             let names = try await readConfig([String: String].self, key: "flagLabels") ?? [:]
+            guard !Task.isCancelled else { return }
             flagNames = Self.knownFlagNames(names)
         } catch {
+            guard !Task.isCancelled else { return }
             failure = error.message
         }
     }
@@ -72,6 +74,7 @@ extension CardBrowserModel {
                 names[String(flag.rawValue)] = name.isEmpty ? nil : name
             }
             try await writeConfig(names, key: "flagLabels")
+            store.signal(.config)
             flagNames = Self.knownFlagNames(names)
             await refreshResults()
         } catch {
@@ -89,6 +92,7 @@ extension CardBrowserModel {
     /// Loads the decks and tags the quick filters and the Move action offer.
     /// `run()` loads them too, and again when decks or tags change.
     public func loadChoices() async {
+        guard !Task.isCancelled else { return }
         do {
             // An empty Default deck is hidden, as in the deck list.
             let allDecks = try await store.core.getDeckNames(.with {
@@ -101,6 +105,7 @@ extension CardBrowserModel {
             })
             let tags = try await store.core.allTags()
             let noteTypes = try await store.core.getNotetypeNames()
+            guard !Task.isCancelled else { return }
             choices = BrowserChoices(
                 decks: allDecks.entries.map(\.name),
                 tags: tags.vals,

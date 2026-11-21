@@ -109,6 +109,7 @@ public final class CardBrowserModel {
     @ObservationIgnored private var searchCount = 0
     @ObservationIgnored private var finishedSearch = 0
     @ObservationIgnored private var submittedSearch: String?
+    @ObservationIgnored private var appearanceRevision: UInt64?
 
     /// The rows fetched so far, by card id.
     private var rows: [Int64: CachedRow] = [:]
@@ -152,6 +153,7 @@ public final class CardBrowserModel {
     }
 
     private func search(text: String) async {
+        guard !Task.isCancelled else { return }
         // Searches can overlap (the learner submits while a change triggers
         // one); only the latest may update what is shown.
         searchCount += 1
@@ -159,7 +161,7 @@ public final class CardBrowserModel {
         do {
             if !hasLoadedMode {
                 let notes = try await store.core.getConfigBool(.with { $0.key = .browserTableShowNotesMode }).val
-                guard thisSearch == searchCount else { return }
+                guard thisSearch == searchCount, !Task.isCancelled else { return }
                 mode = notes ? .notes : .cards
                 hasLoadedMode = true
             }
@@ -188,14 +190,14 @@ public final class CardBrowserModel {
                 let valid = Self.validColumns(saved, known: known)
                 columns = valid.isEmpty ? mode.defaultColumns : valid
             }
-            guard thisSearch == searchCount else { return }
+            guard thisSearch == searchCount, !Task.isCancelled else { return }
             let request = Anki_Search_SearchRequest.with {
                 $0.search = text
                 $0.order = order.order
             }
             let found = try await (mode == .cards ? store.core.searchCards(request) : store.core.searchNotes(request))
             let undo = try await store.core.getUndoStatus()
-            guard thisSearch == searchCount else { return }
+            guard thisSearch == searchCount, !Task.isCancelled else { return }
             availableUndo = undo.undo.isEmpty ? nil : (undo.undo, undo.lastStep)
             sorts[mode] = order
             sort = order
@@ -208,18 +210,18 @@ public final class CardBrowserModel {
                 let label = mode == .cards ? column.cardsModeLabel : column.notesModeLabel
                 return SortColumn(id: column.key, label: label, startsDescending: sorting == .descending)
             }
-            rowIDs = found.ids
-            rowIndices = Dictionary(uniqueKeysWithValues: found.ids.enumerated().map { ($1, $0) })
-            if !selection.isEmpty {
-                selection.formIntersection(found.ids)
+            if rowIDs != found.ids {
+                rowIDs = found.ids
+                rowIndices = Dictionary(uniqueKeysWithValues: found.ids.enumerated().map { ($1, $0) })
             }
+            if !selection.isEmpty { selection.formIntersection(found.ids) }
             searchedText = text
             finishedSearch = thisSearch
             rows.removeAll(keepingCapacity: true)
             generation += 1
             state = .loaded
         } catch where error.kind == .searchError {
-            guard thisSearch == searchCount else { return }
+            guard thisSearch == searchCount, !Task.isCancelled else { return }
             rowIDs = []
             rowIndices = [:]
             rows.removeAll()
@@ -229,7 +231,7 @@ public final class CardBrowserModel {
             availableUndo = nil
             state = .invalidSearch(message: error.message)
         } catch {
-            guard thisSearch == searchCount else { return }
+            guard thisSearch == searchCount, !Task.isCancelled else { return }
             availableUndo = nil
             state = .failed(message: error.message)
         }
@@ -391,10 +393,9 @@ public final class CardBrowserModel {
     /// calling task is cancelled. The browse screen runs this in its `.task`.
     public func run() async {
         let changes = store.changes()
-        await refreshResults()
-        await loadChoices()
-        await loadFlagNames()
+        await refreshOnAppearance()
         for await change in changes where !change.isDisjoint(with: Self.relevantChanges) {
+            guard !Task.isCancelled else { return }
             if change == .everything {
                 hasLoadedMode = false
                 sorts.removeAll()
@@ -408,6 +409,19 @@ public final class CardBrowserModel {
                 await loadChoices()
             }
         }
+    }
+
+    func refreshOnAppearance() async {
+        // SwiftUI restarts the view task on return to the tab. Keep the list and
+        // its fetched pages if the collection hasn't changed while away.
+        let revision = store.changeRevision
+        guard !Task.isCancelled, appearanceRevision != revision || finishedSearch != searchCount else { return }
+        await refreshResults()
+        guard !Task.isCancelled else { return }
+        await loadChoices()
+        guard !Task.isCancelled else { return }
+        await loadFlagNames()
+        if !Task.isCancelled, finishedSearch == searchCount { appearanceRevision = revision }
     }
 
     private struct CachedRow {

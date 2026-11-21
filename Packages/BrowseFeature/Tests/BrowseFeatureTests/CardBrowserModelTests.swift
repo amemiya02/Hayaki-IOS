@@ -1,4 +1,4 @@
-import BrowseFeature
+@testable import BrowseFeature
 import CollectionStore
 import CollectionTesting
 import Foundation
@@ -181,6 +181,28 @@ struct CardBrowserModelTests {
                 await model.loadRow(perro)
                 return model.row(for: perro)?.mark == .suspended
             }
+        }
+    }
+
+    @Test("Returning to Browse keeps loaded rows and refreshes after an offscreen change")
+    func returningToBrowse() async throws {
+        try await withTemporaryCollection { store in
+            let deck = try await store.addDeck(named: "Spanish")
+            let perro = try await store.addBasicCard(front: "perro", back: "dog", inDeck: deck)
+            let model = CardBrowserModel(store: store)
+            await model.refreshOnAppearance()
+            await model.loadRow(perro)
+            let initialGeneration = model.generation
+            try #require(model.row(for: perro) != nil)
+
+            await model.refreshOnAppearance()
+            #expect(model.generation == initialGeneration)
+            #expect(model.row(for: perro)?.question == "perro")
+
+            let gato = try await store.addBasicCard(front: "gato", back: "cat", inDeck: deck)
+            await model.refreshOnAppearance()
+            #expect(model.cardIDs == [gato, perro])
+            #expect(model.generation > initialGeneration)
         }
     }
 }

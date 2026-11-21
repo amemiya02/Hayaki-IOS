@@ -500,9 +500,14 @@ public struct BrowseScreen: View {
     /// position. While selecting it selects many rows; beside a detail column
     /// (iPad) it selects the one row shown there; otherwise rows open.
     private var resultList: some View {
-        List(model.rowIDs, id: \.self, selection: listSelection) { rowID in
-            row(rowID)
-                .accessibilityIdentifier(rowID == model.rowIDs.last ? "browse-last-result" : "browse-result")
+        let lastRowID = model.rowIDs.last
+        return List(model.rowIDs, id: \.self, selection: listSelection) { rowID in
+            // Give List one row per ID without evaluating every row's controls up front.
+            VStack(spacing: 0) {
+                row(rowID)
+            }
+            .tag(rowID)
+            .accessibilityIdentifier(rowID == lastRowID ? "browse-last-result" : "browse-result")
         }
     }
 
@@ -520,10 +525,9 @@ public struct BrowseScreen: View {
     private func row(_ rowID: Int64) -> some View {
         let row = CardRowView(model: model, cardID: rowID, truncates: truncatesRows)
         if isSelecting {
-            row.tag(rowID)
+            row
         } else if showsDetailColumn {
-            row.tag(rowID)
-                .contextMenu { rowMenu(rowID) }
+            row.contextMenu { rowMenu(rowID) }
         } else {
             Group {
                 if model.mode == .cards {
