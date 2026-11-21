@@ -130,7 +130,7 @@ In Xcode, select the same provisioning team for **Hayaki**, **HayakiShare**, and
 
 - [`App/`](App/) contains the SwiftUI entry point. [`Packages/`](Packages/) contains the app shell, collection store, and feature packages. [`core/`](core/) contains the Rust bridge to Anki.
 - Run `scripts/test.sh` for package tests against the real core and disposable collections. To include the local sync-server integration tests, run `scripts/build-sync-server.sh` first. For a focused run, use `scripts/test.sh BrowseFeature`.
-- [CI](https://github.com/amemiya02/Hayaki-iOS/actions/workflows/ci.yml) builds the app and runs package tests and the iPhone and iPad UI suites on `main`.
+- [CI](https://github.com/amemiya02/Hayaki-iOS/actions/workflows/ci.yml) runs the package tests and builds the app on every pull request and on `main`. Run the iPhone and iPad UI suites locally.
 - Read the [core build guide](docs/building-the-core.md), [feature package conventions](docs/feature-packages.md), and [iOS parity specification](docs/specs/hayaki-v1.md) before changing those parts of the app.
 
 Bug reports are welcome on [GitHub Issues](https://github.com/amemiya02/Hayaki-iOS/issues). Include your iOS version, the Hayaki version from **More → About**, and the shortest steps to reproduce the problem. Use a sample deck if a collection is needed to demonstrate the issue.

@@ -1,4 +1,5 @@
 import CollectionTesting
+import Foundation
 import StudyFeature
 import Testing
 
@@ -87,6 +88,10 @@ struct StudySessionTests {
     )
     func eachRating(rating: Rating) async throws {
         try await withTemporaryCollection { store in
+            // Keep the next day rollover hours away, so a learning step a few
+            // minutes ahead always falls on the same scheduler day.
+            let rollover = Calendar.current.component(.hour, from: Date.now.addingTimeInterval(12 * 3600))
+            try await store.updateSchedulingPreferences { $0.rollover = UInt32(rollover) }
             let spanish = try await store.addDeck(named: "Spanish")
             try await store.addBasicNotes(count: 1, toDeck: spanish)
             let session = StudySessionModel(store: store, deckID: spanish)
