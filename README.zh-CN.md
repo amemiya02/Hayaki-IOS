@@ -25,11 +25,10 @@
 Hayaki 用 SwiftUI 和 Liquid Glass 打造原生 iOS 26 应用，将 [Hayaki 安卓版](https://github.com/amemiya02/Hayaki) 的学习体验带到 iPhone 和 iPad。集合保存在设备上，离线也能学习、浏览和编辑。应用内嵌上游 Anki 的 Rust 核心，用于复习调度、搜索和同步，并兼容桌面 Anki 和 AnkiDroid 的集合格式。
 
 <p align="center">
-  <img src="docs/assets/iphone-decks-zh.webp" width="200" alt="牌组页顶部的今日卡片、全部学习按钮，以及每个牌组的彩色数量标签">
-  <img src="docs/assets/iphone-review-zh.webp" width="200" alt="学习页导航栏显示牌组名和数量，下方是 MathJax 卡片和四个玻璃评分按钮">
-  <img src="docs/assets/iphone-finished-zh.webp" width="200" alt="完成页显示本次复习的卡片数、用时和评分分布">
-  <img src="docs/assets/iphone-statistics.webp" width="200" alt="统计页中的待复习卡片分布和学习日历热力图">
+  <img src="docs/assets/readme/iphone-showcase-zh.webp" width="820" alt="Hayaki 的 iPhone 界面，展示今日待学牌组、带插画的日语闪卡和四种复习评分，以及学习统计">
 </p>
+
+<p align="center"><sub>界面预览使用示例卡片和模拟学习数据。</sub></p>
 
 ## 主要功能
 
@@ -43,6 +42,10 @@ Hayaki 用 SwiftUI 和 Liquid Glass 打造原生 iOS 26 应用，将 [Hayaki 安
 - **适配 iPhone 和 iPad。** iPhone 使用标签栏，iPad 使用侧栏。iPad 上浏览页在列表旁显示所选卡片，卡片保持适合阅读的宽度，按住 Command 可查看全部快捷键。支持英语、简体中文和日语。启用 App Groups 的版本还提供分享扩展和牌组小组件。
 
 已验证的流程和待完成的设备测试记录在 [iOS 验收清单](docs/specs/ios-acceptance.md) 中。
+
+<p align="center">
+  <img src="docs/assets/readme/ipad-browse-zh.webp" width="820" alt="Hayaki 的 iPad 界面并排显示导航侧栏、标签搜索结果和闪卡预览">
+</p>
 
 ## 快速开始
 

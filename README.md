@@ -25,11 +25,10 @@
 Hayaki brings [Hayaki for Android](https://github.com/amemiya02/Hayaki) to iPhone and iPad as a native iOS 26 app built in SwiftUI with Liquid Glass. Your collection lives on your device, so you can study, browse, and edit offline. Hayaki embeds upstream Anki’s Rust core for scheduling, search, sync, and file compatibility with desktop Anki and AnkiDroid.
 
 <p align="center">
-  <img src="docs/assets/iphone-decks.webp" width="200" alt="Decks screen with the Today card, Study All, and colored count pills on each deck">
-  <img src="docs/assets/iphone-review.webp" width="200" alt="Study screen with deck name and counts in the navigation bar, a MathJax card, and four glass rating buttons">
-  <img src="docs/assets/iphone-finished.webp" width="200" alt="Finished screen with a session summary of cards reviewed, time spent, and the rating breakdown">
-  <img src="docs/assets/iphone-statistics.webp" width="200" alt="Statistics screen showing the due-card distribution and study calendar">
+  <img src="docs/assets/readme/iphone-showcase.webp" width="820" alt="Hayaki on iPhone showing the daily deck queue, an illustrated Japanese flashcard with four review ratings, and study statistics">
 </p>
+
+<p align="center"><sub>Interface previews with sample cards and simulated study data.</sub></p>
 
 ## Features
 
@@ -43,6 +42,10 @@ Hayaki brings [Hayaki for Android](https://github.com/amemiya02/Hayaki) to iPhon
 - **Use it on iPhone or iPad.** Navigate with iPhone tabs or the iPad sidebar. On iPad, Browse shows the selected card beside the list, cards keep a readable width, and every shortcut appears when you hold Command. English, Simplified Chinese, and Japanese are supported. The App Groups build also includes Share and deck widgets.
 
 See the [acceptance inventory](docs/specs/ios-acceptance.md) for verified workflows and remaining device checks.
+
+<p align="center">
+  <img src="docs/assets/readme/ipad-browse.webp" width="820" alt="Hayaki on iPad showing the navigation sidebar, the results of a tag search, and a flashcard preview side by side">
+</p>
 
 ## Get started
 
